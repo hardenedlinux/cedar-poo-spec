@@ -217,7 +217,7 @@ is a working example.
 #+begin_src toml
 [[require]]
 name = "CedarPooSpec"
-git = "https://github.com/tao3k/cedar-poo-spec.git"
+git = "https://github.com/hardenedlinux/cedar-poo-spec.git"
 rev = "feat/cedar-evaluation-adapter"
 #+end_src
 
@@ -249,14 +249,14 @@ from standard input and writes Cedar source to standard output:
 
 #+begin_src toml
 [dependencies]
-cedar-poo-core = { git = "https://github.com/tao3k/cedar-poo-spec.git", rev = "<accepted immutable revision>" }
-cedar-poo-runtime = { git = "https://github.com/tao3k/cedar-poo-spec.git", rev = "<same accepted immutable revision>" }
+cedar-poo-core = { git = "https://github.com/hardenedlinux/cedar-poo-spec.git", rev = "<accepted immutable revision>" }
+cedar-poo-runtime = { git = "https://github.com/hardenedlinux/cedar-poo-spec.git", rev = "<same accepted immutable revision>" }
 #+end_src
 
 For the command-line form, install the binary from the same revision:
 
 #+begin_src sh
-cargo install --git https://github.com/tao3k/cedar-poo-spec.git \
+cargo install --git https://github.com/hardenedlinux/cedar-poo-spec.git \
   --rev ACCEPTED_IMMUTABLE_REVISION --package cedar-poo-bridge
 #+end_src
 
