@@ -1,3 +1,4 @@
+import CedarPooSpec.Functional.Capabilities
 import CedarPooSpec.Platform.AWS.AgentCore.Gateway
 import CedarPooSpec.Revision
 import CedarPooSpec.PolicyProfile
@@ -158,9 +159,13 @@ def modelResult : Except LeanPoo.C4.Error Model := do
 
 def model : Model := modelResult.toOption.get (by native_decide)
 
+/-- Checked immutable policy context; current request inputs are supplied at consumption. -/
+protected def program : CedarPooSpec.Functional.Program model schema :=
+  (CedarPooSpec.Functional.prepareProgram CedarPooSpec.Functional.standard
+    model schema (model.modules.map (·.name))).toOption.get (by native_decide)
+
 def decideAt (root : String) (request : Request) : Option Decision := do
-  let policies ← (model.compile root).toOption
-  let response := isAuthorized request entities policies
+  let response ← (CedarPooSpec.AWS.Reconciliation.program.response root request entities).toOption
   if response.erroringPolicies.isEmpty then some response.decision else none
 
 theorem namedReadsEquivalent :
@@ -211,7 +216,7 @@ theorem jointIncidentAndRecovery :
 theorem allRootsValidated :
     ["SourceCombined", "OwnerCombined", "Threshold90", "GraphPaused",
       "JointIncident", "Recovered"].all (fun root =>
-        (CedarPooSpec.PolicyJson.publish model root schema).isOk) = true := by
+        (CedarPooSpec.AWS.Reconciliation.program.publish root).isOk) = true := by
   native_decide
 
 end CedarPooSpec.AWS.Reconciliation

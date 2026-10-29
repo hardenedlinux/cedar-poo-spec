@@ -42,6 +42,14 @@ fn dispatch(input: &str, args: &[String]) -> Result<(), String> {
         println!("Cedar template source matches Lean materialization");
         return Ok(());
     }
+    if args == ["replay-catalog"] {
+        println!(
+            "{}",
+            serde_json::to_string(&crate::catalog::replay(input)?)
+                .map_err(|error| error.to_string())?
+        );
+        return Ok(());
+    }
     if args == ["replay-validated-receipts"] {
         let manifest: ValidatedManifest = serde_json::from_str(input)
             .map_err(|error| format!("validated manifest JSON: {error}"))?;
@@ -103,7 +111,7 @@ fn run_manifest_command(manifest: &Manifest, args: &[String]) -> Result<(), Stri
         }
         _ => {
             return Err(
-                "usage: cedar-poo-bridge [render|check-template-source|replay-receipts|replay-validated-receipts|identified-sources CASE_NAME|replay-schema-only-revision|emit DIRECTORY|check-artifacts DIRECTORY|check-direct DIRECTORY]".into(),
+                "usage: cedar-poo-bridge [render|check-template-source|replay-receipts|replay-validated-receipts|replay-catalog|identified-sources CASE_NAME|replay-schema-only-revision|emit DIRECTORY|check-artifacts DIRECTORY|check-direct DIRECTORY]".into(),
             );
         }
     }

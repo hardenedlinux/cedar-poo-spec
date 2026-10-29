@@ -11,7 +11,7 @@ import Case crates or synthetic scenario inputs.
 
 | Package | Responsibility | Local features |
 |---------+----------------+----------------|
-| =cedar-poo-core= | Policy JSON artifacts, authority and operation ledgers | None |
+| =cedar-poo-core= | Policy JSON artifacts, authority/operation ledgers and typed handoff scopes | None |
 | =cedar-poo-runtime= | Official Cedar validation, schema checks and replay | None |
 | =cedar-poo-agentic= | Common tool-action, selection and sink boundary | None |
 | =cedar-poo-commerce= | Storage-independent signatures, claims and admission | =projection=, =admission= |
@@ -184,3 +184,21 @@ The optional =ap2-coordination= feature supplies the [[file:../Examples/AgenticA
 It groups Host-enrolled canonical authorization/agent/policy identities and
 issues one whole-record CAS. Its independent consumer checks concurrency and
 unknown ACK behavior; it supplies neither a durable backend nor a send permit.
+
+* Complete Functional catalog replay
+
+The bridge =replay-catalog= command consumes the official Lean manifest catalog.
+It uses the runtime's existing strict schema-bound, raw-evaluation and schema
+evolution replays. Deployment policies must match their schema-bound sources;
+the tabular input is classified only as a data fixture. Unknown or incomplete
+catalog shapes fail. =just check-functional-catalog= freezes all 48 original
+manifest bytes and checks the 51-entry catalog.
+
+Core =handoff::Scope<Actor>= and =Grant<Actor>= represent complete simulated
+scope, current epoch and exclusive expiry. =CredentialMode= refuses empty input;
+it does not certify that an arbitrary nonempty mode has an execution provider.
+The bridge's settlement consumer parses actors as Cedar =EntityUid= and refuses
+unsupported credential modes. It binds all claims and banking requests to their
+actual schema-bound receipts, roots, actors and ordered phase requirements.
+Fourteen scenarios exercise independent refusal boundaries; only =ready= admits.
+These are replay simulations and do not issue credentials or execute settlement.

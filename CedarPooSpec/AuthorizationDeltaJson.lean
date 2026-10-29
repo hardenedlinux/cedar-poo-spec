@@ -1,3 +1,4 @@
+import CedarPooSpec.Functional.CompilationJson
 import CedarPooSpec.AuthorizationDeltaEvidence
 import CedarPooSpec.PolicyJson
 
@@ -99,10 +100,10 @@ def impactReport (item : ImpactReport) : Except String Lean.Json := do
 def witnessCases (item : Report) (model : Model)
     (beforeRoot afterRoot : String) : Except String Lean.Json := do
   let cases ← item.expansions.zipIdx.mapM fun (entry, index) => do
-    let before ← CedarPooSpec.PolicyJson.authorizationCase s!"delta-before-{index}"
-      beforeRoot model beforeRoot entry.witness.request entry.witness.entities
-    let after ← CedarPooSpec.PolicyJson.authorizationCase s!"delta-after-{index}"
-      afterRoot model afterRoot entry.witness.request entry.witness.entities
+    let before ← (CedarPooSpec.Functional.compilation model).authorizationCase
+        s!"delta-before-{index}" beforeRoot beforeRoot entry.witness.request entry.witness.entities
+    let after ← (CedarPooSpec.Functional.compilation model).authorizationCase
+        s!"delta-after-{index}" afterRoot afterRoot entry.witness.request entry.witness.entities
     return [before, after]
   return Lean.Json.mkObj [("cases", Lean.toJson cases.flatten)]
 
@@ -111,10 +112,10 @@ def impactWitnessCases (item : ImpactReport) (model : Model)
     (beforeRoot afterRoot : String) : Except String Lean.Json := do
   let witnesses := item.gains.map (·.witness) ++ item.losses.map (·.witness)
   let cases ← witnesses.zipIdx.mapM fun (witness, index) => do
-    let before ← CedarPooSpec.PolicyJson.authorizationCase s!"impact-before-{index}"
-      beforeRoot model beforeRoot witness.request witness.entities
-    let after ← CedarPooSpec.PolicyJson.authorizationCase s!"impact-after-{index}"
-      afterRoot model afterRoot witness.request witness.entities
+    let before ← (CedarPooSpec.Functional.compilation model).authorizationCase
+        s!"impact-before-{index}" beforeRoot beforeRoot witness.request witness.entities
+    let after ← (CedarPooSpec.Functional.compilation model).authorizationCase
+        s!"impact-after-{index}" afterRoot afterRoot witness.request witness.entities
     return [before, after]
   return Lean.Json.mkObj [("cases", Lean.toJson cases.flatten)]
 
@@ -134,10 +135,10 @@ def snapshotReport (item : SnapshotImpact) (before after : Cedar.Spec.Env) :
 
 def snapshotCases (name : String) (model : Model) (beforeRoot afterRoot : String)
     (before after : Cedar.Spec.Env) : Except String Lean.Json := do
-  let beforeCase ← CedarPooSpec.PolicyJson.authorizationCase s!"{name}-before"
-    beforeRoot model beforeRoot before.request before.entities
-  let afterCase ← CedarPooSpec.PolicyJson.authorizationCase s!"{name}-after"
-    afterRoot model afterRoot after.request after.entities
+  let beforeCase ← (CedarPooSpec.Functional.compilation model).authorizationCase
+      s!"{name}-before" beforeRoot beforeRoot before.request before.entities
+  let afterCase ← (CedarPooSpec.Functional.compilation model).authorizationCase
+      s!"{name}-after" afterRoot afterRoot after.request after.entities
   return Lean.Json.mkObj [("cases", Lean.toJson [beforeCase, afterCase])]
 
 end CedarPooSpec.AuthorizationDeltaJson

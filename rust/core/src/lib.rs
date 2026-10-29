@@ -2,6 +2,7 @@
 mod artifact;
 pub use artifact::{CompiledPolicyJson, TemplateSourceJson};
 pub mod authority_consumption;
+pub mod handoff;
 pub mod operation_identity;
 
 #[cfg(test)]

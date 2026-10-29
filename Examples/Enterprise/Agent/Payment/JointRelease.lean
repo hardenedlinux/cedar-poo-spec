@@ -1,3 +1,4 @@
+import CedarPooSpec.Functional.Capabilities
 import CedarPooSpec.AuthorizationDeltaRelease
 import CedarPooSpec.PolicyJson
 import Examples.Enterprise.Agent.Payment.AgentPayment
@@ -25,9 +26,15 @@ def modelResult : Except LeanPoo.C4.Error Model := do
 
 def model : Model := modelResult.toOption.get (by native_decide)
 
+/-- Checked immutable policy context; current request inputs are supplied at consumption. -/
+protected def program : CedarPooSpec.Functional.Program model CedarPooSpec.AgentPaymentExample.paymentSchema :=
+  (CedarPooSpec.Functional.prepareProgram CedarPooSpec.Functional.standard
+    model CedarPooSpec.AgentPaymentExample.paymentSchema (model.modules.map (·.name))).toOption.get (by native_decide)
+
+
 private def hasPolicy (root : String) (id : PolicyID) : Bool :=
-  match model.compile root with
-  | .ok policies => (policies.map Policy.id).contains id
+  match CedarPooSpec.AgentPaymentJointRelease.program.at root with
+  | .ok ready => (ready.checked.policies.map Policy.id).contains id
   | .error _ => false
 
 /-- The two native POO removals remain local, while C4 combines both in the
@@ -145,8 +152,7 @@ def run : IO Lean.Json := do
   let entities := gain.combined.witness.entities
   let mut cases := []
   for root in ["DualHold", "RiskReleased", "ComplianceReleased", "JointRelease"] do
-    let .ok receipt := CedarPooSpec.PolicyJson.authorizationCase root root model root
-        request entities
+    let .ok receipt := CedarPooSpec.AgentPaymentJointRelease.program.authorizationCase root root root request entities
       | throw (IO.userError s!"cannot export {root} Cedar replay")
     cases := cases ++ [receipt]
   return Lean.Json.mkObj [

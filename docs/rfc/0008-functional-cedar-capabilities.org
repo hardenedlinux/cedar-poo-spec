@@ -3,14 +3,14 @@
 
 * Status and scope
 
-The B1 capability core and the B2 payment/prior-authorization consumers (including
-the medical internal channels) are now
-implemented on PR 8; see the [[file:../../CedarPooSpec/Functional/README.org][Functional capability implementation]]. The C1 publication/root-family and C2 effectful consumers are also implemented.
-D scoped bounded reuse and cleanup are also implemented, with measured locality
-and explicit churn/retention limits. The
-preceding typed-industry implementation is described in
-[[file:../lean-poo-alignment.org][LeanPOO alignment]]. The reference is LeanPOO PR 13, immutable revision
-=b577371fe4e2717e198a29eefe16ec8ae0380e0d=.
+The shared capability layer and whole-repository consumer migration are
+implemented on PR 8; see the [[file:../../CedarPooSpec/Functional/README.org][Functional capability implementation]] and
+[[file:../functional-coverage.org][complete coverage matrix]]. This includes typed preparation/publication,
+current-request authorization, effect refresh, bounded root reuse and the
+compile-only Factory for APIs without schema premises. Actual PolicyProfile and
+Handoff Contracts guard consumer projections. The preceding typed-industry
+implementation is described in [[file:../lean-poo-alignment.org][LeanPOO alignment]]. The reference remains LeanPOO
+PR 13, immutable revision =b577371fe4e2717e198a29eefe16ec8ae0380e0d=.
 
 The initial inspected tree at =5b25f80= had 100 =CedarPooSpec= Lean modules and
 129 Example modules; B1 adds PolicyPreparation and Functional.Capabilities,
@@ -287,7 +287,10 @@ end-to-end speedup is inferred; dynamic commit still refreshes the actual model.
 
 * Coverage after the initial slices
 
-The initial B1-D exit gates do not imply complete migration of all inventory
-families. [[file:../functional-coverage.org][The coverage ledger]] records E1 deployment, Google SDP and medical
-pseudonymization/lifecycle consumers, their pair-admission law, retained domain
-boundaries and remaining direct-export surfaces.
+The consumer migration now covers Examples and the applicable library consumers
+as a whole. [[file:../functional-coverage.org][The coverage ledger]] records the complete matrix, schema-free
+compile-stage Factory, actual PolicyProfile/Handoff Contracts, retained proof
+oracles and Production import isolation. The catalog gate freezes 48 original
+manifest byte strings and replays 51 entries, including 14 settlement handoff
+simulations. This completes consumer migration; it does not claim physical
+provider execution, external authentication or native throughput.

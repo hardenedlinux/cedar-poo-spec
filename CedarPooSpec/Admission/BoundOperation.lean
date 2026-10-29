@@ -1,3 +1,4 @@
+import CedarPooSpec.Functional.Compilation
 import CedarPooSpec.CompoundAuthorization
 
 /-!
@@ -52,6 +53,6 @@ def BoundOperation.authorize {Effect State : Type}
   else if !decide (operation.state = state) then
     .error .stateMismatch
   else
-    (CompoundAuthorization.authorizeAll model root [operation.request] entities).mapError .policy
+    ((CedarPooSpec.Functional.compilation model).authorize root [operation.request] entities).mapError .policy
 
 end CedarPooSpec.Admission

@@ -344,6 +344,7 @@ name = "cedar-poo-bridge"
 version = "0.1.0"
 dependencies = [
  "asp-rust",
+ "cedar-policy",
  "cedar-poo-core",
  "cedar-poo-runtime",
  "serde",

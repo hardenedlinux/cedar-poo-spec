@@ -1,3 +1,4 @@
+import CedarPooSpec.Functional.Capabilities
 import Examples.Enterprise.AWS.FinancialServices.MultiAccountBanking.MultiAccountBanking
 import CedarPooSpec.SchemaJson
 
@@ -19,9 +20,8 @@ def manifest : Except String Lean.Json := do
     ("initialize", initializeAction)] do
     for (root, variant) in [("SampleBroad", "source"),
                             ("OwnerCombined", "owners")] do
-      let row ← CedarPooSpec.PolicyJson.authorizationCase
-        s!"{variant}-{label}" variant model root
-        (request banker action) entities
+      let row ← CedarPooSpec.MultiAccountBankingExample.program.authorizationCase
+          s!"{variant}-{label}" variant root (request banker action) entities
       rows := rows ++ [row]
   for (root, variant, label, action) in [
     ("TransferPaused", "paused", "transfer", transfer),
@@ -29,9 +29,8 @@ def manifest : Except String Lean.Json := do
     ("TransferPaused", "paused", "balance", balance),
     ("TransferPaused", "paused", "delete-customer", deleteCustomer),
     ("TransferResumed", "resumed", "transfer", transfer)] do
-    let row ← CedarPooSpec.PolicyJson.authorizationCase
-      s!"{variant}-{label}" variant model root
-      (request banker action) entities
+    let row ← CedarPooSpec.MultiAccountBankingExample.program.authorizationCase
+        s!"{variant}-{label}" variant root (request banker action) entities
     rows := rows ++ [row]
   CedarPooSpec.SchemaJson.validatedManifest schema rows
 

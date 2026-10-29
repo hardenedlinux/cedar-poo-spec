@@ -1,3 +1,4 @@
+import CedarPooSpec.Functional.Capabilities
 import CedarPooSpec.AuthorizationDeltaTrace
 import CedarPooSpec.PolicyJson
 import Examples.Enterprise.Agent.Session.BoundedSession
@@ -25,24 +26,22 @@ private def receiptCases (name : String) (impact : TraceImpact Session) :
     Except String (List Lean.Json) := do
   let indexed := impact.steps.zipIdx
   let before ← indexed.mapM fun (step, index) =>
-    CedarPooSpec.PolicyJson.authorizationCase s!"{name}-before-{index}" "Base"
-      model "Base" step.beforeEnv.request step.beforeEnv.entities
+    CedarPooSpec.BoundedSessionExample.program.authorizationCase
+        s!"{name}-before-{index}" "Base" "Base" step.beforeEnv.request step.beforeEnv.entities
   let after ← indexed.mapM fun (step, index) =>
-    CedarPooSpec.PolicyJson.authorizationCase s!"{name}-after-{index}" "Integrated"
-      model "Integrated" step.afterEnv.request step.afterEnv.entities
+    CedarPooSpec.BoundedSessionExample.program.authorizationCase
+        s!"{name}-after-{index}" "Integrated" "Integrated" step.afterEnv.request step.afterEnv.entities
   return before ++ after
 
 private def crossReceiptCases (name : String) (impact : TraceImpact Session) :
     Except String (List Lean.Json) := do
   let indexed := impact.steps.zipIdx
   let beforeOnAfter ← indexed.mapM fun (step, index) =>
-    CedarPooSpec.PolicyJson.authorizationCase
-      s!"{name}-before-on-after-{index}" "Base"
-      model "Base" step.afterEnv.request step.afterEnv.entities
+    CedarPooSpec.BoundedSessionExample.program.authorizationCase
+        s!"{name}-before-on-after-{index}" "Base" "Base" step.afterEnv.request step.afterEnv.entities
   let afterOnBefore ← indexed.mapM fun (step, index) =>
-    CedarPooSpec.PolicyJson.authorizationCase
-      s!"{name}-after-on-before-{index}" "Integrated"
-      model "Integrated" step.beforeEnv.request step.beforeEnv.entities
+    CedarPooSpec.BoundedSessionExample.program.authorizationCase
+        s!"{name}-after-on-before-{index}" "Integrated" "Integrated" step.beforeEnv.request step.beforeEnv.entities
   return beforeOnAfter ++ afterOnBefore
 
 def run : IO Lean.Json := do

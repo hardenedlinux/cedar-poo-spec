@@ -1,3 +1,4 @@
+import CedarPooSpec.Functional.Capabilities
 import CedarPooSpec.PolicyJson
 import CedarPooSpec.Governance.MemberGrant
 import CedarPooSpec.Governance.Veto
@@ -94,6 +95,11 @@ def modelResult : Except LeanPoo.C4.Error Model := do
 
 def model : Model := modelResult.toOption.get (by native_decide)
 
+/-- Checked immutable policy context; current request inputs are supplied at consumption. -/
+protected def program : CedarPooSpec.Functional.Program model schema :=
+  (CedarPooSpec.Functional.prepareProgram CedarPooSpec.Functional.standard
+    model schema (model.modules.map (·.name))).toOption.get (by native_decide)
+
 def request (principal resource : EntityUID) (requested : String) : Request :=
   ⟨principal, approve, resource,
     Map.make [("amount", .ext (.decimal (decimal requested)))]⟩
@@ -110,10 +116,9 @@ def cases : List (String × String × Request × Decision) := [
   ("integrated-cross-department", "Integrated", request alice researchOrder "10.0000", .deny)]
 
 def decisionsExact : Bool := cases.all fun (_, root, req, expected) =>
-  match model.compile root with
+  match CedarPooSpec.PurchaseApprovalExample.program.response root req entities with
   | .error _ => false
-  | .ok policies =>
-      let response := isAuthorized req entities policies
+  | .ok response =>
       response.decision == expected && response.erroringPolicies.isEmpty
 
 theorem decisionsExactFully : decisionsExact = true := by native_decide
@@ -123,7 +128,7 @@ theorem budgetEditLocal :
       (by native_decide)).changedPolicyIds = ["operations-approval"] := by native_decide
 
 theorem validatedPublication :
-    (CedarPooSpec.PolicyJson.publish model "Integrated" schema).isOk = true := by
+    (CedarPooSpec.PurchaseApprovalExample.program.publish "Integrated").isOk = true := by
   native_decide
 
 def malformedPermit : Policy :=
@@ -133,9 +138,15 @@ def malformedModel : Model := { modules := model.modules ++ [
   { name := "Malformed", parentOrders := [["Integrated"]],
     edits := [.overlay malformedPermit] }] }
 
+/-- Checked immutable policy context; current request inputs are supplied at consumption. -/
+protected def malformedProgram : CedarPooSpec.Functional.Program malformedModel schema :=
+  (CedarPooSpec.Functional.prepareProgram CedarPooSpec.Functional.standard
+    malformedModel schema []).toOption.get (by native_decide)
+
+
 theorem malformedPublicationRejected :
-    (match CedarPooSpec.PolicyJson.publish malformedModel "Malformed" schema with
-     | .error (.policy _) => true
+    (match CedarPooSpec.PurchaseApprovalExample.malformedProgram.publish "Malformed" with
+     | .error (.context "Malformed" (.policy _)) => true
      | _ => false) = true := by native_decide
 
 end CedarPooSpec.PurchaseApprovalExample

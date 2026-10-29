@@ -1,3 +1,4 @@
+import CedarPooSpec.Functional.Capabilities
 import Examples.Enterprise.Agent.Fanout.CrossAgentEgress
 import CedarPooSpec.SchemaJson
 
@@ -124,7 +125,13 @@ def modelResult : Except LeanPoo.C4.Error Model := do
 
 def model : Model := modelResult.toOption.get (by native_decide)
 
+/-- Checked immutable policy context; current request inputs are supplied at consumption. -/
+protected def program : CedarPooSpec.Functional.Program model schema :=
+  (CedarPooSpec.Functional.prepareProgram CedarPooSpec.Functional.standard
+    model schema (model.modules.map (·.name))).toOption.get (by native_decide)
+
 /-- The composed root retains each new owner and the inherited history owner. -/
+
 theorem composedOwnersPresent :
     (departments.map DepartmentObject.name ++
       ["Aggregate", "Temporal", "History"]).all (fun owner =>
@@ -167,10 +174,9 @@ def request (state : State) (attempt : Attempt) : Request :=
 
 def authorized (root : String) (state : State) (attempt : Attempt) : Bool :=
   if attempt.worker != workerA && attempt.worker != workerB then false else
-    match model.compile root with
+    match CedarPooSpec.DepartmentSynthesisExample.program.response root (request state attempt) entities with
     | .error _ => false
-    | .ok policies =>
-        let response := isAuthorized (request state attempt) entities policies
+    | .ok response =>
         response.decision == .allow && response.erroringPolicies.isEmpty
 
 def advance (state : State) (attempt : Attempt) : State :=
@@ -245,7 +251,7 @@ theorem allRootsValidate :
     (departments.map DepartmentObject.name ++
       ["Aggregate", "Temporal", "DepartmentGoverned",
         "DepartmentIncident", "DepartmentRecovered"]).all (fun root =>
-        (CedarPooSpec.PolicyJson.publish model root schema).isOk) = true := by
+        (CedarPooSpec.DepartmentSynthesisExample.program.publish root).isOk) = true := by
   native_decide
 
 end CedarPooSpec.DepartmentSynthesisExample

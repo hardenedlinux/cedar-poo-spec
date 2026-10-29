@@ -208,10 +208,9 @@ theorem emptyCompoundRejected :
      | .error _ => false) = false := by native_decide
 
 def branchCasesExact : Bool := branchCases.all fun (_, root, principal, action, resource, expected) =>
-  match model.compile root with
+  match CedarPooSpec.PaymentReleaseExample.program.response root (request principal action resource) entities with
   | .error _ => false
-  | .ok policies =>
-      let response := isAuthorized (request principal action resource) entities policies
+  | .ok response =>
       response.decision == expected && response.erroringPolicies.isEmpty
 
 theorem branchCasesExactFully : branchCasesExact = true := by native_decide

@@ -1,3 +1,5 @@
+import CedarPooSpec.Functional.Capabilities
+import CedarPooSpec.Functional.CompilationJson
 import CedarPooSpec.PolicyJson
 import Examples.Governance.TicketSharing
 
@@ -24,8 +26,10 @@ theorem duplicateIdsRejected :
 
 private def case (name : String) (policyModel : CedarPooSpec.PolicyModules.Model)
     (root : String) (req : Cedar.Spec.Request)
-    (store : Cedar.Spec.Entities) : Except String Lean.Json :=
-  PolicyJson.authorizationCase name root.toLower policyModel root req store
+    (store : Cedar.Spec.Entities) : Except String Lean.Json := do
+  let source ← (CedarPooSpec.Functional.prepareProgram CedarPooSpec.Functional.standard
+    policyModel schema []).mapError CedarPooSpec.Functional.Error.message
+  source.authorizationCase name root.toLower root req store
 
 def manifest : Except String Lean.Json := do
   let baselineCases ← List.mapM (fun (name, root, req, store) =>

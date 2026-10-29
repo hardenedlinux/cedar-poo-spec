@@ -246,10 +246,32 @@ a measured end-to-end speedup.
 
 * Broader consumer coverage
 
-[[file:../../docs/functional-coverage.org][The coverage ledger]] records E1 beyond the initial RFC Cases. Deployment
+[[file:../../docs/functional-coverage.org][The coverage ledger]] records the completed whole-repository consumer migration beyond the initial RFC Cases. Deployment
 and Google SDP now use checked two-stage receipts; =Ready.allowed_pair= proves
 exact conjunction of the independent decisions. Pseudonymization authorization,
 typed publication and current-state lifecycle use the same prepared capabilities.
 Four manifest byte comparisons, full lifecycle outcomes and malformed second
 stages are checked in [[file:../../Tests/Functional/ExtendedCoverage.lean][ExtendedCoverage]]. Domain selection, provider/crypto wire
 contracts and physical-effect admission remain with their existing owners.
+
+* Whole-repository consumer path
+
+[[file:Compilation.lean][Compilation]] exposes the compile-only LeanPOO Factory of indexed
+=Compiled model root= witnesses. [[file:CompilationJson.lean][CompilationJson]] adds export without forcing JSON
+into the admission-only import closure. Schema-free diagnostics and library
+snapshot/delta/BoundOperation consumers use these operations with their original
+error and validation stages. Schema-bearing Examples use checked Programs.
+Both paths build the canonical CompoundAuthorization receipt; the existing
+distinct-root layer cache retains ownership of reuse.
+
+The shared PolicyProfile Contract validates inherited rendering against actual
+final-self settings and computed policies. Handoff's scope Contract guards the
+actual case/digest projection. [[file:../../Tests/Functional/WholeMigration.lean][Whole migration tests]] prove generic complete
+receipt/compilation equivalence and audit six laws, plus forged-projection
+refusal and inherited-child controls.
+
+=just check-functional-consumers= prevents direct legacy consumer dispatchers
+from returning. =just check-functional-catalog= freezes all 48 original manifest
+bytes and replays all 51 catalog entries through the Rust bridge. Its three new
+settlement entries include 14 typed handoff simulations. Construction/provenance
+proofs and independent Cedar evaluation oracles retain their original owners.

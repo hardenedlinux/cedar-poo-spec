@@ -1,3 +1,4 @@
+import Examples.Enterprise.AWS.FinancialServices.ClaimSettlementExport
 import Examples.Governance.TicketSharingExport
 import Examples.Health.ClinicalBreakGlassExport
 import Examples.Health.PseudonymizationExport
@@ -50,6 +51,9 @@ import Examples.Scenarios.TenantDevicePolicyEvolutionExport
 namespace CedarPooSpec.Manifests
 
 def entries : List (String × (Unit → Except String Lean.Json)) := [
+  ("claim-settlement-claims", fun _ => AWS.ClaimSettlementExport.claimsManifest),
+  ("claim-settlement-banking", fun _ => AWS.ClaimSettlementExport.bankingManifest),
+  ("claim-settlement-handoff", fun _ => AWS.ClaimSettlementExport.handoffs),
   ("ticket-sharing", fun _ => TicketSharingExport.manifest),
   ("clinical", fun _ => ClinicalBreakGlassExport.manifest),
   ("pseudonymization-validated", fun _ => PseudonymizationExport.manifest),
@@ -107,6 +111,16 @@ def evaluate (produce : Unit → Except String Lean.Json) : IO Lean.Json :=
 
 def run (args : List String) : IO Unit :=
   match args with
+  | "catalog" :: requested => do
+      for name in requested do
+        unless entries.any (fun entry => entry.1 == name) do
+          throw (IO.userError s!"unknown manifest: {name}")
+      let selected := if requested.isEmpty then entries else
+        entries.filter (fun entry => requested.contains entry.1)
+      let outputs ← selected.mapM fun (name, produce) => do
+        let json ← evaluate produce
+        pure (name, json)
+      IO.println (Lean.Json.mkObj outputs).compress
   | ["all"] => do
       let outputs ← entries.mapM fun (name, produce) => do
         let json ← evaluate produce

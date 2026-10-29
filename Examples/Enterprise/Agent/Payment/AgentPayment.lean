@@ -1,3 +1,4 @@
+import CedarPooSpec.Functional.Capabilities
 import Examples.Enterprise.Agent.Delegation.AgentDelegation
 
 /-!
@@ -95,6 +96,11 @@ def paymentModelResult : Except LeanPoo.C4.Error Model := do
 
 def paymentModel : Model := paymentModelResult.toOption.get (by native_decide)
 
+/-- Checked immutable policy context; current request inputs are supplied at consumption. -/
+protected def paymentProgram : CedarPooSpec.Functional.Program paymentModel paymentSchema :=
+  (CedarPooSpec.Functional.prepareProgram CedarPooSpec.Functional.standard
+    paymentModel paymentSchema (paymentModel.modules.map (·.name))).toOption.get (by native_decide)
+
 /-- Inspect the compiled C4 slot at a revision boundary. `some none` is the
     explicit removal tombstone; Cedar publication still validates edit intent. -/
 def policySlot (root : String) (id : PolicyID) : Option (Option Policy) :=
@@ -118,7 +124,7 @@ def checks (root : String) (account origin : EntityUID) (requested : String) :
 
 def authorizePayment (root : String) (account origin : EntityUID)
     (requested : String) : Bool :=
-  match CedarPooSpec.CompoundAuthorization.authorizeLayers paymentModel
+  match CedarPooSpec.AgentPaymentExample.paymentProgram.authorizeLayers
       (checks root account origin requested) paymentEntities with
   | .error _ => false
   | .ok receipts => CedarPooSpec.CompoundAuthorization.layersAllowed receipts
@@ -192,8 +198,7 @@ def malformedChecks : List (String × Request) := [
   ("FinanceTool", requestTool financeBot paymentTool),
   ("PaymentGoverned", malformedOriginRequest)]
 def malformedOriginRejected : Bool :=
-  match CedarPooSpec.CompoundAuthorization.authorizeLayers paymentModel
-      malformedChecks paymentEntities with
+  match CedarPooSpec.AgentPaymentExample.paymentProgram.authorizeLayers malformedChecks paymentEntities with
   | .ok [toolLayer, paymentLayer] =>
       paymentLayer.response.decision == .allow &&
       !paymentLayer.response.erroringPolicies.isEmpty &&
@@ -205,7 +210,7 @@ theorem malformedOriginRejectedFully : malformedOriginRejected = true := by
 def allRootsValidated : Bool :=
   ["FinanceTool", "PaymentBase", "PaymentAccount", "PaymentAmount",
     "PaymentOrigin", "PaymentGoverned", "PaymentFrozen", "PaymentRestored"].all
-    fun root => (CedarPooSpec.PolicyJson.publish paymentModel root paymentSchema).isOk
+    fun root => (CedarPooSpec.AgentPaymentExample.paymentProgram.publish root).isOk
 
 theorem allRootsValidatedFully : allRootsValidated = true := by native_decide
 

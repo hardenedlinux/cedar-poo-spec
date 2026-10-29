@@ -1,3 +1,4 @@
+import CedarPooSpec.Functional.Capabilities
 import CedarPooSpec.Revision
 import CedarPooSpec.PolicyJson
 import CedarPooSpec.CompoundAuthorization
@@ -98,6 +99,12 @@ def modelResult : Except LeanPoo.C4.Error Model := do
 
 def model : Model := modelResult.toOption.get (by native_decide)
 
+/-- Checked immutable policy context; current request inputs are supplied at consumption. -/
+protected def program : CedarPooSpec.Functional.Program model schema :=
+  (CedarPooSpec.Functional.prepareProgram CedarPooSpec.Functional.standard
+    model schema (model.modules.map (·.name))).toOption.get (by native_decide)
+
+
 structure Facts where
   routeApproved : Bool := true
   sceneTextPromoted : Bool := false
@@ -110,8 +117,7 @@ def context (facts : Facts) : Map String Value := Map.make [
 def request (action segment : EntityUID) (facts : Facts) : Request :=
   ⟨planner, action, segment, context facts⟩
 def authorized (root : String) (action segment : EntityUID) (facts : Facts) : Bool :=
-  match CedarPooSpec.CompoundAuthorization.authorizeLayers model
-      [(root, request action segment facts)] entities with
+  match CedarPooSpec.VlaCommandBoundaryExample.program.authorizeLayers [(root, request action segment facts)] entities with
   | .error _ => false
   | .ok receipts => CedarPooSpec.CompoundAuthorization.layersAllowed receipts
 
@@ -151,7 +157,7 @@ theorem casesExactFully : casesExact = true := by native_decide
 
 def rootsValidated : Bool :=
   ["Base", "Safety", "Provenance", "Integrated", "Incident", "Recovered"].all fun root =>
-    (CedarPooSpec.PolicyJson.publish model root schema).isOk
+    (CedarPooSpec.VlaCommandBoundaryExample.program.publish root).isOk
 theorem rootsValidatedFully : rootsValidated = true := by native_decide
 
 def incidentRevision : Revision :=

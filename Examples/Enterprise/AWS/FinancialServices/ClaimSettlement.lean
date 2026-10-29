@@ -1,3 +1,4 @@
+import CedarPooSpec.Functional.Capabilities
 import Examples.Enterprise.AWS.FinancialServices.LakehouseGateway.LakehouseGateway
 import Examples.Enterprise.AWS.FinancialServices.MultiAccountBanking.Lineage
 import CedarPooSpec.CompoundAuthorization
@@ -36,9 +37,8 @@ def planned (claimsRoot bankRoot mode : String) (actors : Actors)
     [CedarPooSpec.LakehouseGatewayExample.queryClaims,
       CedarPooSpec.LakehouseGatewayExample.claimDetails].map fun action =>
         CedarPooSpec.LakehouseGatewayExample.request actors.adjuster action geography
-  let claims ← (CedarPooSpec.CompoundAuthorization.authorizeAll
-    CedarPooSpec.LakehouseGatewayExample.model claimsRoot claimsRequests
-    CedarPooSpec.LakehouseGatewayExample.entities).toOption
+  let claims ← (CedarPooSpec.LakehouseGatewayExample.program.authorize
+      claimsRoot claimsRequests CedarPooSpec.LakehouseGatewayExample.entities).toOption
   let [claimsQuery, claimDetails] := claims.responses | none
   if !claimsQuery.erroringPolicies.isEmpty || !claimDetails.erroringPolicies.isEmpty then
     none

@@ -1,3 +1,4 @@
+import CedarPooSpec.Functional.Capabilities
 import CedarPooSpec.Revision
 import CedarPooSpec.PolicyJson
 
@@ -97,7 +98,13 @@ def modelResult : Except LeanPoo.C4.Error Model := do
 
 def model : Model := modelResult.toOption.get (by native_decide)
 
+/-- Checked immutable policy context; current request inputs are supplied at consumption. -/
+protected def program : CedarPooSpec.Functional.Program model schema :=
+  (CedarPooSpec.Functional.prepareProgram CedarPooSpec.Functional.standard
+    model schema (model.modules.map (·.name))).toOption.get (by native_decide)
+
 /-- The host owns this ledger and serializes admission and updates. -/
+
 structure Session where
   sensitiveSeen : Bool := false
   usedExports : Int64 := 0
@@ -126,10 +133,9 @@ def request (session : Session) (attempt : Attempt) : Request :=
     ("maxExports", .prim (.int session.maxExports))]⟩
 
 def authorized (root : String) (session : Session) (attempt : Attempt) : Bool :=
-  match model.compile root with
+  match CedarPooSpec.BoundedSessionExample.program.response root (request session attempt) entities with
   | .error _ => false
-  | .ok policies =>
-      let response := isAuthorized (request session attempt) entities policies
+  | .ok response =>
       response.decision == .allow && response.erroringPolicies.isEmpty
 
 /-- A rejected action never advances the trusted ledger. -/
@@ -194,7 +200,7 @@ theorem deniedActionLeavesState :
 
 def rootsValidated : Bool :=
   ["Base", "Intent", "History", "Budget", "Integrated", "Incident",
-    "Recovered"].all fun root => (CedarPooSpec.PolicyJson.publish model root schema).isOk
+    "Recovered"].all fun root => (CedarPooSpec.BoundedSessionExample.program.publish root).isOk
 theorem rootsValidatedExact : rootsValidated = true := by native_decide
 
 def incidentRevision : Revision :=

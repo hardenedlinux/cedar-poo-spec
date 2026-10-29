@@ -1,3 +1,4 @@
+import CedarPooSpec.Functional.Capabilities
 import Examples.Enterprise.Procurement.PurchaseApproval
 
 /-!
@@ -74,6 +75,11 @@ def delegatedModelResult : Except LeanPoo.C4.Error Model := do
 
 def delegatedModel : Model := delegatedModelResult.toOption.get (by native_decide)
 
+/-- Checked immutable policy context; current request inputs are supplied at consumption. -/
+protected def delegatedProgram : CedarPooSpec.Functional.Program delegatedModel delegatedSchema :=
+  (CedarPooSpec.Functional.prepareProgram CedarPooSpec.Functional.standard
+    delegatedModel delegatedSchema (delegatedModel.modules.map (·.name))).toOption.get (by native_decide)
+
 def delegatedRequest (principal resource agent : EntityUID) (requested : String) : Request :=
   ⟨principal, approve, resource,
     Map.make [
@@ -93,20 +99,19 @@ def delegatedCases : List (String × String × Request × Decision) := [
   ("revoked-inactive-agent", "Revoked", delegatedRequest bob operationsOrder dormantBot "250.0000", .deny)]
 
 def delegatedDecisionsExact : Bool := delegatedCases.all fun (_, root, req, expected) =>
-  match delegatedModel.compile root with
+  match CedarPooSpec.DelegatedApprovalExample.delegatedProgram.response root req delegatedEntities with
   | .error _ => false
-  | .ok policies =>
-      let response := isAuthorized req delegatedEntities policies
+  | .ok response =>
       response.decision == expected && response.erroringPolicies.isEmpty
 
 theorem delegatedDecisionsExactFully : delegatedDecisionsExact = true := by native_decide
 
 theorem delegatedPublication :
-    (CedarPooSpec.PolicyJson.publish delegatedModel "Delegated" delegatedSchema).isOk = true := by
+    (CedarPooSpec.DelegatedApprovalExample.delegatedProgram.publish "Delegated").isOk = true := by
   native_decide
 
 theorem revokedPublication :
-    (CedarPooSpec.PolicyJson.publish delegatedModel "Revoked" delegatedSchema).isOk = true := by
+    (CedarPooSpec.DelegatedApprovalExample.delegatedProgram.publish "Revoked").isOk = true := by
   native_decide
 
 end CedarPooSpec.DelegatedApprovalExample

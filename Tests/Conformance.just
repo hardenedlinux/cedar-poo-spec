@@ -131,3 +131,22 @@ check-agentic-ai-commerce-wire-sdk sdk_root:
 
 check-agentic-ai-commerce-constraint-sdk sdk_root:
     uv run --project python --package cedar-poo-py-test --extra ap2-sdk --locked cedar-poo-py-test ap2-constraints --sdk-root {{quote(sdk_root)}}
+
+# Complete catalog replay; preserve all pre-migration wire artifacts exactly.
+check-functional-catalog: build-examples
+    timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 --run Examples/Manifests.lean all
+    sha256sum -c Tests/Conformance/functional-manifests.sha256
+    timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 --run Examples/Manifests.lean catalog > .lake/build/functional-catalog.json
+    cargo run --locked --quiet -p cedar-poo-bridge --manifest-path Cargo.toml -- replay-catalog < .lake/build/functional-catalog.json > .lake/build/functional-catalog-receipts.json
+    jq -e 'length == 51 and (."claim-settlement-handoff".scenarios | length) == 14 and ([."claim-settlement-handoff".scenarios[] | select(.admitted) | .name] == ["ready"])' .lake/build/functional-catalog-receipts.json > /dev/null
+    cargo test --locked -p cedar-poo-bridge --lib emitted_catalog_rejects_cross_artifact_tampering -- --ignored
+
+# Consumer migration is an enforced boundary; primitives retain compatibility APIs.
+check-functional-consumers:
+    if rg -n 'PolicyJson\.(authorizationCase|publish|compiled)\b|CompoundAuthorization\.authorize(All|Layers)\b' Examples Productions --glob '*.lean'; then exit 1; fi
+    if rg -n 'PolicyJson\.authorizationCase\b|CompoundAuthorization\.authorize(All|Layers)\b' CedarPooSpec --glob '*.lean' --glob '!Compilation.lean' --glob '!CompilationJson.lean'; then exit 1; fi
+
+check-claim-settlement-replay: build-examples
+    timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 --run Examples/Manifests.lean catalog claim-settlement-claims claim-settlement-banking claim-settlement-handoff > .lake/build/claim-settlement-catalog.json
+    cargo run --locked --quiet -p cedar-poo-bridge --manifest-path Cargo.toml -- replay-catalog < .lake/build/claim-settlement-catalog.json > .lake/build/claim-settlement-receipts.json
+    jq -e 'length == 3 and (."claim-settlement-handoff".scenarios | length) == 14 and ([."claim-settlement-handoff".scenarios[] | select(.admitted) | .name] == ["ready"])' .lake/build/claim-settlement-receipts.json > /dev/null

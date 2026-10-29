@@ -1,74 +1,92 @@
-#+TITLE: Functional Cedar coverage beyond RFC 0008's initial Cases
+#+TITLE: Whole-repository Functional Cedar migration
 #+OPTIONS: toc:2
 
-* Scope and evidence
+* Scope and ownership
 
-RFC 0008's B1-D pipeline is implemented. This ledger records further coverage;
-it does not imply that every library family has been migrated merely because
-it can import Functional. The E1 baseline is =04f049d= with the same immutable
-LeanPOO, Cedar and Lean toolchain revisions. Examples stay downstream of the
-library and Productions.
+The migration covers consumer orchestration throughout =Examples/= and
+=CedarPooSpec/=, with =Productions/= included in the import and artifact gates.
+It is not a financial-only slice. The immutable LeanPOO revision remains
+=b577371fe4e2717e198a29eefe16ec8ae0380e0d=; Cedar and Lean pins are unchanged.
+The library and Productions remain independent of Examples and Tests.
 
-* E1: cloud effects and cryptographic lifecycle
+| Surface | Actual shared path | Retained domain boundary |
+|---------+--------------------+--------------------------|
+| Cloud pipeline, deployment and Google SDP | checked Program, typed publication and paired receipts | verified release, actual transformation/key recipe and current source |
+| Health prior authorization, regional/FHIR/record access, model stewardship and pseudonymization | checked Program where schemas exist; compile-stage Factory for schema-free diagnostics | patient/channel/region, lineage, keys, incident/recovery and disclosure effects |
+| Agent delegation, chain, payment, session, fanout and department | Program authorization/export and shared compound receipts | current request/history, consumption, budgets, independent authorities and final refresh |
+| Governance, procurement and tenant/device scenarios | typed preparation, publication and current-request evaluation | owner/veto separation, scoped schema changes, construction conflicts and malformed publication refusal |
+| Vehicle mission, Uptane and VLA | checked Programs and ordered exports | attestation, epoch, maintenance and command-effect identity |
+| Financial lakehouse, banking, reconciliation and settlement | checked Programs and ordered compound/layer receipts | independent claims/source, ordered workflow, credential requirements and handoff scope |
+| BoundOperation, PolicySnapshot and authorization-delta library consumers | compile-stage Functional Factory and existing receipt/cache ownership | original errors, actual policy identity, topology refusal and refresh ordering |
+| Productions | existing shared library composition; no legacy consumer dispatcher was present | independent import closure and unchanged Production fixture JSON |
 
-| Consumer | Adapted actual path | Retained authority and refusal controls |
-|----------+---------------------+-----------------------------------------|
-| Cloud/Pipeline/DeploymentCase | checked Program; joint promotion/deployment receipt; typed Root publication; scoped batch export | current digest/subject/attestor, verified release receipt, root/epoch, immutable reference, enforced deployment policy, runner poisoning, incident/recovery |
-| Cloud/DataProtection/GoogleSdpRelease | checked Program; joint pipeline/transformation receipt; scoped batch export | exact recipe/key profile, tenant, row context, released digest and key authorization remain independent of the release pipeline |
-| Health/Pseudonymization | checked authorization and publication; Functional traversal for both manifests | HMAC catalog separation, tenant/context/token-key/transform lineage, SIV/GCM/HMAC capability distinctions and diagnostic migration ancestor |
-| Health/Pseudonymization/Lifecycle | current request through Program in both prepare and redeem | typed deployable roots, policy/approval revisions, epoch/effect identity, expiry, owner/key withdrawal, release budget, audit and single-allocation IV |
+The source gate =just check-functional-consumers= rejects the replaced direct
+export and compound-authorization dispatchers in Examples/Productions and library
+consumers. Canonical low-level API definitions remain available. Construction,
+provenance and negative C4 proofs retain =Model.compile*=; independent Cedar
+=isAuthorized= proof oracles remain independent. Removing these would erase the
+reference against which the shared orchestration is checked.
 
-=Ready.allowed_pair= proves universally that a two-request receipt allows iff
-both single-request receipts allow without policy evaluation errors. It does
-not infer permission for deployment/transformation from promotion/pipeline
-permission. Each pair uses the same actual checked policies and entities;
-requests and responses remain distinct and ordered.
+* Types and Contracts on actual paths
 
-Deployment publication retains its Root enum. Pseudonymization deployment has
-no migration-ancestor constructor; the ordinary regression manifest can still
-exercise that unsafe ancestor. Publication errors now flow through the shared
-Functional error type; the existing manifest-specific error projection remains.
+=Compiled model root= and =Validated model root schema= carry actual policies
+and their equations. Schema-bearing consumers use checked =Program= operations.
+Schema-free ModelStewardship, MultiHospitalAI and ExtensionCoverage diagnostics
+use =Functional.compilation=: a LeanPOO =Factory= producing the existing indexed
+compiled witness. This preserves compile-only error behavior without inventing
+a schema. The raw ExpandedPolicy exporter also uses this compile-stage path.
 
-Four complete manifests are compared with independent pre-E1 algorithms,
-including deployment-only pseudonymization publication. Cloud pair responses
-are compared with raw Cedar evaluation, not merely expected Booleans. Malformed
-second-stage contexts must refuse. Typed-root publication matches reference
-JSON. The pseudonymization lifecycle compares complete ticket/state outcomes
-across ten current states, seven effects and substituted prepared effects;
-its existing IV, audit, revocation and budget theorems remain required.
-The generic pair law has the same standard-axiom audit as the earlier APIs.
+=PolicyProfile= now checks setting, inherited render method and computed policy
+through a strict ObjectContract before =policy?= returns a value. Refined children
+compute from final-self settings; overriding the policy projection inconsistently
+is refused. =Admission.Handoff.scope?= similarly checks the complete typed scope
+against case/digest projections, nonempty fields and distinct actors.
+These Contracts execute in the consumers; they are not documentation-only tags.
 
-* Existing owners deliberately retained
+=Tests/Functional/WholeMigration.lean= compares shared compound authorization
+with an independent original algorithm for arbitrary models, requests and
+entities, including complete failures. Six generic compilation/receipt/Contract
+laws are restricted to =propext=, =Classical.choice= and =Quot.sound=.
+Earlier capability, root-family, effect, reuse and lifecycle proofs remain gates.
 
-- =Pseudonymization.TableBatch= owns ordered selection, duplicate ordinals,
-  per-row selection and cumulative UTF-8 byte ceilings. Stateful early refusal
-  is not replaced by independent traversal merely to use a combinator.
-- =TableBatchWire= and provider adapters retain their wire and physical-input
-  checks. A Lean policy receipt does not prove encryption, provider execution,
-  Arrow-byte identity or durable effect execution.
-- =PolicyJson= remains a partial exporter. No total Codec is claimed without a
-  supported-domain decoder and actual round-trip theorem.
-- BoundOperation, scoped grants and Host tickets retain their actual-input and
-  final-refresh semantics. Checked policy preparation does not authenticate
-  external receipts or make business execution atomic.
+* Complete artifact and Rust replay gate
 
-* Remaining audited surfaces
+=just check-functional-catalog= emits all 51 official entries under the existing
+120-second, 2048-MiB and 10000000-tick limits. The 48 pre-migration files captured from =1336b086ad960574eec1e3366967e2bd10e41a37=
+retain their original SHA-256 bytes; three settlement exports extend the catalog.
+=Tests/Conformance/functional-manifests.sha256= freezes this boundary.
 
-A current source inventory after E1 finds 34 Example modules directly calling
-=PolicyJson.authorizationCase=. This counts files, not independent features or
-missing proofs. Some calls intentionally exercise weaker raw evaluation and
-must not be silently upgraded. Pure revision and construction proofs similarly
-keep their existing compile-only ownership.
+The existing Rust bridge =replay-catalog= runs official Cedar evaluation for raw
+fixtures and strict schema-bound replay where schemas exist. Schema evolution
+uses its existing replay. The catalog produces 1280 Cedar replay rows, alongside
+the schema-evolution result. Six deployment artifacts must match their schema-bound
+source policies and exact deployable-root set. The tabular input is explicitly a
+data fixture; it is not reported as a Cedar decision or cryptographic execution.
+Unknown shapes, empty Cases and missing cross-artifact bindings fail. The gate
+explicitly runs Rust mutation tests on these actual emitted artifacts: substituted
+digest/actor, cross-Case links, changed phase/credential order and unsafe deployment
+root must fail with their specific diagnostic.
 
-| Surface | Next migration obligation |
-|---------+---------------------------|
-| FinancialServices lakehouse, banking, settlement and reconciliation | preserve paired layers, independent source/claims, ordered workflow state, exact artifact identity and audit/consumption boundaries |
-| Regional/FHIR/record and model-stewardship health Cases | preserve region/action-specific schemas, actual patient/channel data and incident/recovery gates |
-| Agent delegation, payment, session and department Cases | distinguish policy diagnostics from actual effect/delegation admission; preserve consumption, current history and error-bearing allow refusal |
-| Governance trust, country approval and ticket-sharing | preserve owner/veto independence, complete revision comparison and scope-specific authorization |
-| Vehicle/VLA/mission/Uptane Cases | preserve attestation, epoch, maintenance and command-effect identity before sharing policy preparation |
+Settlement adds 28 claims and 56 banking request receipts across 14 scenarios,
+plus typed cross-domain handoff simulation. Rust parses actors as Cedar
+=EntityUid=, compares the complete scope and grant, checks exclusive expiry and
+current epoch, binds every linked Case exactly once, and preserves ordered bank
+phases/credential requirements. Only =ready= admits; wrong actor/digest/case,
+stale/expired grants, unknown/other modes, source/region/context gaps, paused
+banking and invalid Contract projections remain independent refusal controls.
+The existing financial entrypoint invokes the same selected-catalog replay.
 
-Each follow-up should migrate an actual consumer with its manifest and negative
-controls, prove the reusable law where needed, and preserve the official Rust
-replay. Coverage expansion alone does not establish native throughput, process
-memory bounds, cryptographic/provider correctness or a real deployment.
+* Qualification boundary
+
+=just check-lean= includes the source guard, all Lean tests, proof audits and
+Production fixtures. =just check-rust= retains workspace tests, ASP checks,
+clippy and dependency-direction checks. CI also executes the complete catalog
+alongside the existing artifact, schema, Host and authorization-delta gates.
+Local results and exact-head remote CI are separate receipts.
+
+TableBatch still owns ordered selection, duplicate ordinals and cumulative UTF-8
+byte ceilings. Provider adapters own wire/physical-input checks. Host simulations
+establish neither authentic external facts, executed settlement/encryption,
+durable atomic execution, crash recovery nor process-RSS bounds. PolicyJson
+remains a partial exporter. Scoped reuse timings do not establish native or
+end-to-end throughput.

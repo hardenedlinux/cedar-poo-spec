@@ -1,3 +1,4 @@
+import CedarPooSpec.Functional.Compilation
 import CedarPooSpec.AuthorizationDelta
 import CedarPooSpec.CompoundAuthorization
 
@@ -41,10 +42,10 @@ def compareCompoundSnapshots (schema : Schema) (model : Model)
     throw .operationChanged
   if beforeChecks.map Prod.snd != afterChecks.map Prod.snd then
     throw .operationChanged
-  let beforeLayers ← (CompoundAuthorization.authorizeLayers model beforeChecks
-    beforeEntities).mapError Error.compilation
-  let afterLayers ← (CompoundAuthorization.authorizeLayers model afterChecks
-    afterEntities).mapError Error.compilation
+  let beforeLayers ← ((CedarPooSpec.Functional.compilation model).authorizeLayers
+      beforeChecks beforeEntities).mapError Error.compilation
+  let afterLayers ← ((CedarPooSpec.Functional.compilation model).authorizeLayers
+      afterChecks afterEntities).mapError Error.compilation
   let layers ← (beforeLayers.zip afterLayers).mapM fun (beforeLayer, afterLayer) => do
     let impact ← compareOperationSnapshots schema beforeLayer.policies afterLayer.policies
       ⟨beforeLayer.request, beforeEntities⟩ ⟨afterLayer.request, afterEntities⟩

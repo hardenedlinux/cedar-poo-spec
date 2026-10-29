@@ -1,3 +1,4 @@
+import CedarPooSpec.Functional.CompilationJson
 import CedarPooSpec.PolicyJson
 import CedarPooSpec.CompoundAuthorization
 import LeanPoo.Functional.CertifiedConsumer
@@ -42,8 +43,7 @@ def cedar : Operations
         PolicyJson.PublicationError.schema PolicyJson.PublicationError.policy
   | .publish => some fun _ checked => PolicyJson.publishValidated checked
   | .authorize => some fun _ checked requests entities =>
-      ⟨checked.policies, checked.compiled,
-        requests.map (fun request => isAuthorized request entities checked.policies), rfl⟩
+      CompoundAuthorization.ofCompiled checked.toCompiled requests entities
 
 /-- A joint contract over the actual selected authorization function, not a
 Boolean assertion about an owner name. Result types also carry Cedar witnesses. -/
@@ -173,19 +173,23 @@ def Program.authorize (program : Program model schema) (root : String)
   let ready ← program.at root
   return ready.authorize requests entities
 
+def Program.response (program : Program model schema) (root : String)
+    (request : Request) (entities : Entities) :=
+  (program.authorize root [request] entities).map (·.singleResponse)
+
 /-- Preserve the selected single-request response in the existing layer receipt. -/
 def Ready.authorizeLayer (ready : Ready ⟨model, root, schema⟩)
     (request : Request) (entities : Entities) : CompoundAuthorization.LayerReceipt model entities :=
   let receipt := ready.authorize [request] entities
   { root, request, policies := receipt.policies, compiled := receipt.compiled
-    response := receipt.responses[0]'(by rw [receipt.evaluated]; simp)
-    evaluated := by simp [receipt.evaluated] }
+    response := receipt.singleResponse
+    evaluated := receipt.singleResponse_evaluated }
 
 theorem Ready.authorizeLayer_response (ready : Ready ⟨model, root, schema⟩)
     (request : Request) (entities : Entities) :
     (ready.authorizeLayer request entities).response =
       isAuthorized request entities ready.checked.policies := by
-  simp [Ready.authorizeLayer, ready.aligned]
+  simp [Ready.authorizeLayer, CompoundAuthorization.Receipt.singleResponse, ready.aligned]
 
 /-- Checked multi-root authorization retains input order and the first failed
 root. The legacy compile-only API keeps its weaker admission boundary. -/

@@ -1,3 +1,4 @@
+import CedarPooSpec.Functional.Capabilities
 import Examples.Health.ModelStewardship.Admission
 
 /-! Replay the exact operation projections checked through BoundOperation. -/
@@ -46,8 +47,8 @@ def manifest : Except String Lean.Json := do
     ("recovered-publish", "Recovered", publicationEffect, publicationSnapshot),
     ("recovered-infer", "Recovered", inferenceEffect, inferenceSnapshot)]
   let rows ← cases.mapM fun (name, root, effect, snapshot) =>
-    CedarPooSpec.PolicyJson.authorizationCase name root model root
-      (operationRequest effect snapshot) (entities snapshot.lineageRevision)
+    CedarPooSpec.ModelStewardshipExample.program.authorizationCase
+        name root root (operationRequest effect snapshot) (entities snapshot.lineageRevision)
   return Lean.Json.mkObj [("cases", Lean.toJson rows)]
 
 end CedarPooSpec.ModelStewardshipExample.ReplayExport

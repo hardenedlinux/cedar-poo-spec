@@ -1,3 +1,4 @@
+import CedarPooSpec.Functional.Capabilities
 import CedarPooSpec.Revision
 import CedarPooSpec.PolicyJson
 import CedarPooSpec.CompoundAuthorization
@@ -105,6 +106,12 @@ def modelResult : Except LeanPoo.C4.Error Model := do
 
 def model : Model := modelResult.toOption.get (by native_decide)
 
+/-- Checked immutable policy context; current request inputs are supplied at consumption. -/
+protected def program : CedarPooSpec.Functional.Program model schema :=
+  (CedarPooSpec.Functional.prepareProgram CedarPooSpec.Functional.standard
+    model schema (model.modules.map (·.name))).toOption.get (by native_decide)
+
+
 structure Facts where
   delegationValid : Bool := true
   metadataAuthenticated : Bool := true
@@ -123,7 +130,7 @@ def updateChecks (root : String) (supplier target : EntityUID) (facts : Facts) :
 def manifestRequest (target : EntityUID) (facts : Facts) : Request :=
   ⟨primary, report, target, context facts⟩
 def allowed (checks : List (String × Request)) : Bool :=
-  match CedarPooSpec.CompoundAuthorization.authorizeLayers model checks entities with
+  match CedarPooSpec.SupplierTransitionExample.program.authorizeLayers checks entities with
   | .error _ => false
   | .ok receipts => CedarPooSpec.CompoundAuthorization.layersAllowed receipts
 def authorizeUpdate (root : String) (supplier target : EntityUID) (facts : Facts) : Bool :=
@@ -166,7 +173,7 @@ theorem casesExactFully : casesExact = true := by native_decide
 
 def rootsValidated : Bool :=
   ["Base", "ImageRemoval", "DirectorRemoval", "Retired", "Replacement"].all fun root =>
-    (CedarPooSpec.PolicyJson.publish model root schema).isOk
+    (CedarPooSpec.SupplierTransitionExample.program.publish root).isOk
 theorem rootsValidatedFully : rootsValidated = true := by native_decide
 
 def retirement : Revision :=

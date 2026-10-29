@@ -1,3 +1,4 @@
+import CedarPooSpec.Functional.Compilation
 import CedarPooSpec.AuthorizationDeltaEvidence
 
 /-!
@@ -69,11 +70,11 @@ def analyzeModelInteraction (model : Model) (baseRoot leftRoot rightRoot
     else if combined.symbolic.noExpansion then
       pure .noCombinedGain
     else do
-      let leftPolicies ← match model.compile leftRoot with
-        | .ok policies => pure policies
+      let leftPolicies ← match (Functional.compilation model) leftRoot with
+        | .ok compiled => pure compiled.policies
         | .error error => return .error (.compilation error)
-      let rightPolicies ← match model.compile rightRoot with
-        | .ok policies => pure policies
+      let rightPolicies ← match (Functional.compilation model) rightRoot with
+        | .ok compiled => pure compiled.policies
         | .error error => return .error (.compilation error)
       let mut witnesses := []
       for gain in combined.symbolic.expansions do

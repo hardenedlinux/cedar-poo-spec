@@ -1,3 +1,4 @@
+import CedarPooSpec.Functional.Capabilities
 import Examples.Enterprise.Agent.Session.BoundedSession
 
 /-!
@@ -81,7 +82,13 @@ def modelResult : Except LeanPoo.C4.Error Model := do
 
 def model : Model := modelResult.toOption.get (by native_decide)
 
+/-- Checked immutable policy context; current request inputs are supplied at consumption. -/
+protected def program : CedarPooSpec.Functional.Program model schema :=
+  (CedarPooSpec.Functional.prepareProgram CedarPooSpec.Functional.standard
+    model schema (model.modules.map (·.name))).toOption.get (by native_decide)
+
 /-- One ledger for the delegation, plus a local counter for each worker. -/
+
 structure State where
   aUsed : Int64 := 0
   bUsed : Int64 := 0
@@ -110,17 +117,15 @@ def missingShared : Request :=
     ("localMax", .prim (.int 1)),
     ("sharedMax", .prim (.int 1))]⟩
 def cedarAllows (root : String) (req : Request) : Bool :=
-  match model.compile root with
+  match CedarPooSpec.SharedBudgetExample.program.response root req entities with
   | .error _ => false
-  | .ok policies =>
-      (isAuthorized req entities policies).decision == .allow
+  | .ok response => response.decision == .allow
 def authorized (root : String) (state : State) (worker : EntityUID) : Bool :=
   if worker != workerA && worker != workerB then false
   else
-    match model.compile root with
+    match CedarPooSpec.SharedBudgetExample.program.response root (request state worker) entities with
     | .error _ => false
-    | .ok policies =>
-        let response := isAuthorized (request state worker) entities policies
+    | .ok response =>
         response.decision == .allow && response.erroringPolicies.isEmpty
 
 def advance (state : State) (worker : EntityUID) : State :=
@@ -208,7 +213,7 @@ theorem missingFactsFailClosed :
 
 def rootsValidated : Bool :=
   ["Base", "Local", "Shared", "Integrated", "Incident", "Recovered"].all
-    fun root => (CedarPooSpec.PolicyJson.publish model root schema).isOk
+    fun root => (CedarPooSpec.SharedBudgetExample.program.publish root).isOk
 theorem rootsValidatedExact : rootsValidated = true := by native_decide
 theorem recoveredPolicies :
     (model.compile "Recovered" == model.compile "Integrated") = true := by

@@ -1,3 +1,4 @@
+import CedarPooSpec.Functional.Capabilities
 import Examples.Enterprise.Agent.Delegation.AgentDelegation
 import CedarPooSpec.AuthorizationDeltaCompound
 
@@ -59,6 +60,11 @@ def chainModelResult : Except LeanPoo.C4.Error Model := do
 
 def chainModel : Model := chainModelResult.toOption.get (by native_decide)
 
+/-- Checked immutable policy context; current request inputs are supplied at consumption. -/
+protected def chainProgram : CedarPooSpec.Functional.Program chainModel CedarPooSpec.AgentDelegationExample.schema :=
+  (CedarPooSpec.Functional.prepareProgram CedarPooSpec.Functional.standard
+    chainModel CedarPooSpec.AgentDelegationExample.schema ((chainModel.modules.map (·.name)).filter (· != "ChainConflicted"))).toOption.get (by native_decide)
+
 def requestHop (source target : EntityUID) (depth : Int64) : Request :=
   let requested := if target == dataBot then "delete_records" else "delegate"
   ⟨source, delegate, target, Map.make [
@@ -85,7 +91,7 @@ def checks (delegationRoot originRoot : String) (path : List EntityUID)
 def authorizeChain (delegationRoot originRoot : String) (path : List EntityUID)
     (origin : EntityUID) : Bool :=
   if !validPath path then false else
-    match CedarPooSpec.CompoundAuthorization.authorizeLayers chainModel
+    match CedarPooSpec.AgentChainExample.chainProgram.authorizeLayers
         (checks delegationRoot originRoot path origin) chainEntities with
     | .error _ => false
     | .ok receipts => CedarPooSpec.CompoundAuthorization.layersAllowed receipts
@@ -124,7 +130,7 @@ theorem casesExactFully : casesExact = true := by native_decide
 def allValidCasesErrorFree : Bool := cases.all fun (_, delegationRoot, originRoot,
     path, origin, _) =>
   if !validPath path then true else
-    match CedarPooSpec.CompoundAuthorization.authorizeLayers chainModel
+    match CedarPooSpec.AgentChainExample.chainProgram.authorizeLayers
         (checks delegationRoot originRoot path origin) chainEntities with
     | .error _ => false
     | .ok receipts => receipts.all fun layer => layer.response.erroringPolicies.isEmpty
@@ -153,7 +159,7 @@ def rootsValidated : Bool :=
   ["ToolHardened", "DelegationBounded", "ChainDelegation",
     "OriginBounded", "ChainOrigin", "ChainGoverned", "ChainGovernedRevoked",
     "ChainGovernedRestored"].all fun root =>
-      (CedarPooSpec.PolicyJson.publish chainModel root schema).isOk
+      (CedarPooSpec.AgentChainExample.chainProgram.publish root).isOk
 theorem rootsValidatedFully : rootsValidated = true := by native_decide
 
 def unaffectedRoots : Bool :=

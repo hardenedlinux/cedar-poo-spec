@@ -1,3 +1,4 @@
+import CedarPooSpec.Functional.Capabilities
 import Examples.Enterprise.AWS.FinancialServices.MultiAccountBanking.MultiAccountBanking
 import CedarPooSpec.CompoundAuthorization
 import LeanPoo.C4.Linearize
@@ -104,8 +105,8 @@ def routeWellRelated : Bool :=
 def gatewayAllowsCalls (root : String) (calls : List RouteCall) : Bool :=
   if !calls.all (fun call => belongsTo call.lob call.action) then false
   else
-    match CedarPooSpec.CompoundAuthorization.authorizeAll model root
-        (calls.map fun call => request call.origin call.action) entities with
+    match CedarPooSpec.MultiAccountBankingExample.program.authorize
+        root (calls.map fun call => request call.origin call.action) entities with
     | .error _ => false
     | .ok receipt => receipt.allowed
 
@@ -127,8 +128,8 @@ structure PlannedCall where
 def plannedCalls (mode root : String) (calls : List RouteCall) :
     Option (List PlannedCall) := do
   if !calls.all (fun call => belongsTo call.lob call.action) then none else do
-    let receipt ← (CedarPooSpec.CompoundAuthorization.authorizeAll model root
-      (calls.map fun call => request call.origin call.action) entities).toOption
+    let receipt ← (CedarPooSpec.MultiAccountBankingExample.program.authorize
+        root (calls.map fun call => request call.origin call.action) entities).toOption
     if calls.length != receipt.responses.length then none else
       (calls.zip receipt.responses).mapM fun (call, response) => do
         if !response.erroringPolicies.isEmpty then none else do

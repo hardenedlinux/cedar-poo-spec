@@ -408,14 +408,19 @@ def authorizationCaseData (name revision : String) (policies : Policies)
     ("expected_error_policies", Lean.toJson response.erroringPolicies.toList)]
 
 
-/-- Compatibility entrypoint retains its compile/export/error order. -/
-def authorizationCase (name revision : String) (model : PolicyModules.Model)
-    (root : String) (req : Request) (store : Entities) : Except String Lean.Json := do
-  let policies ← (model.compile root).mapError reprStr
-  match h : policySet policies with
+/-- Render the exact typed compilation without adding a schema premise. -/
+def authorizationCaseCompiled (compiled : PolicyPreparation.Compiled model root)
+    (name revision : String) (req : Request) (store : Entities) : Except String Lean.Json := do
+  match h : policySet compiled.policies with
   | .error error => .error (reprStr error)
   | .ok exported =>
-      authorizationCaseData name revision policies exported req store
-        (isAuthorized req store policies) h rfl
+      authorizationCaseData name revision compiled.policies exported req store
+        (isAuthorized req store compiled.policies) h rfl
+
+/-- Compile-only compatibility entrypoint retains its exact error order. -/
+def authorizationCase (name revision : String) (model : PolicyModules.Model)
+    (root : String) (req : Request) (store : Entities) : Except String Lean.Json := do
+  let compiled ← (PolicyPreparation.compile model root).mapError reprStr
+  authorizationCaseCompiled compiled name revision req store
 
 end CedarPooSpec.PolicyJson

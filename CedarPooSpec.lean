@@ -1,6 +1,8 @@
 import CedarPooSpec.Evaluation
 import CedarPooSpec.Validation
 import CedarPooSpec.Composition
+import CedarPooSpec.Functional.Compilation
+import CedarPooSpec.Functional.CompilationJson
 import CedarPooSpec.Functional.Capabilities
 import CedarPooSpec.Functional.Admission
 import CedarPooSpec.Functional.Reuse

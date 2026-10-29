@@ -1,5 +1,6 @@
 import CedarPooSpec.PolicyPreparation
 import Cedar.Spec.Authorizer
+import LeanPoo.Functional.Assembly
 
 /-!
 Compound authorization evaluates several Cedar requests against one compiled
@@ -26,13 +27,30 @@ def Receipt.allowed {model : Model} {root : String} {requests : List Request}
     receipt.responses.all (fun response =>
       response.decision == .allow && response.erroringPolicies.isEmpty)
 
-/-- Compile once, then evaluate all requests against the same policy set. -/
+/-- Extract the actual response from a proof-indexed singleton receipt. -/
+def Receipt.singleResponse (receipt : Receipt model root [request] entities) : Response :=
+  receipt.responses[0]'(by rw [receipt.evaluated]; simp)
+
+theorem Receipt.singleResponse_evaluated (receipt : Receipt model root [request] entities) :
+    receipt.singleResponse = isAuthorized request entities receipt.policies := by
+  simp [Receipt.singleResponse, receipt.evaluated]
+
+abbrev Compiler (model : Model) := LeanPoo.Functional.Factory String
+  (fun root => Except PolicyModules.Error (PolicyPreparation.Compiled model root))
+
+def ofCompiled (compiled : PolicyPreparation.Compiled model root)
+    (requests : List Request) (entities : Entities) : Receipt model root requests entities :=
+  ⟨compiled.policies, compiled.compiled,
+    requests.map (fun req => isAuthorized req entities compiled.policies), rfl⟩
+
+def authorizeAllWith (compiler : Compiler model) (root : String) (requests : List Request)
+    (entities : Entities) : Except PolicyModules.Error (Receipt model root requests entities) :=
+  (compiler root).map fun compiled => ofCompiled compiled requests entities
+
+/-- The compile-only public entrypoint retains its existing error boundary. -/
 def authorizeAll (model : Model) (root : String) (requests : List Request)
     (entities : Entities) : Except PolicyModules.Error (Receipt model root requests entities) :=
-  match hc : model.compile root with
-  | .error error => .error error
-  | .ok policies =>
-      .ok ⟨policies, hc, requests.map (fun req => isAuthorized req entities policies), rfl⟩
+  authorizeAllWith (PolicyPreparation.compile model) root requests entities
 
 /-- One decision from one root, with its exact compilation and Cedar response. -/
 structure LayerReceipt (model : Model) (entities : Entities) where
@@ -68,19 +86,19 @@ private def cachedCompilation? (model : Model) (cache : List (CompiledRoot model
       else
         cachedCompilation? model rest root
 
-private def getCompilation (model : Model) (cache : List (CompiledRoot model))
+private def getCompilation (model : Model) (compiler : Compiler model) (cache : List (CompiledRoot model))
     (root : String) : Except PolicyModules.Error
       (RootCompilation model root × List (CompiledRoot model)) :=
   match cachedCompilation? model cache root with
   | some result => .ok (result, cache)
   | none =>
-      match hc : model.compile root with
+      match compiler root with
       | .error error => .error error
-      | .ok policies =>
-          .ok (⟨policies, hc⟩, ⟨root, policies, hc⟩ :: cache)
+      | .ok compiled =>
+          .ok (compiled, ⟨root, compiled.policies, compiled.compiled⟩ :: cache)
 
 /-- Evaluate layers in order; compile each distinct POO root at most once. -/
-def authorizeLayers (model : Model) (checks : List (String × Request))
+def authorizeLayersWith (compiler : Compiler model) (checks : List (String × Request))
     (entities : Entities) : Except PolicyModules.Error (List (LayerReceipt model entities)) :=
   go checks []
 where
@@ -89,9 +107,13 @@ where
     match remaining with
     | [] => return []
     | (root, request) :: rest =>
-        let (⟨policies, hc⟩, updated) ← getCompilation model cache root
+        let (⟨policies, hc⟩, updated) ← getCompilation model compiler cache root
         let tail ← go rest updated
         return ⟨root, request, policies, hc,
           isAuthorized request entities policies, rfl⟩ :: tail
+
+def authorizeLayers (model : Model) (checks : List (String × Request))
+    (entities : Entities) : Except PolicyModules.Error (List (LayerReceipt model entities)) :=
+  authorizeLayersWith (PolicyPreparation.compile model) checks entities
 
 end CedarPooSpec.CompoundAuthorization

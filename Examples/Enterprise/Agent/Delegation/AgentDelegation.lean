@@ -1,3 +1,4 @@
+import CedarPooSpec.Functional.Capabilities
 import CedarPooSpec.PolicyJson
 import CedarPooSpec.CompoundAuthorization
 
@@ -148,6 +149,11 @@ def modelResult : Except LeanPoo.C4.Error Model := do
 
 def model : Model := modelResult.toOption.get (by native_decide)
 
+/-- Checked immutable policy context; current request inputs are supplied at consumption. -/
+protected def program : CedarPooSpec.Functional.Program model schema :=
+  (CedarPooSpec.Functional.prepareProgram CedarPooSpec.Functional.standard
+    model schema (model.modules.map (·.name))).toOption.get (by native_decide)
+
 def requestTool (agent tool : EntityUID) : Request :=
   ⟨agent, invoke, tool, Map.empty⟩
 def requestDelegate (agent : EntityUID) (depth : Int64) (capability : String) : Request :=
@@ -176,7 +182,7 @@ def checks (roots : Roots) (agent tool origin : EntityUID) (depth : Int64)
 
 def authorizeFlow (roots : Roots) (agent tool origin : EntityUID) (depth : Int64)
     (capability : String) : Bool :=
-  match CedarPooSpec.CompoundAuthorization.authorizeLayers model
+  match CedarPooSpec.AgentDelegationExample.program.authorizeLayers
       (checks roots agent tool origin depth capability) entities with
   | .error _ => false
   | .ok receipts => CedarPooSpec.CompoundAuthorization.layersAllowed receipts
@@ -217,7 +223,7 @@ def malformedRawResponse : Bool :=
 theorem malformedRawAllowsWithError : malformedRawResponse = true := by native_decide
 
 def malformedFlowRejected : Bool :=
-  match CedarPooSpec.CompoundAuthorization.authorizeLayers model malformedChecks entities with
+  match CedarPooSpec.AgentDelegationExample.program.authorizeLayers malformedChecks entities with
   | .error _ => false
   | .ok receipts => !CedarPooSpec.CompoundAuthorization.layersAllowed receipts
 
@@ -226,7 +232,7 @@ theorem malformedFlowRejectedFully : malformedFlowRejected = true := by native_d
 def allRootsValidated : Bool :=
   ["ToolBase", "ToolHardened", "DelegationBase", "DelegationBounded",
    "OriginBase", "OriginBounded", "OriginRevoked", "OriginUnsafe"].all fun root =>
-    (CedarPooSpec.PolicyJson.publish model root schema).isOk
+    (CedarPooSpec.AgentDelegationExample.program.publish root).isOk
 
 theorem allRootsValidatedFully : allRootsValidated = true := by native_decide
 

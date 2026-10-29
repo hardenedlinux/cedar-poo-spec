@@ -1,3 +1,4 @@
+import CedarPooSpec.Functional.Capabilities
 import CedarPooSpec.Functional.Admission
 import Examples.Enterprise.Agent.Fanout.SharedBudget
 import CedarPooSpec.SchemaJson
@@ -355,6 +356,12 @@ def reloadedModelResult : Except LeanPoo.C4.Error Model := do
 
 def reloadedModel : Model := reloadedModelResult.toOption.get (by native_decide)
 
+/-- Checked immutable policy context; current request inputs are supplied at consumption. -/
+protected def reloadedProgram : CedarPooSpec.Functional.Program reloadedModel schema :=
+  (CedarPooSpec.Functional.prepareProgram CedarPooSpec.Functional.standard
+    reloadedModel schema (reloadedModel.modules.map (·.name))).toOption.get (by native_decide)
+
+
 theorem reloadedPolicyStillAllowsSend :
     (reloadedModel.compile "CrossAgentGoverned").toOption.map
       (fun policies => authorizedBy policies .delegationShared {} publicSendA.attempt) =
@@ -366,7 +373,7 @@ theorem reloadedPolicyFreezesWorkerB :
       some false := by native_decide
 
 theorem reloadedRootValid :
-    (CedarPooSpec.PolicyJson.publish reloadedModel "CrossAgentGoverned" schema).isOk =
+    (CedarPooSpec.CrossAgentEgressExample.reloadedProgram.publish "CrossAgentGoverned").isOk =
       true := by native_decide
 
 /-- Root name, ledger epoch, and effect all still match. The changed POO

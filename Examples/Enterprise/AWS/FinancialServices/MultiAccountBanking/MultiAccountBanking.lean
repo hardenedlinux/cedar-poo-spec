@@ -1,3 +1,4 @@
+import CedarPooSpec.Functional.Capabilities
 import CedarPooSpec.Platform.AWS.AgentCore.Gateway
 import CedarPooSpec.Vertical.FinancialServices.BankingToolOwner
 import CedarPooSpec.Vertical.FinancialServices.BankingToolProfile
@@ -115,9 +116,13 @@ def modelResult : Except LeanPoo.C4.Error Model := do
 
 def model : Model := modelResult.toOption.get (by native_decide)
 
+/-- Checked immutable policy context; current request inputs are supplied at consumption. -/
+protected def program : CedarPooSpec.Functional.Program model schema :=
+  (CedarPooSpec.Functional.prepareProgram CedarPooSpec.Functional.standard
+    model schema (model.modules.map (·.name))).toOption.get (by native_decide)
+
 def decideAt (root : String) (req : Request) : Option Decision := do
-  let policies ← (model.compile root).toOption
-  let response := isAuthorized req entities policies
+  let response ← (CedarPooSpec.MultiAccountBankingExample.program.response root req entities).toOption
   if response.erroringPolicies.isEmpty then some response.decision else none
 
 def expected (action : EntityUID) : Decision :=
@@ -170,7 +175,7 @@ theorem pausedRevisionTouchesOnlyTransaction :
 theorem allRootsValidated :
     ["Gateway", "SampleBroad", "Protocol", "Retail", "Transaction", "Lending",
       "OwnerCombined", "TransferPaused", "TransferResumed"].all (fun root =>
-        (CedarPooSpec.PolicyJson.publish model root schema).isOk) = true := by
+        (CedarPooSpec.MultiAccountBankingExample.program.publish root).isOk) = true := by
   native_decide
 
 end CedarPooSpec.MultiAccountBankingExample

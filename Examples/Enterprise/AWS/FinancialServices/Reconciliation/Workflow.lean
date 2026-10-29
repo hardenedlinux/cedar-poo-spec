@@ -1,3 +1,4 @@
+import CedarPooSpec.Functional.Capabilities
 import Examples.Enterprise.AWS.FinancialServices.Reconciliation.Reconciliation
 import CedarPooSpec.CompoundAuthorization
 
@@ -35,8 +36,7 @@ def investigationActions : List EntityUID :=
   [searchLedger, searchNotices, retrieve, searchCorrespondence]
 
 def investigationAllowed (root : String) : Bool :=
-  match CedarPooSpec.CompoundAuthorization.authorizeAll model root
-      (investigationActions.map (readRequest agent)) entities with
+  match CedarPooSpec.AWS.Reconciliation.program.authorize root (investigationActions.map (readRequest agent)) entities with
   | .error _ => false
   | .ok receipt => receipt.allowed
 
@@ -85,8 +85,7 @@ an approved Graph send. This Boolean represents admission checks only. -/
 def routeAllowed (root : String) (confidence : Option String)
     (requestedReference : String) (caseRecord : Option CaseRecord)
     (mail : MailCall) (draft : Option ApprovedDraft) : Bool :=
-  match CedarPooSpec.CompoundAuthorization.authorizeAll model root
-      (routeRequests confidence) entities with
+  match CedarPooSpec.AWS.Reconciliation.program.authorize root (routeRequests confidence) entities with
   | .error _ => false
   | .ok receipt =>
       receipt.allowed &&

@@ -1,3 +1,4 @@
+import CedarPooSpec.Functional.Capabilities
 import CedarPooSpec.Platform.AWS.AgentCore.Gateway
 import CedarPooSpec.Data.Lakehouse.LocationBoundary
 import CedarPooSpec.Data.Lakehouse.LocationProfile
@@ -127,6 +128,11 @@ def modelResult : Except LeanPoo.C4.Error Model := do
 
 def model : Model := modelResult.toOption.get (by native_decide)
 
+/-- Checked immutable policy context; current request inputs are supplied at consumption. -/
+protected def program : CedarPooSpec.Functional.Program model schema :=
+  (CedarPooSpec.Functional.prepareProgram CedarPooSpec.Functional.standard
+    model schema (model.modules.map (·.name))).toOption.get (by native_decide)
+
 def sourceCases : List (String × EntityUID × EntityUID × Option String × Decision) := [
   ("policyholder-us-query", policyholderUS, queryClaims, some "US", .allow),
   ("policyholder-eu-query", policyholderEU, queryClaims, some "EU", .deny),
@@ -136,8 +142,7 @@ def sourceCases : List (String × EntityUID × EntityUID × Option String × Dec
   ("restricted-tool", adjusterUS, loginAudit, some "RESTRICTED", .deny)]
 
 def decideAt (root : String) (req : Request) : Option Decision := do
-  let policies ← (model.compile root).toOption
-  let response := isAuthorized req entities policies
+  let response ← (CedarPooSpec.LakehouseGatewayExample.program.response root req entities).toOption
   if response.erroringPolicies.isEmpty then some response.decision else none
 
 theorem sourceDecisionsExact :
@@ -174,7 +179,7 @@ theorem oneFreshPolicyBody :
 theorem allRootsValidated :
     ["GatewayBase", "Role", "EU", "Restricted", "SourceCombined",
       "FailClosed"].all (fun root =>
-        (CedarPooSpec.PolicyJson.publish model root schema).isOk) = true := by
+        (CedarPooSpec.LakehouseGatewayExample.program.publish root).isOk) = true := by
   native_decide
 
 end CedarPooSpec.LakehouseGatewayExample

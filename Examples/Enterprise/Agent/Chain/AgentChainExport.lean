@@ -1,3 +1,4 @@
+import CedarPooSpec.Functional.Capabilities
 import Examples.Enterprise.Agent.Chain.AgentChain
 
 namespace CedarPooSpec.AgentChainExport
@@ -9,8 +10,8 @@ def manifest : Except String Lean.Json := do
   for (name, delegationRoot, originRoot, path, origin, _) in cases do
     if validPath path then
       for ((root, req), index) in (checks delegationRoot originRoot path origin).zipIdx do
-        let receipt ← CedarPooSpec.PolicyJson.authorizationCase
-          s!"{name}-layer-{index}" root.toLower chainModel root req chainEntities
+        let receipt ← CedarPooSpec.AgentChainExample.chainProgram.authorizationCase
+            s!"{name}-layer-{index}" root.toLower root req chainEntities
         rows := rows ++ [receipt]
   return Lean.Json.mkObj [("cases", Lean.toJson rows)]
 
