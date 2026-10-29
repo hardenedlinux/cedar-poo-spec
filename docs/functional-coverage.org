@@ -108,7 +108,7 @@ is introduced.
 | ControllerReleaseProfile | template, threshold, groups, control and policy | positive Cedar decimal, full template projection including hidden field names, exact bounded policy |
 | DisclosureProfile | template, policy/action/destination/purpose/payload, channel and policy | nonempty industry labels, full channel projection including context keys, exact minimum policy |
 | BankingToolProfile | template, ordered action list, owner | full owner projection; empty actions remain a valid paused owner |
-| LocationProfile | template, policy/scope/location/missing mode, boundary | exact full boundary projection; nonempty policy/location configuration |
+| LocationProfile | template, policy/scope/location/missing mode, boundary | exact full boundary projection; explicit empty location remains distinct from a missing field |
 | SourceProfile | template, branch, control | nonempty branch and full source-control projection |
 | ProtectionProfile (including Productions) | storage, profile/key/version/residency, intent | nonempty protection configuration and exact complete intent; physical/grant admission remains ProtectedStorage's responsibility |
 | Handoff | template, case/digest, complete scope | complete inherited scope projection, well-formed scope, distinct actors; current grant/expiry remains Grant.admits |

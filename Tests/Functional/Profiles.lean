@@ -100,7 +100,21 @@ example : (emptyKey.toOption.bind Data.ProtectionProfile.intent?).isNone = true 
 
 private def emptyLocation := LakehouseGatewayExample.euProfile.extendWith "EmptyLocation" do
   Object.Declaration.Builder.value .location ""
-example : (emptyLocation.toOption.bind Data.Lakehouse.LocationProfile.boundary?).isNone = true := by native_decide
+example : (emptyLocation.toOption.bind Data.Lakehouse.LocationProfile.boundary?) =
+    some { LakehouseGatewayExample.euTemplate with deniedLocation := "" } := by native_decide
+
+/-- An explicit empty boundary value is distinct from an absent geography field. -/
+private def emptyLocationDecisions : Bool :=
+  let boundary := { LakehouseGatewayExample.euTemplate with deniedLocation := "" }
+  let policies := [{ Policy.allowAll with id := "baseline" }, boundary.policy]
+  let evaluate := fun location => isAuthorized
+    (LakehouseGatewayExample.request LakehouseGatewayExample.adjusterUS
+      LakehouseGatewayExample.queryClaims location) LakehouseGatewayExample.entities policies
+  (evaluate (some "")).decision == .deny &&
+    (evaluate (some "EU")).decision == .allow &&
+    (evaluate none).decision == .allow &&
+    [some "", some "EU", none].all (fun location => (evaluate location).erroringPolicies.isEmpty)
+example : emptyLocationDecisions = true := by native_decide
 
 private def emptyDigest := joined.extendWith "EmptyDigest" do
   Object.Declaration.Builder.value .digest ""

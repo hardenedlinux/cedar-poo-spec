@@ -51,8 +51,7 @@ def contract : Contract Object Key Unit String :=
     match profile.read .template, profile.read .policyId, profile.read .actionScope,
         profile.read .location, profile.read .denyMissing, profile.read .boundary with
     | some template, some policyId, some actionScope, some deniedLocation, some denyMissing, some boundary =>
-      if !policyId.isEmpty && !deniedLocation.isEmpty &&
-          decide (boundary = { template with policyId, actionScope, deniedLocation, denyMissing }) then []
+      if boundary = { template with policyId, actionScope, deniedLocation, denyMissing } then []
       else [.rejected path "location projection mismatch"]
     | _, _, _, _, _, _ => [.rejected path "missing location projection"]
 

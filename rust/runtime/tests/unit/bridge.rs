@@ -754,3 +754,46 @@ fn measured_schema_replay_preserves_strict_errors_and_receipt_bindings() {
         replay_validated_manifest(&manifest).expect_err("strict original context")
     );
 }
+
+#[test]
+fn replay_distinguishes_explicit_empty_geography_from_missing_and_other_values() {
+    let mut policies = load_policy_set(&receipt().policies).expect("baseline policy");
+    let forbid = cedar_policy::Policy::parse(
+        Some("empty-geography".parse().expect("policy ID")),
+        r#"forbid(principal, action, resource) when {
+            context.input has geography && context.input.geography == ""
+        };"#,
+    )
+    .expect("independent Cedar text");
+    policies.add(forbid).expect("distinct policy ID");
+    let artifact = policies.to_json().expect("official Cedar JSON");
+    let mut cases = Vec::new();
+    for (name, input, decision, reasons) in [
+        (
+            "empty",
+            json!({"geography":""}),
+            "deny",
+            vec!["empty-geography".to_string()],
+        ),
+        (
+            "other",
+            json!({"geography":"EU"}),
+            "allow",
+            vec!["base".to_string()],
+        ),
+        ("missing", json!({}), "allow", vec!["base".to_string()]),
+    ] {
+        let mut case = receipt();
+        case.name = name.into();
+        case.policies = serde_json::from_value(artifact.clone()).expect("artifact");
+        case.policy_ids = vec!["base".into(), "empty-geography".into()];
+        case.request.context = json!({"input":input});
+        case.expected = decision.into();
+        case.expected_reasons = reasons;
+        cases.push(case);
+    }
+    let receipts = replay_manifest(&Manifest { cases }).expect("empty and absent are distinct");
+    assert_eq!(receipts.len(), 3);
+    assert_eq!(receipts[0].decision, "deny");
+    assert!(receipts[1].error_free_allow && receipts[2].error_free_allow);
+}
