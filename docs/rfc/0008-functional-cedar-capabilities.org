@@ -1,0 +1,248 @@
+#+TITLE: RFC 0008: Typed Cedar capabilities composed through LeanPOO Functional
+#+OPTIONS: toc:2
+
+* Status and scope
+
+Design draft following the typed-industry alignment in PR 8. This RFC specifies
+the subsequent cross-library refactor; its proposed capability layer is not yet
+implemented. The current implementation is described in
+[[file:../lean-poo-alignment.org][LeanPOO alignment]]. The reference is LeanPOO PR 13, immutable revision
+=b577371fe4e2717e198a29eefe16ec8ae0380e0d=.
+
+The inspected tree has 100 =CedarPooSpec= Lean modules and 129 Example modules.
+The audit covers the whole library inventory and the construction, preparation,
+authorization and effect paths of the largest Cases. Examples remain downstream
+consumers; the library and Productions must not import them.
+
+* Design objective
+
+Provide a typed Cedar capability family whose operations can be assembled,
+selected, prepared and consumed using existing LeanPOO Functional APIs. Industry
+objects contribute settings, predicates and required capabilities. Complex Cases
+compose those objects and capabilities against one explicit current context.
+The existing Cedar functions and their correctness witnesses remain the semantic
+implementation of each capability.
+
+The resulting path is:
+
+#+begin_example
+typed industry objects + Contract refinements
+  -> C4-selected capability factories
+  -> Requirements.prepare / prepareWith (resolve required capabilities once)
+  -> compile -> validate -> checked policies
+                           |-> encode / publish
+                           `-> evaluate actual request and entity snapshot
+  -> current Host admission -> business effect
+#+end_example
+
+Plain Cedar records continue to serve as wire values, schema inputs and exact
+semantic projections. Typed objects own construction and inheritance; prepared
+functions own reusable workflows; proof-indexed values carry admission evidence.
+
+* Complete library ownership map
+
+| Current family | Current modules/concerns | Target ownership and relevant Functional API |
+|----------------+--------------------------+----------------------------------------------|
+| Policy construction | =PolicyModules=, =PolicyProfile=, =Composition= | Existing Object.Definition and C4 remain composition authority. Expose their selected compile operations as context-indexed factories; preserve ordered edits, tombstones and provenance. |
+| Validation | =Validation=, =PolicyValidation=, =TemplateValidation=, =SchemaAdmission= | Typed compile/validation stages. Factory.map/bind and Validation.traverse may compose operations when exact first-error behavior is preserved. Cedar validator and incremental-validation equivalence proofs stay local. |
+| Evaluation and proof transport | =Evaluation=, =Soundness=, =Slicing=, =Revision= | Return exact proof-indexed results through Factory/fromProof and CertifiedConsumer. Existing Proof.Product/Batch/reuse theorems keep the semantic obligations. |
+| Export | =PolicyJson=, =SchemaJson= | Separate Cedar AST/wire encoding from publication orchestration. Initially expose partial exporters as Except-returning factories; use Codec only after the required round-trip law exists on the supported domain. |
+| Multi-request authorization | =CompoundAuthorization= | Prepare typed root compilations once, consume the same checked policies for each actual request. Retain the exact model/root/request/entities receipt indices. |
+| Authorization deltas | =AuthorizationDelta*= and exact/reason/effective proofs | Pure context-indexed analysis operations and typed review results. Keep SMT/theorem kernels and unknown/error distinctions. Factory composition must not turn an inconclusive result into approval. |
+| Admission (6 modules) | scope, claims, Host binding, policy snapshots and handoff | Typed scopes and Contract predicates; explicit final refresh remains mandatory. Requirements declares required evidence; it does not authenticate Host facts. |
+| AgenticAI (9 modules) | boundary and Commerce admission/acceptance/consumption | Use typed capabilities for their current prepare/check/consume paths. Keep actual effect digests, budgets, revocation and audience binding in the domain contracts. |
+| Cloud (6 modules) | pipeline, source controls, attestation and deployment | Industry providers contribute source/runner/artifact capability factories. C4 determines construction; Cedar continues veto aggregation. |
+| Data (12 modules) | derived artifacts, storage/protection, schema profiles | Typed input/output families and joint Requirements claims. Codec adapters are conditional on wire laws; storage atomicity remains a Host/provider concern. |
+| Governance (10 modules) | authority, custody, separation of duties, vetoes | Reusable typed predicates and provider contributions. Generic method selection cannot replace Cedar forbid precedence or final authorization. |
+| Platform (2 modules) | AWS-specific naming and scopes | Small pure domain adapters used by provider factories, without introducing another runtime object framework. |
+| Pseudonymization (7 modules) | tabular modes, compatibility, tokens and batch wire | Context-indexed batch checks and exact wire projections. Functional traversal is appropriate for sequencing; row ordering, duplicates and first refusal remain the existing contract. |
+| Vertical (18 modules) | Health, FHIR, regions and FinancialServices | Typed industry objects with existing Contract/refine, contributing capabilities to the shared family. Preserve region/FHIR/schema-specific facts and exact policy materialization. |
+
+The first six rows partition the root-level library concerns; remaining rows
+cover every named subdirectory. File size is an audit signal, not a reason to
+replace Cedar-specific semantics with an unrelated generic helper.
+
+* Capability and context design
+
+** Separate reusable policy inputs from changing request inputs
+
+Define a policy context containing the actual model/source, selected root and
+schema. A request context supplies the actual request and entities; a separate
+Host admission context supplies the actual immutable effect/scope and revisions.
+Factories close over only the context they really depend upon.
+
+Do not cache compilation under a context that also changes on every request.
+Do not retain authorization under only a root name, profile name or digest.
+Model, schema, request and Host evidence identities must remain explicit in the
+relevant result type or verified binding.
+
+** A finite, heterogeneous capability key
+
+The initial capability inventory is compile, validate, encode/publish and
+authorize. Later add review/analyze and Host-bound preparation as their consumers
+migrate. Use a Lean inductive key and a dependent =Value context key= family,
+with =Factory= and =Provider= from LeanPOO; avoid a String-to-Any method table.
+
+Capabilities representing a later stage return functions taking the earlier
+stage's typed result. For example, a validator consumes an exact compiled result,
+and an encoder consumes an exact checked result. This makes shared intermediate
+work explicit instead of letting each capability independently recompile the
+same root. Errors retain the existing typed Cedar/SPEC causes and stage order.
+
+The following are conceptual result indices, not new implemented APIs:
+
+#+begin_example
+Compiled policyContext
+  carries policies and model.compile root = .ok policies
+
+Checked compiled
+  carries actual schema/policy validation evidence for compiled.policies
+
+Published checked
+  carries exact serialization and unique-policy-ID evidence
+
+Authorized checked requestContext
+  carries the actual Cedar response and its evaluation equality
+#+end_example
+
+Reuse existing =PolicyJson.Publication=, =CompoundAuthorization.Receipt=,
+=LayerReceipt= and policy proof bundles wherever their indices already match.
+Avoid keeping parallel old/new receipt structures with identical information.
+
+** Prepare the family before repeated consumption
+
+As in LeanPOO's ContextualFactories/DictionaryConsumers examples, C4 assembles
+the contributed provider family. A Case declares only its required capability
+keys; =Requirements.prepare= resolves those keys once and retains an ordered,
+heterogeneous factory tuple. Missing capability errors must name the key.
+
+=Requirements.Certified= and =CertifiedConsumer= are appropriate when the joint
+claim has a concrete proof over all required data. An arbitrary predicate or
+opaque function is not automatically a certified capability. A provider offering
+a checked validator/authorizer must produce the actual Cedar witnesses required
+by its result type; a Boolean override cannot manufacture those witnesses.
+
+* Functional API mapping and proof obligations
+
+| Existing API | Concrete Cedar application | Required acceptance law |
+|--------------+----------------------------+-------------------------|
+| Factory.map, bind, zipWith, reindex | compile/validation/export workflows and domain context projection | Same data, error and order as the current pipeline |
+| Provider, assemble | C4 selection of industry-contributed construction/check functions | Same selected owner and capability; overlapping owners preserve C4 semantics |
+| Requirements.prepare/prepareWith, factoryAt | prepare a Case's selected compile/check/publish operations | Missing capability refused before effectful consumption; one shared context |
+| CertifiedConsumer | consume proof-bearing validation and publication data | Joint claim is derived from actual results, not assumed from a label |
+| ObjectContract/refine | industry object configuration and derived-value alignment | Refinement preserves inherited refusal and exact typed projections |
+| PrototypeTypes / PrototypeTypeDescriptors | declared plugin/configuration types and refinement constraints where a Case actually has dynamic values | Supply the Cedar-value interpretation; preserve subtype soundness, variance and incomplete-inference refusal; Cedar Schema keeps ownership of request/entity typing |
+| FunctionValidation, ContainerValidation, OptionalValidation, VariantValidation | validate contributed callbacks, lists, optional fields and tagged/union inputs | Validate actual arguments/results, preserve missing versus invalid, retain ordered alternative semantics and exact first errors |
+| Validation.traverse/traverseExcept | ordered validation or export of independent rows/policies | Exact first error and order; no hidden reordering or added allocation regression |
+| Codec.product/list/refine | supported structured wire inputs with dependent validity | Prove decode_encode and exact public error behavior on that supported domain |
+| ContextSlot, consumeAlong, rebind | bounded reuse of certified dependency data once identity laws exist | Actual context equality or a proved dependency projection, and exact factory-family alignment |
+| TableRevision and scoped transactions | explicit logical policy/source revisions and scoped preparations | Preserve whole policy bodies, policy order and Cedar revision witnesses |
+| Contract and method metadata | additional typed call pre/post conditions when a concrete Case needs them | The call consumes the actual input and emits evidence bound to its actual output |
+
+The public examples read for this design include ObjectDefinition, LiveRevision,
+ContextualFactories, DictionaryConsumers, ValidationWorkflow,
+ValidatedConfiguration, VariantContracts, ContractChecks,
+CertifiedContextCache, TableRevision and PolicyDispatch. Their example modules
+are not imported by the SPEC implementation.
+
+* Complex Case restructuring
+
+| Case | Current concentration | Target reusable units and invariants |
+|------+-----------------------+--------------------------------------|
+| Health/AgenticAI/LanguageModel/Disclosure (519 lines) | lineage object, destination/approval/delegation checks, prepare/redeem and Host cases | typed lineage/destination/authority requirements; a shared preparation consumer; keep actual payload digest, source join, grants, revocation and final redemption refresh explicit |
+| Governance/AttestedDataAccess (504 lines) | versions, attestations, schema construction, publication and query comparisons | root/profile providers plus prepared publication/query functions; preserve immutable revision selection and independent same-input query results |
+| Health/Pseudonymization (466 lines) | profiles, transformations, authority and batch scenarios | typed transformation/protection capabilities and prepared batch consumer; preserve exact rows, tokens, order and Host binding |
+| Enterprise/Agent/Fanout/CrossAgentEgress (445 lines) | multiple workers, shared scopes, preparation/commit/replay | prepared root capability family plus typed effect/evidence requirements; retain distinct grants, scope boundaries, single-use/indeterminate-spend behavior and stale-model refusal |
+| Cloud/Pipeline/GoogleThreatCase (369 lines) | independent source/dependency/runner/artifact owners and many roots | one contributed provider family and an explicit selected requirement list per root; exact vetoes, ordered policies and root-local revisions |
+| Enterprise/Personnel/SourceCustody (340 lines) | joined source provenance, channels and publication/effect logic | typed custody requirements shared with actual-input admission; preserve source independence, affected recipients and final scope |
+| Enterprise/Agent/DataFlow (327 lines) | multiple owner branches, dispatch, publication and request matrix | retain existing multidispatch for construction; prepare selected factories once; keep exact policy order and Cedar veto behavior |
+| Health/PriorAuthorization (308 lines) and internal channels | independent external/internal controls and their effects | typed channel providers and compound consumers; keep actual channel, patient, delegation and minimum-payload checks independent |
+| Enterprise/Vehicle/Mission/SuccessorBoundary (308 lines) and Session/HostSafety (292 lines) | preparation/admission/lifecycle checks | reusable scoped requirements with domain-owned revision/lease/effect invariants; no generic authorization shortcut |
+
+Move reusable behavior into the relevant existing library owner; keep fixture
+identities, schema instances, Case assumptions and decision matrices in Examples
+and Tests. Extract shared orchestration only after two concrete consumers have
+shown the same semantics and error policy.
+
+* Important constraints discovered in the source
+
+** Dynamic type metadata needs a Cedar interpretation
+
+Static Lean types already protect dependent capability results. Dynamic plugin
+or configuration descriptors may additionally use PrototypeTypes and its bounded
+inference/interpretation APIs. Their scalar, container, function and refinement
+meanings must be connected to the actual Cedar values and callback interface.
+An unresolved constraint is not a successful type check. Metadata validation
+cannot replace Cedar's own schema validation or justify erasing its error cases.
+
+** Publication order is observable
+
+=PolicyJson.publish= currently executes compile, schema-definition validation,
+schema well-formedness, policy validation, export, then duplicate-ID admission.
+The refactor must preserve the exact first failure and ordered policy material.
+Compile-only/evaluation APIs must retain their documented weaker boundary; route
+deployment consumers through an explicitly checked publication operation.
+
+** Partial JSON export is not yet a round-trip Codec
+
+=PolicyJson= contains bounded/partial AST and value exporters. A =Codec= requires
+a proved decoder/encoder law. Initially compose these exporters as typed
+Except-returning factories. Introduce a lawful codec only for a supported,
+explicitly refined domain with a real decoder and proof. Existing JSON fields,
+IDs, ordering and Rust Cedar parser admission remain authoritative.
+
+** Reuse requires actual identity evidence
+
+=Model= contains cached functions/objects, and schema comparison already has its
+own semantics. Do not assume a global DecidableEq over an opaque model or treat
+a version/digest match as equality. Start with preparation scoped to a captured
+immutable source/schema; add ContextSlot only when the selected context really
+has decidable equality or an existing proved reindex/rebind law. A cache hit
+reuses dependency data, not a final request authorization or current Host grant.
+
+** Ordered policies and errors survive table abstraction
+
+Policy validation currently compares entire bodies and preserves the first
+error; policy modules separately enforce edit ownership and order. TableRevision
+does not justify reducing equality to PolicyID or using an unordered map as the
+published policy list. Keep the indexed Cedar fast path until its replacement
+has semantic and resource evidence.
+
+** Functional combinators preserve authorization boundaries
+
+Factory.recover is appropriate for explicitly specified recovery behavior. It
+must not translate a missing capability, failed contract, solver unknown,
+revoked grant or stale publication into an allow. Method combinations select
+construction/check behavior; Cedar still owns permit/forbid aggregation.
+
+* Delivery order
+
+| Slice | Work | Concrete exit gate |
+|-------+------+--------------------|
+| A: current PR 8 | latest immutable LeanPOO pin; typed industry Profiles and Contract use; shared source/plan selection | all local and exact-head SPEC CI; preserve current exported artifacts |
+| B1: capability core | scoped contexts and exact compile/check/publish/authorize capability result families; reuse existing receipts | universal equalities to current functions including exact errors and policy order; no parallel cache/type system |
+| B2: two complete consumers | migrate PaymentRelease and prior-authorization internal channels to shared prepared operations | same existing JSON/Cedar artifacts and decision matrices; dynamic context/contract/refusal controls |
+| C1: publication and root families | migrate AttestedDataAccess, GoogleThreatCase and DataFlow | distinct roots, owner selection and schema/profile changes refuse stale preparation; unchanged policy order and Rust conformance |
+| C2: effectful Cases | migrate Disclosure, CrossAgentEgress and SourceCustody | actual-input lineage, grant/budget/revocation and final Host refresh gates retained through prepare/commit |
+| D: bounded reuse and cleanup | prove safe reindex/rebind/caching where measurement justifies it; remove replaced orchestration | matched source/context controls, error/refusal parity, bounded resources; no unsupported speedup claim |
+
+This order supplies shared capability operations before broadly rewriting the
+large Examples. Receipt unification and removal of the replaced functions belong
+to each slice's exit criteria; keep a working consumer while moving ownership.
+
+* Cross-cutting acceptance matrix
+
+- Exact old/new success values, Cedar policies, policy order and serialized bytes.
+- Exact first error on multi-failure inputs; distinct deny, evaluator error,
+  missing capability, incomplete analysis and stale scope outcomes.
+- Same body with a different ID, same ID with a different body, reordered bodies,
+  duplicate IDs, tombstones and competing owners.
+- Independent schema, root, factory family, request, entity, source, epoch and
+  effect changes must invalidate only their actual dependent preparation.
+- A refined child cannot weaken inherited Contract refusal; raw object reads
+  cannot become an authorization/admission path.
+- No delivery on rejected prepare/redeem; actual final Host revisions and effect
+  identity are checked at the existing point of release.
+- Library and Production imports stay independent of Examples and Tests.
+- Kernel proofs and exact-head CI remain separate evidence from Case simulation,
+  downstream Rust execution, resource counts and elapsed-time measurements.
