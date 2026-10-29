@@ -195,15 +195,21 @@ theorem Program.authorizeLayers_append (program : Program model schema)
         (program.authorizeLayers right entities).map (first ++ ·)) :=
   Validation.traverse_append _ left right
 
-def Program.authorizationCase (program : Program model schema) (name revision root : String)
+/-- Render current inputs using this exact checked snapshot and selected methods. -/
+def Ready.authorizationCase (ready : Ready context) (name revision : String)
     (request : Request) (entities : Entities) : Except String Lean.Json := do
-  let ready ← (program.at root).mapError Error.message
-  let publication ← ready.publish.get.mapError (fun cause => Error.message (.context root cause))
+  let publication ← ready.publish.get.mapError
+    (fun cause => Error.message (.context context.root cause))
   let layer := ready.authorizeLayer request entities
   have same : layer.policies = publication.policies :=
     Except.ok.inj (layer.compiled.symm.trans publication.compiled)
   have request_eq : layer.request = request := rfl
   PolicyJson.authorizationCaseData name revision publication.policies publication.json
     request entities layer.response publication.serialized (by simpa only [same, request_eq] using layer.evaluated)
+
+def Program.authorizationCase (program : Program model schema) (name revision root : String)
+    (request : Request) (entities : Entities) : Except String Lean.Json := do
+  let ready ← (program.at root).mapError Error.message
+  ready.authorizationCase name revision request entities
 
 end CedarPooSpec.Functional

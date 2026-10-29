@@ -15,3 +15,8 @@ bench-rust-export: prepare-cedar-manifest prepare-mission-successor-manifest
     rust/target/release/examples/export_latency .lake/build/expanded-policy.json 32 500
     rust/target/release/examples/export_latency .lake/build/expanded-policy.json 128 200
     rust/target/release/examples/export_latency --manifest .lake/build/mission-successor-manifest.json 100
+
+# Fixed 128-read, three-sample local probe; timings have no pass/fail threshold.
+bench-functional-reuse: build
+    lake build Examples.Enterprise.Agent.Fanout.CrossAgentEgress
+    timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 --run Benchmarks/FunctionalReuse.lean CrossAgentGoverned

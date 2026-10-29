@@ -142,8 +142,60 @@ These deterministic Host simulations remain the qualification boundary. Durable
 atomic execution, authentic external facts and distributed crash recovery are
 separate obligations, not prerequisites for running the simulated Cases.
 
-B1/B2/C1/C2 from RFC 0008 are implemented. Measured bounded reuse (D) remains
-separate work.
+* Measured scoped reuse (D)
+
+[[file:Reuse.lean][RootSlot]] is an alias of LeanPOO's =Requirements.ContextSlot=,
+not a second cache implementation. =Program.rootFamily= reindexes the complete
+=Program.at= outcome onto String roots. Its certified claim is exact outcome
+equality, including failure payloads and the selected publication function.
+The Program's actual model/schema and selected factory family remain type
+indices; only root equality is checked at runtime. No DecidableEq is assumed
+for an opaque model or factory, and root names/digests alone cannot rebind a slot.
+
+The slot stores zero or one whole prepared result, including failures. A changed
+root replaces the previous result; returning to an evicted root builds it again.
+The same-context hit law returns retained data and the unchanged slot. Exact
+value and bound laws hold for arbitrary slots, not only fixtures. Requests,
+entities, authorization decisions and Host tickets are not stored in the slot.
+
+=Ready.authorizationCase= is the shared renderer. =Program.authorizationCases=
+threads one slot through an ordered batch, reevaluating each current request.
+Its universal equality with ordinary =Validation.traverse= preserves all JSON
+values and the first error. Medical prior-authorization and cross-agent egress
+manifests use empty-retention Programs plus this batch path, removing their
+nested export traversals. Their policy/state replay and admission boundaries
+remain unchanged. This bounds extra prepared-root retention; input/output lists,
+the caller's other Program entries and overall process RSS are not bounded by it.
+
+=just bench-functional-reuse= runs a fixed 16-read warmup and three 128-read
+samples under the existing 120-second, 2048-MiB, 10000000-tick Lean-run limits.
+Each iteration changes the actual budget fact; all paths must return matching
+checksums. Same-root workloads require exactly 127 hits; alternating governed/
+incident workloads require zero hits. Timings are observations, never pass/fail
+thresholds. The benchmark also retains the all-roots-prepared comparison.
+
+One macOS Lean 4.34.1 sample set on 2026-10-30 measured:
+
+| Workload (128 reads) | Repeated cold preparation | One slot | All roots retained | Slot hits |
+|----------------------+---------------------------+----------+--------------------+-----------|
+| Same root | 442-501 ms | 17.1-19.8 ms | 14.0-14.7 ms | 127 |
+| Alternating two roots | 469-499 ms | 470-496 ms | 15.0-15.8 ms | 0 |
+
+This supports scoped reuse for root locality. It also shows the tradeoff:
+one-slot churn has no speed benefit, while full retention is faster when its
+larger retained set is acceptable. These are local Lean-run preparation/evaluation
+measurements, not compiled production throughput or an end-to-end manifest
+speedup. The exact benchmark runs in CI, without requiring identical timings.
+
+[[file:../../Tests/Functional/Reuse.lean][Reuse tests]] cover root eviction, cached refusal, changed source/schema/family,
+changed actual requests/entities, publication refusal and complete manifest
+byte equality. Five additional generic hit/value/bound/batch laws pass the
+standard-axiom audit. CrossAgentEgress's dynamic commit still constructs from its
+actual activeModel; this optimization never substitutes an old Program there.
+
+B1/B2/C1/C2/D's scoped implementation is complete. Cross-source rebinding,
+durable atomic persistence, process-memory bounds and native end-to-end speedups
+remain outside the claims established here.
 
 * Proof and regression gates
 

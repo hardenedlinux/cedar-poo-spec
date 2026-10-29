@@ -6,14 +6,15 @@
 The B1 capability core and the B2 payment/prior-authorization consumers (including
 the medical internal channels) are now
 implemented on PR 8; see the [[file:../../CedarPooSpec/Functional/README.org][Functional capability implementation]]. The C1 publication/root-family and C2 effectful consumers are also implemented.
-D measured bounded reuse retains design-draft status. The
+D scoped bounded reuse and cleanup are also implemented, with measured locality
+and explicit churn/retention limits. The
 preceding typed-industry implementation is described in
 [[file:../lean-poo-alignment.org][LeanPOO alignment]]. The reference is LeanPOO PR 13, immutable revision
 =b577371fe4e2717e198a29eefe16ec8ae0380e0d=.
 
 The initial inspected tree at =5b25f80= had 100 =CedarPooSpec= Lean modules and
 129 Example modules; B1 adds PolicyPreparation and Functional.Capabilities,
-and C2 adds Functional.Admission.
+C2 adds Functional.Admission, and D adds Functional.Reuse.
 The audit covers the whole library inventory and the construction, preparation,
 authorization and effect paths of the largest Cases. Examples remain downstream
 consumers; the library and Productions must not import them.
@@ -253,8 +254,19 @@ revision/effect refresh and its current lineage/cohort/audit gates. SourceCustod
 keeps its decision-only operation/snapshot scope. Three full manifests, complete
 fanout ledger/ticket parity and independent current-state refusal controls form
 the executable regression boundary. Three additional universal admission proofs
-pass the standard-axiom audit. These are simulated Host controls; D, durable
-atomic persistence and distributed crash recovery are not established here.
+pass the standard-axiom audit. These are simulated Host controls; durable atomic
+persistence and distributed crash recovery are not established here.
+
+D uses the existing LeanPOO ContextSlot with root-only reindexing under one
+exact model/schema/selected family. A slot retains at most one whole prepared
+result; generic hit/value/bound/batch equivalence laws preserve values and first
+errors. Five laws pass the standard-axiom audit. Two manifests use shared bounded
+batch rendering and retain their reference wire bytes. The fixed benchmark
+reports same-root hits, a zero-hit alternating-root negative control and a
+full-retention comparison. Local same-root preparation falls from roughly
+442-501 ms to 17-20 ms per 128 reads; alternating-root churn remains roughly cold
+cost. Timings do not gate CI. No external-source freshness, process-RSS or native
+end-to-end speedup is inferred; dynamic commit still refreshes the actual model.
 
 * Cross-cutting acceptance matrix
 
