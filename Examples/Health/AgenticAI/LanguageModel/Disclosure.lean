@@ -1,3 +1,4 @@
+import CedarPooSpec.Functional.Capabilities
 import Examples.Health.Pseudonymization
 import CedarPooSpec.Data.DerivedArtifact
 import CedarPooSpec.Data.CumulativeDisclosure
@@ -162,6 +163,11 @@ def publicationModelResult : Except LeanPoo.C4.Error Model := do
     [incidentGate.edit .withdraw]
 def publicationModel : Model := publicationModelResult.toOption.get (by native_decide)
 
+/-- Retain checked policies for this exact model/schema, never request decisions. -/
+def program : CedarPooSpec.Functional.Program publicationModel publicationSchema :=
+  (CedarPooSpec.Functional.prepareProgram CedarPooSpec.Functional.standard publicationModel publicationSchema
+    (publicationModel.modules.map (·.name))).toOption.get (by native_decide)
+
 /-- Only composed roots may be used to prepare an external disclosure. The
     partial owner roots remain available for diagnostics and comparison. -/
 inductive DeployableRoot where
@@ -291,12 +297,9 @@ def projectedRequest (state : State) (effect : Effect) : Request :=
     ("auditReady", .prim (.bool state.auditReady))]⟩
 
 def authorized (root : String) (state : State) (effect : Effect) : Bool :=
-  match publicationModel.compile root with
+  match program.authorize root [projectedRequest state effect] publicationEntities with
   | .error _ => false
-  | .ok policies =>
-      let answer := isAuthorized (projectedRequest state effect)
-        publicationEntities policies
-      answer.decision == .allow && answer.erroringPolicies.isEmpty
+  | .ok receipt => receipt.allowed
 
 structure Ticket where
   root : DeployableRoot
@@ -507,11 +510,9 @@ def cases : List (String × String × State × Effect × Decision) := [
   ("source-recovered", "DerivedPublicationRecovered", initial, workspaceEffect, .allow)]
 
 def casesConform : Bool := cases.all fun (_, root, state, effect, expected) =>
-  match publicationModel.compile root with
+  match program.authorize root [projectedRequest state effect] publicationEntities with
   | .error _ => false
-  | .ok policies =>
-      let answer := isAuthorized (projectedRequest state effect)
-        publicationEntities policies
+  | .ok receipt => receipt.responses.all fun answer =>
       answer.decision == expected && answer.erroringPolicies.isEmpty
 
 theorem casesConformFully : casesConform = true := by native_decide

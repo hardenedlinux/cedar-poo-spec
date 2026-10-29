@@ -99,8 +99,50 @@ remain available with their documented weaker boundary; migrating a Case to
 Program explicitly adds policy/schema admission before its authorization/export.
 No request-schema gate is added to malformed-request evaluation.
 
-B1/B2/C1 from RFC 0008 are implemented. Disclosure, CrossAgentEgress and
-SourceCustody's effectful migrations (C2), and measured bounded reuse (D), remain
+* Effectful admission consumers (C2)
+
+[[file:Admission.lean][Functional admission]] bridges checked data to the existing
+=Admission.PolicySnapshot=. =Ready.policySnapshot= preserves the exact root and
+whole policy set. =Program.refreshPolicy= first obtains checked data at the
+captured root from its supplied Program, then compares the complete policies.
+Its =Refreshed= subtype carries the equality witness. Compilation/schema/policy
+refusal is =RefreshError.preparation=; unequal policy bodies or order is
+=RefreshError.changed=. Export is still deferred.
+
+=Ready.policySnapshot_compiled= and =Refreshed.compiled= bind both sides to
+actual model compilation. =Refreshed.allowed_eq= ties each new request/entity
+decision to the exact captured policies. These are kernel proofs with no native
+Case computation assumptions.
+
+- [[file:../../Examples/Health/AgenticAI/LanguageModel/Disclosure.lean][Disclosure]] uses its checked Program for fresh projected requests in both
+  prepare and redeem, and for its complete manifest. DeployableRoot remains
+  restricted to composed roots. Epoch, approval/delegation/policy/audience
+  revisions, exact effect, expiry, current grants, lineage, audit, budget and
+  cumulative cohort checks remain domain-owned. Only successful redeem advances
+  epoch, spends budget and records the actual payload digest.
+- [[file:../../Examples/Enterprise/Agent/Fanout/CrossAgentEgress.lean][CrossAgentEgress]] uses selected checked authorizers for diagnostic replay
+  and prepare/commit. Each prepare/commit builds a Program from the actual
+  =activeModel= argument and schema; commit never substitutes the global fixture
+  Program for that argument. It refreshes the existing snapshot before actual
+  request evaluation, then consumes the exact grant and admits the operation
+  before advancing lineage/budget/epoch. The worker allowlist remains explicit.
+  =Factory.fold= sequences replay with the request projected before each step.
+  Raw =authorizedBy= remains an independent policy-only diagnostic for the
+  changed-policy theorems; it is not the admission path.
+- [[file:../../Examples/Enterprise/Personnel/SourceCustody.lean][SourceCustody]] uses current Operation.request and caller-supplied Entities
+  through Program for decisions and its full schema-bound manifest. Existing
+  scoped approval/delegation projection, device, departure/separation, incident,
+  knowledge-scope and destination checks retain their owners. No new ticket or
+  simulated external-effect lifecycle is invented for this decision-only Case.
+
+A Program's model index describes supplied data. Calling refresh on an old
+Program does not prove external source freshness. The CrossAgentEgress caller
+must supply its actual active model; the admission simulation does so explicitly.
+These deterministic Host simulations remain the qualification boundary. Durable
+atomic execution, authentic external facts and distributed crash recovery are
+separate obligations, not prerequisites for running the simulated Cases.
+
+B1/B2/C1/C2 from RFC 0008 are implemented. Measured bounded reuse (D) remains
 separate work.
 
 * Proof and regression gates
@@ -138,6 +180,13 @@ standard-axiom audit.
 
 Run =lake build Tests.Functional.Capabilities Tests.Functional.RootFamilies=
 and =just check-lean=. Each Case retains its own source/revision/Host obligations.
+[[file:../../Tests/Functional/Effectful.lean][Effectful tests]] additionally compare three complete C2 manifests against
+pre-migration algorithms, CrossAgentEgress's full replay/tickets/next ledger
+across both models, views and changed effects/current states, and Disclosure's
+prepare/redeem/release outcomes across independently revoked or stale facts.
+They test same-root policy changes, reordered bodies and invalid new schemas.
+Three generic snapshot/refresh proofs undergo the same standard-axiom audit;
+the Case replay-order theorem instantiates the existing generic fold law.
 The complete GitHub workflow also checks the existing official Rust Cedar
 parser/validator/authorizer, artifacts, scenarios and authorization-delta proofs.
 Retained snapshots/thunks do not establish hard RSS bounds, Host atomicity or

@@ -6,12 +6,10 @@ open CedarPooSpec.CrossAgentEgressExample
 
 /-- Export each request with the exact ledger facts seen before admission. -/
 def manifest : Except String Lean.Json := do
-  let mut rows : List Lean.Json := []
-  for (name, root, view, attempts, _) in cases do
-    for ((req, _), index) in (replay root view {} attempts).1.zipIdx do
-      let row ← CedarPooSpec.PolicyJson.authorizationCase
-        s!"{name}-step-{index}" root model root req entities
-      rows := rows ++ [row]
-  CedarPooSpec.SchemaJson.validatedManifest schema rows
+  let batches ← LeanPoo.Functional.Validation.traverse (fun (name, root, view, attempts, _) =>
+    LeanPoo.Functional.Validation.traverse (fun ((req, _), index) =>
+      program.authorizationCase s!"{name}-step-{index}" root root req entities)
+      (replay root view {} attempts).1.zipIdx) cases
+  CedarPooSpec.SchemaJson.validatedManifest schema batches.flatten
 
 end CedarPooSpec.CrossAgentEgressValidatedExport

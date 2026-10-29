@@ -173,8 +173,9 @@ authorization boundaries.
 [[file:docs/rfc/0008-functional-cedar-capabilities.org][RFC 0008]] designs the subsequent shared Functional capability layer and
 ordered migration of the broader library and complex Cases. Its B1 capability
 core, B2 payment/prior-authorization consumers (including internal channels), and
-C1 attested-data, GoogleThreat and DataFlow root families are implemented in
-[[file:CedarPooSpec/Functional/README.org][Functional Cedar capabilities]]. C2 effectful Cases and D bounded reuse remain planned.
+C1 attested-data, GoogleThreat and DataFlow root families, and C2 Disclosure,
+CrossAgentEgress and SourceCustody consumers are implemented in
+[[file:CedarPooSpec/Functional/README.org][Functional Cedar capabilities]]. D measured bounded reuse remains planned.
 
 =just lean-poo-api= lists the public modules from the locked LeanPOO
 dependency. =just lean-poo-api-find 'Multimethod.register'= searches its Lean

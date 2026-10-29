@@ -5,14 +5,15 @@
 
 The B1 capability core and the B2 payment/prior-authorization consumers (including
 the medical internal channels) are now
-implemented on PR 8; see the [[file:../../CedarPooSpec/Functional/README.org][Functional capability implementation]]. The C1 publication/root-family consumers are also implemented. C2 effectful
-Cases and D bounded reuse retain design-draft status. The
+implemented on PR 8; see the [[file:../../CedarPooSpec/Functional/README.org][Functional capability implementation]]. The C1 publication/root-family and C2 effectful consumers are also implemented.
+D measured bounded reuse retains design-draft status. The
 preceding typed-industry implementation is described in
 [[file:../lean-poo-alignment.org][LeanPOO alignment]]. The reference is LeanPOO PR 13, immutable revision
 =b577371fe4e2717e198a29eefe16ec8ae0380e0d=.
 
 The initial inspected tree at =5b25f80= had 100 =CedarPooSpec= Lean modules and
-129 Example modules; B1 adds PolicyPreparation and Functional.Capabilities.
+129 Example modules; B1 adds PolicyPreparation and Functional.Capabilities,
+and C2 adds Functional.Admission.
 The audit covers the whole library inventory and the construction, preparation,
 authorization and effect paths of the largest Cases. Examples remain downstream
 consumers; the library and Productions must not import them.
@@ -244,7 +245,16 @@ and removes the duplicate singleton export dispatcher. Independent previous
 export algorithms, full response/policy projections, malformed/reordered/repeated
 layers, changed schema and removed sources provide regression gates. Domain
 revision/delta/BoundOperation operations retain their own stronger or weaker
-contracts; C2/D are not advanced by these receipts.
+contracts. C2 now also migrates Disclosure, CrossAgentEgress and SourceCustody.
+Functional.Admission reuses PolicySnapshot with checked capture/refresh witnesses;
+CrossAgentEgress prepares from the actual activeModel on both admission phases,
+then preserves grant/operation/budget consumption. Disclosure preserves final
+revision/effect refresh and its current lineage/cohort/audit gates. SourceCustody
+keeps its decision-only operation/snapshot scope. Three full manifests, complete
+fanout ledger/ticket parity and independent current-state refusal controls form
+the executable regression boundary. Three additional universal admission proofs
+pass the standard-axiom audit. These are simulated Host controls; D, durable
+atomic persistence and distributed crash recovery are not established here.
 
 * Cross-cutting acceptance matrix
 
