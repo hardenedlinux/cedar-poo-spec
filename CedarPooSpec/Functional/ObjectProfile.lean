@@ -48,8 +48,9 @@ abbrev Operations (contract : Check Key Value) :=
 
 def check (contract : Check Key Value) (profile : Object Key Value) :
     Except (List (Issue Key String)) (PLift (Checked contract profile)) :=
-  if valid : diagnose contract profile [] = [] then .ok ⟨⟨valid⟩⟩
-  else .error (diagnose contract profile [])
+  let report := diagnose contract profile []
+  if valid : report = [] then .ok ⟨⟨valid⟩⟩
+  else .error report
 
 def project (profile : Object Key Value) (key : Key) : Option (Projection profile key) :=
   match actual : profile.read key with

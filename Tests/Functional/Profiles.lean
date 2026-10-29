@@ -21,7 +21,7 @@ def guards {Key : Type} {Value : Key → Type} [DecidableEq Key] [BEq Key]
     (consume : Object.Memoized Key Value → Option (Value key)) : Bool :=
   let changed := profile.extendWith "Forged" do Object.Declaration.Builder.value key forged
   let missing : Except C4.Error (Object.Memoized Key Value) := Object.define "Missing" (pure ())
-  (consume profile).isSome &&
+  missing.isOk && (consume profile).isSome &&
     (changed.toOption.bind consume).isNone &&
     (missing.toOption.bind consume).isNone &&
     (changed.toOption.bind (fun object => object.read key)).isSome
