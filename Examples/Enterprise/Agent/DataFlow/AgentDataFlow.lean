@@ -1,3 +1,4 @@
+import CedarPooSpec.Functional.Capabilities
 import Examples.Enterprise.Agent.Delegation.AgentDelegation
 import LeanPoo.Object.Multimethod
 
@@ -192,6 +193,11 @@ def dataModelResult : Except LeanPoo.C4.Error Model := do
 
 def dataModel : Model := dataModelResult.toOption.get (by native_decide)
 
+/-- Prepared against this exact model/schema; requests and entities remain current. -/
+def program : CedarPooSpec.Functional.Program dataModel dataSchema :=
+  (CedarPooSpec.Functional.prepareProgram CedarPooSpec.Functional.standard dataModel dataSchema
+    (dataModel.modules.map (·.name))).toOption.get (by native_decide)
+
 def readRequest (source origin : EntityUID) : Request :=
   ⟨knowledgeBot, readDocument, source, Map.make [
     ("origin", .prim (.entityUID origin))]⟩
@@ -207,7 +213,7 @@ def checks (readRoot publishRoot : String) (source repo origin approver : Entity
   (publishRoot, publishRequest source repo origin approver approved)]
 def authorizeFlow (readRoot publishRoot : String) (source repo origin approver : EntityUID)
     (approved : Bool) : Bool :=
-  match CedarPooSpec.CompoundAuthorization.authorizeLayers dataModel
+  match program.authorizeLayers
       (checks readRoot publishRoot source repo origin approver approved) dataEntities with
   | .error _ => false
   | .ok receipts => CedarPooSpec.CompoundAuthorization.layersAllowed receipts
@@ -236,7 +242,7 @@ theorem casesExactFully : casesExact = true := by native_decide
 
 def casesErrorFree : Bool := cases.all fun (_, readRoot, publishRoot, source, repo,
     origin, approver, approved, _) =>
-  match CedarPooSpec.CompoundAuthorization.authorizeLayers dataModel
+  match program.authorizeLayers
       (checks readRoot publishRoot source repo origin approver approved) dataEntities with
   | .error _ => false
   | .ok receipts => receipts.all fun layer => layer.response.erroringPolicies.isEmpty
@@ -297,7 +303,7 @@ def malformedChecks : List (String × Request) := [
   ("ReadTenant", readRequest publicDoc admin),
   ("PublishGoverned", malformedReviewRequest)]
 def malformedReviewRejected : Bool :=
-  match CedarPooSpec.CompoundAuthorization.authorizeLayers dataModel
+  match program.authorizeLayers
       malformedChecks dataEntities with
   | .ok [readLayer, publishLayer] =>
       publishLayer.response.decision == .allow &&
@@ -308,7 +314,7 @@ theorem malformedReviewRejectedFully : malformedReviewRejected = true := by
   native_decide
 
 def classifiedLeakBoundary : Bool :=
-  match CedarPooSpec.CompoundAuthorization.authorizeLayers dataModel
+  match program.authorizeLayers
       (checks "ReadTenant" "PublishClassified" internalDoc publicRepo admin reviewer true)
       dataEntities with
   | .error _ => false
@@ -321,7 +327,7 @@ def allRootsValidated : Bool :=
   ["ReadBase", "ReadTenant", "PublishBase", "PublishScoped",
     "PublishClassified", "PublishReview", "PublishGoverned", "PublishDispatched",
     "PublishRevoked", "PublishRestored"].all fun root =>
-      (CedarPooSpec.PolicyJson.publish dataModel root dataSchema).isOk
+      (program.publish root).isOk
 theorem allRootsValidatedFully : allRootsValidated = true := by native_decide
 
 end CedarPooSpec.AgentDataFlowExample

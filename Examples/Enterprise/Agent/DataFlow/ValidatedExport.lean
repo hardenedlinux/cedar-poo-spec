@@ -11,13 +11,11 @@ def dispatchComparisonRows : Except String (List Lean.Json) := do
   let requests := [
     ("allow", publishRequest publicDoc publicRepo admin reviewer true),
     ("deny", publishRequest internalDoc publicRepo admin reviewer true)]
-  let mut rows : List Lean.Json := []
-  for (label, req) in requests do
-    for root in ["PublishGoverned", "PublishDispatched"] do
-      let receipt ← CedarPooSpec.PolicyJson.authorizationCase
-        s!"dispatch-{label}-{root.toLower}" root.toLower dataModel root req dataEntities
-      rows := rows ++ [receipt]
-  return rows
+  let rows ← LeanPoo.Functional.Validation.traverse (fun (label, req) =>
+    LeanPoo.Functional.Validation.traverse (fun root =>
+      program.authorizationCase s!"dispatch-{label}-{root.toLower}" root.toLower root req dataEntities)
+      ["PublishGoverned", "PublishDispatched"]) requests
+  return rows.flatten
 
 def manifest : Except String Lean.Json := do
   let rows ← CedarPooSpec.AgentDataFlowExport.wellFormedRows

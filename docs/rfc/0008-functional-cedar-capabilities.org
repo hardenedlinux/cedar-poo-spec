@@ -5,8 +5,8 @@
 
 The B1 capability core and the B2 payment/prior-authorization consumers (including
 the medical internal channels) are now
-implemented on PR 8; see the [[file:../../CedarPooSpec/Functional/README.org][Functional capability implementation]]. The remaining
-cross-library and complex-Case migrations retain design-draft status. The
+implemented on PR 8; see the [[file:../../CedarPooSpec/Functional/README.org][Functional capability implementation]]. The C1 publication/root-family consumers are also implemented. C2 effectful
+Cases and D bounded reuse retain design-draft status. The
 preceding typed-industry implementation is described in
 [[file:../lean-poo-alignment.org][LeanPOO alignment]]. The reference is LeanPOO PR 13, immutable revision
 =b577371fe4e2717e198a29eefe16ec8ae0380e0d=.
@@ -237,7 +237,14 @@ B1 and B2 implement the typed result stages, C4-selected operations,
 =CertifiedConsumer= method contract, retained root preparation, delayed export,
 actual-request authorization and both Case export paths. Their tests include
 universal publication/error equality and complete compressed-manifest equality.
-These implementation receipts do not advance C1/C2/D to completed status.
+C1 additionally migrates AttestedDataAccess revision export, GoogleThreat stage
+authorization/export, and DataFlow multi-root authorization/export. It reuses
+LayerReceipt, proves singleton-response alignment and ordered batch composition,
+and removes the duplicate singleton export dispatcher. Independent previous
+export algorithms, full response/policy projections, malformed/reordered/repeated
+layers, changed schema and removed sources provide regression gates. Domain
+revision/delta/BoundOperation operations retain their own stronger or weaker
+contracts; C2/D are not advanced by these receipts.
 
 * Cross-cutting acceptance matrix
 

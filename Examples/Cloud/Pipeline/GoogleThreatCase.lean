@@ -1,8 +1,8 @@
+import CedarPooSpec.Functional.Capabilities
 import CedarPooSpec.Cloud.Pipeline.ReleaseBoundary
 import CedarPooSpec.Cloud.Pipeline.Evidence
 import CedarPooSpec.Cloud.Pipeline.SourceControlBoundary
 import CedarPooSpec.Cloud.Pipeline.SourceProfile
-import CedarPooSpec.PolicyJson
 
 /-!
 Synthetic pipeline release based on Google Cloud Threat Intelligence's 2026
@@ -259,12 +259,15 @@ def modelResult : Except LeanPoo.Object.CombineError Model := do
 
 def model : Model := modelResult.toOption.get (by native_decide)
 
+/-- Prepared against this exact model/schema; requests and entities remain current. -/
+def program : CedarPooSpec.Functional.Program model schema :=
+  (CedarPooSpec.Functional.prepareProgram CedarPooSpec.Functional.standard model schema
+    (model.modules.map (·.name))).toOption.get (by native_decide)
+
 def allowed (root : String) (resource : EntityUID) (facts : Facts) : Bool :=
-  match model.compile root with
+  match program.authorize root [request resource facts] entities with
   | .error _ => false
-  | .ok policies =>
-      let response := isAuthorized (request resource facts) entities policies
-      response.decision == .allow && response.erroringPolicies.isEmpty
+  | .ok receipt => receipt.allowed
 
 def independentFacts : Facts :=
   { sourceCommit := "commit-b", lockDigest := "lock-b",

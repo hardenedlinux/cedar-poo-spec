@@ -1,4 +1,3 @@
-import CedarPooSpec.PolicyJson
 import Examples.Governance.AttestedDataAccess
 
 /-! Export attested-data POO revisions and Lean-computed authorization receipts. -/
@@ -10,13 +9,13 @@ open CedarPooSpec.AttestedManifest
 
 private def case (name : String) (root : Root) (req : Cedar.Spec.Request) :
     Except String Lean.Json :=
-  PolicyJson.authorizationCase name root.artifactRevision model root.name req entities
+  program.authorizationCase name root.artifactRevision root.name req entities
 
 def rows : Except String (List Lean.Json) := do
-  let stable ← unchangedCases.mapM fun (name, req, _) => do
+  let stable ← LeanPoo.Functional.Validation.traverse (fun (name, req, _) => do
     let before ← case s!"{name}-baseline" .baseline req
     let after ← case s!"{name}-updated" .strengthened req
-    return [before, after]
+    return [before, after]) unchangedCases
   let staleBefore ← case "stale-attestation-baseline" .baseline
     (request customerDataset { attestationFresh := false })
   let staleAfter ← case "stale-attestation-updated" .strengthened

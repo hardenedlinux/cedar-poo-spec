@@ -69,9 +69,39 @@ still needs the existing source/scope/revision checks at the effect boundary.
   through Program; [[file:../../Examples/Health/PriorAuthorization/InternalChannelsExport.lean][its manifest]] uses the same actual-response renderer.
   All these paths preserve the reference schema-bound wire bytes.
 
-These are the two B2 consumers from RFC 0008. Broader Disclosure,
-CrossAgentEgress, AttestedDataAccess and DataFlow migrations remain separate
-slices; this implementation does not claim that they have migrated.
+The C1 root families now also use the shared layer:
+
+- [[file:../../Examples/Governance/AttestedDataAccess.lean][AttestedDataAccess]] prepares all model roots against its exact schema;
+  [[file:../../Examples/Governance/AttestedDataAccessExport.lean][its revision manifest]] uses retained publications and actual query responses.
+  Revision deltas, owner suffixes and BoundOperation's effect/state gates retain
+  their domain-owned APIs and proofs.
+- [[file:../../Examples/Cloud/Pipeline/GoogleThreatCase.lean][GoogleThreatCase]] uses the prepared program for actual stage authorization
+  and [[file:../../Examples/Cloud/Pipeline/ReplayExport.lean][replay export]]. Independent source, runner, dependency, artifact and provenance
+  policies still compose through the existing typed profiles/C4 model.
+- [[file:../../Examples/Enterprise/Agent/DataFlow/AgentDataFlow.lean][AgentDataFlow]] uses =Program.authorizeLayers= for its read/publish roots.
+  Each selected single-request response becomes the existing =LayerReceipt=;
+  input order, repeated roots and first refusal are preserved by Functional
+  traversal. Empty layers still fail =layersAllowed=; an allow response with
+  policy-evaluation errors still refuses the business operation. Dispatch,
+  classification, review, revocation and restoration remain domain policies.
+
+=Ready.authorizeLayer_response= proves that the selected layer response equals
+Cedar evaluation under the checked policies. =Program.authorizeLayers_append=
+proves ordered batch composition, including first-error short circuiting.
+=Program.authorizationCase= reuses the same singleton projection, removing a
+second response-shape dispatcher and its unreachable error branch.
+
+All three C1 consumers retain every declared module root. A cold root still
+uses =Program.at='s checked path. That fallback does not promise retention or
+compile-once behavior across repeated cold calls. The legacy compile-only
+=CompoundAuthorization.authorizeLayers= and =PolicyJson.authorizationCase=
+remain available with their documented weaker boundary; migrating a Case to
+Program explicitly adds policy/schema admission before its authorization/export.
+No request-schema gate is added to malformed-request evaluation.
+
+B1/B2/C1 from RFC 0008 are implemented. Disclosure, CrossAgentEgress and
+SourceCustody's effectful migrations (C2), and measured bounded reuse (D), remain
+separate work.
 
 * Proof and regression gates
 
@@ -98,7 +128,16 @@ standard =propext=, =Classical.choice= and =Quot.sound= axioms. Concrete Case
 instances retain their existing native computation certificates; they are
 separate from these universal method/publication/fold laws.
 
-Run =lake build Tests.Functional.Capabilities= and =just check-lean=.
+[[file:../../Tests/Functional/RootFamilies.lean][Root-family tests]] compare all four C1 manifests against independent
+pre-migration export algorithms, compare full per-layer policies/requests/responses
+including malformed, repeated and reordered checks, and compare every module
+root's publication. Changed-schema and removed-source Programs cannot accept an
+old Program at elaboration; a removed audit root refuses while its explicit old
+snapshot remains usable. Two additional generic layer proofs undergo the same
+standard-axiom audit.
+
+Run =lake build Tests.Functional.Capabilities Tests.Functional.RootFamilies=
+and =just check-lean=. Each Case retains its own source/revision/Host obligations.
 The complete GitHub workflow also checks the existing official Rust Cedar
 parser/validator/authorizer, artifacts, scenarios and authorization-delta proofs.
 Retained snapshots/thunks do not establish hard RSS bounds, Host atomicity or

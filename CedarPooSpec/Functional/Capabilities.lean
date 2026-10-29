@@ -165,23 +165,45 @@ def Program.authorize (program : Program model schema) (root : String)
   let ready ← program.at root
   return ready.authorize requests entities
 
+/-- Preserve the selected single-request response in the existing layer receipt. -/
+def Ready.authorizeLayer (ready : Ready ⟨model, root, schema⟩)
+    (request : Request) (entities : Entities) : CompoundAuthorization.LayerReceipt model entities :=
+  let receipt := ready.authorize [request] entities
+  { root, request, policies := receipt.policies, compiled := receipt.compiled
+    response := receipt.responses[0]'(by rw [receipt.evaluated]; simp)
+    evaluated := by simp [receipt.evaluated] }
+
+theorem Ready.authorizeLayer_response (ready : Ready ⟨model, root, schema⟩)
+    (request : Request) (entities : Entities) :
+    (ready.authorizeLayer request entities).response =
+      isAuthorized request entities ready.checked.policies := by
+  simp [Ready.authorizeLayer, ready.aligned]
+
+/-- Checked multi-root authorization retains input order and the first failed
+root. The legacy compile-only API keeps its weaker admission boundary. -/
+def Program.authorizeLayers (program : Program model schema)
+    (checks : List (String × Request)) (entities : Entities) :
+    Except Error (List (CompoundAuthorization.LayerReceipt model entities)) :=
+  Validation.traverse (fun (root, request) => do
+    let ready ← program.at root
+    return ready.authorizeLayer request entities) checks
+
+theorem Program.authorizeLayers_append (program : Program model schema)
+    (left right : List (String × Request)) (entities : Entities) :
+    program.authorizeLayers (left ++ right) entities =
+      (program.authorizeLayers left entities).bind (fun first =>
+        (program.authorizeLayers right entities).map (first ++ ·)) :=
+  Validation.traverse_append _ left right
+
 def Program.authorizationCase (program : Program model schema) (name revision root : String)
     (request : Request) (entities : Entities) : Except String Lean.Json := do
   let ready ← (program.at root).mapError Error.message
   let publication ← ready.publish.get.mapError (fun cause => Error.message (.context root cause))
-  let receipt := ready.authorize [request] entities
-  match h : receipt.responses with
-  | [response] =>
-      have same : publication.policies = ready.checked.policies :=
-        Except.ok.inj (publication.compiled.symm.trans ready.checked.compiled)
-      have evaluated : response = isAuthorized request entities publication.policies := by
-        have aligned := ready.aligned [request] entities
-        change receipt.responses = _ at aligned
-        rw [h] at aligned
-        rw [same]
-        exact (List.cons.inj aligned).1
-      PolicyJson.authorizationCaseData name revision publication.policies publication.json
-        request entities response publication.serialized evaluated
-  | _ => throw "Cedar single-request receipt invariant failed"
+  let layer := ready.authorizeLayer request entities
+  have same : layer.policies = publication.policies :=
+    Except.ok.inj (layer.compiled.symm.trans publication.compiled)
+  have request_eq : layer.request = request := rfl
+  PolicyJson.authorizationCaseData name revision publication.policies publication.json
+    request entities layer.response publication.serialized (by simpa only [same, request_eq] using layer.evaluated)
 
 end CedarPooSpec.Functional
