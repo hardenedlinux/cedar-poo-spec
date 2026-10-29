@@ -1,0 +1,74 @@
+#+TITLE: Functional Cedar coverage beyond RFC 0008's initial Cases
+#+OPTIONS: toc:2
+
+* Scope and evidence
+
+RFC 0008's B1-D pipeline is implemented. This ledger records further coverage;
+it does not imply that every library family has been migrated merely because
+it can import Functional. The E1 baseline is =04f049d= with the same immutable
+LeanPOO, Cedar and Lean toolchain revisions. Examples stay downstream of the
+library and Productions.
+
+* E1: cloud effects and cryptographic lifecycle
+
+| Consumer | Adapted actual path | Retained authority and refusal controls |
+|----------+---------------------+-----------------------------------------|
+| Cloud/Pipeline/DeploymentCase | checked Program; joint promotion/deployment receipt; typed Root publication; scoped batch export | current digest/subject/attestor, verified release receipt, root/epoch, immutable reference, enforced deployment policy, runner poisoning, incident/recovery |
+| Cloud/DataProtection/GoogleSdpRelease | checked Program; joint pipeline/transformation receipt; scoped batch export | exact recipe/key profile, tenant, row context, released digest and key authorization remain independent of the release pipeline |
+| Health/Pseudonymization | checked authorization and publication; Functional traversal for both manifests | HMAC catalog separation, tenant/context/token-key/transform lineage, SIV/GCM/HMAC capability distinctions and diagnostic migration ancestor |
+| Health/Pseudonymization/Lifecycle | current request through Program in both prepare and redeem | typed deployable roots, policy/approval revisions, epoch/effect identity, expiry, owner/key withdrawal, release budget, audit and single-allocation IV |
+
+=Ready.allowed_pair= proves universally that a two-request receipt allows iff
+both single-request receipts allow without policy evaluation errors. It does
+not infer permission for deployment/transformation from promotion/pipeline
+permission. Each pair uses the same actual checked policies and entities;
+requests and responses remain distinct and ordered.
+
+Deployment publication retains its Root enum. Pseudonymization deployment has
+no migration-ancestor constructor; the ordinary regression manifest can still
+exercise that unsafe ancestor. Publication errors now flow through the shared
+Functional error type; the existing manifest-specific error projection remains.
+
+Four complete manifests are compared with independent pre-E1 algorithms,
+including deployment-only pseudonymization publication. Cloud pair responses
+are compared with raw Cedar evaluation, not merely expected Booleans. Malformed
+second-stage contexts must refuse. Typed-root publication matches reference
+JSON. The pseudonymization lifecycle compares complete ticket/state outcomes
+across ten current states, seven effects and substituted prepared effects;
+its existing IV, audit, revocation and budget theorems remain required.
+The generic pair law has the same standard-axiom audit as the earlier APIs.
+
+* Existing owners deliberately retained
+
+- =Pseudonymization.TableBatch= owns ordered selection, duplicate ordinals,
+  per-row selection and cumulative UTF-8 byte ceilings. Stateful early refusal
+  is not replaced by independent traversal merely to use a combinator.
+- =TableBatchWire= and provider adapters retain their wire and physical-input
+  checks. A Lean policy receipt does not prove encryption, provider execution,
+  Arrow-byte identity or durable effect execution.
+- =PolicyJson= remains a partial exporter. No total Codec is claimed without a
+  supported-domain decoder and actual round-trip theorem.
+- BoundOperation, scoped grants and Host tickets retain their actual-input and
+  final-refresh semantics. Checked policy preparation does not authenticate
+  external receipts or make business execution atomic.
+
+* Remaining audited surfaces
+
+A current source inventory after E1 finds 34 Example modules directly calling
+=PolicyJson.authorizationCase=. This counts files, not independent features or
+missing proofs. Some calls intentionally exercise weaker raw evaluation and
+must not be silently upgraded. Pure revision and construction proofs similarly
+keep their existing compile-only ownership.
+
+| Surface | Next migration obligation |
+|---------+---------------------------|
+| FinancialServices lakehouse, banking, settlement and reconciliation | preserve paired layers, independent source/claims, ordered workflow state, exact artifact identity and audit/consumption boundaries |
+| Regional/FHIR/record and model-stewardship health Cases | preserve region/action-specific schemas, actual patient/channel data and incident/recovery gates |
+| Agent delegation, payment, session and department Cases | distinguish policy diagnostics from actual effect/delegation admission; preserve consumption, current history and error-bearing allow refusal |
+| Governance trust, country approval and ticket-sharing | preserve owner/veto independence, complete revision comparison and scope-specific authorization |
+| Vehicle/VLA/mission/Uptane Cases | preserve attestation, epoch, maintenance and command-effect identity before sharing policy preparation |
+
+Each follow-up should migrate an actual consumer with its manifest and negative
+controls, prove the reusable law where needed, and preserve the official Rust
+replay. Coverage expansion alone does not establish native throughput, process
+memory bounds, cryptographic/provider correctness or a real deployment.

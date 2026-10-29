@@ -284,3 +284,10 @@ end-to-end speedup is inferred; dynamic commit still refreshes the actual model.
 - Library and Production imports stay independent of Examples and Tests.
 - Kernel proofs and exact-head CI remain separate evidence from Case simulation,
   downstream Rust execution, resource counts and elapsed-time measurements.
+
+* Coverage after the initial slices
+
+The initial B1-D exit gates do not imply complete migration of all inventory
+families. [[file:../functional-coverage.org][The coverage ledger]] records E1 deployment, Google SDP and medical
+pseudonymization/lifecycle consumers, their pair-admission law, retained domain
+boundaries and remaining direct-export surfaces.

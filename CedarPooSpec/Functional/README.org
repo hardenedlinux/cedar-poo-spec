@@ -243,3 +243,13 @@ The complete GitHub workflow also checks the existing official Rust Cedar
 parser/validator/authorizer, artifacts, scenarios and authorization-delta proofs.
 Retained snapshots/thunks do not establish hard RSS bounds, Host atomicity or
 a measured end-to-end speedup.
+
+* Broader consumer coverage
+
+[[file:../../docs/functional-coverage.org][The coverage ledger]] records E1 beyond the initial RFC Cases. Deployment
+and Google SDP now use checked two-stage receipts; =Ready.allowed_pair= proves
+exact conjunction of the independent decisions. Pseudonymization authorization,
+typed publication and current-state lifecycle use the same prepared capabilities.
+Four manifest byte comparisons, full lifecycle outcomes and malformed second
+stages are checked in [[file:../../Tests/Functional/ExtendedCoverage.lean][ExtendedCoverage]]. Domain selection, provider/crypto wire
+contracts and physical-effect admission remain with their existing owners.

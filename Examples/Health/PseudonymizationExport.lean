@@ -1,4 +1,3 @@
-import CedarPooSpec.PolicyJson
 import CedarPooSpec.SchemaJson
 import Examples.Health.Pseudonymization
 import Examples.Health.Pseudonymization.Deployment
@@ -14,8 +13,8 @@ open CedarPooSpec.PseudonymizationExample
 def manifest : Except String Lean.Json := do
   unless hmacCatalogSeparated datasets do
     throw "cross-scope HMAC key reuse in published dataset catalog"
-  let rows ← cases.mapM fun (name, root, req, _) =>
-    CedarPooSpec.PolicyJson.authorizationCase name root model root req entities
+  let rows ← LeanPoo.Functional.Validation.traverse (fun (name, root, req, _) =>
+    program.authorizationCase name root root req entities) cases
   CedarPooSpec.SchemaJson.validatedManifest schema rows
 
 def deployableRoots : List PseudonymizationExample.Deployment.Root :=
@@ -27,11 +26,11 @@ def deployableRoots : List PseudonymizationExample.Deployment.Root :=
 def deploymentManifest : Except String Lean.Json := do
   unless hmacCatalogSeparated datasets do
     throw "cross-scope HMAC key reuse in published dataset catalog"
-  let roots ← deployableRoots.mapM fun root => do
+  let roots ← LeanPoo.Functional.Validation.traverse (fun root => do
     let publication ← (PseudonymizationExample.Deployment.publish root).mapError
       (fun _ => "deployable root failed Cedar publication")
     return Lean.Json.mkObj [
-      ("root", Lean.toJson root.name), ("policies", publication.json)]
+      ("root", Lean.toJson root.name), ("policies", publication.json)]) deployableRoots
   return Lean.toJson roots
 
 end CedarPooSpec.PseudonymizationExport

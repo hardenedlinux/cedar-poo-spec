@@ -177,6 +177,8 @@ C1 attested-data, GoogleThreat and DataFlow root families, and C2 Disclosure,
 CrossAgentEgress and SourceCustody consumers are implemented in
 [[file:CedarPooSpec/Functional/README.org][Functional Cedar capabilities]]. D adds measured one-root reuse via LeanPOO ContextSlot and shared batch export;
 its locality, churn and retention boundaries are documented there.
+[[file:docs/functional-coverage.org][Further coverage]] records cloud deployment, Google SDP and medical
+pseudonymization/lifecycle adaptation and the remaining audit surfaces.
 
 =just lean-poo-api= lists the public modules from the locked LeanPOO
 dependency. =just lean-poo-api-find 'Multimethod.register'= searches its Lean

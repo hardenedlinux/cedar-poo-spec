@@ -1,3 +1,4 @@
+import CedarPooSpec.Functional.Capabilities
 import CedarPooSpec.Revision
 import CedarPooSpec.PolicyValidation
 import CedarPooSpec.Governance.Veto
@@ -285,6 +286,11 @@ def modelResult : Except LeanPoo.C4.Error Model := do
 
 def model : Model := modelResult.toOption.get (by native_decide)
 
+/-- Exact checked policy snapshots; actual requests/entities remain per-call. -/
+def program : CedarPooSpec.Functional.Program model schema :=
+  (CedarPooSpec.Functional.prepareProgram CedarPooSpec.Functional.standard model schema
+    (model.modules.map (·.name))).toOption.get (by native_decide)
+
 structure Facts where
   targetDataset : EntityUID := hospital
   ownerApproved : Bool := true
@@ -435,12 +441,10 @@ def cases : List (String × String × Request × Decision) := [
   ("recovered-agent-join", "Recovered", request agent join hospital {}, .allow)]
 
 def scenarioConforms : Bool := cases.all fun (_, root, req, expected) =>
-  match model.compile root with
+  match program.authorize root [req] entities with
   | .error _ => false
-  | .ok policies =>
-    (validate policies schema).isOk &&
-    let response := isAuthorized req entities policies
-    response.decision == expected && response.erroringPolicies.isEmpty
+  | .ok receipt => receipt.responses.all fun response =>
+      response.decision == expected && response.erroringPolicies.isEmpty
 
 def composedViewsShareRemoval : Bool :=
   views.all (fun view => view.module.edits == [.remove legacyReveal.id])

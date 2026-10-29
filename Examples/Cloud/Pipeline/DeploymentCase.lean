@@ -1,3 +1,4 @@
+import CedarPooSpec.Functional.Capabilities
 import Examples.Cloud.Pipeline.GoogleThreatCase
 import CedarPooSpec.Cloud.Pipeline.DeploymentBoundary
 
@@ -101,6 +102,11 @@ def modelResult : Except LeanPoo.Object.CombineError Model := do
 
 def model : Model := modelResult.toOption.get (by native_decide)
 
+/-- Exact checked policy snapshots; actual requests/entities remain per-call. -/
+def program : CedarPooSpec.Functional.Program model schema :=
+  (CedarPooSpec.Functional.prepareProgram CedarPooSpec.Functional.standard model schema
+    (model.modules.map (·.name))).toOption.get (by native_decide)
+
 inductive Root where
   | ready
   | incident
@@ -113,7 +119,7 @@ def Root.name : Root → String
   | .recovered => "DeploymentRecovered"
 
 def publish (root : Root) :=
-  CedarPooSpec.PolicyJson.publish model root.name schema
+  program.publish root.name
 
 structure Choice where
   name : String
@@ -143,11 +149,9 @@ def deployRequest (choice : Choice) : Request :=
     ("incidentActive", .prim (.bool choice.pipeline.incidentActive))]⟩
 
 def allowed (root : String) (request : Request) : Bool :=
-  match model.compile root with
+  match program.authorize root [request] entities with
   | .error _ => false
-  | .ok policies =>
-      let response := isAuthorized request entities policies
-      response.decision == .allow && response.erroringPolicies.isEmpty
+  | .ok receipt => receipt.allowed
 
 def promotionAllowed (choice : Choice) : Bool :=
   allowed choice.root
@@ -159,7 +163,11 @@ def deploymentAllowed (choice : Choice) : Bool :=
 /-- Both decisions must hold for the sample release; the Host still owns
     atomic redemption and actual deployment enforcement. -/
 def admitted (choice : Choice) : Bool :=
-  promotionAllowed choice && deploymentAllowed choice
+  match program.authorize choice.root
+      [GoogleThreatCase.request GoogleThreatCase.candidate choice.pipeline,
+       deployRequest choice] entities with
+  | .error _ => false
+  | .ok receipt => receipt.allowed
 
 def choices : List Choice := [
   { name := "ready", expectedPromotion := true, expectedDeployment := true },

@@ -79,6 +79,14 @@ theorem Ready.allowed_eq (ready : Ready context) (requests : List Request) (enti
           response.decision == .allow && response.erroringPolicies.isEmpty)) := by
   simp only [CompoundAuthorization.Receipt.allowed, ready.aligned]
 
+/-- Both independent stages must allow without evaluation errors. The shared
+checked policy data does not turn one stage's permission into the other's. -/
+theorem Ready.allowed_pair (ready : Ready context) (first second : Request) (entities : Entities) :
+    (ready.authorize [first, second] entities).allowed =
+      ((ready.authorize [first] entities).allowed &&
+        (ready.authorize [second] entities).allowed) := by
+  simp [Ready.allowed_eq]
+
 def construct (context : Context) (data : Data context) (contract : Coherent context data) :
     Except PolicyJson.PublicationError (Ready context) := do
   let compiled ← data.1
