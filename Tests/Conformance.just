@@ -143,6 +143,7 @@ check-functional-catalog: build-examples
 
 # Consumer migration is an enforced boundary; primitives retain compatibility APIs.
 check-functional-consumers:
+    if rg -U -n 'def (policy\?|owner\?|control\?|channel\?|boundary\?|intent\?|scope\?|artifact\?)[^\n]*\n[ \t]+profile\.read' CedarPooSpec --glob '*.lean'; then exit 1; fi
     if rg -n 'PolicyJson\.(authorizationCase|publish|compiled)\b|CompoundAuthorization\.authorize(All|Layers)\b' Examples Productions --glob '*.lean'; then exit 1; fi
     if rg -n 'PolicyJson\.authorizationCase\b|CompoundAuthorization\.authorize(All|Layers)\b' CedarPooSpec --glob '*.lean' --glob '!Compilation.lean' --glob '!CompilationJson.lean'; then exit 1; fi
 

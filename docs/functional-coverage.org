@@ -90,3 +90,92 @@ establish neither authentic external facts, executed settlement/encryption,
 durable atomic execution, crash recovery nor process-RSS bounds. PolicyJson
 remains a partial exporter. Scoped reuse timings do not establish native or
 end-to-end throughput.
+
+* P0-P2: industry objects, contracts and native execution
+
+The P0-P2 implementation covers every memoized domain-object family, rather
+than one industry. =Functional.ObjectProfile= owns strict shape observation,
+C4-selected contract/projection providers and their proof-indexed consumer.
+=Requirements.prepareConsumer= resolves both methods before observing an object.
+The admitted witness is indexed by the actual contract and actual object;
+every returned projection includes equality to that object's inherited read.
+No dynamic cast, function equality, cached authorization or new type checker
+is introduced.
+
+| Object family | Static configuration and derived value | Actual Contract and lifecycle owner |
+|---------------+----------------------------------------+-------------------------------------|
+| PolicyProfile (all policy-owner industries) | setting, selected render callback, policy | exact callback output for final-self setting; policy/schema admission stays in Cedar |
+| ControllerReleaseProfile | template, threshold, groups, control and policy | positive Cedar decimal, full template projection including hidden field names, exact bounded policy |
+| DisclosureProfile | template, policy/action/destination/purpose/payload, channel and policy | nonempty industry labels, full channel projection including context keys, exact minimum policy |
+| BankingToolProfile | template, ordered action list, owner | full owner projection; empty actions remain a valid paused owner |
+| LocationProfile | template, policy/scope/location/missing mode, boundary | exact full boundary projection; nonempty policy/location configuration |
+| SourceProfile | template, branch, control | nonempty branch and full source-control projection |
+| ProtectionProfile (including Productions) | storage, profile/key/version/residency, intent | nonempty protection configuration and exact complete intent; physical/grant admission remains ProtectedStorage's responsibility |
+| Handoff | template, case/digest, complete scope | complete inherited scope projection, well-formed scope, distinct actors; current grant/expiry remains Grant.admits |
+| LineageProfile | ordered sources, digest, artifact | nonempty digest/source list and exact full artifact; source authentication and disclosure admission remain separate |
+
+LineageProfile moves the reusable type/Contract out of the medical Example;
+the Example retains its strict C4 prototype/amendment construction and fixture
+identities. PolicyModules' internal compiled objects remain the canonical edit
+engine with its own construction proofs. AgenticAI.Boundary is a multimethod
+check composition, not an additional memoized profile. Plain domain records
+continue to use their typed functions and existing admission protocols. Dynamic
+PrototypeTypes metadata is therefore not imposed on these statically indexed
+objects. Empty optional data, action withdrawal, runtime freshness and physical
+storage admission are not conflated with malformed object projection.
+
+=Tests/Functional/Profiles.lean= exercises public getters for all nine families:
+valid objects, present-but-forged derived values and missing fields. It also
+checks hidden-field substitution together with a matching forged policy,
+inherited final-self recomputation and parent preservation, wrong callback/slot
+types and cross-object/Contract witness rebinding at elaboration, empty configuration
+refusals, and the valid all-actions-withdrawn case. Six universal coherence,
+missing-capability, actual-read, Contract and refusal/refinement laws retain the
+standard-axiom audit. The shared three-node C4 graph has a kernel-checked graph
+certificate, including its accepted checked-resolver result; no native axiom
+is used in these generic laws. The source gate rejects raw public profile reads.
+
+=just bench-functional-catalog= extends the existing complete catalog gate. It
+builds the native release Rust bridge and runs one warmup plus three full-catalog
+samples under the unchanged 120-second execution ceiling. Every measured output
+must equal the complete ordinary replay, and all 1280 rows must execute both
+compiled-policy and rendered-policy authorization (2560 observed calls/sample).
+The runtime counts actual distinct-revision preparation within each manifest,
+strict schema/request/entity preparation, and actual authorization durations.
+Transport serialization is measured separately. Replay totals also include
+JSON decoding, hashes, diagnostics, schema-evolution and cross-artifact checks;
+these are not misreported as authorization time. Schema-evolution's separate
+replay and data-only fixtures are outside the 1280-row counters.
+
+Observed and ordinary runtime entrypoints share the same implementation. With
+observations disabled, no clocks are read. Rust tests compare complete receipts,
+strict refusal errors and actual reuse counts for repeated/changed revisions.
+Existing stale-source/schema, operation/effect, expiry and consumption tests and
+all frozen manifests remain required. The benchmark does not replace functional
+replay, change workload sizes, set new build-job limits or gate on elapsed time.
+It measures native Cedar conformance and transport; it does not measure native
+Lean object preparation, cryptographic/provider execution or establish RSS bounds.
+
+The separate =just bench-functional-native= target compiles the existing
+=Benchmarks.FunctionalReuse= source as a Lean executable. It retains the same
+16-read warmup, three 128-read samples, changing input facts, exact checksums,
+127 same-root hits and zero alternating-root hits. Thus native Functional
+preparation/reuse and native Rust Cedar replay have separate receipts. A local
+macOS run observed roughly 22-49 ms cold versus 1.0-6.4 ms with one slot for the
+same-root workload. Alternating roots remained a zero-hit control and were
+slower with the slot in this run (74-156 ms versus 18-62 ms cold). Local timing
+variance and the churn tradeoff are reported, not converted into speed claims
+or relaxed acceptance thresholds. Native executables retain the fixed workload
+and 120-second execution ceiling; elaboration's memory/tick gates remain
+separate and unchanged. Neither executable establishes a process-RSS bound.
+
+The native gate also compiles =objectProfilesNative= from
+=Tests.Functional.ProfilesMain=. It executes the same nine-family check inventory
+as the Lean tests: valid input, a present forged projection, missing fields and
+actual raw-read presence. All nine checks must pass before natural process exit.
+No second set of industry fixtures or Contract implementation is introduced.
+The final combined run measured 15.6-15.9 ms cold versus 1.03-1.06 ms with a slot
+for same-root reads; alternating reads were roughly 17.3-17.6 ms on both paths.
+The earlier run's slower slot-churn observations remain recorded above where
+applicable; the workload/source and acceptance checks were unchanged. These
+runs document timing variation and root locality, not a guaranteed churn gain.

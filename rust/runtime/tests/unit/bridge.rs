@@ -707,3 +707,50 @@ fn mixed_template_source_checks_static_bodies_and_id_collisions() {
             .contains("template source parse")
     );
 }
+
+#[test]
+fn measured_replay_retains_receipts_failures_and_actual_reuse_counts() {
+    let first = receipt();
+    let mut second = receipt();
+    second.name = "second".into();
+    let mut manifest = Manifest {
+        cases: vec![first, second],
+    };
+    let reference = replay_manifest(&manifest).expect("reference");
+    let mut metrics = super::ReplayMetrics::default();
+    let observed = super::replay_manifest_measured(&manifest, &mut metrics).expect("observed");
+    assert_eq!(reference, observed);
+    assert_eq!(metrics.prepared_revisions, 1);
+    assert_eq!(metrics.authorization_calls, 4);
+    manifest.cases[1].revision = "changed".into();
+    let mut metrics = super::ReplayMetrics::default();
+    super::replay_manifest_measured(&manifest, &mut metrics).expect("changed root");
+    assert_eq!(metrics.prepared_revisions, 2);
+    assert_eq!(metrics.authorization_calls, 4);
+    manifest.cases[1].expected = "deny".into();
+    assert_eq!(
+        replay_manifest(&manifest).expect_err("original failure"),
+        super::replay_manifest_measured(&manifest, &mut metrics)
+            .expect_err("same observed failure")
+    );
+}
+
+#[test]
+fn measured_schema_replay_preserves_strict_errors_and_receipt_bindings() {
+    let mut manifest = validated(receipt());
+    let mut metrics = super::ReplayMetrics::default();
+    let measured =
+        crate::replay_validated_manifest_measured(&manifest, &mut metrics).expect("schema replay");
+    assert_eq!(
+        measured,
+        replay_validated_manifest(&manifest).expect("original")
+    );
+    assert_eq!(metrics.prepared_revisions, 1);
+    assert_eq!(metrics.authorization_calls, 2);
+    manifest.cases[0].request.context = json!({"unlisted":true});
+    assert_eq!(
+        crate::replay_validated_manifest_measured(&manifest, &mut metrics)
+            .expect_err("strict measured context"),
+        replay_validated_manifest(&manifest).expect_err("strict original context")
+    );
+}

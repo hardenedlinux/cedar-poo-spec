@@ -79,3 +79,17 @@ fn emitted_catalog_rejects_cross_artifact_tampering() {
     changed["pseudonymization-deployable"][0]["root"] = json!("Base");
     reject(changed, "invalid or duplicate deployment root");
 }
+
+#[test]
+fn measured_catalog_preserves_complete_output_and_refuses_the_same_invalid_input() {
+    let input = fixture().to_string();
+    let mut metrics = cedar_poo_runtime::ReplayMetrics::default();
+    let measured = super::replay_measured(&input, &mut metrics).expect("measured");
+    assert_eq!(measured, replay(&input).expect("ordinary"));
+    assert_eq!(metrics.authorization_calls, 2);
+    assert_eq!(metrics.prepared_revisions, 1);
+    assert_eq!(
+        super::replay_measured("{}", &mut metrics).expect_err("empty measured catalog"),
+        replay("{}").expect_err("empty ordinary catalog")
+    );
+}

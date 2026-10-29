@@ -1,5 +1,6 @@
 import CedarPooSpec.Data.ProtectedStorage
 import LeanPoo.Object.Definition
+import CedarPooSpec.Functional.ObjectProfile
 
 /-!
 LeanPoo-owned composition for protected storage profiles. The public wire
@@ -54,7 +55,26 @@ def withKeyVersion (parent : Object) (name keyVersion : String) :
   parent.extendWith name do
     LeanPoo.Object.Declaration.Builder.value .keyVersion keyVersion
 
+open LeanPoo.Functional.ObjectContract
+
+def contract : Contract Object Key Unit String :=
+  refine (Functional.ObjectProfile.shape [.storage, .profile, .keyRef, .keyVersion, .residency, .intent])
+    fun profile path =>
+      match profile.read .storage, profile.read .profile, profile.read .keyRef,
+          profile.read .keyVersion, profile.read .residency, profile.read .intent with
+      | some storage, some selected, some keyRef, some keyVersion, some residency, some intent =>
+        if !selected.isEmpty && !keyRef.isEmpty && !keyVersion.isEmpty && !residency.isEmpty &&
+            decide (intent = { storage, profile := selected, keyRef, keyVersion, residency }) then []
+        else [.rejected path "protection intent projection mismatch"]
+      | _, _, _, _, _, _ => [.rejected path "missing protection intent projection"]
+
+def issues (profile : Object) := diagnose contract profile []
+
 def intent? (profile : Object) : Option ProtectionIntent :=
-  profile.read .intent
+  Functional.ObjectProfile.read contract profile .intent
+
+theorem intent_requires_contract (profile : Object) (intent : ProtectionIntent)
+    (accepted : intent? profile = some intent) : diagnose contract profile [] = [] :=
+  Functional.ObjectProfile.read_requires_contract contract profile _ _ accepted
 
 end CedarPooSpec.Data.ProtectionProfile

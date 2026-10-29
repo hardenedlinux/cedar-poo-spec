@@ -1,6 +1,6 @@
 import CedarPooSpec.Vertical.FinancialServices.ControllerRelease
 import LeanPoo.Object.Definition
-import LeanPoo.Functional.ObjectContractRefinement
+import CedarPooSpec.Functional.ObjectProfile
 
 /-! Controller-owned release settings and their inherited Cedar policy.
 Changing a threshold does not replace the controller or senior approver slots. -/
@@ -10,10 +10,12 @@ open Cedar.Spec LeanPoo
 open LeanPoo.Object.Declaration.Builder
 
 inductive Key where
+  | template
   | threshold | controllerGroup | seniorGroup | control | policy
   deriving DecidableEq, BEq, ReflBEq, LawfulBEq, Hashable
 
 abbrev Value : Key → Type
+  | .template => ControllerRelease
   | .threshold => String
   | .controllerGroup | .seniorGroup => EntityUID
   | .control => ControllerRelease
@@ -23,6 +25,7 @@ abbrev Object := LeanPoo.Object.Memoized Key Value
 
 def define (name : String) (initial : ControllerRelease) : Except C4.Error Object :=
   LeanPoo.Object.define name do
+    LeanPoo.Object.Declaration.Builder.value .template initial
     value .threshold initial.threshold
     value .controllerGroup initial.controllerGroup
     value .seniorGroup initial.seniorGroup
@@ -38,19 +41,8 @@ def withThreshold (parent : Object) (name threshold : String) : Except C4.Error 
 
 open LeanPoo.Functional.ObjectContract
 
-private def shape : Contract Object Key Unit String where
-  view := {
-    isObject := fun _ => true
-    prototype := fun _ => true
-    names := fun profile => LeanPoo.allSlots profile.plan
-    lookup := fun profile key => (profile.read key).map fun _ => () }
-  fields := [.threshold, .controllerGroup, .seniorGroup, .control, .policy].map
-    fun key => { name := key, check := fun _ _ => [] }
-  strict := true
-  constraints := []
-  obligations := fun _ _ => []
-  validInventory := Or.inl rfl
-
+private def shape : Contract Object Key Unit String :=
+  Functional.ObjectProfile.shape [.template, .threshold, .controllerGroup, .seniorGroup, .control, .policy]
 /-- Use Cedar's decimal parser for threshold admission, and require a positive
 amount. Static String typing alone cannot establish this industry contract. -/
 def contract : Contract Object Key Unit String :=
@@ -61,7 +53,11 @@ def contract : Contract Object Key Unit String :=
           | none => [.rejected (path ++ [.threshold]) "invalid decimal threshold"]
           | some amount =>
               if amount.toInt > 0 then [] else [.rejected (path ++ [.threshold]) "nonpositive threshold"]
-        let aligned := profile.read .threshold = some control.threshold ∧
+        let templateAligned := match profile.read .template with
+          | none => false
+          | some template => decide (control = { template with
+              threshold := control.threshold, controllerGroup := control.controllerGroup, seniorGroup := control.seniorGroup })
+        let aligned := templateAligned = true ∧ profile.read .threshold = some control.threshold ∧
           profile.read .controllerGroup = some control.controllerGroup ∧
           profile.read .seniorGroup = some control.seniorGroup ∧ policy = control.bounded
         threshold ++ (if aligned then [] else [.rejected path "controller projection mismatch"])
@@ -70,16 +66,13 @@ def contract : Contract Object Key Unit String :=
 def issues (profile : Object) : List (Issue Key String) := diagnose contract profile []
 
 def control? (profile : Object) : Option ControllerRelease :=
-  if (issues profile).isEmpty then profile.read .control else none
+  Functional.ObjectProfile.read contract profile .control
 
 def policy? (profile : Object) : Option Policy :=
-  if (issues profile).isEmpty then profile.read .policy else none
+  Functional.ObjectProfile.read contract profile .policy
 
 theorem policy_requires_contract (profile : Object) (policy : Policy)
-    (accepted : policy? profile = some policy) : diagnose contract profile [] = [] := by
-  unfold policy? at accepted
-  split at accepted
-  · simpa [issues, List.isEmpty_iff] using ‹(issues profile).isEmpty = true›
-  · contradiction
+    (accepted : policy? profile = some policy) : diagnose contract profile [] = [] :=
+  Functional.ObjectProfile.read_requires_contract contract profile _ _ accepted
 
 end CedarPooSpec.Vertical.FinancialServices.ControllerReleaseProfile

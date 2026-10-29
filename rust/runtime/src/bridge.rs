@@ -12,6 +12,25 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::ops::Deref;
 use std::path::Path;
 use std::str::FromStr;
+use std::time::Instant;
+
+/// Optional observations of the canonical replay, excluding JSON transport and diagnostics.
+/// Durations are observations, never authorization inputs or acceptance thresholds.
+#[derive(Default, Debug, Serialize)]
+pub struct ReplayMetrics {
+    pub runtime_preparation_ns: u128,
+    pub authorization_ns: u128,
+    pub prepared_revisions: usize,
+    pub authorization_calls: usize,
+}
+
+/// Measure the same replay implementation used by ordinary conformance.
+pub fn replay_manifest_measured(
+    manifest: &Manifest,
+    metrics: &mut ReplayMetrics,
+) -> Result<Vec<ReplayReceipt>, String> {
+    check_manifest_observed(&manifest.cases, true, None, Some(metrics))
+}
 
 /// Request fields emitted from the Lean Cedar model.
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -75,6 +94,15 @@ pub(crate) fn check_manifest_inner(
     collect_receipts: bool,
     schema: Option<&Schema>,
 ) -> Result<Vec<ReplayReceipt>, String> {
+    check_manifest_observed(cases, collect_receipts, schema, None)
+}
+
+pub(crate) fn check_manifest_observed(
+    cases: &[Case],
+    collect_receipts: bool,
+    schema: Option<&Schema>,
+    mut metrics: Option<&mut ReplayMetrics>,
+) -> Result<Vec<ReplayReceipt>, String> {
     if cases.is_empty() {
         return Err("manifest has no cases".into());
     }
@@ -93,8 +121,13 @@ pub(crate) fn check_manifest_inner(
             return Err(format!("duplicate case name: {}", case.name));
         }
         if !revisions.contains_key(&case.revision) {
+            let started = metrics.as_ref().map(|_| Instant::now());
             let checked = CheckedRevision::new(case, collect_receipts)
                 .map_err(|error| format!("{}: {error}", case.name))?;
+            if let (Some(stats), Some(started)) = (metrics.as_deref_mut(), started) {
+                stats.runtime_preparation_ns += started.elapsed().as_nanos();
+                stats.prepared_revisions += 1;
+            }
             revisions.insert(case.revision.clone(), checked);
         }
         let revision = &revisions[&case.revision];
@@ -108,6 +141,7 @@ pub(crate) fn check_manifest_inner(
             &revision.compiled_bodies,
             &revision.rendered_bodies,
             schema,
+            metrics.as_deref_mut(),
         )
         .map_err(|error| format!("{}: {error}", case.name))?;
         if collect_receipts {
@@ -565,7 +599,9 @@ fn check_case(
     compiled_bodies: &BTreeMap<String, String>,
     rendered_bodies: &BTreeMap<String, String>,
     schema: Option<&Schema>,
+    mut metrics: Option<&mut ReplayMetrics>,
 ) -> Result<ObservedDecision, String> {
+    let started = metrics.as_ref().map(|_| Instant::now());
     let expected_ids = case.policy_ids.iter().cloned().collect::<BTreeSet<_>>();
     let loaded_ids = policies
         .policies()
@@ -591,7 +627,15 @@ fn check_case(
         schema,
     )
     .map_err(|error| format!("Cedar schema request: {error}"))?;
+    if let (Some(stats), Some(started)) = (metrics.as_deref_mut(), started) {
+        stats.runtime_preparation_ns += started.elapsed().as_nanos();
+    }
+    let started = metrics.as_ref().map(|_| Instant::now());
     let response = Authorizer::new().is_authorized(&request, policies, &entities);
+    if let (Some(stats), Some(started)) = (metrics.as_deref_mut(), started) {
+        stats.authorization_ns += started.elapsed().as_nanos();
+        stats.authorization_calls += 1;
+    }
     let decision = match response.decision() {
         Decision::Allow => "allow",
         Decision::Deny => "deny",
@@ -634,7 +678,12 @@ fn check_case(
             error_policies
         ));
     }
+    let started = metrics.as_ref().map(|_| Instant::now());
     let reparsed = Authorizer::new().is_authorized(&request, rendered, &entities);
+    if let (Some(stats), Some(started)) = (metrics, started) {
+        stats.authorization_ns += started.elapsed().as_nanos();
+        stats.authorization_calls += 1;
+    }
     let rendered_reasons = diagnostic_body_counts(
         reparsed.diagnostics().reason().map(ToString::to_string),
         rendered_bodies,

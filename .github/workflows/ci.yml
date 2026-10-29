@@ -41,6 +41,7 @@ jobs:
       - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
       - run: just check-lean
       - run: just bench-functional-reuse
+      - run: just bench-functional-native
 
   rust:
     runs-on: ubuntu-latest
@@ -102,7 +103,7 @@ jobs:
       - run: just check-replay-receipts
       - run: just check-schema-bound-receipts
       - run: just check-schema-bound-scenarios
-      - run: just check-functional-catalog
+      - run: just bench-functional-catalog
       - run: just example aws financial-services lakehouse
       - run: just example aws financial-services multi-account-banking
       - run: just example aws financial-services claim-settlement

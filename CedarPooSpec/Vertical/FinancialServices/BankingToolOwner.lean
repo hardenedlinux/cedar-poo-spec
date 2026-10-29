@@ -15,6 +15,7 @@ structure BankingToolOwner where
   principalType : EntityType
   gateway : EntityUID
   actions : List EntityUID
+  deriving DecidableEq
 
 def BankingToolOwner.policy (owner : BankingToolOwner) : Policy :=
   { id := owner.policyId, effect := .permit,

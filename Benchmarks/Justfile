@@ -20,3 +20,16 @@ bench-rust-export: prepare-cedar-manifest prepare-mission-successor-manifest
 bench-functional-reuse: build
     lake build Examples.Enterprise.Agent.Fanout.CrossAgentEgress
     timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 --run Benchmarks/FunctionalReuse.lean CrossAgentGoverned
+
+# Native Rust, fixed full catalog. Time observations never change admission.
+bench-functional-catalog: check-functional-catalog
+    cargo build --release --locked -p cedar-poo-bridge --manifest-path Cargo.toml
+    timeout --signal=TERM --kill-after=3s 120s rust/target/release/cedar-poo-bridge benchmark-catalog < .lake/build/functional-catalog.json > .lake/build/functional-native-benchmark.json
+    jq -e '.kind == "native-catalog-benchmark" and .build_profile == "release" and .warmup == 1 and (.samples | length) == 3 and all(.samples[]; .rows == 1280 and .runtime.authorization_calls == 2560 and .runtime.prepared_revisions > 0)' .lake/build/functional-native-benchmark.json > /dev/null
+    jq -c '{build_profile,warmup,samples:[.samples[] | {sample,rows,replay_ns,serialization_ns,runtime}]}' .lake/build/functional-native-benchmark.json
+
+# Same source/workload as the Lean-run probe, compiled to a native executable.
+bench-functional-native: build
+    lake build functionalReuseNative objectProfilesNative
+    timeout --signal=TERM --kill-after=3s 120s .lake/build/bin/objectProfilesNative
+    timeout --signal=TERM --kill-after=3s 120s .lake/build/bin/functionalReuseNative CrossAgentGoverned

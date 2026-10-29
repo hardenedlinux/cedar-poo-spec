@@ -1,6 +1,6 @@
 import Cedar.Spec.Policy
 import LeanPoo.Object.Definition
-import LeanPoo.Functional.ObjectContractRefinement
+import CedarPooSpec.Functional.ObjectProfile
 
 /-! A typed LeanPOO profile for one Cedar policy owner. The setting is the
 direct slot; the policy is an inherited computation over final self. Revising
@@ -42,18 +42,8 @@ def revise {Setting : Type} (parent : Object Setting)
 
 open LeanPoo.Functional.ObjectContract
 
-private def shape {Setting : Type} : Contract (Object Setting) Key Unit String where
-  view := {
-    isObject := fun _ => true
-    prototype := fun _ => true
-    names := fun profile => LeanPoo.allSlots profile.plan
-    lookup := fun profile key => (profile.read key).map fun _ => () }
-  fields := [.setting, .render, .policy].map fun key => { name := key, check := fun _ _ => [] }
-  strict := true
-  constraints := []
-  obligations := fun _ _ => []
-  validInventory := Or.inl rfl
-
+private def shape {Setting : Type} : Contract (Object Setting) Key Unit String :=
+  Functional.ObjectProfile.shape [.setting, .render, .policy]
 /-- Check actual inherited settings, callback and produced Cedar policy. Function
 values are never compared; the selected callback's actual output is checked. -/
 def contract {Setting : Type} : Contract (Object Setting) Key Unit String :=
@@ -66,13 +56,10 @@ def contract {Setting : Type} : Contract (Object Setting) Key Unit String :=
 def issues {Setting : Type} (profile : Object Setting) := diagnose contract profile []
 
 def policy? {Setting : Type} (profile : Object Setting) : Option Policy :=
-  if (issues profile).isEmpty then profile.read .policy else none
+  Functional.ObjectProfile.read contract profile .policy
 
 theorem policy_requires_contract {Setting : Type} (profile : Object Setting) (policy : Policy)
-    (accepted : policy? profile = some policy) : diagnose contract profile [] = [] := by
-  unfold policy? at accepted
-  split at accepted
-  · simpa [issues, List.isEmpty_iff] using ‹(issues profile).isEmpty = true›
-  · contradiction
+    (accepted : policy? profile = some policy) : diagnose contract profile [] = [] :=
+  Functional.ObjectProfile.read_requires_contract contract profile _ _ accepted
 
 end CedarPooSpec.PolicyProfile

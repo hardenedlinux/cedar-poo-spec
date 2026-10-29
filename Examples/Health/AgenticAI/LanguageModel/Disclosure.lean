@@ -1,3 +1,4 @@
+import CedarPooSpec.Data.LineageProfile
 import CedarPooSpec.Functional.Capabilities
 import Examples.Health.Pseudonymization
 import CedarPooSpec.Data.DerivedArtifact
@@ -55,14 +56,8 @@ def publicationEntities : Entities := Map.make (entities.toList ++ [
 
 def source (resource : EntityUID) : SourceLabel :=
   { resource, owner := steward, tenant := "hospital-a", restricted := true }
-inductive LineageKey where
-  | sources | digest | artifact
-  deriving DecidableEq, BEq, ReflBEq, LawfulBEq, Hashable
-
-abbrev LineageValue : LineageKey → Type
-  | .sources => List SourceLabel
-  | .digest => String
-  | .artifact => DerivedArtifact
+abbrev LineageKey := CedarPooSpec.Data.LineageProfile.Key
+abbrev LineageValue := CedarPooSpec.Data.LineageProfile.Value
 
 /-- The inherited computation observes the final source list and digest. -/
 def hospitalPrototype : Except (LeanPoo.Object.DefinitionError LineageKey)
@@ -93,7 +88,8 @@ def joinedPrototype : Except String
       (fun _ => "invalid joined prototype")
 
 def joinedResult : DerivedArtifact :=
-  ((joinedPrototype.toOption.get (by native_decide)).read .artifact).get (by native_decide)
+  (CedarPooSpec.Data.LineageProfile.artifact?
+    (joinedPrototype.toOption.get (by native_decide))).get (by native_decide)
 
 theorem joinedResultRetainsBothSources :
     joinedResult.sources = [source hospital, source research] := by

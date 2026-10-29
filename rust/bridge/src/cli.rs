@@ -42,6 +42,10 @@ fn dispatch(input: &str, args: &[String]) -> Result<(), String> {
         println!("Cedar template source matches Lean materialization");
         return Ok(());
     }
+    if args == ["benchmark-catalog"] {
+        crate::catalog::benchmark(input)?;
+        return Ok(());
+    }
     if args == ["replay-catalog"] {
         println!(
             "{}",

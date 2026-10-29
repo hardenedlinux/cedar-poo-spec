@@ -294,3 +294,26 @@ oracles and Production import isolation. The catalog gate freezes 48 original
 manifest byte strings and replays 51 entries, including 14 settlement handoff
 simulations. This completes consumer migration; it does not claim physical
 provider execution, external authentication or native throughput.
+
+* P0-P2 whole-domain acceptance
+
+The P0-P2 implementation inventories and admits all nine memoized domain
+object families, including Production protection profiles and Example lineage
+composition, through Functional.ObjectProfile. The [[file:../functional-coverage.org][coverage matrix]] specifies
+actual types, complete projection Contracts, consumers and lifecycle ownership.
+The shared C4/Requirements/CertifiedConsumer path retains actual-object proof
+indices and a kernel-certified provider order. Hidden-field/policy substitution,
+missing fields, legitimate withdrawal and inherited settings are covered without
+introducing a dynamic type checker or a universal business lifecycle.
+
+The native release Rust catalog benchmark reuses canonical conformance, compares
+complete outputs and observes preparation, authorization and serialization under
+fixed workloads and execution limits. It is distinct from the existing Lean-run
+ContextSlot measurement. All old wire bytes, proof audits, Rust refusals and
+current-head CI remain gates; PR 8 is not merged by this implementation.
+
+The same acceptance unit also compiles the existing Functional reuse source as
+=functionalReuseNative= and the nine-family shared test inventory as
+=objectProfilesNative=. Both native Lean processes run in CI alongside the
+release Rust catalog replay. Their results remain separate from Lean-run
+measurements; the unchanged cold/hot/churn checks expose timing tradeoffs.

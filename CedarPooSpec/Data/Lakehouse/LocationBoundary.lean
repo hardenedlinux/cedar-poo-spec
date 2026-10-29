@@ -19,6 +19,7 @@ structure LocationBoundary where
   inputKey : String := "input"
   locationKey : String := "geography"
   denyMissing : Bool := false
+  deriving DecidableEq
 
 def LocationBoundary.input (boundary : LocationBoundary) : Expr :=
   .getAttr (.var .context) boundary.inputKey

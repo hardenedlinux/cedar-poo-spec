@@ -1,13 +1,14 @@
 //! Strict Cedar schema validation and schema-bound replay records.
 
 use crate::bridge::{
-    Case, ReplayReceipt, check_manifest_inner, json_sha256, load_policy_set,
+    Case, ReplayMetrics, ReplayReceipt, check_manifest_observed, json_sha256, load_policy_set,
     render_identified_policy_sources,
 };
 use cedar_policy::{Entities, Schema, ValidationMode, Validator};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::{BTreeMap, BTreeSet};
+use std::time::Instant;
 
 /// A schema-bearing manifest intended for admission as a deployment candidate.
 #[derive(Debug, Deserialize)]
@@ -81,6 +82,22 @@ pub struct SchemaOnlyRevisionReceipt {
 pub fn replay_validated_manifest(
     manifest: &ValidatedManifest,
 ) -> Result<Vec<SchemaBoundReceipt>, String> {
+    replay_validated_observed(manifest, None)
+}
+
+/// Observe strict schema preparation and the canonical schema-bound replay.
+pub fn replay_validated_manifest_measured(
+    manifest: &ValidatedManifest,
+    metrics: &mut ReplayMetrics,
+) -> Result<Vec<SchemaBoundReceipt>, String> {
+    replay_validated_observed(manifest, Some(metrics))
+}
+
+fn replay_validated_observed(
+    manifest: &ValidatedManifest,
+    mut metrics: Option<&mut ReplayMetrics>,
+) -> Result<Vec<SchemaBoundReceipt>, String> {
+    let started = metrics.as_ref().map(|_| Instant::now());
     let schema = Schema::from_json_value(manifest.schema.clone())
         .map_err(|error| format!("Cedar schema: {error}"))?;
     let validator = Validator::new(schema);
@@ -98,15 +115,20 @@ pub fn replay_validated_manifest(
         }
     }
     let schema_sha256 = json_sha256(&manifest.schema)?;
-    check_manifest_inner(&manifest.cases, true, Some(validator.schema())).map(|receipts| {
-        receipts
-            .into_iter()
-            .map(|replay| SchemaBoundReceipt {
-                schema_sha256: schema_sha256.clone(),
-                replay,
-            })
-            .collect()
-    })
+    if let (Some(stats), Some(started)) = (metrics.as_deref_mut(), started) {
+        stats.runtime_preparation_ns += started.elapsed().as_nanos();
+    }
+    check_manifest_observed(&manifest.cases, true, Some(validator.schema()), metrics).map(
+        |receipts| {
+            receipts
+                .into_iter()
+                .map(|replay| SchemaBoundReceipt {
+                    schema_sha256: schema_sha256.clone(),
+                    replay,
+                })
+                .collect()
+        },
+    )
 }
 
 /// Recompute schema-bound receipts against the current official Cedar runtime.

@@ -1,14 +1,23 @@
 //! Strict replay of the complete Lean manifest catalog through the existing Cedar runtime.
 use cedar_poo_core::CompiledPolicyJson;
 use cedar_poo_runtime::{
-    Manifest, SchemaEvolutionBundle, ValidatedManifest, render_identified_policy_sources,
-    replay_manifest, replay_schema_only_revision, replay_validated_manifest,
+    Manifest, ReplayMetrics, SchemaEvolutionBundle, ValidatedManifest,
+    render_identified_policy_sources, replay_manifest, replay_manifest_measured,
+    replay_schema_only_revision, replay_validated_manifest, replay_validated_manifest_measured,
 };
 use serde_json::{Value, json};
 use std::collections::{BTreeMap, BTreeSet};
 use std::ops::Deref;
 
 pub(crate) fn replay(input: &str) -> Result<Value, String> {
+    replay_observed(input, None)
+}
+
+pub(crate) fn replay_measured(input: &str, metrics: &mut ReplayMetrics) -> Result<Value, String> {
+    replay_observed(input, Some(metrics))
+}
+
+fn replay_observed(input: &str, mut metrics: Option<&mut ReplayMetrics>) -> Result<Value, String> {
     let catalog: BTreeMap<String, Value> =
         serde_json::from_str(input).map_err(|e| e.to_string())?;
     if catalog.is_empty() {
@@ -23,14 +32,25 @@ pub(crate) fn replay(input: &str) -> Result<Value, String> {
             if value.get("schema").is_some() {
                 let manifest: ValidatedManifest =
                     serde_json::from_value(value).map_err(|e| format!("{name}: {e}"))?;
-                let receipts = replay_validated_manifest(&manifest)?;
+                let receipts = if let Some(stats) = metrics.as_deref_mut() {
+                    replay_validated_manifest_measured(&manifest, stats)?
+                } else {
+                    replay_validated_manifest(&manifest)?
+                };
                 let result = json!({"kind":"schema-bound","receipts":receipts});
                 verified.insert(name.clone(), (manifest, receipts));
                 result
             } else {
                 let manifest: Manifest =
                     serde_json::from_value(value).map_err(|e| format!("{name}: {e}"))?;
-                json!({"kind":"raw-evaluation","receipts":replay_manifest(&manifest)?})
+                {
+                    let receipts = if let Some(stats) = metrics.as_deref_mut() {
+                        replay_manifest_measured(&manifest, stats)?
+                    } else {
+                        replay_manifest(&manifest)?
+                    };
+                    json!({"kind":"raw-evaluation","receipts":receipts})
+                }
             }
         } else if name == "attested-schema-evolution" {
             let bundle: SchemaEvolutionBundle =
@@ -133,6 +153,59 @@ pub(crate) fn replay(input: &str) -> Result<Value, String> {
         return Err("settlement schemas require their handoff scenario binding".into());
     }
     serde_json::to_value(output).map_err(|e| e.to_string())
+}
+
+/// Fixed complete-catalog samples. Equality/counters gate acceptance; time does not.
+pub(crate) fn benchmark(input: &str) -> Result<(), String> {
+    let reference = replay(input)?;
+    let source: BTreeMap<String, Value> = serde_json::from_str(input).map_err(|e| e.to_string())?;
+    let expected_revisions: usize = source
+        .values()
+        .filter_map(|entry| entry.get("cases").and_then(Value::as_array))
+        .map(|cases| {
+            cases
+                .iter()
+                .filter_map(|case| case.get("revision").and_then(Value::as_str))
+                .collect::<BTreeSet<_>>()
+                .len()
+        })
+        .sum();
+
+    let mut results = Vec::new();
+    for sample in 1..=3 {
+        let mut metrics = ReplayMetrics::default();
+        let started = std::time::Instant::now();
+        let output = replay_measured(input, &mut metrics)?;
+        let replay_ns = started.elapsed().as_nanos();
+        if output != reference {
+            return Err("measured catalog changed complete receipts".into());
+        }
+        let started = std::time::Instant::now();
+        let encoded = serde_json::to_string(&output).map_err(|e| e.to_string())?;
+        let serialize_ns = started.elapsed().as_nanos();
+        let rows: usize = output
+            .as_object()
+            .ok_or("catalog receipts must be an object")?
+            .values()
+            .filter_map(|value| value.get("receipts").and_then(Value::as_array))
+            .map(Vec::len)
+            .sum();
+        if rows == 0
+            || metrics.authorization_calls != rows * 2
+            || metrics.prepared_revisions != expected_revisions
+        {
+            return Err(
+                "measured replay did not execute every compiled/rendered authorization".into(),
+            );
+        }
+        results.push(json!({"sample":sample, "rows":rows, "replay_ns":replay_ns,
+            "serialization_ns":serialize_ns, "receipt_bytes":encoded.len(), "runtime":metrics}));
+    }
+    println!(
+        "{}",
+        json!({"kind":"native-catalog-benchmark", "build_profile":if cfg!(debug_assertions) { "debug" } else { "release" }, "warmup":1, "samples":results})
+    );
+    Ok(())
 }
 
 #[cfg(test)]

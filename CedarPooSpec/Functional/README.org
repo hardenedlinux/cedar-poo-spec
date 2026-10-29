@@ -275,3 +275,34 @@ from returning. =just check-functional-catalog= freezes all 48 original manifest
 bytes and replays all 51 catalog entries through the Rust bridge. Its three new
 settlement entries include 14 typed handoff simulations. Construction/provenance
 proofs and independent Cedar evaluation oracles retain their original owners.
+
+* Industry object admission and projection
+
+[[file:ObjectProfile.lean][ObjectProfile]] reuses upstream ObjectContract, C4 assembly, Requirements and
+CertifiedConsumer for all nine memoized domain families. Contract admission and
+field projection are separate selected capabilities. A Checked witness names the
+actual object and contract; projections carry equality to the actual inherited
+read. Missing methods fail before object observation. Domain Contracts retain
+their own semantic rules and complete template bindings, including hidden field
+names. Refinement cannot recover a rejected parent value.
+
+[[file:../../Tests/Functional/Profiles.lean][Profile tests]] cover public consumers across all families and audit six generic
+laws. The C4 graph certificate is checked in the kernel; the previous generic
+axiom whitelist is unchanged. [[file:../../docs/functional-coverage.org][The coverage matrix]] documents the type, Contract,
+actual consumer and lifecycle owner for each family. Low-level construction
+proofs and plain typed records retain their existing owners.
+
+=just bench-functional-catalog= builds the release Rust bridge, checks all frozen
+artifacts and reports three fixed full-catalog samples. It separately observes
+runtime preparation, actual authorization and transport serialization, retaining
+complete receipt equality and actual-call/revision counters. It does not infer
+native Lean performance from Rust timings.
+
+=just bench-functional-native= additionally builds the existing FunctionalReuse
+source as a native Lean executable. It uses the same fixed requests/checksums
+and hot/churn controls as the Lean-run probe; its native preparation timings
+are separate from the Rust catalog's native Cedar timings. One-slot churn may
+be slower and is retained as a negative control, never hidden by a new workload.
+
+The native gate also runs =objectProfilesNative= using the same nine-family
+Contract check inventory as [[file:../../Tests/Functional/Profiles.lean][the Lean tests]]. It must pass every public-getter check and exit naturally.

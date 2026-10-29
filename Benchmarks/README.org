@@ -11,3 +11,32 @@ validation for a generated policy set; its static proof claims are checked by
 #+begin_src sh
 just bench-policy-reuse
 #+end_src
+
+* Native complete-catalog replay
+
+=just bench-functional-catalog= first runs =check-functional-catalog= and its
+artifact/negative-control gates. It then builds the release Rust bridge and
+writes =.lake/build/functional-native-benchmark.json=: one complete warmup and
+three fixed samples, each with all 1280 Cedar rows and 2560 compiled/rendered
+authorization calls. Every measured output equals the complete ordinary replay.
+Strict schema/revision/request/entity preparation, actual authorization and JSON
+transport serialization have separate observations. Overall replay also includes
+hashes, diagnostics and cross-artifact checks. Prepared-revision counts are per
+manifest; they do not imply cross-source or cross-schema cache reuse. No duration
+threshold, increased execution ceiling or build-job override is used.
+
+* Native Functional preparation and reuse
+
+=just bench-functional-native= builds the =functionalReuseNative= Lake executable
+from the same =Benchmarks.FunctionalReuse= source as the Lean-run probe. No
+parallel implementation or substitute fixture is used. Warmup/sample/read counts,
+changing facts, checksums, same-root hits and alternating-root misses remain
+identical. Execution has the same 120-second ceiling; elaboration's memory/tick
+settings remain separate. CI runs both probes. A macOS observation measured
+22-49 ms cold versus 1.0-6.4 ms with one slot for 128 same-root reads; alternating
+roots had zero hits and were slower with one slot in that run. This qualifies
+native execution and documents the churn cost, rather than asserting a general
+speedup, process-RSS bound or hardware-independent latency guarantee.
+
+The native gate also runs =objectProfilesNative= using the same nine-family
+Contract check inventory as [[file:../Tests/Functional/Profiles.lean][the Lean tests]]. It must pass every public-getter check and exit naturally.

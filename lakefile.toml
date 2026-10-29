@@ -29,3 +29,11 @@ globs = ["Productions.+"]
 name = "Tests"
 roots = ["Tests"]
 globs = ["Tests.+"]
+
+[[lean_exe]]
+name = "functionalReuseNative"
+root = "Benchmarks.FunctionalReuse"
+
+[[lean_exe]]
+name = "objectProfilesNative"
+root = "Tests.Functional.ProfilesMain"

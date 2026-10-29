@@ -202,3 +202,15 @@ unsupported credential modes. It binds all claims and banking requests to their
 actual schema-bound receipts, roots, actors and ordered phase requirements.
 Fourteen scenarios exercise independent refusal boundaries; only =ready= admits.
 These are replay simulations and do not issue credentials or execute settlement.
+
+* Optional observations of actual replay
+
+Runtime =replay_manifest_measured= and =replay_validated_manifest_measured= accept
+ReplayMetrics and use the same conformance implementation as ordinary replay.
+The ordinary path reads no clocks. Preparation and both compiled/rendered
+Authorizer calls are observed independently; durations never feed admission.
+Counters report actual per-manifest revision preparation and authorizer calls.
+The bridge =benchmark-catalog= requires identical complete ordinary/measured
+outputs across three fixed full-catalog samples and separately times transport
+serialization. =just bench-functional-catalog= runs it as a release executable.
+This is native Cedar conformance evidence, not native Lean or provider timing.

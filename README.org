@@ -176,6 +176,10 @@ shared typed preparation, publication, authorization and bounded root reuse.
 actual PolicyProfile/Handoff Contracts, retained semantic proof oracles and the
 51-entry Rust catalog replay. All 48 original manifest files retain their bytes.
 Library and Production imports remain independent of Examples.
+The shared ObjectProfile path now admits all nine memoized domain families
+through executable projection Contracts and kernel-audited provider laws.
+=just bench-functional-catalog= measures the native release Rust replay under
+fixed workloads, alongside the separate Lean-run reuse measurement.
 
 =just lean-poo-api= lists the public modules from the locked LeanPOO
 dependency. =just lean-poo-api-find 'Multimethod.register'= searches its Lean

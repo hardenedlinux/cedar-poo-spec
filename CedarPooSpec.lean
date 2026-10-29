@@ -95,3 +95,6 @@ import CedarPooSpec.AuthorizationDeltaJson
 import CedarPooSpec.AgenticAI.Commerce.Acceptance
 
 import CedarPooSpec.AgenticAI.Commerce.Presentation
+
+import CedarPooSpec.Data.LineageProfile
+import CedarPooSpec.Functional.ObjectProfile
