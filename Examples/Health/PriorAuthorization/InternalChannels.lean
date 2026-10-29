@@ -1,5 +1,5 @@
 import Examples.Health.PriorAuthorization.PriorAuthorization
-import CedarPooSpec.Vertical.Health.DisclosureChannel
+import CedarPooSpec.Vertical.Health.DisclosureProfile
 
 /-!
 The same provider workflow has two internal boundaries that the payer-submit
@@ -39,14 +39,34 @@ def entities : Entities := Map.make (PriorAuthorizationExample.entities.toList +
   (delegate, actionSchemaEntryToEntityData delegateEntry),
   (remember, actionSchemaEntryToEntityData rememberEntry)])
 
-def verificationObject : DisclosureChannel :=
+def verificationTemplate : DisclosureChannel :=
   { policyId := "delegate-verification", action := delegate,
     destination := verifier, purpose := "verify-prior-authorization",
     payloadClass := "verification-token" }
+def verificationProfile : DisclosureProfile.Object :=
+  (DisclosureProfile.define "VerificationChannel" verificationTemplate).toOption.get
+    (by native_decide)
+
+def verificationObject : DisclosureChannel :=
+  (DisclosureProfile.channel? verificationProfile).get (by native_decide)
+
+def memoryProfile : DisclosureProfile.Object :=
+  (verificationProfile.extendWith "MemoryChannel" do
+    LeanPoo.Object.Declaration.Builder.value .policyId "write-shared-memory"
+    LeanPoo.Object.Declaration.Builder.value .action remember
+    LeanPoo.Object.Declaration.Builder.value .destination memory
+    LeanPoo.Object.Declaration.Builder.value .purpose "resume-prior-authorization"
+    LeanPoo.Object.Declaration.Builder.value .payloadClass "workflow-handle").toOption.get
+      (by native_decide)
+
 def memoryObject : DisclosureChannel :=
-  { policyId := "write-shared-memory", action := remember,
-    destination := memory, purpose := "resume-prior-authorization",
-    payloadClass := "workflow-handle" }
+  (DisclosureProfile.channel? memoryProfile).get (by native_decide)
+
+def verificationPolicy : Policy :=
+  (DisclosureProfile.policy? verificationProfile).get (by native_decide)
+
+def memoryPolicy : Policy :=
+  (DisclosureProfile.policy? memoryProfile).get (by native_decide)
 def revokedChannel : Policy :=
   policy "revoked-internal-delegation" .forbid
     (.actionInAny [delegate, remember]) .any (not_ (fact "delegationActive"))
@@ -63,7 +83,7 @@ def modelResult : Except LeanPoo.C4.Error Model := do
     [memoryObject.introduce]
   let base ← stored.mix "ChannelBase" ["VerificationHandoff", "SharedMemory"]
   let privacy ← base.extend "ChannelPrivacy" "ChannelBase"
-    [verificationObject.strengthen, memoryObject.strengthen]
+    [.overlay verificationPolicy, .overlay memoryPolicy]
   let temporal ← privacy.extend "ChannelTemporal" "ChannelBase"
     [.extend revokedChannel]
   let combined ← temporal.mix "ChannelGoverned"

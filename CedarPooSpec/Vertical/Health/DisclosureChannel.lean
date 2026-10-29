@@ -21,6 +21,7 @@ structure DisclosureChannel where
   payloadClassKey : String := "payloadClass"
   patientMatchKey : String := "patientMatches"
   delegationKey : String := "delegationActive"
+  deriving DecidableEq
 
 def DisclosureChannel.broad (channel : DisclosureChannel) : Policy :=
   { id := channel.policyId, effect := .permit,

@@ -1,7 +1,7 @@
 import CedarPooSpec.PolicyJson
 import CedarPooSpec.Governance.SeparationOfDuties
 import CedarPooSpec.CompoundAuthorization
-import CedarPooSpec.Vertical.FinancialServices.ControllerRelease
+import CedarPooSpec.Vertical.FinancialServices.ControllerReleaseProfile
 
 /-!
 Two authorization queries form one payment release. The controls illustrate
@@ -108,10 +108,26 @@ def policy (id : String) (effect : Effect) (action : EntityUID)
 def preparePermit : Policy :=
   policy "prepare-matched-payment" .permit prepare (.mem clerk)
     (.and selfRelease (.and matched positive))
-def controllerRelease : ControllerRelease :=
+def controllerTemplate : ControllerRelease :=
   { policyId := "controller-release", action := release,
     controllerGroup := controller, seniorGroup := senior,
     resourceScope := .resourceScope (.mem operations), threshold := "500.0000" }
+def controllerProfile : ControllerReleaseProfile.Object :=
+  (ControllerReleaseProfile.define "ControllerRelease" controllerTemplate).toOption.get
+    (by native_decide)
+
+def controllerRelease : ControllerRelease :=
+  (ControllerReleaseProfile.control? controllerProfile).get (by native_decide)
+
+def controllerPolicy : Policy :=
+  (ControllerReleaseProfile.policy? controllerProfile).get (by native_decide)
+
+def restrictedControllerProfile : ControllerReleaseProfile.Object :=
+  (ControllerReleaseProfile.withThreshold controllerProfile "RestrictedControllerRelease"
+    "200.0000").toOption.get (by native_decide)
+
+def restrictedControllerPolicy : Policy :=
+  (ControllerReleaseProfile.policy? restrictedControllerProfile).get (by native_decide)
 def legacyBypass : Policy :=
   policy "legacy-matched-release" .permit release .any matched
 
@@ -129,11 +145,12 @@ def modelResult : Except LeanPoo.C4.Error Model := do
   let base : Model := { modules := [
     { name := "Base", edits := [.extend preparePermit, controllerRelease.introduce,
         .extend legacyBypass] }] }
-  let threshold ← base.extend "Threshold" "Base" [controllerRelease.strengthen]
+  let threshold ← base.extend "Threshold" "Base" [.overlay controllerPolicy]
   let duties ← threshold.extend "Duties" "Base" [dutiesControl.edit .introduce]
   let risk ← duties.extend "Risk" "Base" [.extend riskVeto]
   let retired ← risk.extend "Retired" "Base" [.remove legacyBypass.id]
-  retired.mix "Integrated" ["Threshold", "Duties", "Risk", "Retired"]
+  let integrated ← retired.mix "Integrated" ["Threshold", "Duties", "Risk", "Retired"]
+  integrated.extend "Restricted" "Integrated" [.overlay restrictedControllerPolicy]
 
 def model : Model := modelResult.toOption.get (by native_decide)
 

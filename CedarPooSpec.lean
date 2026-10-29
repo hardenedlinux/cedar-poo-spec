@@ -17,13 +17,13 @@ import CedarPooSpec.Governance.Personnel.KnowledgeScope
 import CedarPooSpec.Governance.Personnel.Admission
 import CedarPooSpec.Platform.AWS.AgentCore.Gateway
 import CedarPooSpec.Platform.Google.SensitiveDataProtection
-import CedarPooSpec.Vertical.Health.DisclosureChannel
+import CedarPooSpec.Vertical.Health.DisclosureProfile
 import CedarPooSpec.Vertical.Health.EmergencyAccess
 import CedarPooSpec.Vertical.Health.FHIR.ConsumerAccess
 import CedarPooSpec.Vertical.Health.ClinicalExchange
 import CedarPooSpec.Vertical.Health.Region.Australia
 import CedarPooSpec.Vertical.Health.Region.UnitedStates
-import CedarPooSpec.Vertical.FinancialServices.ControllerRelease
+import CedarPooSpec.Vertical.FinancialServices.ControllerReleaseProfile
 import CedarPooSpec.Vertical.FinancialServices.BankingToolOwner
 import CedarPooSpec.Vertical.FinancialServices.BankingToolProfile
 import CedarPooSpec.Vertical.FinancialServices.ClaimSummaryVeto

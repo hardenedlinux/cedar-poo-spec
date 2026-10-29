@@ -1,6 +1,4 @@
 import Cedar.Spec.Policy
-import LeanPoo.Object.Builder
-import LeanPoo.Object.Memo
 import LeanPoo.Object.Definition
 import LeanPoo.Object.Debug
 import LeanPoo.Compose
@@ -52,22 +50,27 @@ structure Model where
   modules : List Module
   built : Option Built := none
 
-/-- A record update to `modules` invalidates the cached LeanPOO schema. -/
+private def Built.source : Built → List Module
+  | .schema source _ | .object source _ => source
+
+private def Built.toSchema : Built →
+    LeanPoo.Object.Schema PolicyID (fun _ => Option Policy)
+  | .schema _ cached => cached
+  | .object _ cached => cached.plan.schema
+
+/-- One source-identity gate for every retained schema, plan and object view. -/
+private def Model.activeBuilt? (model : Model) : Option Built :=
+  model.built.filter fun built => built.source == model.modules
+
 private def Model.activeSchema? (model : Model) :
     Option (LeanPoo.Object.Schema PolicyID (fun _ => Option Policy)) :=
-  match model.built with
-  | some (.schema source schema) =>
-      if source == model.modules then some schema else none
-  | some (.object source object) =>
-      if source == model.modules then some object.plan.schema else none
-  | none => none
+  model.activeBuilt?.map Built.toSchema
 
 /-- Return the active first-class object only while its source modules match. -/
 def Model.currentObject? (model : Model) :
     Option (LeanPoo.Object.Memoized PolicyID (fun _ => Option Policy)) :=
-  match model.built with
-  | some (.object source object) =>
-      if source == model.modules then some object else none
+  match model.activeBuilt? with
+  | some (.object _ object) => some object
   | _ => none
 
 def Model.graph (model : Model) : LeanPoo.C4.Graph :=
@@ -108,6 +111,13 @@ private def Model.schema (model : Model) :
           (model.modules.find? (fun module => module.name == name)).map
             Module.declaration }
 
+private def Model.planAt (model : Model) (root : String) :
+    Except LeanPoo.C4.Error
+      (LeanPoo.Object.Plan PolicyID (fun _ => Option Policy)) := do
+  if let some object := model.currentObject? then
+    if object.plan.root == root then return object.plan
+  LeanPoo.Object.compile model.schema root
+
 /-- Obtain a first-class object for any valid root in this policy family.
     This is a composition view; publish through Cedar validation instead. -/
 def Model.objectAt (model : Model) (root : String) :
@@ -115,14 +125,14 @@ def Model.objectAt (model : Model) (root : String) :
       (LeanPoo.Object.Memoized PolicyID (fun _ => Option Policy)) := do
   if let some object := model.currentObject? then
     if object.plan.root == root then return object
-  let plan ← LeanPoo.Object.compile model.schema root
+  let plan ← model.planAt root
   return plan.memoize
 
 /-- Inspect C4 resolution even if the Cedar edit sequence is invalid. -/
 def Model.explainResolution (model : Model) (root : String) (id : PolicyID) :
     Except LeanPoo.C4.Error (LeanPoo.Object.Debug.Resolution PolicyID) := do
-  let object ← model.objectAt root
-  return LeanPoo.Object.Debug.Plan.explain object.plan id
+  let plan ← model.planAt root
+  return LeanPoo.Object.Debug.Plan.explain plan id
 
 /-- Stage a single-parent policy owner through LeanPOO's extension API.
     The final mix or publication compiles the complete C4 topology. -/
@@ -169,10 +179,7 @@ def Model.combine (first : Model) (firstRoot : String)
 def Model.compilePlan (model : Model) (root : String) :
     Except LeanPoo.C4.Error
       (LeanPoo.Object.CompiledPlan PolicyID (fun _ => Option Policy)) := do
-  if let some object := model.currentObject? then
-    if object.plan.root == root then
-      return object.plan.compileMemo
-  let plan ← LeanPoo.Object.compile model.schema root
+  let plan ← model.planAt root
   return plan.compileMemo
 
 inductive Error where

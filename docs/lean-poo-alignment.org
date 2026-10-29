@@ -1,0 +1,85 @@
+#+TITLE: LeanPOO typed industry objects and contracts
+
+* Dependency and authority
+
+The library and lockfile pin [[https://github.com/tao3k/lean-poo/pull/13][LeanPOO PR 13]] at
+=b577371fe4e2717e198a29eefe16ec8ae0380e0d=. This is a pinned research-branch
+snapshot, not a claim that PR 13 has merged. SPEC retains Lean 4.34.1 and its
+existing Cedar revision; no unrelated dependency upgrade is included.
+
+Industry models use the existing typed object and Contract systems. LeanPOO
+owns typed declarations, C4 inheritance, final-self computation, contract
+diagnostics and refinement. SPEC supplies industry fields and predicates, and
+Cedar owns policy/schema validation and authorization. Host facts remain a
+separate admission responsibility.
+
+* Concrete alignment
+
+| Industry or adapter | Typed object use | Contract or semantic boundary |
+|---------------------+------------------+-------------------------------|
+| Medical disclosure | =DisclosureProfile= indexes action, destination, purpose, payload class, channel and policy by their Lean types | Existing =ObjectContract= checks actual declared-slot inventory and presence; =refine= adds nonempty purpose/payload and exact input/channel/policy alignment |
+| Payment release | =ControllerReleaseProfile= indexes decimal text, controller/senior identities, control and policy | Cedar's decimal parser and positivity constrain threshold text; derived policy/control must agree with current settings |
+| Source control | =SourceProfile= inherits branch overrides into source-control policy data | Existing Cedar schema, threat/deployment decisions and source-owner change tests |
+| Protected storage | =ProtectionProfile= inherits storage and key-version settings into an intent | Existing protected-storage wire/Host checks and storage-profile matrix |
+| Banking and lakehouse | Existing =BankingToolProfile= and =LocationProfile= use typed action/location fields and derived owners | Existing exact policy and authorization tests |
+| Policy owners | =PolicyModules= delegates object construction, C4 and compiled slots to LeanPOO | Cedar-specific edit intent, ownership, tombstones and provenance remain local |
+| Proof reuse | =Evaluation=, =Validation=, =Composition= and =Revision= retain LeanPOO proof objects and dependency-aware reuse | Cedar evaluation/typechecking relations remain the actual obligations |
+
+The new industry types follow LeanPOO's [[https://github.com/tao3k/lean-poo/blob/b577371fe4e2717e198a29eefe16ec8ae0380e0d/Examples/ObjectDefinition.lean][ObjectDefinition]] and
+[[https://github.com/tao3k/lean-poo/blob/b577371fe4e2717e198a29eefe16ec8ae0380e0d/Examples/LiveRevision.lean][LiveRevision]] workflows; contract recognition/refinement uses the same public
+[[https://github.com/tao3k/lean-poo/blob/b577371fe4e2717e198a29eefe16ec8ae0380e0d/Examples/VariantContracts.lean][VariantContracts]] mechanisms. Examples are references, not runtime imports.
+
+* Static and dynamic boundaries
+
+The dependent =Value : Key → Type= prevents putting an entity identity in a
+purpose slot, or a policy in a threshold slot. It does not establish that a
+String is a positive decimal or a nonempty industry purpose. Those predicates
+belong to the reusable Contract refinement. No second type checker, subtype
+inference engine, contract compiler or policy evaluator is implemented here.
+
+Contract views use =LeanPoo.allSlots= and actual typed reads. Presence checks
+erase values to Unit because their carrier types are already statically fixed;
+whole-object predicates read the original typed values. =isObject= and
+=prototype= are true for this statically indexed carrier; they do not claim
+runtime ancestry authentication of arbitrary wire values. Missing slots and
+overridden projections still fail the inventory/alignment checks.
+
+=policy?= exposes no policy unless =diagnose contract profile [] = []=.
+=policy_requires_contract= proves this for all profile values. Raw =Object.read=
+remains an inspection API; it is not contract admission. A further contract
+refinement cannot remove an inherited refusal, by LeanPOO's existing theorem.
+Constructing a typed object or satisfying this contract still does not authorize
+a request or validate an arbitrary Cedar schema.
+
+* Industry consumers
+
+The prior-authorization Case now builds the memory channel as a typed child of
+the verification channel, overriding only industry input slots and inheriting
+channel/policy computation. Its existing privacy, delegation, removal and
+incident roots continue to consume checked policies.
+
+The payment Case obtains its controller control/policy from the checked typed
+profile. A child lowers the threshold from 500 to 200 while retaining controller
+and senior slots. Its =Restricted= root is used in Cedar authorization tests:
+the ordinary controller loses the 250 payment permission, the senior controller
+retains it, and the original =Integrated= root remains unchanged.
+
+* Cleanup and verification
+
+=PolicyModules= has one source-identity gate for retained schemas and objects,
+and one root-plan selector for compilation and diagnostics. Diagnostics no
+longer instantiate a memoized object merely to read its plan. The staged-schema
+path is retained for extensions of older roots. Unnecessary Builder/Memo and
+Object.Debug imports are removed where the public owner module already supplies
+the API or the import is unused. No end-to-end performance claim follows.
+
+[[file:../Tests/Language/LeanPooAlignment.lean][LeanPooAlignment]] checks warm-object/schema invalidation after raw source edits,
+old-root retention, tombstones and the distinction between object construction
+and Cedar edit admission. [[file:../Tests/Language/VerticalProfiles.lean][VerticalProfiles]] checks independent expected channel
+and policy values, inherited settings, actual Cedar decisions, malformed/zero/
+negative thresholds, empty purpose, forged derived policy and inherited refusal.
+
+Run =lake build CedarPooSpec Tests Productions= and =just check-lean=; the
+existing layer check must keep library/Production separate from Examples.
+The full GitHub CI additionally qualifies existing Rust conformance, exported
+Cedar artifacts, schema-bound scenarios and authorization-delta proofs.

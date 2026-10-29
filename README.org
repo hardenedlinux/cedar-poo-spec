@@ -167,6 +167,10 @@ library composes Cedar authorization controls. See the
 
 * Verification
 
+The [[file:docs/lean-poo-alignment.org][typed industry object and Contract alignment]] records the exact LeanPOO
+PR revision, medical/payment consumers and their static, contract and Cedar
+authorization boundaries.
+
 =just lean-poo-api= lists the public modules from the locked LeanPOO
 dependency. =just lean-poo-api-find 'Multimethod.register'= searches its Lean
 declarations and uses the same revision that Lake builds for this project.
