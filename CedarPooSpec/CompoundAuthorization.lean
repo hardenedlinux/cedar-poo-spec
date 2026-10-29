@@ -1,4 +1,4 @@
-import CedarPooSpec.PolicyModules
+import CedarPooSpec.PolicyPreparation
 import Cedar.Spec.Authorizer
 
 /-!
@@ -55,9 +55,8 @@ structure CompiledRoot (model : Model) where
   policies : Policies
   compiled : model.compile root = .ok policies
 
-private structure RootCompilation (model : Model) (root : String) where
-  policies : Policies
-  compiled : model.compile root = .ok policies
+private abbrev RootCompilation (model : Model) (root : String) :=
+  PolicyPreparation.Compiled model root
 
 private def cachedCompilation? (model : Model) (cache : List (CompiledRoot model))
     (root : String) : Option (RootCompilation model root) :=

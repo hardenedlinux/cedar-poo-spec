@@ -1,5 +1,4 @@
-import CedarPooSpec.PolicyModules
-import CedarPooSpec.SchemaAdmission
+import CedarPooSpec.PolicyPreparation
 import Cedar.Spec.Entities
 import Cedar.Spec.Request
 import Cedar.Spec.Authorizer
@@ -348,12 +347,7 @@ inductive PublicationError where
 
 /-- A publication carries the exact compiled set and Cedar validation premises. -/
 structure Publication (model : PolicyModules.Model) (root : String)
-    (schema : Cedar.Validation.Schema) where
-  policies : Policies
-  compiled : model.compile root = .ok policies
-  schemaDefinitionsValid : SchemaAdmission.validateDefinitions schema = .ok ()
-  schemaValid : schema.validateWellFormed = .ok ()
-  policyValid : Cedar.Validation.validate policies schema = .ok ()
+    (schema : Cedar.Validation.Schema) extends PolicyPreparation.Validated model root schema where
   idsUnique : (policies.map Policy.id).Nodup
   json : Lean.Json
   serialized : policySet policies = .ok json
@@ -374,39 +368,32 @@ theorem Publication.policyIdsUnique (publication : Publication model root schema
 
 /-- Produce a Lean-validated artifact. The Rust consumer must still admit the
     JSON through Cedar's official policy-set parser before deployment. -/
+def publishValidated (checked : PolicyPreparation.Validated model root schema) :
+    Except PublicationError (Publication model root schema) :=
+  match hj : policySet checked.policies with
+  | .error error => .error (.export error)
+  | .ok json =>
+      if unique : (checked.policies.map Policy.id).Nodup then
+        .ok { toValidated := checked, idsUnique := unique, json, serialized := hj }
+      else .error .duplicatePolicyIds
+
 def publish (model : PolicyModules.Model) (root : String)
     (schema : Cedar.Validation.Schema) :
-    Except PublicationError (Publication model root schema) :=
-  match hc : model.compile root with
-  | .error error => .error (.composition error)
-  | .ok policies =>
-    match ha : SchemaAdmission.validateDefinitions schema with
-    | .error error => .error (.schema error)
-    | .ok () =>
-      match hs : schema.validateWellFormed with
-      | .error error => .error (.schema error)
-      | .ok () =>
-      match hv : Cedar.Validation.validate policies schema with
-      | .error error => .error (.policy error)
-      | .ok () =>
-        match hj : policySet policies with
-        | .error error => .error (.export error)
-        | .ok json =>
-          if unique : (policies.map Policy.id).Nodup then
-            .ok ⟨policies, hc, ha, hs, hv, unique, json, hj⟩
-          else
-            .error .duplicatePolicyIds
+    Except PublicationError (Publication model root schema) := do
+  let compiled ← (PolicyPreparation.compile model root).mapError .composition
+  let checked ← PolicyPreparation.check compiled schema PublicationError.schema PublicationError.policy
+  publishValidated checked
 
-/-- A concrete Cedar authorization receipt for a compiled POO root. -/
-def authorizationCase (name revision : String) (model : PolicyModules.Model)
-    (root : String) (req : Request) (store : Entities) : Except String Lean.Json := do
+/-- Render exact serialized policies and an actual Cedar response. Witnesses
+bind both inputs; shared consumers need no second compilation or authorization. -/
+def authorizationCaseData (name revision : String) (policies : Policies)
+    (exported : Lean.Json) (req : Request) (store : Entities) (response : Response)
+    (_serialized : policySet policies = .ok exported)
+    (_evaluated : response = isAuthorized req store policies) : Except String Lean.Json := do
   let convert {α β : Type} [Repr α] (result : Except α β) : Except String β :=
     result.mapError reprStr
-  let policies ← convert (model.compile root)
-  let exported ← convert (policySet policies)
   let exportedEntities ← convert (entities store)
   let exportedRequest ← convert (request req)
-  let response := isAuthorized req store policies
   return obj [
     ("name", Lean.toJson name),
     ("revision", Lean.toJson revision),
@@ -419,5 +406,16 @@ def authorizationCase (name revision : String) (model : PolicyModules.Model)
       | .deny => "deny")),
     ("expected_reasons", Lean.toJson response.determiningPolicies.toList),
     ("expected_error_policies", Lean.toJson response.erroringPolicies.toList)]
+
+
+/-- Compatibility entrypoint retains its compile/export/error order. -/
+def authorizationCase (name revision : String) (model : PolicyModules.Model)
+    (root : String) (req : Request) (store : Entities) : Except String Lean.Json := do
+  let policies ← (model.compile root).mapError reprStr
+  match h : policySet policies with
+  | .error error => .error (reprStr error)
+  | .ok exported =>
+      authorizationCaseData name revision policies exported req store
+        (isAuthorized req store policies) h rfl
 
 end CedarPooSpec.PolicyJson

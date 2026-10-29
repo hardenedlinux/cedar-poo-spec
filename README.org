@@ -171,8 +171,9 @@ The [[file:docs/lean-poo-alignment.org][typed industry object and Contract align
 PR revision, medical/payment consumers and their static, contract and Cedar
 authorization boundaries.
 [[file:docs/rfc/0008-functional-cedar-capabilities.org][RFC 0008]] designs the subsequent shared Functional capability layer and
-ordered migration of the broader library and complex Cases; it is a design
-draft, not a claim that those migrations are implemented.
+ordered migration of the broader library and complex Cases. Its B1 capability
+core and B2 payment/prior-authorization consumers (including internal channels) are implemented in
+[[file:CedarPooSpec/Functional/README.org][Functional Cedar capabilities]]; the broader Case migrations remain planned.
 
 =just lean-poo-api= lists the public modules from the locked LeanPOO
 dependency. =just lean-poo-api-find 'Multimethod.register'= searches its Lean

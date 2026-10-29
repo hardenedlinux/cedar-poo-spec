@@ -53,6 +53,11 @@ a request or validate an arbitrary Cedar schema.
 
 * Industry consumers
 
+The shared [[file:../CedarPooSpec/Functional/README.org][Functional capability layer]] now carries these consumers through
+preparation, checked policy data, publication and actual request evaluation.
+Their Type/Contract checks feed the model; their Cedar evidence feeds the
+Functional consumer. They do not stop at typed profile construction.
+
 The prior-authorization Case now builds the memory channel as a typed child of
 the verification channel, overriding only industry input slots and inheriting
 channel/policy computation. Its existing privacy, delegation, removal and

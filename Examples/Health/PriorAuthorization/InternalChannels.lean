@@ -1,5 +1,6 @@
 import Examples.Health.PriorAuthorization.PriorAuthorization
 import CedarPooSpec.Vertical.Health.DisclosureProfile
+import CedarPooSpec.Functional.Capabilities
 
 /-!
 The same provider workflow has two internal boundaries that the payer-submit
@@ -96,6 +97,14 @@ def modelResult : Except LeanPoo.C4.Error Model := do
 
 def model : Model := modelResult.toOption.get (by native_decide)
 
+def roots : List String :=
+  ["VerificationHandoff", "SharedMemory", "ChannelBase", "ChannelPrivacy", "ChannelTemporal",
+    "ChannelGoverned", "MemoryRemoved", "ChannelIncident", "ChannelRecovered"]
+
+def program : CedarPooSpec.Functional.Program model schema :=
+  (CedarPooSpec.Functional.prepareProgram CedarPooSpec.Functional.standard model schema roots).toOption.get
+      (by native_decide)
+
 inductive Payload where
   | verificationToken | workflowHandle | fullChart
   deriving BEq, DecidableEq
@@ -121,11 +130,9 @@ def request (envelope : Envelope) : Request :=
     ("delegationActive", .prim (.bool envelope.delegationActive))]⟩
 
 def admitted (root : String) (envelope : Envelope) : Bool :=
-  match model.compile root with
+  match program.authorize root [request envelope] entities with
   | .error _ => false
-  | .ok policies =>
-      let response := isAuthorized (request envelope) entities policies
-      response.decision == .allow && response.erroringPolicies.isEmpty
+  | .ok receipt => receipt.allowed
 
 /-- Replace this synthetic boundary with a host connector that projects the
     real immutable payload and performs the authorized effect. -/

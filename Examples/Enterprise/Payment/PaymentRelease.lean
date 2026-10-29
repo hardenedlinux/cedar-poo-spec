@@ -1,6 +1,5 @@
-import CedarPooSpec.PolicyJson
 import CedarPooSpec.Governance.SeparationOfDuties
-import CedarPooSpec.CompoundAuthorization
+import CedarPooSpec.Functional.Capabilities
 import CedarPooSpec.Vertical.FinancialServices.ControllerReleaseProfile
 
 /-!
@@ -154,20 +153,25 @@ def modelResult : Except LeanPoo.C4.Error Model := do
 
 def model : Model := modelResult.toOption.get (by native_decide)
 
+def roots : List String :=
+  ["Base", "Threshold", "Duties", "Risk", "Retired", "Integrated", "Restricted"]
+
+def program : CedarPooSpec.Functional.Program model schema :=
+  (CedarPooSpec.Functional.prepareProgram CedarPooSpec.Functional.standard model schema roots).toOption.get
+      (by native_decide)
+
 def request (principal action resource : EntityUID) : Request :=
   ⟨principal, action, resource, Map.empty⟩
 
 def authorized (root : String) (principal action resource : EntityUID) : Bool :=
-  match model.compile root with
+  match program.authorize root [request principal action resource] entities with
   | .error _ => false
-  | .ok policies =>
-      let response := isAuthorized (request principal action resource) entities policies
-      response.decision == .allow && response.erroringPolicies.isEmpty
+  | .ok receipt => receipt.allowed
 
 /-- The application must require both permissions on the same payment snapshot. -/
 def releaseOperation (root : String) (preparer releaser resource : EntityUID) : Bool :=
   let requests := [request preparer prepare resource, request releaser release resource]
-  match CedarPooSpec.CompoundAuthorization.authorizeAll model root requests entities with
+  match program.authorize root requests entities with
   | .error _ => false
   | .ok receipt => receipt.allowed
 
@@ -199,7 +203,7 @@ def operationsExact : Bool := operationCases.all fun (_, root, preparer, release
 theorem operationsExactFully : operationsExact = true := by native_decide
 
 theorem emptyCompoundRejected :
-    (match CedarPooSpec.CompoundAuthorization.authorizeAll model "Integrated" [] entities with
+    (match program.authorize "Integrated" [] entities with
      | .ok receipt => receipt.allowed
      | .error _ => false) = false := by native_decide
 
@@ -239,12 +243,11 @@ def integratedPolicyIdsExact : Bool :=
 theorem legacyRetired : integratedPolicyIdsExact = true := by native_decide
 
 theorem validatedIntegrated :
-    (CedarPooSpec.PolicyJson.publish model "Integrated" schema).isOk = true := by
+    (program.publish "Integrated").isOk = true := by
   native_decide
 
 def allRootsValidated : Bool :=
-  ["Base", "Threshold", "Duties", "Risk", "Retired", "Integrated"].all fun root =>
-    (CedarPooSpec.PolicyJson.publish model root schema).isOk
+  roots.all fun root => (program.publish root).isOk
 
 theorem allRootsValidatedFully : allRootsValidated = true := by native_decide
 

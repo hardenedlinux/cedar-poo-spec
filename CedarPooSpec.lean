@@ -1,6 +1,7 @@
 import CedarPooSpec.Evaluation
 import CedarPooSpec.Validation
 import CedarPooSpec.Composition
+import CedarPooSpec.Functional.Capabilities
 import CedarPooSpec.Soundness
 import CedarPooSpec.Slicing
 import CedarPooSpec.PolicyModules

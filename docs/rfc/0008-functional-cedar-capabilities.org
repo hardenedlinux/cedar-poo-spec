@@ -3,13 +3,16 @@
 
 * Status and scope
 
-Design draft following the typed-industry alignment in PR 8. This RFC specifies
-the subsequent cross-library refactor; its proposed capability layer is not yet
-implemented. The current implementation is described in
+The B1 capability core and the B2 payment/prior-authorization consumers (including
+the medical internal channels) are now
+implemented on PR 8; see the [[file:../../CedarPooSpec/Functional/README.org][Functional capability implementation]]. The remaining
+cross-library and complex-Case migrations retain design-draft status. The
+preceding typed-industry implementation is described in
 [[file:../lean-poo-alignment.org][LeanPOO alignment]]. The reference is LeanPOO PR 13, immutable revision
 =b577371fe4e2717e198a29eefe16ec8ae0380e0d=.
 
-The inspected tree has 100 =CedarPooSpec= Lean modules and 129 Example modules.
+The initial inspected tree at =5b25f80= had 100 =CedarPooSpec= Lean modules and
+129 Example modules; B1 adds PolicyPreparation and Functional.Capabilities.
 The audit covers the whole library inventory and the construction, preparation,
 authorization and effect paths of the largest Cases. Examples remain downstream
 consumers; the library and Productions must not import them.
@@ -221,7 +224,7 @@ construction/check behavior; Cedar still owns permit/forbid aggregation.
 |-------+------+--------------------|
 | A: current PR 8 | latest immutable LeanPOO pin; typed industry Profiles and Contract use; shared source/plan selection | all local and exact-head SPEC CI; preserve current exported artifacts |
 | B1: capability core | scoped contexts and exact compile/check/publish/authorize capability result families; reuse existing receipts | universal equalities to current functions including exact errors and policy order; no parallel cache/type system |
-| B2: two complete consumers | migrate PaymentRelease and prior-authorization internal channels to shared prepared operations | same existing JSON/Cedar artifacts and decision matrices; dynamic context/contract/refusal controls |
+| B2: two complete consumers | migrate PaymentRelease and PriorAuthorization, including internal channels, to shared prepared operations | same existing JSON/Cedar artifacts and decision matrices; dynamic context/contract/refusal controls |
 | C1: publication and root families | migrate AttestedDataAccess, GoogleThreatCase and DataFlow | distinct roots, owner selection and schema/profile changes refuse stale preparation; unchanged policy order and Rust conformance |
 | C2: effectful Cases | migrate Disclosure, CrossAgentEgress and SourceCustody | actual-input lineage, grant/budget/revocation and final Host refresh gates retained through prepare/commit |
 | D: bounded reuse and cleanup | prove safe reindex/rebind/caching where measurement justifies it; remove replaced orchestration | matched source/context controls, error/refusal parity, bounded resources; no unsupported speedup claim |
@@ -229,6 +232,12 @@ construction/check behavior; Cedar still owns permit/forbid aggregation.
 This order supplies shared capability operations before broadly rewriting the
 large Examples. Receipt unification and removal of the replaced functions belong
 to each slice's exit criteria; keep a working consumer while moving ownership.
+
+B1 and B2 implement the typed result stages, C4-selected operations,
+=CertifiedConsumer= method contract, retained root preparation, delayed export,
+actual-request authorization and both Case export paths. Their tests include
+universal publication/error equality and complete compressed-manifest equality.
+These implementation receipts do not advance C1/C2/D to completed status.
 
 * Cross-cutting acceptance matrix
 

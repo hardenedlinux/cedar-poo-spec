@@ -1,0 +1,105 @@
+#+TITLE: Functional Cedar capabilities
+
+* Exact data and typed operations
+
+[[file:../PolicyPreparation.lean][PolicyPreparation]] owns =Compiled model root= and
+=Validated model root schema=. Their fields contain actual compiled policies
+and the corresponding compilation/schema/policy equations. =PolicyJson.Publication=
+extends this validated value instead of duplicating its witness fields.
+The compatibility publication API delegates to these stages in its original
+compile/definitions/well-formedness/policy/export/unique-ID order.
+
+[[file:Capabilities.lean][Capabilities]] uses LeanPOO =Factory=, =Provider= and C4 assembly with a
+dependent result type for =compile=, =validate=, =publish= and =authorize=.
+Later stages consume the exact earlier-stage data. =Requirements.prepareConsumer=
+resolves the complete capability list before building any context.
+
+=Coherent= is the shared method contract: the selected authorization method
+must return responses from Cedar for the actual checked policies, requests
+and entities. =coherent= proves this from the operations' indexed witnesses;
+=CertifiedConsumer= passes that proof into =construct=. It is not an assumed
+Boolean assertion about a provider name.
+
+=Ready.allowed_eq= proves that admission uses Cedar's actual responses,
+requires a nonempty request list, and refuses any policy-evaluation error.
+Industry object Contracts continue to guard their configuration and projections
+before those policies enter the model. Cedar request/entity evaluation remains
+distinct from authenticating Host-supplied facts.
+
+* Preparation and consumption
+
+The payment and medical consumers show the full public sequence:
+
+1. Construct typed industry objects and admit them through their Contracts.
+2. Compose the policy model with the existing C4/Edit interface.
+3. Call =prepareProgram standard model schema roots= once and retain its result.
+4. Call =program.authorize root requests entities= for current inputs.
+5. Use =receipt.allowed= at the existing business-effect boundary.
+6. Call =program.publish= or =program.authorizationCase= for validated exports.
+
+The constructor uses =Validation.traverse= and returns the first preparation
+error, without exposing a partially prepared Program. Duplicate root requests
+are eliminated in first-occurrence order. Each retained root holds checked
+policy data and a lazy publication thunk. Export is not demanded during
+authorization, and repeated exports share this immutable serialization result.
+
+=Program.at= preserves the existing open-root interface: a valid root outside
+the retained set uses the same already selected factory. It receives the same
+compilation and validation gates and can be explicitly retained by a subsequent
+preparation. Unknown roots preserve their underlying compilation failure.
+There is no direct-authorization fallback for unprepared roots.
+
+The Program is indexed by its actual captured model and schema. It never
+compares opaque factory functions, assumes DecidableEq over a model, or keys
+reuse by a profile/root name alone. Changing model or schema requires a new
+appropriately indexed preparation. Requests, entities and final decisions are
+not cached. An old Program remains an explicit old snapshot; its type does not
+authenticate a current external Host revision. Real Host publication/release
+still needs the existing source/scope/revision checks at the effect boundary.
+
+* Complete Case consumers
+
+- [[file:../../Examples/Enterprise/Payment/PaymentRelease.lean][PaymentRelease]] uses Program for single and compound authorization, root
+  validation and publication. [[file:../../Examples/Enterprise/Payment/PaymentReleaseExport.lean][Its manifest]] uses Functional traversal and the
+  same prepared publication/response witnesses. [[file:../../Examples/Enterprise/Payment/PublishedPayment.lean][PublishedPayment]] emits the
+  shared validated artifact.
+- [[file:../../Examples/Health/PriorAuthorization/PriorAuthorization.lean][PriorAuthorization]] routes authorization through Program and stateful
+  replay through =Factory.fold=. Its [[file:../../Examples/Health/PriorAuthorization/ValidatedExport.lean][normal/malformed manifests]] use shared
+  publication/response witnesses. [[file:../../Examples/Health/PriorAuthorization/InternalChannels.lean][Internal channels]] routes admitted/Port/delivery
+  through Program; [[file:../../Examples/Health/PriorAuthorization/InternalChannelsExport.lean][its manifest]] uses the same actual-response renderer.
+  All these paths preserve the reference schema-bound wire bytes.
+
+These are the two B2 consumers from RFC 0008. Broader Disclosure,
+CrossAgentEgress, AttestedDataAccess and DataFlow migrations remain separate
+slices; this implementation does not claim that they have migrated.
+
+* Proof and regression gates
+
+[[file:../../Tests/Functional/Capabilities.lean][Capabilities tests]] includes a kernel-checked universal equality between the
+new publication pipeline and the independent pre-refactor algorithm. Every
+success, original error and error ordering is covered for arbitrary model,
+root and schema. It additionally checks:
+
+- C4 operation override and inherited operations; exact first missing key.
+- Missing capabilities precede context construction; first invalid root wins.
+- A deliberately refusing publisher does not block in-memory authorization.
+- Empty compound requests and unknown roots refuse admission.
+- Schema changes refuse old validation; changed entities and source policies
+  produce fresh decisions while the original snapshot remains unchanged.
+- Medical decisions across all model roots match the old open-root behavior.
+- Payment single/compound decisions and medical effects match the old consumers.
+- Both complete manifests match the reference compressed JSON byte strings.
+- The medical main workflow and its malformed-request manifest additionally
+  match their reference bytes; all replay rows and final evidence-state flags
+  match the original authorizer. A generic fold law proves state-step ordering.
+
+A build-time audit restricts six generic API/Contract/workflow proofs to Lean's
+standard =propext=, =Classical.choice= and =Quot.sound= axioms. Concrete Case
+instances retain their existing native computation certificates; they are
+separate from these universal method/publication/fold laws.
+
+Run =lake build Tests.Functional.Capabilities= and =just check-lean=.
+The complete GitHub workflow also checks the existing official Rust Cedar
+parser/validator/authorizer, artifacts, scenarios and authorization-delta proofs.
+Retained snapshots/thunks do not establish hard RSS bounds, Host atomicity or
+a measured end-to-end speedup.
