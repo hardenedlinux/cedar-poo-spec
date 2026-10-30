@@ -57,8 +57,7 @@ jobs:
       - name: Restore Cargo cache
         uses: Swatinem/rust-cache@49a0bdc70d2e1b713ca9e2869b211fcce03d3c1c # v2
         with:
-          shared-key: cedar-poo-workspace-target-v2
-          key: ${{ github.job }}
+          shared-key: cedar-poo-workspace-target-v2-${{ github.job }}
           workspaces: ". -> rust/target"
       - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
       - run: just check-lean-layers
@@ -95,8 +94,7 @@ jobs:
       - name: Restore Cargo cache
         uses: Swatinem/rust-cache@49a0bdc70d2e1b713ca9e2869b211fcce03d3c1c # v2
         with:
-          shared-key: cedar-poo-workspace-target-v2
-          key: ${{ github.job }}
+          shared-key: cedar-poo-workspace-target-v2-${{ github.job }}
           workspaces: ". -> rust/target"
       - run: just check-cedar-artifacts
       - run: uv run --project python --package cedar-poo-py-test --locked python -m unittest discover -s python/tests
@@ -159,8 +157,7 @@ jobs:
       - name: Restore Cargo cache
         uses: Swatinem/rust-cache@49a0bdc70d2e1b713ca9e2869b211fcce03d3c1c # v2
         with:
-          shared-key: cedar-poo-workspace-target-v2
-          key: ${{ github.job }}
+          shared-key: cedar-poo-workspace-target-v2-${{ github.job }}
           workspaces: ". -> rust/target"
       - name: Install pinned CVC5
         run: |
