@@ -105,3 +105,28 @@ fn measured_catalog_preserves_complete_output_and_refuses_the_same_invalid_input
         replay("{}").expect_err("empty ordinary catalog")
     );
 }
+
+#[test]
+fn catalog_normalization_preserves_duplicate_wire_field_behavior() {
+    let ordinary = fixture().to_string();
+    let duplicated = ordinary.replace(
+        "\"name\":\"allow-all\"",
+        "\"name\":\"ignored\",\"name\":\"allow-all\"",
+    );
+    assert_ne!(
+        ordinary, duplicated,
+        "duplicate-field control must mutate input"
+    );
+    assert_eq!(
+        replay(&duplicated).expect("normalized Value path"),
+        replay(&ordinary).expect("baseline")
+    );
+    // Direct typed decoding changes this accepted wire behavior. Keep the shared
+    // Value normalization owner instead of silently changing the transport contract.
+    assert!(
+        serde_json::from_str::<std::collections::BTreeMap<String, cedar_poo_runtime::Manifest>>(
+            &duplicated
+        )
+        .is_err()
+    );
+}

@@ -181,7 +181,9 @@ through executable projection Contracts and kernel-audited provider laws.
 =just bench-functional-catalog= measures the native release Rust replay under
 fixed workloads, alongside the separate Lean-run reuse measurement.
 [[file:docs/native-performance-plan.org][Native lifecycle audit and next acceptance plan]] records whole-process accounting,
-shared ownership changes and the next all-domain optimization unit.
+shared ownership changes and the accepted all-domain optimization unit.
+[[file:docs/native-preparation-acceptance.org][P0-P2 implementation and acceptance]] records shared Entities preparation, proved
+Contract-report fusion and complete native process/resource evidence.
 
 =just lean-poo-api= lists the public modules from the locked LeanPOO
 dependency. =just lean-poo-api-find 'Multimethod.register'= searches its Lean

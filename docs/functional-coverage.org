@@ -251,3 +251,13 @@ The original 48 artifact byte hashes, all 51 entries, 1280 Cedar rows, both
 compiled/rendered authorization paths, current-head CI and all negative controls
 remain acceptance requirements. Neither favorable timings nor peak RSS alone
 admit provider I/O, cryptographic execution or a real Host deployment.
+
+* P0-P2 shared preparation closure
+
+See the [[file:native-preparation-acceptance.org][integrated acceptance report]]. All 51 catalog entries and nine
+object families retain the same semantic scope. The independent original-flow
+check now covers all 23 schema-bearing and 24 raw manifests. Object/report laws
+number thirteen after adding full-report equality for fused POO diagnostics.
+Rust reuses parsed Entities within one actual schema/invocation and immutable
+full snapshot; Case requests, contexts, receipt inputs and authorizations remain
+fresh. No library or Production import gains an Example/Test dependency.

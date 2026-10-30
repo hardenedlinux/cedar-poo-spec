@@ -1,3 +1,4 @@
+import CedarPooSpec.Functional.PreparedDiagnostics
 import LeanPoo.Object.Definition
 import LeanPoo.C4.ValidationInvariant
 import LeanPoo.Functional.ObjectContractRefinement
@@ -46,11 +47,13 @@ abbrev Result (contract : Check Key Value) (profile : Object Key Value) : Capabi
 abbrev Operations (contract : Check Key Value) :=
   Provider (Object Key Value) Capability (Result contract)
 
-def check (contract : Check Key Value) (profile : Object Key Value) :
+def check (contract : Check Key Value) : (profile : Object Key Value) →
     Except (List (Issue Key String)) (PLift (Checked contract profile)) :=
-  let report := diagnose contract profile []
-  if valid : report = [] then .ok ⟨⟨valid⟩⟩
-  else .error report
+  let prepared := prepareDiagnostics contract
+  fun profile =>
+    let report := prepared.report profile
+    if valid : report = [] then .ok ⟨⟨(prepared.aligned profile).symm.trans valid⟩⟩
+    else .error report
 
 def project (profile : Object Key Value) (key : Key) : Option (Projection profile key) :=
   match actual : profile.read key with

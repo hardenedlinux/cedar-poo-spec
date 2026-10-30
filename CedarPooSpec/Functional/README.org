@@ -322,3 +322,9 @@ objects, forcing work inside the clock interval. [[file:../../docs/functional-co
 root-scaling, logical retention, allocation-counter units, process RSS and the
 separate ordinary/instrumented Rust observations. Resource evidence does not
 replace type, Contract, proof or complete Cedar receipt equality.
+
+* P0-P2 shared native preparation
+
+The [[file:../../docs/native-preparation-acceptance.org][integrated acceptance report]] records invocation/schema-bound Entities
+reuse, proved fused Contract reports, canonical hashing, full lifecycle/CPU/RSS
+evidence and all-domain closure. Requests/decisions are never cached.

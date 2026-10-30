@@ -1,14 +1,15 @@
 //! Policy parsing, source verification and individual Cedar case execution.
+use crate::entities::EntitySlot;
 use crate::observation::ReplayMetrics;
 
+pub(crate) use crate::canonical::json_sha256;
+use crate::canonical::value_sha256;
 use crate::{CompiledPolicyJson, TemplateSourceJson};
 use cedar_policy::{
-    AuthorizationError, Authorizer, Context, Decision, Entities, EntityUid, PolicySet, Request,
-    Schema,
+    AuthorizationError, Authorizer, Context, Decision, EntityUid, PolicySet, Request,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet};
 use std::ops::Deref;
 use std::path::Path;
@@ -71,52 +72,6 @@ pub(crate) fn valid_revision_name(revision: &str) -> bool {
     })
 }
 
-pub(crate) fn json_sha256(value: &impl Serialize) -> Result<String, String> {
-    let value = serde_json::to_value(value).map_err(|error| error.to_string())?;
-    let mut bytes = Vec::new();
-    write_canonical_json(&value, &mut bytes)?;
-    let digest = Sha256::digest(bytes);
-    Ok(digest.iter().map(|byte| format!("{byte:02x}")).collect())
-}
-
-fn write_canonical_json(value: &Value, output: &mut Vec<u8>) -> Result<(), String> {
-    match value {
-        Value::Null => output.extend_from_slice(b"null"),
-        Value::Bool(value) => output.extend_from_slice(if *value { b"true" } else { b"false" }),
-        Value::Number(value) => output.extend_from_slice(value.to_string().as_bytes()),
-        Value::String(value) => {
-            output.extend_from_slice(&serde_json::to_vec(value).map_err(|error| error.to_string())?)
-        }
-        Value::Array(values) => {
-            output.push(b'[');
-            for (index, value) in values.iter().enumerate() {
-                if index > 0 {
-                    output.push(b',');
-                }
-                write_canonical_json(value, output)?;
-            }
-            output.push(b']');
-        }
-        Value::Object(values) => {
-            output.push(b'{');
-            let mut entries = values.iter().collect::<Vec<_>>();
-            entries.sort_unstable_by(|left, right| left.0.cmp(right.0));
-            for (index, (key, value)) in entries.into_iter().enumerate() {
-                if index > 0 {
-                    output.push(b',');
-                }
-                output.extend_from_slice(
-                    &serde_json::to_vec(key).map_err(|error| error.to_string())?,
-                );
-                output.push(b':');
-                write_canonical_json(value, output)?;
-            }
-            output.push(b'}');
-        }
-    }
-    Ok(())
-}
-
 pub(crate) struct CheckedRevision {
     pub(crate) source: Value,
     pub(crate) policy_sha256: Option<String>,
@@ -171,7 +126,7 @@ impl CheckedRevision {
             return Err("rendered Cedar text changed policy bodies".into());
         }
         let policy_sha256 = if hash_for_receipt {
-            Some(json_sha256(&source)?)
+            Some(value_sha256(&source)?)
         } else {
             None
         };
@@ -194,9 +149,11 @@ pub fn check_direct_sources(manifest: &Manifest, directory: &Path) -> Result<(),
         return Err("manifest has no cases".into());
     }
     let mut sources = BTreeMap::new();
+    let mut entities = EntitySlot::new(None);
     for case in &manifest.cases {
         let policies = direct_source(&mut sources, directory, case)?;
-        check_direct_case(case, policies).map_err(|error| format!("{}: {error}", case.name))?;
+        check_direct_case(case, policies, &mut entities)
+            .map_err(|error| format!("{}: {error}", case.name))?;
     }
     Ok(())
 }
@@ -220,7 +177,11 @@ fn direct_source<'a>(
     Ok(&sources[&case.revision])
 }
 
-fn check_direct_case(case: &Case, policies: &PolicySet) -> Result<(), String> {
+fn check_direct_case<'input>(
+    case: &'input Case,
+    policies: &PolicySet,
+    entity_slot: &mut EntitySlot<'_, 'input>,
+) -> Result<(), String> {
     if policies.policies().count() != case.policy_ids.len() {
         return Err("direct policy count differs".into());
     }
@@ -236,7 +197,8 @@ fn check_direct_case(case: &Case, policies: &PolicySet) -> Result<(), String> {
     if policy_body_counts(&direct_bodies) != policy_body_counts(&compiled_bodies) {
         return Err("direct policy bodies differ".into());
     }
-    let entities = Entities::from_json_value(case.entities.clone(), None)
+    let entities = entity_slot
+        .get(&case.entities, None)
         .map_err(|error| format!("Cedar entities: {error}"))?;
     let uid = |value: &str| EntityUid::from_str(value).map_err(|error| error.to_string());
     let context = Context::from_json_value(case.request.context.clone(), None)
@@ -249,7 +211,7 @@ fn check_direct_case(case: &Case, policies: &PolicySet) -> Result<(), String> {
         None,
     )
     .map_err(|error| format!("Cedar request: {error}"))?;
-    let response = Authorizer::new().is_authorized(&request, policies, &entities);
+    let response = Authorizer::new().is_authorized(&request, policies, entities);
     let decision = match response.decision() {
         Decision::Allow => "allow",
         Decision::Deny => "deny",
@@ -506,15 +468,20 @@ pub(crate) struct ObservedDecision {
     pub(crate) error_policy_ids: Vec<String>,
 }
 
-pub(crate) fn check_case(
-    case: &Case,
-    policies: &PolicySet,
-    rendered: &PolicySet,
-    compiled_bodies: &BTreeMap<String, String>,
-    rendered_bodies: &BTreeMap<String, String>,
-    schema: Option<&Schema>,
+pub(crate) fn check_case<'input>(
+    case: &'input Case,
+    revision: &CheckedRevision,
+    entity_slot: &mut EntitySlot<'_, 'input>,
     mut metrics: Option<&mut ReplayMetrics>,
 ) -> Result<ObservedDecision, String> {
+    let CheckedRevision {
+        policies,
+        rendered,
+        compiled_bodies,
+        rendered_bodies,
+        ..
+    } = revision;
+    let schema = entity_slot.schema();
     let started = metrics.as_ref().map(|_| Instant::now());
     let expected_ids = case.policy_ids.iter().cloned().collect::<BTreeSet<_>>();
     let loaded_ids = policies
@@ -524,7 +491,8 @@ pub(crate) fn check_case(
     if expected_ids.len() != case.policy_ids.len() || expected_ids != loaded_ids {
         return Err("loaded policy IDs differ from the Lean compilation".into());
     }
-    let entities = Entities::from_json_value(case.entities.clone(), schema)
+    let entities = entity_slot
+        .get(&case.entities, metrics.as_deref_mut())
         .map_err(|error| format!("Cedar schema entities: {error}"))?;
     let uid = |text: &str| EntityUid::from_str(text).map_err(|error| error.to_string());
     let action = uid(&case.request.action)?;
@@ -547,7 +515,7 @@ pub(crate) fn check_case(
         stats.request_preparation_ns += elapsed;
     }
     let started = metrics.as_ref().map(|_| Instant::now());
-    let response = Authorizer::new().is_authorized(&request, policies, &entities);
+    let response = Authorizer::new().is_authorized(&request, policies, entities);
     if let (Some(stats), Some(started)) = (metrics.as_deref_mut(), started) {
         stats.authorization_ns += started.elapsed().as_nanos();
         stats.authorization_calls += 1;
@@ -599,7 +567,7 @@ pub(crate) fn check_case(
         stats.diagnostics_ns += started.elapsed().as_nanos();
     }
     let started = metrics.as_ref().map(|_| Instant::now());
-    let reparsed = Authorizer::new().is_authorized(&request, rendered, &entities);
+    let reparsed = Authorizer::new().is_authorized(&request, rendered, entities);
     if let (Some(stats), Some(started)) = (metrics.as_deref_mut(), started) {
         stats.authorization_ns += started.elapsed().as_nanos();
         stats.authorization_calls += 1;

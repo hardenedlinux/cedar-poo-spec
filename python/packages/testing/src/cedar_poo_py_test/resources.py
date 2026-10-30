@@ -4,12 +4,12 @@ import argparse
 import hashlib
 import json
 import platform
-import re
 import subprocess
 import sys
 import tempfile
 import time
 from pathlib import Path
+from .process_stats import parse_stats
 
 
 def main() -> None:
@@ -35,18 +35,17 @@ def main() -> None:
         elapsed = time.monotonic_ns() - started
         report.seek(0)
         statistics = report.read()
-    pattern = (r"^\s*(\d+)\s+maximum resident set size\s*$" if system == "Darwin"
-               else r"^\s*Maximum resident set size \(kbytes\):\s*(\d+)\s*$")
-    match = re.search(pattern, statistics, re.MULTILINE)
-    if match is None:
+    try:
+        observed = parse_stats(statistics, system)
+    except ValueError as error:
         sys.stderr.write(statistics)
-        raise SystemExit(child.returncode or "native process RSS observation unavailable")
+        raise SystemExit(child.returncode or str(error)) from error
     args.output.parent.mkdir(parents=True, exist_ok=True)
     receipt = {
         "format": "cedar-poo-native-process-v1", "system": system,
         "architecture": platform.machine(), "executable": str(executable),
         "executable_sha256": digest.hexdigest(), "arguments": args.arguments,
-        "elapsed_ns": elapsed, "peak_rss_bytes": int(match[1]) * (1 if system == "Darwin" else 1024),
+        "elapsed_ns": elapsed, **observed,
         "returncode": child.returncode,
         "scope": "OS process high-water RSS including native startup; not retained heap or an RSS bound",
     }

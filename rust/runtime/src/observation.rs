@@ -14,4 +14,11 @@ pub struct ReplayMetrics {
     pub request_preparation_ns: u128,
     pub diagnostics_ns: u128,
     pub receipt_ns: u128,
+    /// Subphase of request preparation, not an additional top-level duration.
+    pub entity_preparation_ns: u128,
+    pub entity_parse_calls: usize,
+    pub entity_reuses: usize,
+    pub entity_replacements: usize,
+    /// Maximum entries retained by this one-slot owner; not a heap/RSS bound.
+    pub entity_slot_peak: usize,
 }

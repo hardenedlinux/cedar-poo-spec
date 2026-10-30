@@ -5,6 +5,8 @@ use crate::bridge::{
     Case, CheckedRevision, Manifest, ReplayReceipt, SourcePolicies, check_case, json_sha256,
     valid_revision_name,
 };
+use crate::canonical::value_sha256;
+use crate::entities::EntitySlot;
 use crate::observation::ReplayMetrics;
 use cedar_policy::Schema;
 use std::collections::{BTreeMap, BTreeSet};
@@ -50,8 +52,24 @@ pub(crate) fn check_manifest_prepared(
     cases: &[Case],
     collect_receipts: bool,
     schema: Option<&Schema>,
+    metrics: Option<&mut ReplayMetrics>,
+    loaded: BTreeMap<String, SourcePolicies>,
+) -> Result<Vec<ReplayReceipt>, String> {
+    check_manifest_with_entities(
+        cases,
+        collect_receipts,
+        metrics,
+        loaded,
+        EntitySlot::new(schema),
+    )
+}
+
+pub(crate) fn check_manifest_with_entities<'input>(
+    cases: &'input [Case],
+    collect_receipts: bool,
     mut metrics: Option<&mut ReplayMetrics>,
     mut loaded: BTreeMap<String, SourcePolicies>,
+    mut entities: EntitySlot<'_, 'input>,
 ) -> Result<Vec<ReplayReceipt>, String> {
     if cases.is_empty() {
         return Err("manifest has no cases".into());
@@ -94,16 +112,8 @@ pub(crate) fn check_manifest_prepared(
         if revision.source != *case.policies.deref() {
             return Err(format!("{}: conflicting revision output", case.revision));
         }
-        let observed = check_case(
-            case,
-            &revision.policies,
-            &revision.rendered,
-            &revision.compiled_bodies,
-            &revision.rendered_bodies,
-            schema,
-            metrics.as_deref_mut(),
-        )
-        .map_err(|error| format!("{}: {error}", case.name))?;
+        let observed = check_case(case, revision, &mut entities, metrics.as_deref_mut())
+            .map_err(|error| format!("{}: {error}", case.name))?;
         if collect_receipts {
             let started = metrics.as_ref().map(|_| Instant::now());
             let error_free_allow =
@@ -119,7 +129,7 @@ pub(crate) fn check_manifest_prepared(
                     .as_ref()
                     .ok_or("missing policy digest for replay receipt")?
                     .clone(),
-                entities_sha256: json_sha256(&case.entities)?,
+                entities_sha256: value_sha256(&case.entities)?,
                 request_sha256: json_sha256(&case.request)?,
                 decision: observed.decision,
                 reasons: observed.reasons,

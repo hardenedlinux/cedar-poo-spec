@@ -1,10 +1,10 @@
 //! Strict Cedar schema validation and schema-bound replay records.
+use crate::canonical::value_sha256;
 use crate::observation::ReplayMetrics;
 use crate::replay::check_manifest_prepared;
 
 use crate::bridge::{
-    Case, ReplayReceipt, SourcePolicies, json_sha256, load_policy_set,
-    render_identified_policy_sources,
+    Case, ReplayReceipt, SourcePolicies, load_policy_set, render_identified_policy_sources,
 };
 use cedar_policy::{Entities, Schema, ValidationMode, Validator};
 use serde::{Deserialize, Serialize};
@@ -120,7 +120,7 @@ fn replay_validated_observed(
             revisions.insert(case.revision.clone(), policies);
         }
     }
-    let schema_sha256 = json_sha256(&manifest.schema)?;
+    let schema_sha256 = value_sha256(&manifest.schema)?;
     if let (Some(stats), Some(started)) = (metrics.as_deref_mut(), started) {
         let elapsed = started.elapsed().as_nanos();
         stats.runtime_preparation_ns += elapsed;

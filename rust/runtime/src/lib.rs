@@ -1,5 +1,7 @@
 //! Official Cedar validation, policy export and receipt replay.
 mod bridge;
+mod canonical;
+mod entities;
 mod observation;
 mod replay;
 pub use observation::ReplayMetrics;

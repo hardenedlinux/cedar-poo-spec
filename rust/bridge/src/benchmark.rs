@@ -27,6 +27,19 @@ pub(crate) fn run(input: &str, cli_input_read_ns: u128) -> Result<(), String> {
         })
         .sum();
 
+    let expected_entity_parses: usize = source
+        .values()
+        .filter_map(|entry| entry.get("cases").and_then(Value::as_array))
+        .map(|cases| {
+            cases
+                .iter()
+                .enumerate()
+                .filter(|(index, case)| {
+                    *index == 0 || case.get("entities") != cases[*index - 1].get("entities")
+                })
+                .count()
+        })
+        .sum();
     drop(source);
     let revision_inventory_ns = started.elapsed().as_nanos();
     let samples_started = Instant::now();
@@ -65,6 +78,9 @@ pub(crate) fn run(input: &str, cli_input_read_ns: u128) -> Result<(), String> {
         if rows == 0
             || metrics.authorization_calls != rows * 2
             || metrics.prepared_revisions != expected_revisions
+            || metrics.entity_parse_calls != expected_entity_parses
+            || metrics.entity_parse_calls + metrics.entity_reuses != rows
+            || metrics.entity_slot_peak != 1
         {
             return Err(
                 "measured replay did not execute every compiled/rendered authorization".into(),

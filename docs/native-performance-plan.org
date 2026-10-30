@@ -9,9 +9,10 @@ families and applicable Production fixtures remain one acceptance unit. Domain
 fixtures consume shared changes; there is no per-industry engine, provider or
 independently declared completion. PR #8 remains open and unmerged.
 
-This document distinguishes implemented observations/ownership changes from
-planned entity preparation, typed transport and Lean allocation work. Those
-planned optimizations are not claimed as implemented or qualified.
+P0-P2 is now implemented and locally qualified as one shared unit. The
+[[file:native-preparation-acceptance.org][implementation and acceptance report]] records exact code, tests, all-domain
+coverage and measured results. The design sections below preserve the earlier
+proposal and its rationale; they are superseded by that implementation status.
 
 * Why the earlier process comparison was inconclusive
 
@@ -46,7 +47,7 @@ parsing, JSON conversion, allocation and destruction paths. Sampling perturbs
 the process and covers a window; its timings are not latency qualification or
 whole-run CPU percentages.
 
-* Implemented common ownership and lifecycle changes
+* Common ownership and lifecycle changes (b64ab6b baseline)
 
 The catalog moves its already encoded nested Values into the final JSON object,
 removing a redundant deep serialization. It retains manifests/typed receipts
@@ -74,7 +75,7 @@ remaining drops, shutdown and observer overhead. It is not isolated dyld time,
 a cold-filesystem measurement, or Python/uv startup time: the wrapper starts
 its timer after importing itself and hashing the executable.
 
-* Measured lifecycle follow-up and optimization limits
+* Measured lifecycle follow-up and optimization limits (b64ab6b baseline)
 
 Final ordinary executable SHA-256 is
 =3ed1581b90efc41b76590f4ffc25ed141c95b65f519fb5c06ec3b6abc92b046a=.
@@ -128,30 +129,31 @@ The remaining dominant cost still warrants shared preparation/transport work.
 The final CLI-timed artifact has separate receipts above; observations from
 these distinct artifact cohorts are not silently combined into a speed claim.
 
-* Next stage: one shared acceptance unit
+* Accepted P0-P2 design (see implementation status above)
 
 | Workstream | Shared owner and delivery | Acceptance scope |
 |------------+---------------------------+------------------|
-| 1. Complete lifecycle baseline | Keep this stage evidence on the canonical ordinary path; fixed alternating comparisons of benchmark and one-shot replay, separate allocation and CPU sampling | All 51 entries, complete artifacts, process identity/exit/RSS and phase residuals |
-| 2. Entity preparation and transport ownership | Runtime owns an invocation/schema-bound prepared Entities slot; assess borrowed/typed catalog decoding and canonical hashing after profiling | Every schema-bearing and raw manifest, including changed entities/schema and simultaneous invalid-input controls |
-| 3. Lean typed allocation/retention | Existing ObjectProfile/Program/ContextSlot owners; inspect immutable plan sharing, repeated inherited reads and construction allocations before adding structures | All nine families, accepted/forged/missing inputs, existing hot/churn and 8/32/128-root controls |
+| 1. Complete lifecycle baseline | Implemented observer/OS wall, CPU and precision, fresh/repeated cohorts and fixed alternating benchmark/one-shot comparisons | All 51 entries, complete artifacts, process identity/exit/RSS and phase residuals |
+| 2. Entity preparation and transport ownership | Implemented schema/invocation-bound EntitySlot and borrowed canonical hashing; preserve Value normalization after rejecting incompatible direct typed decoding | Every schema-bearing and raw manifest, including changed entities/schema and simultaneous invalid-input controls |
+| 3. Lean typed allocation/retention | Implemented Contract-indexed fused diagnostics with exact report proof; measured all nine families and retained existing Program/ContextSlot ownership | All nine families, accepted/forged/missing inputs, existing hot/churn and 8/32/128-root controls |
 | 4. Whole-process qualification | Same exact head on macOS and Ubuntu; ordinary process latency, separate allocation/RSS and complete proof/replay gates | All industries and Production fixtures together; PR #8 remains unmerged |
 
-** Shared Entities preparation: first substantive candidate
+** Shared Entities preparation: implemented
 
 A source-input survey found 1280 case rows but only 51 distinct entity JSON
-snapshots when identity is scoped separately to each manifest. This is an input
-inventory, not proof of authorization equivalence or evidence of implemented
-reuse. The current case path reparses entities for every row; request preparation
-was around 145 ms per complete sample in the earlier phase observations.
+snapshots when identity is scoped separately to each manifest. That inventory
+motivated the implementation, but did not itself prove authorization equivalence.
+The original path reparsed every row; the implemented bounded slot now performs
+53 parses and 1227 reuses, including ordered churn. The acceptance report gives
+the complete original-workflow comparisons and current resource evidence.
 
 Use the pinned [[https://docs.rs/cedar-policy/4.12.0/cedar_policy/struct.Entities.html][Cedar 4.12.0 public Entities API]]. Its parser validates with the
 supplied schema and incorporates schema action entities. Therefore a UID or
 JSON digest alone is insufficient for reusing parsed entities.
 
-The proposed slot must own or borrow the actual schema for one invocation and
-retain the full source snapshot alongside parsed Entities. Lookup verifies full
-source equality; changes replace the slot, and invocation exit releases it.
+The implemented slot borrows the actual schema and full immutable input Values
+for one invocation alongside parsed Entities. Lookup verifies full Value
+equality; changes replace the slot, and invocation exit releases it.
 No global cache, cross-schema reuse or decision/credential retention is allowed.
 Construction stays lazy at its original point after policy-ID checks, preserving
 first-error behavior. Request/context/action parsing and both authorization
@@ -160,11 +162,12 @@ malformed input, simultaneous faults, refusal and retry require exact complete
 receipt/error parity against the independent original workflow. The candidate
 is accepted only after this proof boundary and actual end-to-end measurements.
 
-Then measure typed/borrowed catalog decoding against the existing Value path.
-Preserve catalog order, input classification, unknown-entry refusal, policy
-source equality and cross-artifact checks. Do not enable borrowed transport or
-replace canonical hashing based solely on one microbenchmark. Shared policies
-must still complete strict validation before requests are observed.
+The transport assessment preserves catalog order, input classification,
+unknown-entry refusal, normalization and cross-artifact checks. Direct typed
+Manifest decoding changes duplicate-field behavior and was not enabled; a
+regression test locks that boundary. Borrowed Value hashing and direct escaping
+are tested against the previous canonical algorithm and complete old/new output.
+Shared policies still complete strict validation before requests are observed.
 
 ** Lean and compiler scope
 

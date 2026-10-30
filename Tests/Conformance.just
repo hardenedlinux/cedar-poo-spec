@@ -140,7 +140,7 @@ check-functional-catalog: build-examples
     cargo run --locked --quiet -p cedar-poo-bridge --manifest-path Cargo.toml -- replay-catalog < .lake/build/functional-catalog.json > .lake/build/functional-catalog-receipts.json
     jq -e 'length == 51 and (."claim-settlement-handoff".scenarios | length) == 14 and ([."claim-settlement-handoff".scenarios[] | select(.admitted) | .name] == ["ready"])' .lake/build/functional-catalog-receipts.json > /dev/null
     cargo test --locked -p cedar-poo-bridge --lib emitted_catalog_rejects_cross_artifact_tampering -- --ignored
-    cargo test --locked -p cedar-poo-runtime --lib prepared_catalog_matches_original_schema_workflow -- --ignored
+    cargo test --locked -p cedar-poo-runtime --lib prepared_catalog_matches_original_workflows -- --ignored
 
 # Consumer migration is an enforced boundary; primitives retain compatibility APIs.
 check-functional-consumers:

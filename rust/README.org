@@ -229,3 +229,9 @@ uses a forwarding System allocator with nonallocating atomic counters. Ordinary
 latency is measured without that feature; instrumented allocation/RSS observations
 run separately. Rust allocation requests, requested-live peaks and OS process RSS
 have different meanings and are never authority or admission inputs.
+
+* P0-P2 shared native preparation
+
+The [[file:../docs/native-preparation-acceptance.org][integrated acceptance report]] records invocation/schema-bound Entities
+reuse, proved fused Contract reports, canonical hashing, full lifecycle/CPU/RSS
+evidence and all-domain closure. Requests/decisions are never cached.

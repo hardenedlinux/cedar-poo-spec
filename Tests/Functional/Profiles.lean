@@ -218,7 +218,8 @@ example (contract : Functional.ObjectProfile.Check PolicyProfile.Key (PolicyProf
 open Lean in
 run_cmd do
   let allowed := ["propext", "Classical.choice", "Quot.sound"]
-  for declaration in [``Functional.ObjectProfile.coherent,
+  for declaration in [``Functional.prepareDiagnostics_exact,
+      ``Functional.ObjectProfile.coherent,
       ``Functional.prepareProgram_retained,
       ``Functional.ObjectProfile.admit_read_eq,
       ``Functional.ObjectProfile.Access.read_matches,
@@ -233,5 +234,5 @@ run_cmd do
     for dependency in ← collectAxioms declaration do
       unless allowed.contains dependency.toString do
         throwError "Object Profile axiom boundary changed: {declaration}: {dependency}"
-  logInfo "OBJECT-PROFILES-AXIOMS-OK twelve universal laws; nine object families"
+  logInfo "OBJECT-PROFILES-AXIOMS-OK thirteen universal laws; nine object families"
 end CedarPooSpec.FunctionalProfilesTest

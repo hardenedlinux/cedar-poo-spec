@@ -119,3 +119,9 @@ process pair as a repeatable regression. The benchmark now emits =lifecycle=
 and per-sample =catalog= stages/entry coverage, and measures explicit cleanup.
 OS elapsed minus the measured body is a combined external residual, not startup
 alone. Fixed ordinary and allocation recipes retain these fields in CI output.
+
+* P0-P2 shared native preparation
+
+The [[file:../docs/native-preparation-acceptance.org][integrated acceptance report]] records invocation/schema-bound Entities
+reuse, proved fused Contract reports, canonical hashing, full lifecycle/CPU/RSS
+evidence and all-domain closure. Requests/decisions are never cached.
