@@ -6,14 +6,16 @@
 All nine applicable dependent-field object families now use the POO dataflow
 algorithm in one migration. Type/Contract/proof and complete Case/Rust replay
 acceptance pass. Complete process/resource evidence is recorded, including the
-initial regressions. The measurements do NOT establish a whole-application speedup
-or uniform small-object allocation non-regression. PR #8 remains unmerged and
-auto-merge stays disabled.
+initial regressions and both revision-preparation cohorts. The latest empty
+revision allocations decrease across all nine families; literal revisions also
+improve against the preceding dataflow revision. The measurements still do NOT
+establish a whole-application speedup. PR #8 remains unmerged and auto-merge stays
+disabled.
 
 The pre-migration Cedar baseline is
 =5ce4bd2c92cc79609221a9cad3a4c3af3893ce7f= with POO
-=b577371fe4e2717e198a29eefe16ec8ae0380e0d=. The final dependency is POO
-=c03da1ab399ac8ea57fdefd4b460e725541d88e6= from existing PR #13. That exact
+=b577371fe4e2717e198a29eefe16ec8ae0380e0d=. The current dependency is POO
+=1b1d41eafe6c979387c4fa69e194fb921bd4befe= from existing PR #13. That exact
 upstream revision passed all 17 GitHub CI jobs. Cedar retains Lean 4.34.1 and
 its Cedar pin; no compiler-profile, Cargo-jobs, timeout, heap, sample or workload
 exception was introduced.
@@ -183,12 +185,93 @@ revalidate the outputs. There is no fallback across the compatibility boundary.
 The workflow reports the requested identity and exact-hit state; a restored
 prefix is not an exact hit or proof of artifact acceptance. The existing native
 artifact mutation, cold-link and replay gates still determine acceptance.
-Cargo cache owners and paths are unchanged.
+Cargo retains =. -> rust/target= and uses the action's built-in job/toolchain/
+manifest/configuration identity, without a repository-specific numbered prefix. The [[file:lean-cache-evidence.json][cache receipt]] records
+one completed cold Lean job and one completed warm Lean job with the same
+compatibility identity. The warm job has both exact hits and explicitly disables
+the setup action's whole-Lake cache. Superseded integration jobs are not counted
+as successful whole-workflow evidence.
 
 The initial and pre-repair cohorts qualify their saved =a0dc449= source/artifact
 identities. The final cohort reruns every process using freshly built canonical-ABI
 executables and records their changed SHA identities. Domain, POO and Rust
 algorithms are unchanged by the ABI repair; no speedup is inferred from it.
+
+* Current shared revision and materializer ownership results
+
+The immediate pre-optimization baseline is Cedar
+=f05d23b3a3ac96dea517f462f837aa19aa62f619= / POO
+=c03da1ab399ac8ea57fdefd4b460e725541d88e6=. Its canonical-ABI executables are
+frozen separately from the older pre-migration baseline. The first new cohort
+qualifies POO =f31920166ddd09d4a943bc3006cd2a77d2c1e841=; the final cohort
+qualifies =1b1d41eafe6c979387c4fa69e194fb921bd4befe=. Neither cohort overwrites
+another's binaries, observations or failed performance conclusion.
+
+Empty C4 prefixes now share the complete preparation using open-self resolver
+and inventory frame proofs, while retaining their real new node/plan and fresh
+instance construction. Default-free prefixes persistently patch direct methods.
+Replacement methods discard inherited closures at preparation time. The same
+PreparedDeclaration owner supplies source lookup and literal overlay lowering.
+When a literal removes edges, a subset proof retains the old ranked schedule;
+new edges still schedule normally. Graph/execution indexes for nonempty prefixes
+remain a preparation cost.
+
+Instance publication now takes the materializer's actual dependent field index.
+It no longer retabulates/copies every completed field. The shared materializer
+loop and existing finish/complete-support check remain authoritative. Finish-state
+and indexed-lookup proofs connect the actual published table to the exact
+source-bound closed state; type/Contract/refusal behavior remains unchanged.
+
+The [[file:native-revision-preparation-initial-evidence.json][first complete cohort]],
+[[file:native-revision-preparation-initial-object-observations.csv][first object records]] and
+[[file:native-revision-preparation-initial-entry-timings.csv][first entry records]] are preserved.
+The [[file:native-revision-preparation-evidence.json][final complete cohort]],
+[[file:native-revision-preparation-object-observations.csv][final object records]] and
+[[file:native-revision-preparation-entry-timings.csv][final entry records]] each contain 48 naturally
+completed children, 15 full wire comparisons, 486 object observations and 1836
+ordinary Rust entry timings. The fixed three pairs, fresh-file observations,
+120-second/3-second supervision, workloads and guards are unchanged. Both exact
+POO revisions passed all 17 remote CI jobs; both immutable dependency pins passed
+the complete local Cedar gate. The Python process/resource suite passed 14 tests.
+
+Counts below are medians per 128 fresh named structural revisions (nine
+observations per cell). They are small-allocation heartbeat counts, not bytes.
+Empty revisions decrease 29.7–43.6%; literal-forgery revisions decrease 17.2–26.0%.
+All nine final empty-revision counts are also below their pre-migration valid-mode
+counts. This does not establish a memory/RSS bound or superiority in every mode.
+
+| Family | Empty before | Empty after | Literal before | Literal after |
+|--------+--------------+-------------+----------------+---------------|
+| policy | 36992 | 24064 | 38272 | 30336 |
+| banking | 34560 | 23680 | 37888 | 30336 |
+| location | 57216 | 33280 | 56704 | 42240 |
+| source | 34560 | 23680 | 37888 | 30336 |
+| protection | 59648 | 33664 | 57088 | 42240 |
+| controller | 62720 | 39424 | 60928 | 46976 |
+| disclosure | 76544 | 44544 | 71552 | 52992 |
+| handoff | 42112 | 26880 | 43648 | 33792 |
+| lineage | 57728 | 40576 | 59392 | 49152 |
+
+Final complete object-process CPU medians are 210 -> 170 ms. Object RSS medians
+are both about 39.09 MiB. The complete catalog producer CPU is 140 -> 150 ms;
+sequential producer/Rust CPU is 500 -> 510 ms. The paired pipeline CPU observations
+are 570/500/490 ms before and 530/510/500 ms after. These do not establish stable
+end-to-end acceleration. The ordinary Rust executable is byte-identical between
+variants. Pipeline peak-child RSS medians are about 119.27 -> 119.62 MiB; they are
+not summed child peaks or a proven retained-heap bound.
+
+The nine paired ordinary Rust timing samples retain medians of 38.62 ms for
+schema preparation, 75.08 ms for independent text normalization, 55.48 ms for
+request preparation and 15.95 ms for authorization. These are disjoint owner
+subphases where documented; request preparation includes its entity subphase.
+They do not attribute every byte or the entire process lifetime.
+
+Every first-file observation is retained: first paired pipeline wall times are
+2781.27 -> 3914.55 ms despite CPU times of 570 -> 530 ms. Later paired wall times
+are 530.57/519.40 -> 541.86/533.27 ms. The non-CPU first-use overhead remains
+unattributed; this evidence does not identify antivirus, filesystem, scheduling
+or another host mechanism as its cause. Synthetic revision allocation savings
+therefore cannot stand in for catalog/startup or complete process acceptance.
 
 * Reproduction and next complete optimization boundary
 
@@ -203,15 +286,31 @@ Freeze before-bridge, before-object-profiles, before-functional-reuse and
 before-case-manifests with their SHA identities in baseline-identities.json.
 The saved evidence includes those exact identities and configuration exception.
 Then run =just bench-dataflow-lifecycle ARTIFACTS NEW_OUTPUT_DIRECTORY= after
-stopping task-owned builds/tests. Output directories are new and every process
+stopping task-owned builds/tests. For the immediate dataflow baseline, supply
+=f05d23b3a3ac96dea517f462f837aa19aa62f619= as the third argument. The driver
+checks the full baseline commit, its committed POO pin and all frozen hashes;
+commit/pin/hash mutation controls reject before launching measured children.
+Its source snapshot now includes root aggregators, Productions, all owned
+source files, JSON/Cedar fixtures, configuration files and nested Justfiles. Output directories are new and every process
 receipt/output remains preserved. The existing raw catalog benchmark jq gate
 continues to check every Rust sample.
 
-The remaining performance unit is shared prepared structural revision, across
-all nine families together: prove exact per-key C4 code equivalence and complete
-key coverage, update changed methods/read sets while framing unchanged owners,
-and avoid rebuilding full prepared tables for empty/literal-only revisions.
-Keep fresh source topology/node identities and actual new values. Reuse cannot
-be justified by matching labels, sampled outputs, or a schedule alone. Re-run the
-same complete native producer/Rust/Case evidence before any uniform performance
-acceptance. No timeout, case-count, admission or resource guard may be relaxed.
+The next performance unit is the complete catalog lifecycle across all 51
+entries, rather than another family-specific revision benchmark:
+
+1. Attribute native module initialization, manifest production and serialization
+   separately while preserving the ordinary complete-process control and exact
+   wire bytes. The new object algorithm's savings are not visible as a producer
+   CPU improvement in either cohort.
+2. Audit invocation-scoped immutable policy/schema preparation and canonical text
+   normalization in Rust. Existing measured subphases show preparation, not just
+   authorization, remains material. Keep the independent text-side parser,
+   compiled/rendered authorizers, strict error ordering and uncached reference.
+3. If persistent graph/execution patching is implemented, require exact per-key
+   source equations, complete support and current dependency ranks. Empty-node
+   sharing is already implemented; nonempty graph/index rebuilding remains.
+4. Re-run the same full semantic, original-workflow/mutation, fixed native process
+   and resource cohort together. Preserve every prior cohort and distinguish
+   allocation improvements from whole-process CPU, wall time and RSS outcomes.
+
+No timeout, case-count, workload, admission, axiom or resource guard may be relaxed.

@@ -14,6 +14,7 @@ import shutil
 import subprocess
 import sys
 import time
+import tomllib
 
 ROOT = Path(__file__).resolve().parents[1]
 BASE_COMMIT = "5ce4bd2c92cc79609221a9cad3a4c3af3893ce7f"
@@ -26,6 +27,7 @@ def digest(path):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--baseline-commit", default=BASE_COMMIT, help="Exact declared baseline commit; frozen hashes and dependency pin are verified")
     parser.add_argument("--artifacts", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
@@ -35,12 +37,18 @@ def main():
     binaries = {variant: {role: artifacts / f"{variant}-{name}" for role, name in ROLES.items()}
                 for variant in ("before", "after")}
     identities = {v: {k: {"path": str(p), "sha256": digest(p)} for k, p in d.items()} for v, d in binaries.items()}
-    tracked = subprocess.check_output(["git", "ls-files", "--", "CedarPooSpec", "Examples", "Productions", "Tests", "Benchmarks", "rust"], cwd=ROOT, text=True).splitlines()
-    source_files = [ROOT / name for name in tracked if Path(name).suffix in (".lean", ".py", ".rs", ".just")]
-    source_files += [ROOT / p for p in ("lakefile.toml", "lake-manifest.json", "Cargo.toml", "Cargo.lock", "Justfile", "Benchmarks/DataflowLifecycle.py")]
+    tracked = subprocess.check_output(["git", "ls-files"], cwd=ROOT, text=True).splitlines()
+    source_suffixes = {".lean", ".py", ".rs", ".just", ".toml", ".lock", ".json", ".jq", ".cedar", ".sha256", ".yml", ".yaml"}
+    source_files = [ROOT / name for name in tracked if not name.startswith("docs/") and
+                    (Path(name).suffix in source_suffixes or Path(name).name in {"Justfile", "lean-toolchain"})]
     baseline = json.loads((artifacts / "baseline-identities.json").read_text())
-    if baseline["cedar_commit"] != BASE_COMMIT:
-        parser.error("This fixed study requires the declared baseline commit")
+    if not re.fullmatch(r"[0-9a-f]{40}", args.baseline_commit) or baseline["cedar_commit"] != args.baseline_commit:
+        parser.error("Frozen baseline must match the explicit full baseline commit")
+    configuration = subprocess.check_output(
+        ["git", "show", f"{args.baseline_commit}:lakefile.toml"], cwd=ROOT, text=True)
+    baseline_poo = next(p["rev"] for p in tomllib.loads(configuration)["require"] if p["name"] == "LeanPoo")
+    if baseline["poo_revision"] != baseline_poo:
+        parser.error("Frozen baseline POO identity differs from its committed dependency pin")
     for role, identity in identities["before"].items():
         if identity["sha256"] != baseline["executables"]["before-" + ROLES[role]]:
             parser.error(f"Frozen baseline artifact changed: {role}")
@@ -48,7 +56,7 @@ def main():
     snapshot = hashlib.sha256(json.dumps(source_identity, sort_keys=True).encode()).hexdigest()
 
     def save():
-        report = {"format": "cedar-poo-dataflow-lifecycle-v1", "baseline_commit": BASE_COMMIT, "baseline_provenance": baseline,
+        report = {"format": "cedar-poo-dataflow-lifecycle-v1", "baseline_commit": args.baseline_commit, "baseline_provenance": baseline,
                   "poo_revision": next(p["rev"] for p in json.loads((ROOT / "lake-manifest.json").read_text())["packages"] if p["name"] == "LeanPoo"),
                   "source_snapshot_sha256": snapshot, "source_inputs": source_identity,
                   "binaries": identities, "process_limit_seconds": 120, "kill_after_seconds": 3,
