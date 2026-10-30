@@ -125,3 +125,7 @@ alone. Fixed ordinary and allocation recipes retain these fields in CI output.
 The [[file:../docs/native-preparation-acceptance.org][integrated acceptance report]] records invocation/schema-bound Entities
 reuse, proved fused Contract reports, canonical hashing, full lifecycle/CPU/RSS
 evidence and all-domain closure. Requests/decisions are never cached.
+
+The [[file:../docs/native-performance-next.org][first-file launch attribution and next integrated plan]] separates matched macOS
+execution-assessment waits from remaining shared runtime and object allocation
+costs, with all 51 entries retained in one acceptance unit.

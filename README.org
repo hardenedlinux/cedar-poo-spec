@@ -268,3 +268,7 @@ Cedar and =cedar-spec= are developed by the
 François-René Rideau, Alex Knauth, and Nada Amin. Their projects retain
 their own copyright and licenses. This repository is licensed under the
 Apache License 2.0; see [[file:LICENSE][LICENSE]].
+
+The [[file:docs/native-performance-next.org][first-file launch attribution and next integrated plan]] separates matched macOS
+execution-assessment waits from remaining shared runtime and object allocation
+costs, with all 51 entries retained in one acceptance unit.

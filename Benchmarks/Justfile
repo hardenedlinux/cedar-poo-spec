@@ -49,3 +49,8 @@ bench-functional-allocation: bench-functional-catalog
     jq -e -f Tests/Conformance/native-catalog-benchmark.jq .lake/build/functional-allocation-benchmark.json > /dev/null
     jq -e 'all(.samples[]; .allocation.allocation_requests > 0)' .lake/build/functional-allocation-benchmark.json > /dev/null
     jq -c '{build_profile,warmup,cli,lifecycle,samples}' .lake/build/functional-allocation-benchmark.json
+
+# Diagnostic executable has explicit main markers; its timings never qualify ordinary latency.
+probe-native-launch:
+    cargo build --release --locked -p cedar-poo-bridge --example launch_probe --manifest-path Cargo.toml
+    timeout --signal=TERM --kill-after=3s 120s uv run --project python --package cedar-poo-py-test --locked python -m cedar_poo_py_test.launch rust/target/release/examples/launch_probe --output-directory .lake/build/launch-probe

@@ -1,6 +1,9 @@
 #+title: Native lifecycle audit and next whole-repository acceptance unit
 #+options: toc:2
 
+The [[file:native-performance-next.org][2026-10-30 launch attribution and next integrated plan]] supersedes this
+earlier proposal after the shared-preparation implementation.
+
 * Scope and evidence boundary
 
 The owner is the shared Rust runtime/catalog and the shared Lean Functional

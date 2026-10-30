@@ -126,6 +126,7 @@ jobs:
       - run: just check-mission-comparison
       - run: just check-personnel-governance
       - run: just check-agentic-ai-commerce-admission
+      - run: just probe-native-launch
 
   authorization-delta:
     needs: [lean, rust]
