@@ -30,7 +30,13 @@ check-storage-profiles-v1:
 check-google-table-batch-v1:
     lake env lean --run Productions/Pseudonymization/TableBatchFixtureMain.lean | diff -u Tests/Conformance/google-table-batch-v1.json -
 
-check-delta: check-authorization-delta check-authorization-delta-operational check-authorization-delta-reasons check-authorization-delta-effective-reasons check-payment-delta check-payment-interaction check-agent-trace-delta check-health-authorization-impact
+check-delta: check-gateway-delta check-authorization-delta check-authorization-delta-operational check-authorization-delta-reasons check-authorization-delta-effective-reasons check-payment-delta check-payment-interaction check-agent-trace-delta check-health-authorization-impact
+
+check-gateway:
+    lake build CedarPooSpec.Gateway Tests.Gateway.Contracts Tests.Gateway.Delta
+
+check-gateway-delta: check-gateway
+    lake env lean --run Tests/Gateway/Delta.lean
 
 check-replay-receipts: prepare-agent-payment-manifest
     cargo run --locked --quiet -p cedar-poo-bridge --manifest-path Cargo.toml -- replay-receipts < .lake/build/agent-payment-manifest.json > .lake/build/agent-payment-replay-receipts.json
@@ -108,6 +114,7 @@ check-health-authorization-impact:
     uv run --project python --package cedar-poo-py-test --locked cedar-poo-py-test check health-authorization-impact
 
 check-authorization-delta-proof:
+    just check-gateway
     lake build CedarPooSpec.AuthorizationDeltaProof CedarPooSpec.AuthorizationDeltaBooleanCore Tests.Governance.AuthorizationDeltaFormula Tests.Governance.AuthorizationDeltaDirect Tests.Governance.AuthorizationDeltaAxiomAudit
 
 check-payment-delta: build-examples
