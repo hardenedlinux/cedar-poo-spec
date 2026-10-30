@@ -82,6 +82,63 @@ pub(crate) struct CheckedRevision {
     pub(crate) rendered_bodies: BTreeMap<String, String>,
 }
 
+/// Only the text parser constructs this owner. Consequently every policy has
+/// its complete original text; no lossy JSON/PST display is used as identity.
+struct ParsedTextPolicies {
+    policies: PolicySet,
+}
+
+impl ParsedTextPolicies {
+    fn parse(text: &str) -> Result<Self, String> {
+        PolicySet::from_str(text)
+            .map(|policies| Self { policies })
+            .map_err(|error| format!("rendered Cedar text parse: {error}"))
+    }
+}
+
+/// One manifest invocation owns pure normalization results, keyed by complete
+/// parsed source. SDK 4.12's text-to-JSON conversion reparses that exact text.
+/// Hits avoid this repeated EST parse as well as JSON-to-AST normalization.
+/// Revision names, policy IDs and observed decisions authorize no hit.
+#[derive(Default)]
+pub(crate) struct PreparedPolicyBodies {
+    bodies: BTreeMap<String, String>,
+}
+
+impl PreparedPolicyBodies {
+    fn bodies_by_id(
+        &mut self,
+        parsed: &ParsedTextPolicies,
+        mut metrics: Option<&mut ReplayMetrics>,
+    ) -> Result<BTreeMap<String, String>, String> {
+        let mut result = BTreeMap::new();
+        for policy in parsed.policies.policies() {
+            let key = policy
+                .to_cedar()
+                .ok_or("parsed static policy has no original Cedar text")?;
+            let body = if let Some(body) = self.bodies.get(&key) {
+                if let Some(stats) = metrics.as_deref_mut() {
+                    stats.policy_body_reuses += 1;
+                }
+                body.clone()
+            } else {
+                // The original independent normalizer remains the miss path.
+                let body = canonical_policy_body(policy)?;
+                self.bodies.insert(key, body.clone());
+                if let Some(stats) = metrics.as_deref_mut() {
+                    stats.policy_body_normalizations += 1;
+                    stats.policy_body_slot_peak =
+                        stats.policy_body_slot_peak.max(self.bodies.len());
+                }
+                body
+            };
+            // Keep each actual parsed ID and all body multiplicities.
+            result.insert(policy.id().to_string(), body);
+        }
+        Ok(result)
+    }
+}
+
 /// A sealed source/parse pair. Validation can borrow it but cannot replace its body.
 pub(crate) struct SourcePolicies {
     revision: String,
@@ -104,11 +161,12 @@ impl SourcePolicies {
         case: &Case,
         hash_for_receipt: bool,
         metrics: Option<&mut ReplayMetrics>,
+        bodies: Option<&mut PreparedPolicyBodies>,
     ) -> Result<CheckedRevision, String> {
         if self.revision != case.revision || self.source != *case.policies.deref() {
             return Err("prepared policy source mismatch".into());
         }
-        CheckedRevision::from_source(self, hash_for_receipt, metrics)
+        CheckedRevision::from_source(self, hash_for_receipt, metrics, bodies)
     }
 }
 impl CheckedRevision {
@@ -116,18 +174,20 @@ impl CheckedRevision {
         case: &Case,
         hash_for_receipt: bool,
         mut metrics: Option<&mut ReplayMetrics>,
+        bodies: Option<&mut PreparedPolicyBodies>,
     ) -> Result<Self, String> {
         let source = revision_phase(
             metrics.as_deref_mut(),
             |s| &mut s.revision_source_load_ns,
             || SourcePolicies::new(case),
         )?;
-        source.checked(case, hash_for_receipt, metrics)
+        source.checked(case, hash_for_receipt, metrics, bodies)
     }
     fn from_source(
         source: SourcePolicies,
         hash_for_receipt: bool,
         mut metrics: Option<&mut ReplayMetrics>,
+        mut bodies: Option<&mut PreparedPolicyBodies>,
     ) -> Result<Self, String> {
         let SourcePolicies {
             source, policies, ..
@@ -142,17 +202,21 @@ impl CheckedRevision {
         let rendered = revision_phase(
             metrics.as_deref_mut(),
             |s| &mut s.revision_text_parse_ns,
-            || {
-                PolicySet::from_str(&text)
-                    .map_err(|error| format!("rendered Cedar text parse: {error}"))
-            },
+            || ParsedTextPolicies::parse(&text),
         )?;
-        // Independent text-side normalization and both authorizers remain mandatory.
-        let rendered_bodies = revision_phase(
-            metrics.as_deref_mut(),
-            |s| &mut s.revision_normalize_ns,
-            || policy_bodies_by_id(&rendered),
-        )?;
+        // Every revision still parses its text independently. Identical complete
+        // parsed text can share pure normalization within this invocation;
+        // both authorizers and each revision's body comparison remain mandatory.
+        let normalize_started = metrics.as_ref().map(|_| Instant::now());
+        let rendered_bodies = if let Some(prepared) = bodies.as_mut() {
+            prepared.bodies_by_id(&rendered, metrics.as_deref_mut())
+        } else {
+            policy_bodies_by_id(&rendered.policies)
+        };
+        if let (Some(stats), Some(started)) = (metrics.as_deref_mut(), normalize_started) {
+            stats.revision_normalize_ns += started.elapsed().as_nanos();
+        }
+        let rendered_bodies = rendered_bodies?;
         let same = revision_phase(
             metrics.as_deref_mut(),
             |s| &mut s.revision_compare_ns,
@@ -176,7 +240,7 @@ impl CheckedRevision {
             source,
             policy_sha256,
             policies,
-            rendered,
+            rendered: rendered.policies,
             compiled_bodies,
             rendered_bodies,
         })

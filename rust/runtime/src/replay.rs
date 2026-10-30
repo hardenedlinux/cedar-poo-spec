@@ -2,8 +2,8 @@
 use std::ops::Deref;
 
 use crate::bridge::{
-    Case, CheckedRevision, Manifest, ReplayReceipt, SourcePolicies, check_case, json_sha256,
-    valid_revision_name,
+    Case, CheckedRevision, Manifest, PreparedPolicyBodies, ReplayReceipt, SourcePolicies,
+    check_case, json_sha256, valid_revision_name,
 };
 use crate::canonical::value_sha256;
 use crate::entities::EntitySlot;
@@ -55,12 +55,14 @@ pub(crate) fn check_manifest_prepared(
     metrics: Option<&mut ReplayMetrics>,
     loaded: BTreeMap<String, SourcePolicies>,
 ) -> Result<Vec<ReplayReceipt>, String> {
+    let mut bodies = PreparedPolicyBodies::default();
     check_manifest_with_entities(
         cases,
         collect_receipts,
         metrics,
         loaded,
         EntitySlot::new(schema),
+        Some(&mut bodies),
     )
 }
 
@@ -70,6 +72,7 @@ pub(crate) fn check_manifest_with_entities<'input>(
     mut metrics: Option<&mut ReplayMetrics>,
     mut loaded: BTreeMap<String, SourcePolicies>,
     mut entities: EntitySlot<'_, 'input>,
+    mut bodies: Option<&mut PreparedPolicyBodies>,
 ) -> Result<Vec<ReplayReceipt>, String> {
     if cases.is_empty() {
         return Err("manifest has no cases".into());
@@ -91,12 +94,22 @@ pub(crate) fn check_manifest_with_entities<'input>(
         if !revisions.contains_key(&case.revision) {
             let started = metrics.as_ref().map(|_| Instant::now());
             let checked = match loaded.remove(&case.revision) {
-                Some(policies) => policies.checked(case, collect_receipts, metrics.as_deref_mut()),
+                Some(policies) => policies.checked(
+                    case,
+                    collect_receipts,
+                    metrics.as_deref_mut(),
+                    bodies.as_deref_mut(),
+                ),
                 None => {
                     if let Some(stats) = metrics.as_deref_mut() {
                         stats.source_policy_loads += 1;
                     }
-                    CheckedRevision::new(case, collect_receipts, metrics.as_deref_mut())
+                    CheckedRevision::new(
+                        case,
+                        collect_receipts,
+                        metrics.as_deref_mut(),
+                        bodies.as_deref_mut(),
+                    )
                 }
             }
             .map_err(|error| format!("{}: {error}", case.name))?;

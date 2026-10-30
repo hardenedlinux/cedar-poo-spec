@@ -1,5 +1,4 @@
 set shell := ["sh", "-eu", "-c"]
-export CARGO_TARGET_DIR := "rust/target"
 
 # Example recipes follow the source publisher or project area.
 mod example 'Examples/Justfile'

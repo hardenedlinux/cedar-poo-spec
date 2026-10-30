@@ -48,6 +48,9 @@ fn emitted_catalog_rejects_cross_artifact_tampering() {
     assert_eq!(stages.entries.len(), 51);
     assert_eq!(stages.retained_manifests, 3);
     assert_eq!(metrics.authorization_calls, 2560);
+    assert_eq!(metrics.policy_body_normalizations, 335);
+    assert_eq!(metrics.policy_body_reuses, 665);
+    assert_eq!(metrics.policy_body_slot_peak, 21);
 
     assert_eq!(
         output.as_object().expect("catalog receipt object").len(),

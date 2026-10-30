@@ -59,6 +59,7 @@ fn original_validated_replay(
         None,
         std::collections::BTreeMap::new(),
         crate::entities::EntitySlot::uncached(Some(validator.schema())),
+        None,
     )
     .map(|rows| {
         rows.into_iter()
@@ -104,6 +105,7 @@ fn prepared_catalog_matches_original_workflows() {
                     None,
                     std::collections::BTreeMap::new(),
                     crate::entities::EntitySlot::uncached(None),
+                    None,
                 )
             };
             assert_eq!(
@@ -286,4 +288,51 @@ fn direct_source_batch_retains_error_prefixes_and_matches_fresh_preparation() {
             _ => actual.expect("valid direct input"),
         }
     }
+}
+
+#[test]
+fn policy_body_preparation_shares_only_complete_source_within_one_invocation() {
+    let first = receipt();
+    let mut same = first.clone();
+    same.name = "same-body".into();
+    same.revision = "same-body".into();
+    let mut changed = first.clone();
+    changed.name = "changed-body".into();
+    changed.revision = "changed-body".into();
+    let mut artifact = changed.policies.deref().clone();
+    artifact["staticPolicies"]["base"]["effect"] = json!("forbid");
+    changed.policies = serde_json::from_value(artifact).expect("different body at same policy ID");
+    changed.expected = "deny".into();
+    let manifest = Manifest {
+        cases: vec![first, same, changed],
+    };
+    let original = || {
+        crate::replay::check_manifest_with_entities(
+            &manifest.cases,
+            true,
+            None,
+            std::collections::BTreeMap::new(),
+            crate::entities::EntitySlot::uncached(None),
+            None,
+        )
+    };
+    for _ in 0..2 {
+        let mut metrics = crate::ReplayMetrics::default();
+        let actual =
+            crate::replay_manifest_measured(&manifest, &mut metrics).expect("shared preparation");
+        assert_eq!(
+            actual,
+            original().expect("independent uncached normalization")
+        );
+        assert_eq!(metrics.policy_body_normalizations, 2);
+        assert_eq!(metrics.policy_body_reuses, 1);
+        assert_eq!(metrics.policy_body_slot_peak, 2);
+        assert_eq!(metrics.prepared_revisions, 3);
+        assert_eq!(metrics.source_policy_loads, 3);
+        assert_eq!(metrics.authorization_calls, 6);
+    }
+    let mut conflict = manifest;
+    conflict.cases[2].revision = conflict.cases[0].revision.clone();
+    let error = replay_manifest(&conflict).expect_err("same revision cannot hide changed body");
+    assert!(error.contains("conflicting revision output"), "{error}");
 }

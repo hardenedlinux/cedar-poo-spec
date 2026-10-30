@@ -16,6 +16,11 @@ pub struct ReplayMetrics {
     pub revision_render_ns: u128,
     pub revision_text_parse_ns: u128,
     pub revision_normalize_ns: u128,
+    /// Text-side normalization work; reuse is keyed by the complete parsed policy text.
+    pub policy_body_normalizations: usize,
+    pub policy_body_reuses: usize,
+    /// Largest invocation-local set of prepared bodies, not a heap/RSS bound.
+    pub policy_body_slot_peak: usize,
     pub revision_compare_ns: u128,
     pub revision_hash_ns: u128,
     pub request_preparation_ns: u128,
