@@ -11,6 +11,13 @@ pub struct ReplayMetrics {
     pub source_policy_loads: usize,
     pub schema_preparation_ns: u128,
     pub revision_preparation_ns: u128,
+    /// Disjoint subphases of revision preparation, never additional top-level cost.
+    pub revision_source_load_ns: u128,
+    pub revision_render_ns: u128,
+    pub revision_text_parse_ns: u128,
+    pub revision_normalize_ns: u128,
+    pub revision_compare_ns: u128,
+    pub revision_hash_ns: u128,
     pub request_preparation_ns: u128,
     pub diagnostics_ns: u128,
     pub receipt_ns: u128,
@@ -21,4 +28,21 @@ pub struct ReplayMetrics {
     pub entity_replacements: usize,
     /// Maximum entries retained by this one-slot owner; not a heap/RSS bound.
     pub entity_slot_peak: usize,
+}
+
+/// The ordinary path never reads a clock. Subphases keep their actual owner.
+pub(crate) fn revision_phase<T>(
+    metrics: Option<&mut ReplayMetrics>,
+    phase: fn(&mut ReplayMetrics) -> &mut u128,
+    operation: impl FnOnce() -> T,
+) -> T {
+    match metrics {
+        None => operation(),
+        Some(stats) => {
+            let started = std::time::Instant::now();
+            let result = operation();
+            *phase(stats) += started.elapsed().as_nanos();
+            result
+        }
+    }
 }

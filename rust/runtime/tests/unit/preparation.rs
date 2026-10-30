@@ -86,6 +86,15 @@ fn prepared_catalog_matches_original_workflows() {
         if value.get("cases").is_none() {
             continue;
         }
+        // Independent legacy JSON -> AST normalization, before the optimized
+        // replay/oracle share their checked-revision owner.
+        let cases: Vec<Case> = serde_json::from_value(value["cases"].clone()).expect("cases");
+        let mut revisions = std::collections::BTreeSet::new();
+        for case in &cases {
+            if revisions.insert(&case.revision) {
+                super::assert_legacy_revision_bodies(case);
+            }
+        }
         if value.get("schema").is_none() {
             let mut manifest: Manifest = serde_json::from_value(value).expect("raw manifest");
             let original = |cases: &[Case]| {

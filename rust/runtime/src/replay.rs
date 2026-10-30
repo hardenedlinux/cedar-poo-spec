@@ -91,12 +91,12 @@ pub(crate) fn check_manifest_with_entities<'input>(
         if !revisions.contains_key(&case.revision) {
             let started = metrics.as_ref().map(|_| Instant::now());
             let checked = match loaded.remove(&case.revision) {
-                Some(policies) => policies.checked(case, collect_receipts),
+                Some(policies) => policies.checked(case, collect_receipts, metrics.as_deref_mut()),
                 None => {
                     if let Some(stats) = metrics.as_deref_mut() {
                         stats.source_policy_loads += 1;
                     }
-                    CheckedRevision::new(case, collect_receipts)
+                    CheckedRevision::new(case, collect_receipts, metrics.as_deref_mut())
                 }
             }
             .map_err(|error| format!("{}: {error}", case.name))?;

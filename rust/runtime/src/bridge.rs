@@ -1,6 +1,7 @@
 //! Policy parsing, source verification and individual Cedar case execution.
 use crate::entities::EntitySlot;
-use crate::observation::ReplayMetrics;
+use crate::observation::{ReplayMetrics, revision_phase};
+use std::fmt::Write;
 
 pub(crate) use crate::canonical::json_sha256;
 use crate::canonical::value_sha256;
@@ -102,34 +103,75 @@ impl SourcePolicies {
         self,
         case: &Case,
         hash_for_receipt: bool,
+        metrics: Option<&mut ReplayMetrics>,
     ) -> Result<CheckedRevision, String> {
         if self.revision != case.revision || self.source != *case.policies.deref() {
             return Err("prepared policy source mismatch".into());
         }
-        CheckedRevision::from_source(self, hash_for_receipt)
+        CheckedRevision::from_source(self, hash_for_receipt, metrics)
     }
 }
 impl CheckedRevision {
-    pub(crate) fn new(case: &Case, hash_for_receipt: bool) -> Result<Self, String> {
-        SourcePolicies::new(case)?.checked(case, hash_for_receipt)
+    pub(crate) fn new(
+        case: &Case,
+        hash_for_receipt: bool,
+        mut metrics: Option<&mut ReplayMetrics>,
+    ) -> Result<Self, String> {
+        let source = revision_phase(
+            metrics.as_deref_mut(),
+            |s| &mut s.revision_source_load_ns,
+            || SourcePolicies::new(case),
+        )?;
+        source.checked(case, hash_for_receipt, metrics)
     }
-    fn from_source(source: SourcePolicies, hash_for_receipt: bool) -> Result<Self, String> {
+    fn from_source(
+        source: SourcePolicies,
+        hash_for_receipt: bool,
+        mut metrics: Option<&mut ReplayMetrics>,
+    ) -> Result<Self, String> {
         let SourcePolicies {
             source, policies, ..
         } = source;
-        let text = render_loaded_policy_set(&policies)?;
-        let rendered = PolicySet::from_str(&text)
-            .map_err(|error| format!("rendered Cedar text parse: {error}"))?;
-        let compiled_bodies = policy_bodies_by_id(&policies)?;
-        let rendered_bodies = policy_bodies_by_id(&rendered)?;
-        if policy_body_counts(&compiled_bodies) != policy_body_counts(&rendered_bodies) {
+        // SourcePolicies is sealed and loaded exclusively through Policy::from_json.
+        // to_cedar already renders its normalized AST; retain those exact bodies.
+        let (text, compiled_bodies) = revision_phase(
+            metrics.as_deref_mut(),
+            |s| &mut s.revision_render_ns,
+            || rendered_policy_bodies(&policies),
+        )?;
+        let rendered = revision_phase(
+            metrics.as_deref_mut(),
+            |s| &mut s.revision_text_parse_ns,
+            || {
+                PolicySet::from_str(&text)
+                    .map_err(|error| format!("rendered Cedar text parse: {error}"))
+            },
+        )?;
+        // Independent text-side normalization and both authorizers remain mandatory.
+        let rendered_bodies = revision_phase(
+            metrics.as_deref_mut(),
+            |s| &mut s.revision_normalize_ns,
+            || policy_bodies_by_id(&rendered),
+        )?;
+        let same = revision_phase(
+            metrics.as_deref_mut(),
+            |s| &mut s.revision_compare_ns,
+            || policy_body_counts(&compiled_bodies) == policy_body_counts(&rendered_bodies),
+        );
+        if !same {
             return Err("rendered Cedar text changed policy bodies".into());
         }
-        let policy_sha256 = if hash_for_receipt {
-            Some(value_sha256(&source)?)
-        } else {
-            None
-        };
+        let policy_sha256 = revision_phase(
+            metrics,
+            |s| &mut s.revision_hash_ns,
+            || {
+                if hash_for_receipt {
+                    value_sha256(&source).map(Some)
+                } else {
+                    Ok(None)
+                }
+            },
+        )?;
         Ok(Self {
             source,
             policy_sha256,
@@ -248,10 +290,10 @@ fn policy_bodies_by_id(policies: &PolicySet) -> Result<BTreeMap<String, String>,
         .collect()
 }
 
-fn policy_body_counts(bodies: &BTreeMap<String, String>) -> BTreeMap<String, usize> {
+fn policy_body_counts(bodies: &BTreeMap<String, String>) -> BTreeMap<&str, usize> {
     let mut counts = BTreeMap::new();
     for body in bodies.values() {
-        *counts.entry(body.clone()).or_insert(0) += 1;
+        *counts.entry(body.as_str()).or_insert(0) += 1;
     }
     counts
 }
@@ -259,7 +301,7 @@ fn policy_body_counts(bodies: &BTreeMap<String, String>) -> BTreeMap<String, usi
 fn diagnostic_body_counts(
     ids: impl IntoIterator<Item = String>,
     bodies: &BTreeMap<String, String>,
-) -> Result<BTreeMap<String, usize>, String> {
+) -> Result<BTreeMap<&str, usize>, String> {
     let mut counts = BTreeMap::new();
     let mut seen = BTreeSet::new();
     for id in ids {
@@ -269,7 +311,7 @@ fn diagnostic_body_counts(
         let body = bodies
             .get(&id)
             .ok_or_else(|| format!("unknown diagnostic policy ID: {id}"))?;
-        *counts.entry(body.clone()).or_insert(0) += 1;
+        *counts.entry(body.as_str()).or_insert(0) += 1;
     }
     Ok(counts)
 }
@@ -372,10 +414,18 @@ pub fn check_template_source(
 
 /// Render an already admitted Cedar policy set without parsing JSON again.
 pub fn render_loaded_policy_set(policies: &PolicySet) -> Result<String, String> {
+    rendered_policy_bodies(policies).map(|(text, _)| text)
+}
+
+// Keep sorted source bodies while rendering; no transient section strings/join buffer.
+// For arbitrary text policies these are source bodies, not normalized bodies.
+fn rendered_policy_bodies(
+    policies: &PolicySet,
+) -> Result<(String, BTreeMap<String, String>), String> {
     if policies.templates().next().is_some() {
         return Err("template source cannot render as a materialized policy file".into());
     }
-    let mut rendered = policies
+    let bodies = policies
         .policies()
         .map(|policy| {
             let body = policy
@@ -383,16 +433,18 @@ pub fn render_loaded_policy_set(policies: &PolicySet) -> Result<String, String> 
                 .ok_or_else(|| "linked policy cannot render as Cedar text".to_owned())?;
             Ok((policy.id().to_string(), body))
         })
-        .collect::<Result<Vec<_>, String>>()?;
-    rendered.sort_by(|left, right| left.0.cmp(&right.0));
-    let sections = rendered
-        .into_iter()
-        .map(|(id, body)| format!("// POO policy ID: {id}\n{body}"))
-        .collect::<Vec<_>>();
-    Ok(format!(
-        "// Generated from Lean-POO. Cedar assigns new IDs when parsing this text.\n{}\n",
-        sections.join("\n\n")
-    ))
+        .collect::<Result<BTreeMap<_, _>, String>>()?;
+    let mut text =
+        String::from("// Generated from Lean-POO. Cedar assigns new IDs when parsing this text.\n");
+    for (index, (id, body)) in bodies.iter().enumerate() {
+        if index != 0 {
+            text.push_str("\n\n");
+        }
+        // Writing to a String is infallible.
+        write!(&mut text, "// POO policy ID: {id}\n{body}").expect("String formatting");
+    }
+    text.push('\n');
+    Ok((text, bodies))
 }
 
 /// Render a compiled Lean policy set to a valid `.cedar` source file.
@@ -483,12 +535,16 @@ pub(crate) fn check_case<'input>(
     } = revision;
     let schema = entity_slot.schema();
     let started = metrics.as_ref().map(|_| Instant::now());
-    let expected_ids = case.policy_ids.iter().cloned().collect::<BTreeSet<_>>();
-    let loaded_ids = policies
-        .policies()
-        .map(|policy| policy.id().to_string())
+    let expected_ids = case
+        .policy_ids
+        .iter()
+        .map(String::as_str)
         .collect::<BTreeSet<_>>();
-    if expected_ids.len() != case.policy_ids.len() || expected_ids != loaded_ids {
+    if expected_ids.len() != case.policy_ids.len()
+        || !expected_ids
+            .into_iter()
+            .eq(compiled_bodies.keys().map(String::as_str))
+    {
         return Err("loaded policy IDs differ from the Lean compilation".into());
     }
     let entities = entity_slot

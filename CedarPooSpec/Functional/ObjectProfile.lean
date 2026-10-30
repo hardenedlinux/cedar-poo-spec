@@ -97,8 +97,18 @@ def order : C4.VerifiedOrder graph "Profile" where
     (C4.LinearizeState.reachableUnique_of_global (by decide))
   derivation := ⟨[], rootTrace⟩
 
-def standard (contract : Check Key Value) : Operations contract :=
-  LeanPoo.Functional.assemble order (providers contract)
+/-- Specialize the fixed certified order once by capability. Custom provider
+assemblies still use prepare; the standard callbacks and object demands are exact. -/
+def standard (contract : Check Key Value) : Operations contract
+  | .check => some (check contract)
+  | .project => some (fun profile _ key => project profile key)
+
+/-- The static specialization is the original Functional/C4 provider selection,
+including its actual factory functions, not merely equivalent returned values. -/
+theorem standard_eq_assemble (contract : Check Key Value) :
+    standard contract = LeanPoo.Functional.assemble order (providers contract) := by
+  funext capability
+  cases capability <;> rfl
 
 abbrev required : List Capability := [.check, .project]
 abbrev Data (contract : Check Key Value) (profile : Object Key Value) :=

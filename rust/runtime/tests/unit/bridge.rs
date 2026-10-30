@@ -819,3 +819,64 @@ fn replay_distinguishes_explicit_empty_geography_from_missing_and_other_values()
 
 #[path = "preparation.rs"]
 mod preparation;
+
+// Retain the exact pre-optimization normalizer as an independent test oracle.
+fn assert_legacy_revision_bodies(case: &Case) {
+    let policies = load_policy_set(&case.policies).expect("compiled JSON policy set");
+    let (text, bodies) = super::rendered_policy_bodies(&policies).expect("render");
+    let legacy: std::collections::BTreeMap<_, _> = policies
+        .policies()
+        .map(|p| {
+            (
+                p.id().to_string(),
+                super::canonical_policy_body(p).expect("legacy normalization"),
+            )
+        })
+        .collect();
+    assert_eq!(bodies, legacy, "compiled AST normalization: {}", case.name);
+    let sections = bodies
+        .iter()
+        .map(|(id, body)| format!("// POO policy ID: {id}\n{body}"))
+        .collect::<Vec<_>>();
+    assert_eq!(
+        text,
+        format!(
+            "// Generated from Lean-POO. Cedar assigns new IDs when parsing this text.\n{}\n",
+            sections.join("\n\n")
+        )
+    );
+}
+
+#[test]
+fn json_ast_render_preserves_legacy_normalization_and_source_bytes() {
+    // Formatting, annotations, IDs, scopes, literals and condition structure.
+    for (index, text) in [
+        "permit(principal,action,resource);",
+        " // spacing\n permit ( principal, action, resource ) when { true };",
+        "@z(\"last\") @a(\"first\") forbid(principal,action,resource) unless { false };",
+        "permit(principal == User::\"alice\",action in [Action::\"a\",Action::\"b\"],resource) when { context has x && context.x == 1 };",
+        "permit(principal is User,action,resource is Document) when { true } when { false } unless { false };",
+        "permit(principal,action,resource) when { [1,2].contains(1) && { x: \"line\\nquote\\\"\", y: -9223372036854775808 }.y < 0 };",
+        "permit(principal,action,resource) when { context.ip.isInRange(ip(\"10.0.0.0/8\")) };",
+        "permit(principal,action,resource) when { context.name like \"a*\" };",
+    ].into_iter().enumerate() {
+        let policy = cedar_policy::Policy::parse(None, text).expect("metamorphic source");
+        let mut case = receipt();
+        let id = format!("revision-{index}");
+        let mut source = json!({"staticPolicies":{},"templates":{},"templateLinks":[]});
+        source["staticPolicies"][&id] = policy.to_json().expect("source JSON");
+        case.policies = serde_json::from_value(source).expect("compiled wire");
+        assert_legacy_revision_bodies(&case);
+    }
+    // Duplicate bodies retain distinct IDs, sorted source order and multiplicity.
+    let mut case = receipt();
+    let mut source = case.policies.deref().clone();
+    source["staticPolicies"]["second"] = source["staticPolicies"]["base"].clone();
+    case.policies = serde_json::from_value(source).unwrap();
+    assert_legacy_revision_bodies(&case);
+    let empty = cedar_policy::PolicySet::new();
+    assert_eq!(
+        super::rendered_policy_bodies(&empty).unwrap().0,
+        "// Generated from Lean-POO. Cedar assigns new IDs when parsing this text.\n\n"
+    );
+}

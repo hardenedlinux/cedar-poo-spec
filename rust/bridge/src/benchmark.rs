@@ -95,6 +95,15 @@ pub(crate) fn run(input: &str, cli_input_read_ns: u128) -> Result<(), String> {
             + metrics.authorization_ns
             + metrics.diagnostics_ns
             + metrics.receipt_ns;
+        let revision_accounted = metrics.revision_source_load_ns
+            + metrics.revision_render_ns
+            + metrics.revision_text_parse_ns
+            + metrics.revision_normalize_ns
+            + metrics.revision_compare_ns
+            + metrics.revision_hash_ns;
+        if revision_accounted > metrics.revision_preparation_ns {
+            return Err("overlapping revision subphase observations".into());
+        }
         if accounted > replay_ns {
             return Err("overlapping replay phase observations".into());
         }
