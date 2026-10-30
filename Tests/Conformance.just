@@ -33,7 +33,7 @@ check-google-table-batch-v1:
 check-delta: check-gateway-delta check-authorization-delta check-authorization-delta-operational check-authorization-delta-reasons check-authorization-delta-effective-reasons check-payment-delta check-payment-interaction check-agent-trace-delta check-health-authorization-impact
 
 check-gateway:
-    lake build CedarPooSpec.Gateway Tests.Gateway.Contracts Tests.Gateway.Counterexamples Tests.Gateway.Objects Tests.Gateway.Delta
+    lake build CedarPooSpec.Gateway Tests.Gateway.Contracts Tests.Gateway.Counterexamples Tests.Gateway.Objects Tests.Gateway.Publication Tests.Gateway.Delta
 
 check-gateway-delta: check-gateway
     lake env lean --run Tests/Gateway/Delta.lean

@@ -1,5 +1,6 @@
 import CedarPooSpec.Gateway.Context
 import CedarPooSpec.Gateway.Admission
+import CedarPooSpec.Gateway.ProfileAdmission
 import CedarPooSpec.AuthorizationDeltaOperationalExactProof
 import CedarPooSpec.AuthorizationDeltaEvidence
 
@@ -167,5 +168,29 @@ theorem bound_admitted_execution_preserves_delta
     envWellFormed beforeWellFormed afterWellFormed
 
 end BoundLaws
+
+/-- Join the actual profile Contract, original scope and exact Delta implication.
+Authority authentication and durable CAS remain separate Host obligations. -/
+theorem published_execution_preserves_original_and_delta
+    {E S : Type} {projection : E → S → Request} {prepared : Prepared E S projection}
+    {model : Model} {effect : E} {state : S} {actualContext : Context}
+    {checks : List Assessment} {entities : Entities}
+    {original : Profile} {object : ProfileObject.Object}
+    {publication : ProfileObject.Publication original object}
+    (receipt : PublishedReceipt publication prepared model effect state actualContext checks entities)
+    (plan : DeltaPlan) (binding : AdmissionBinding receipt.semantic plan)
+    (coverage : ExactCoverage plan.schema plan.revision.beforePolicies plan.revision.afterPolicies)
+    (envWellFormed : (Env.mk (projection effect state) entities).StronglyWellFormed)
+    (beforeWellFormed : (Env.mk (projection effect state) entities).StronglyWellFormedForPolicies
+      plan.revision.beforePolicies)
+    (afterWellFormed : (Env.mk (projection effect state) entities).StronglyWellFormedForPolicies
+      plan.revision.afterPolicies) :
+    original.Refines prepared.profile ∧
+    prepared.context.scope = publication.context.scope ∧
+    CedarPooSpec.AuthorizationDelta.errorFreeAllow plan.revision.beforePolicies
+      (Env.mk (projection effect state) entities) = true :=
+  ⟨published_profile_refines_authoritative_original receipt, published_scope_cannot_reset receipt,
+    bound_admitted_execution_preserves_delta receipt.semantic plan binding coverage envWellFormed
+      beforeWellFormed afterWellFormed⟩
 
 end CedarPooSpec.Gateway

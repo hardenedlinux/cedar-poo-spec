@@ -1,4 +1,4 @@
-import CedarPooSpec.Gateway.Admission
+import CedarPooSpec.Gateway.ProfileAdmission
 import CedarPooSpec.Admission.AuthorityConsumption
 
 /-! Compose existing pure admission ledgers. The Host must authenticate their
@@ -20,7 +20,9 @@ def consumeAdmission {E S : Type} {project : E → S → Cedar.Spec.Request}
     {prepared : Prepared E S project} {model : CedarPooSpec.PolicyModules.Model}
     {effect : E} {state : S} {actualContext : Context} {checks : List Assessment}
     {entities : Cedar.Spec.Entities} [BEq E] [LawfulBEq E]
-    (_receipt : Receipt prepared model effect state actualContext checks entities)
+    {original : Profile} {object : ProfileObject.Object}
+    (publication : ProfileObject.Publication original object)
+    (_receipt : PublishedReceipt publication prepared model effect state actualContext checks entities)
     (operations : CedarPooSpec.Admission.OperationLedger)
     (authorities : CedarPooSpec.Admission.AuthorityLedger E) (authorityId : String) :
     Except ConsumptionError (Consumed E) := do
@@ -34,14 +36,16 @@ variable {E S : Type} {project : E → S → Cedar.Spec.Request}
   {prepared : Prepared E S project} {model : CedarPooSpec.PolicyModules.Model}
   {effect : E} {state : S} {actualContext : Context} {checks : List Assessment}
   {entities : Cedar.Spec.Entities} [BEq E] [LawfulBEq E]
-  (receipt : Receipt prepared model effect state actualContext checks entities)
+  {original : Profile} {object : ProfileObject.Object}
+  (publication : ProfileObject.Publication original object)
+  (receipt : PublishedReceipt publication prepared model effect state actualContext checks entities)
   (operations : CedarPooSpec.Admission.OperationLedger)
   (authorities : CedarPooSpec.Admission.AuthorityLedger E) (authorityId : String)
 
 /-- Successful composition preserves the entire existing operation prefix and
 adds exactly the original operation, irrespective of the authority identifier. -/
 theorem consumption_preserves_operation_prefix (result : Consumed E)
-    (committed : consumeAdmission receipt operations authorities authorityId = .ok result) :
+    (committed : consumeAdmission publication receipt operations authorities authorityId = .ok result) :
     result.operations.admitted = operations.admitted ++ [prepared.operationId] := by
   cases op : operations.admit prepared.operationId <;>
     cases grant : authorities.consume authorityId effect <;>
@@ -52,9 +56,9 @@ theorem consumption_preserves_operation_prefix (result : Consumed E)
 /-- Replay rejection is conditional on using the returned ledger. Persisting,
 serializing and recovering that ledger is a Host obligation. -/
 theorem consumed_operation_rejects_replay (result : Consumed E)
-    (committed : consumeAdmission receipt operations authorities authorityId = .ok result) :
+    (committed : consumeAdmission publication receipt operations authorities authorityId = .ok result) :
     result.operations.admit prepared.operationId = none := by
-  have historyPrefix := consumption_preserves_operation_prefix receipt operations authorities authorityId result committed
+  have historyPrefix := consumption_preserves_operation_prefix publication receipt operations authorities authorityId result committed
   have reflexive : (prepared.operationId == prepared.operationId) = true := by
     change (prepared.operationId.value == prepared.operationId.value) = true
     simp
@@ -63,12 +67,12 @@ theorem consumed_operation_rejects_replay (result : Consumed E)
     reflexive]
 
 theorem renewed_authority_cannot_repeat_consumed_operation (result : Consumed E)
-    (committed : consumeAdmission receipt operations authorities authorityId = .ok result)
+    (committed : consumeAdmission publication receipt operations authorities authorityId = .ok result)
     (renewedAuthorities : CedarPooSpec.Admission.AuthorityLedger E) (renewedId : String) :
-    consumeAdmission receipt result.operations renewedAuthorities renewedId =
+    consumeAdmission publication receipt result.operations renewedAuthorities renewedId =
       .error .operationAlreadyAdmitted := by
   simp [consumeAdmission,
-    consumed_operation_rejects_replay receipt operations authorities authorityId result committed]
+    consumed_operation_rejects_replay publication receipt operations authorities authorityId result committed]
 
 end Laws
 

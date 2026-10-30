@@ -1,5 +1,6 @@
 import CedarPooSpec.Gateway.Context
 import CedarPooSpec.Gateway.Admission
 import CedarPooSpec.Gateway.ProfileObject
+import CedarPooSpec.Gateway.ProfileAdmission
 import CedarPooSpec.Gateway.Consumption
 import CedarPooSpec.Gateway.AuthorizationDelta

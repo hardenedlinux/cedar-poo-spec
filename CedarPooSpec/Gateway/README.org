@@ -19,6 +19,7 @@ routing proposals. Neither a proposal nor a Lean receipt is a send permit.
 |--------+----------------+---------------------------|
 | Context | Original scope, deciding revisions, named profile requirements | Explicit caller-supplied typed data |
 | ProfileObject | Source-bound governance objects, inherited requirements and explicit strengthening | LeanPoo Dataflow/C4, ObjectProfile Contract and factory-indexed Session |
+| ProfileAdmission | Exact selected profile and scope binding to the current publication | Actual ObjectProfile Session, projection and Contract consequences |
 | Admission | Validate actual operation, schema, current source and error-free Cedar allow | BoundOperation, PolicySnapshot, Functional compilation, upstream validators |
 | Consumption | Compose original-operation admission and effect-bound grant consumption | OperationLedger and AuthorityLedger |
 | AuthorizationDelta | Prepare source-bound C4 revision, analyze gains/losses, compose conditional proofs | Exact operational Delta, policy/provenance changes, proof footprint |
@@ -65,13 +66,52 @@ in =contract original=, whose original profile is outside the child object. A
 child cannot replace an internal template slot to justify dropping budget or
 history checks. Tests refuse removed/reordered obligations, forged projections,
 identity substitution and duplicates. Caller authentication of that original
-profile and its source closure remains mandatory. A caller that chooses a weaker
-original or calls the low-level record API does not get the object Contract's
-stronger guarantee. The Host must require the admitted object path at publication.
+profile and its source closure remains mandatory. Raw record preparation and
+semantic authorization remain lower-level computations. They cannot enter
+=consumeAdmission= without a =PublishedReceipt= bound to the current publication.
 
 Immutable scope data and proof-bearing receipts remain records. They are not
 represented as method owners or another inheritance evaluator; those semantics
 belong to the reused LeanPoo APIs above.
+
+* Original profile authority and raw preparation
+
+=ProfileObject.Publication= retains the actual original Profile, object and
+factory-indexed Session; the selected value has an exact projection witness.
+=capturePublication= only constructs a pure Host read view. It does not publish
+to durable storage, authenticate a producer or make a caller-selected original
+authoritative. The Host supplies this view independently of candidate data.
+
+=authorizePublished= composes semantic authorization with =bindPublication=.
+Binding compares the complete selected Profile, including ordered checks, and
+the complete deciding Context. =consumeAdmission= takes an explicit publication
+and a =PublishedReceipt= indexed by that exact publication. A raw =Receipt= fails
+the consumption API's type check. Neither raw nor object construction gets an
+entry-origin exemption. An exactly matching raw value is allowed because the
+retained publication supplies the actual object Contract proof. This guarantees
+the postcondition; it does not prove which constructor produced a raw value.
+
+=published_profile_refines_authoritative_original= and
+=published_original_obligations_are_satisfied= reuse the Session's Contract
+consequence. =published_scope_cannot_reset= preserves every claim/canonical-key/
+budget/history coordinate relative to the publication.
+=weakened_original_cannot_have_published_receipt= rules out dropping original
+obligations. =published_execution_preserves_original_and_delta= joins those
+consequences with exact Delta implication, retaining all upstream premises.
+
+Weaver Rust must resolve current authority from the existing original-family
+assignment and publication ledger, authenticate original full profile content
+and actual object/source/factory closure, then join publication identity/revision
+with claim, account/history, pending intents and owner fence in final CAS. Every
+payload/source change needs a new authority identity/revision. Do not derive the
+authority from candidate data, trust a proof tag across FFI, or confuse a matching
+digest with producer authentication. Verify actual bytes and source closure.
+Reading a correct publication before an intervening commit is insufficient.
+
+This library has no authority registry, anti-rollback store or final transport.
+A Host that passes a self-selected weaker publication, or an old publication and
+old ledger, can still violate the system contract. Expected counterexamples are
+retained. A constructor or type label is not a credential or durable-use receipt.
 
 * Binding and trust assumptions
 
@@ -129,7 +169,7 @@ its policy equality alone is not a claim/domain/freshness binding certificate.
 |------------+-------------+----------------------------|
 | Original claim/root and canonical operation | Receipt context equality preserves every scope field; operation ID equals the supplied canonical operation; bound Delta preserves original scope | Authenticate original identity; canonical registry prevents consistent relabeling/new family |
 | Budget and history domains | Exact scope equality preserves supplied domain identifiers | Authenticate domain ownership and migrations; shared balances and original reservation survive restart |
-| Original profile | Admitted object projection preserves identity and every original ordered check | Bind the authoritative original profile content and object source; prevent bypass through raw preparation |
+| Original profile | Publication-indexed admission preserves actual selected content and original ordered checks; raw Receipt cannot enter Gateway consumption | Authenticate and freshly resolve original content, source/factory and current publication; forbid candidate-selected authority |
 | Operation/grant consumption | Success preserves the complete operation prefix and adds the original key; returned state rejects replay even with a renewed grant | One durable CAS selects among concurrent transitions; restore anti-rollback state |
 | Reservation arithmetic/unknown exposure | No arithmetic or unknown-result settlement theorem in this library | Atomically reserve/consume; retain unknown budget; settle only with bound authoritative application evidence |
 | History contents and freshness | Named assessment inclusion and equality of supplied history revision | Durable ordered history, true source assessments, pending-intent retention and final-CAS freshness |
@@ -166,6 +206,17 @@ The second review passed 54 executable assertions: 28 original contracts,
 Its axiom audit covers 19 Gateway declarations and two reused materialized-object
 laws. The original =b688288= Lean and Authorization Delta CI jobs passed; those
 results do not qualify later commits. Exact-head CI status is reported separately.
+
+The third review adds 16 publication controls and a negative type check. Weaker
+same-name profiles, same-claim new canonical keys, claim/domain replacement,
+stronger actual selection and owner changes face the same binding gate. A
+self-selected weaker publication is shown to pass if the Host chooses the wrong
+authority; zero external balance and old-ledger replay remain Host obligations.
+The cumulative suite has 70 executable assertions, one negative type check,
+27 Gateway law audits and two reused object-law audits. Baseline =f524732=
+completed all four CI jobs, including Authorization Delta and conformance,
+before this follow-up. Follow-up CI is checked separately. No dependency pins or
+Rust runtime code are changed.
 
 During development, compilation exposed a Cedar =Effect= namespace collision,
 non-decidable validation error equality and an unavailable Option helper. Those

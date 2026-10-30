@@ -61,9 +61,24 @@ def authorize (value : Gateway.Prepared String Bool request := prepared)
 
 def grants (id := "approval") : Admission.AuthorityLedger String :=
   ⟨[⟨id, "invoke", 1, 0⟩]⟩
+
+-- A separate Host-selected publication; candidate constructors cannot choose it.
+def currentPublication : Option ((object : Gateway.ProfileObject.Object) ×
+    Gateway.ProfileObject.Publication profile object) :=
+  (Gateway.ProfileObject.define "AuthoritativeGateway" profile).toOption.bind fun object =>
+    (Gateway.ProfileObject.openSession profile object).toOption.bind fun session =>
+      (Gateway.ProfileObject.capturePublication context session).toOption.map fun publication =>
+        ⟨object, publication⟩
+
+def againstCurrent (candidate : Gateway.Prepared String Bool request := prepared)
+    (actualContext := context) (assessments := checks) : Bool :=
+  (currentPublication.map fun entry =>
+    (Gateway.authorizePublished entry.2 candidate model "invoke" true actualContext assessments entities).isOk).getD false
+
 def consume (operations : Admission.OperationLedger) (authorities : Admission.AuthorityLedger String)
     (id : String) : Option (Gateway.Consumed String) :=
-  (authorize).toOption.bind fun receipt =>
-    (Gateway.consumeAdmission receipt operations authorities id).toOption
+  currentPublication.bind fun entry =>
+    (Gateway.authorizePublished entry.2 prepared model "invoke" true context checks entities).toOption.bind fun receipt =>
+      (Gateway.consumeAdmission entry.2 receipt operations authorities id).toOption
 
 end CedarPooSpec.GatewayTest
