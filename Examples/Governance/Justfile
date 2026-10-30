@@ -1,7 +1,7 @@
 set working-directory := '../..'
 
 attested-data:
-    lake build Examples.Governance.AttestedManifest
+    lake build Examples.Governance.AttestedManifest Examples.Governance.AttestedDataAccess
     timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 Examples/Governance/AttestedDataAccess.lean
 
 attested-views:
@@ -16,9 +16,8 @@ attested-views:
     cmp .lake/build/attested-governed-0.2-validated.cedar Examples/Governance/AttestedPolicies/attested-governed-0.2.cedar
 
 trusted-network:
-    lake build Examples.Governance.AttestedManifest
-    mkdir -p .lake/build/lib/lean/Examples/Governance
-    timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 -o .lake/build/lib/lean/Examples/Governance/AttestedDataAccess.olean Examples/Governance/AttestedDataAccess.lean
+    lake build Examples.Governance.AttestedManifest Examples.Governance.AttestedDataAccess
+    timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 Examples/Governance/AttestedDataAccess.lean
     timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 Examples/Governance/TrustedNetworkDataAccess.lean
 
 country-approval:

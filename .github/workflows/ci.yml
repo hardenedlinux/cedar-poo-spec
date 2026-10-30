@@ -35,7 +35,7 @@ jobs:
           path: |
             .lake/packages
             .lake/build
-          key: lean-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain', 'lakefile.toml', 'lake-manifest.json') }}-${{ hashFiles('CedarPooSpec.lean', 'CedarPooSpec/**/*.lean', 'Examples/**/*.lean', 'Tests/**/*.lean', 'Benchmarks/**/*.lean') }}
+          key: lean-native-setup-v3-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain', 'lakefile.toml', 'lake-manifest.json') }}-${{ hashFiles('CedarPooSpec.lean', 'CedarPooSpec/**/*.lean', 'Examples/**/*.lean', 'Tests/**/*.lean', 'Benchmarks/**/*.lean', 'Justfile', 'Examples/**/Justfile', 'Tests/*.just', 'Benchmarks/Justfile', '.github/workflows/ci.yml') }}
           restore-keys: |
             lean-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain', 'lakefile.toml', 'lake-manifest.json') }}-
       - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
@@ -88,7 +88,7 @@ jobs:
           path: |
             .lake/packages
             .lake/build
-          key: lean-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain', 'lakefile.toml', 'lake-manifest.json') }}-${{ hashFiles('CedarPooSpec.lean', 'CedarPooSpec/**/*.lean', 'Examples/**/*.lean', 'Tests/**/*.lean', 'Benchmarks/**/*.lean') }}
+          key: lean-native-setup-v3-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain', 'lakefile.toml', 'lake-manifest.json') }}-${{ hashFiles('CedarPooSpec.lean', 'CedarPooSpec/**/*.lean', 'Examples/**/*.lean', 'Tests/**/*.lean', 'Benchmarks/**/*.lean', 'Justfile', 'Examples/**/Justfile', 'Tests/*.just', 'Benchmarks/Justfile', '.github/workflows/ci.yml') }}
           restore-keys: |
             lean-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain', 'lakefile.toml', 'lake-manifest.json') }}-
       - name: Restore Cargo cache
@@ -151,7 +151,7 @@ jobs:
           path: |
             .lake/packages
             .lake/build
-          key: lean-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain', 'lakefile.toml', 'lake-manifest.json') }}-${{ hashFiles('CedarPooSpec.lean', 'CedarPooSpec/**/*.lean', 'Examples/**/*.lean') }}
+          key: lean-native-setup-v3-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain', 'lakefile.toml', 'lake-manifest.json') }}-${{ hashFiles('CedarPooSpec.lean', 'CedarPooSpec/**/*.lean', 'Examples/**/*.lean', 'Tests/**/*.lean', 'Benchmarks/**/*.lean', 'Justfile', 'Examples/**/Justfile', 'Tests/*.just', 'Benchmarks/Justfile', '.github/workflows/ci.yml') }}
           restore-keys: |
             lean-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain', 'lakefile.toml', 'lake-manifest.json') }}-
       - name: Restore Cargo cache

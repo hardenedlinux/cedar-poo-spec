@@ -134,6 +134,12 @@ check-agentic-ai-commerce-constraint-sdk sdk_root:
 
 # Compile the existing manifest entrypoint; its output must match Lean execution byte for byte.
 check-native-catalog: build-examples
+    sha256sum .lake/build/lib/lean/Examples/Governance/AttestedDataAccess.olean .lake/build/lib/lean/Examples/Enterprise/Procurement/PurchaseApproval.olean .lake/build/lib/lean/Examples/Enterprise/Agent/Delegation/AgentDelegation.olean > .lake/build/native-artifact-owner.sha256
+    just check-policy-reuse
+    just example governance trusted-network
+    just example enterprise procurement delegated-approval
+    just example enterprise agent chain
+    sha256sum -c .lake/build/native-artifact-owner.sha256
     lake build caseManifestsNative
     timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 --run Examples/Manifests.lean catalog > .lake/build/functional-catalog-lean.json
     timeout --signal=TERM --kill-after=3s 120s .lake/build/bin/caseManifestsNative catalog > .lake/build/functional-catalog-native.json

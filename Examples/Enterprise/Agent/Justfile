@@ -5,9 +5,8 @@ delegation:
     timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 Examples/Enterprise/Agent/Delegation/AgentDelegation.lean
 
 chain:
-    lake build CedarPooSpec.AuthorizationDeltaCompound
-    mkdir -p .lake/build/lib/lean/Examples/Enterprise/Agent/Delegation
-    timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 -o .lake/build/lib/lean/Examples/Enterprise/Agent/Delegation/AgentDelegation.olean Examples/Enterprise/Agent/Delegation/AgentDelegation.lean
+    lake build CedarPooSpec.AuthorizationDeltaCompound Examples.Enterprise.Agent.Delegation.AgentDelegation
+    timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 Examples/Enterprise/Agent/Delegation/AgentDelegation.lean
     timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 Examples/Enterprise/Agent/Chain/AgentChain.lean
 
 payment:

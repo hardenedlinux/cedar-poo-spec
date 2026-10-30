@@ -79,10 +79,12 @@ actor context, credential, admission decision or Host fact becomes cached.
 
 The [[file:native-dataflow-initial-evidence.json][initial complete cohort]] and
 [[file:native-dataflow-initial-object-observations.csv][initial object observations]] retain the first migration's increased preparation
-cost. The [[file:native-dataflow-evidence.json][final complete cohort]],
+cost. The [[file:native-dataflow-pre-abi-evidence.json][pre-ABI-repair complete cohort]] and its
+[[file:native-dataflow-pre-abi-object-observations.csv][object]]/[[file:native-dataflow-pre-abi-entry-timings.csv][entry]] records remain preserved. The
+[[file:native-dataflow-evidence.json][final canonical-ABI complete cohort]],
 [[file:native-dataflow-object-observations.csv][final object observations]] and
 [[file:native-dataflow-entry-timings.csv][all native Rust entry timings]] retain the owner-reuse refinement.
-Each cohort contains 48 native child processes: three alternating complete
+All three cohorts contain 48 native child processes each (144 total): three alternating complete
 before/after pairs plus separate fresh-file/repeated-file producer and Rust
 observations. All processes exit zero naturally under their unchanged 120-second
 limit. Each cohort contains 486 family/mode/sample observations and 15 exact wire
@@ -102,10 +104,10 @@ Final OS observations, in pair order, including first use of each frozen path:
 
 | Process or ledger | Before wall ms | After wall ms | Before CPU ms | After CPU ms |
 |-------------------+----------------+---------------+---------------+--------------|
-| Full nine-family object process | 1529 / 196 / 195 | 1491 / 236 / 238 | 210 / 180 / 180 | 240 / 220 / 220 |
-| All-Case producer | 1582 / 180 / 156 | 1452 / 160 / 157 | 170 / 140 / 140 | 170 / 140 / 140 |
-| Producer + complete Rust replay | 2901 / 558 / 528 | 2201 / 528 / 593 | 570 / 500 / 500 | 560 / 500 / 520 |
-| Rust full benchmark process | 1740 / 1517 / 1518 | 1567 / 1617 / 1623 | 1600 / 1500 / 1500 | 1550 / 1560 / 1510 |
+| Full nine-family object process | 1439 / 246 / 315 | 1495 / 281 / 293 | 190 / 200 / 200 | 240 / 230 / 230 |
+| All-Case producer | 2000 / 261 / 211 | 1544 / 225 / 203 | 170 / 160 / 170 | 190 / 150 / 170 |
+| Producer + complete Rust replay | 3054 / 1113 / 830 | 2748 / 744 / 963 | 520 / 560 / 620 | 620 / 550 / 630 |
+| Rust full benchmark process | 1486 / 3069 / 3185 | 3519 / 3296 / 2947 | 1470 / 1820 / 1750 | 1820 / 1770 / 1800 |
 
 The ordinary Rust executable SHA is identical between variants; catalog and full
 replay bytes also match. Rust time movements are therefore a negative control,
@@ -138,6 +140,36 @@ most small graphs still pay more for explicit code/dependency/execution tables.
 Proof terms are erased; this is runtime preparation/index overhead, not proof
 execution cost. The disclosure family pays back more repeated legacy self reads;
 small three-field shapes often do not amortize the new preparation.
+
+* Native artifact ownership and Ubuntu follow-up
+
+The first Cedar CI run at =a0dc449= passed Lean, Rust and authorization-delta,
+but the new cold native catalog link exposed an existing artifact-owner violation.
+Standalone =lean -o= checks overwrote Lake-managed .olean files. Their unqualified
+=l_CedarPooSpec_...= native names disagreed with package-qualified
+=lp_CedarPooSpec_CedarPooSpec_...= names exported by the cached native objects.
+A warm previously linked local executable had masked the cold-link failure.
+
+The local negative control uses the real AttestedDataAccess module: canonical
+Lake output hash =8473d767db67d22a79d96a3a65654789ce33522b09d0f6bc529558b3db5e7711=
+changes to =0f09b2f99e9a447d3d8b08bae0b5fd383bb367a8c414b80d0b3baac507ab03c6=
+after the old standalone writer. The corresponding generated C shows the distinct
+symbol prefixes. This is an artifact ABI observation, not a policy/hash mismatch.
+
+All such recipes now ask Lake to build their modules. Standalone checks retain
+their exact 120-second, 2048-MiB, 10000000-tick bounds and do not publish artifacts.
+The native gate executes governance, procurement and delegation checks between
+checksums of the three actual .olean files; any mutation fails before linking.
+A fresh project-only lib/ir/bin build rechecks the cold native path. Frozen
+performance binaries and raw evidence are retained outside those generated paths.
+Lean cache namespace =lean-native-setup-v3= excludes the contaminated generation;
+all cache keys include source and recipe owners. Cargo cache owners/paths are
+unchanged. This removes the competing writer instead of relying on cache clearing.
+
+The initial and pre-repair cohorts qualify their saved =a0dc449= source/artifact
+identities. The final cohort reruns every process using freshly built canonical-ABI
+executables and records their changed SHA identities. Domain, POO and Rust
+algorithms are unchanged by the ABI repair; no speedup is inferred from it.
 
 * Reproduction and next complete optimization boundary
 
