@@ -47,5 +47,13 @@ def firstConsumption := consume {} (grants) "approval"
 #print axioms Gateway.no_execution_gain_for_validated_input
 #print axioms Gateway.changed_scope_rejects_delta_reuse
 #print axioms Gateway.admitted_execution_preserves_delta
+#print axioms Gateway.admitted_original_scope_is_preserved
+#print axioms Gateway.admitted_operation_is_canonical
+#print axioms Gateway.consumption_preserves_operation_prefix
+#print axioms Gateway.consumed_operation_rejects_replay
+#print axioms Gateway.renewed_authority_cannot_repeat_consumed_operation
+#print axioms Gateway.bound_delta_preserves_original_scope
+#print axioms Gateway.changed_scope_cannot_bind_admission
+#print axioms Gateway.bound_admitted_execution_preserves_delta
 
 end CedarPooSpec.GatewayTest

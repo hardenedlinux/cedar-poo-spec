@@ -140,6 +140,22 @@ theorem admitted_context_is_current
     (receipt : Receipt prepared model effect state actualContext checks entities) :
     prepared.context = actualContext := receipt.contextMatches
 
+/-- Metadata preservation, not authentication of the supplied original scope. -/
+theorem admitted_original_scope_is_preserved
+    (receipt : Receipt prepared model effect state actualContext checks entities) :
+    prepared.context.scope = actualContext.scope :=
+  congrArg Context.scope receipt.contextMatches
+
+theorem admitted_operation_is_canonical
+    (receipt : Receipt prepared model effect state actualContext checks entities) :
+    prepared.operationId.value = actualContext.scope.canonicalOperation := by
+  have valid := receipt.preparationValid
+  simp only [Prepared.valid, Bool.and_eq_true_iff, decide_eq_true_eq] at valid
+  have canonical : prepared.operationId.value = prepared.context.scope.canonicalOperation := by
+    grind only
+  exact canonical.trans (congrArg Scope.canonicalOperation
+    (admitted_original_scope_is_preserved receipt))
+
 theorem admitted_profile_preserves_required_checks
     (receipt : Receipt prepared model effect state actualContext checks entities) :
     ∀ check ∈ checks, check.status = .satisfied :=

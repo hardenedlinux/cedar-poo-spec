@@ -114,4 +114,58 @@ theorem admitted_execution_preserves_delta
   have allowed := admitted_actual_request_is_error_free receipt
   simpa [CedarPooSpec.AuthorizationDelta.errorFreeAllow, policyBinding] using allowed
 
+/-- Strong composition interface. Equality authenticates no external source;
+the Host still supplies canonical identities, true assessments and current state.
+Keeping schema equality explicit lets the theorem reuse actual receipt validation
+rather than silently substituting a similarly named schema. -/
+structure AdmissionBinding
+    {E S : Type} {projection : E → S → Request} {prepared : Prepared E S projection}
+    {model : Model} {effect : E} {state : S} {actualContext : Context}
+    {checks : List Assessment} {entities : Entities}
+    (receipt : Receipt prepared model effect state actualContext checks entities)
+    (plan : DeltaPlan) : Prop where
+  scopeMatches : plan.scope = actualContext.scope
+  schemaMatches : plan.schema = prepared.schema
+  sourceMatches : plan.sourceModules = prepared.sourceModules
+  rootMatches : plan.afterRoot = prepared.policy.root
+  current : plan.matchesCurrent model actualContext.scope = true
+  policiesMatch : receipt.cedar.policies = plan.revision.afterPolicies
+
+section BoundLaws
+variable {E S : Type} {projection : E → S → Request} {prepared : Prepared E S projection}
+  {model : Model} {effect : E} {state : S} {actualContext : Context}
+  {checks : List Assessment} {entities : Entities}
+  {receipt : Receipt prepared model effect state actualContext checks entities} {plan : DeltaPlan}
+
+theorem bound_delta_preserves_original_scope
+    (binding : AdmissionBinding receipt plan) :
+    plan.scope = prepared.context.scope :=
+  binding.scopeMatches.trans (admitted_original_scope_is_preserved receipt).symm
+
+theorem changed_scope_cannot_bind_admission
+    (changed : plan.scope ≠ actualContext.scope) :
+    ¬ AdmissionBinding (prepared := prepared) (actualContext := actualContext) receipt plan :=
+  fun binding => changed binding.scopeMatches
+
+theorem bound_admitted_execution_preserves_delta
+    {E S : Type} {projection : E → S → Request} {prepared : Prepared E S projection}
+    {model : Model} {effect : E} {state : S} {actualContext : Context}
+    {checks : List Assessment} {entities : Entities}
+    (receipt : Receipt prepared model effect state actualContext checks entities)
+    (plan : DeltaPlan) (binding : AdmissionBinding receipt plan)
+    (coverage : ExactCoverage plan.schema plan.revision.beforePolicies plan.revision.afterPolicies)
+    (envWellFormed : (Env.mk (projection effect state) entities).StronglyWellFormed)
+    (beforeWellFormed : (Env.mk (projection effect state) entities).StronglyWellFormedForPolicies
+      plan.revision.beforePolicies)
+    (afterWellFormed : (Env.mk (projection effect state) entities).StronglyWellFormedForPolicies
+      plan.revision.afterPolicies) :
+    CedarPooSpec.AuthorizationDelta.errorFreeAllow plan.revision.beforePolicies
+      (Env.mk (projection effect state) entities) = true :=
+  admitted_execution_preserves_delta receipt plan coverage binding.policiesMatch
+    (by simpa only [binding.schemaMatches] using receipt.requestValid)
+    (by simpa only [binding.schemaMatches] using receipt.entitiesValid)
+    envWellFormed beforeWellFormed afterWellFormed
+
+end BoundLaws
+
 end CedarPooSpec.Gateway
