@@ -29,15 +29,8 @@ jobs:
           test: false
           lint: false
       - uses: taiki-e/install-action@b6a061addd82b81aaeca51bdf2c53cd707996e5a # just
-      - name: Restore Lean and Lake cache
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-        with:
-          path: |
-            .lake/packages
-            .lake/build
-          key: lean-native-setup-v4-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain', 'lakefile.toml', 'lake-manifest.json') }}-${{ hashFiles('CedarPooSpec.lean', 'CedarPooSpec/**/*.lean', 'Examples/**/*.lean', 'Tests/**/*.lean', 'Benchmarks/**/*.lean', 'Justfile', 'Examples/**/Justfile', 'Tests/*.just', 'Benchmarks/Justfile', '.github/workflows/ci.yml') }}
-          restore-keys: |
-            lean-native-setup-v4-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain', 'lakefile.toml', 'lake-manifest.json') }}-
+      - name: Restore compatible Lean artifacts
+        uses: ./.github/actions/lean-cache
       - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
       - run: just check-lean
       - run: just bench-functional-reuse
@@ -82,15 +75,8 @@ jobs:
       - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
         with:
           version: "0.11.3"
-      - name: Restore Lean and Lake cache
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-        with:
-          path: |
-            .lake/packages
-            .lake/build
-          key: lean-native-setup-v4-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain', 'lakefile.toml', 'lake-manifest.json') }}-${{ hashFiles('CedarPooSpec.lean', 'CedarPooSpec/**/*.lean', 'Examples/**/*.lean', 'Tests/**/*.lean', 'Benchmarks/**/*.lean', 'Justfile', 'Examples/**/Justfile', 'Tests/*.just', 'Benchmarks/Justfile', '.github/workflows/ci.yml') }}
-          restore-keys: |
-            lean-native-setup-v4-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain', 'lakefile.toml', 'lake-manifest.json') }}-
+      - name: Restore compatible Lean artifacts
+        uses: ./.github/actions/lean-cache
       - name: Restore Cargo cache
         uses: Swatinem/rust-cache@49a0bdc70d2e1b713ca9e2869b211fcce03d3c1c # v2
         with:
@@ -145,15 +131,8 @@ jobs:
       - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
         with:
           version: "0.11.3"
-      - name: Restore Lean and Lake cache
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-        with:
-          path: |
-            .lake/packages
-            .lake/build
-          key: lean-native-setup-v4-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain', 'lakefile.toml', 'lake-manifest.json') }}-${{ hashFiles('CedarPooSpec.lean', 'CedarPooSpec/**/*.lean', 'Examples/**/*.lean', 'Tests/**/*.lean', 'Benchmarks/**/*.lean', 'Justfile', 'Examples/**/Justfile', 'Tests/*.just', 'Benchmarks/Justfile', '.github/workflows/ci.yml') }}
-          restore-keys: |
-            lean-native-setup-v4-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain', 'lakefile.toml', 'lake-manifest.json') }}-
+      - name: Restore compatible Lean artifacts
+        uses: ./.github/actions/lean-cache
       - name: Restore Cargo cache
         uses: Swatinem/rust-cache@49a0bdc70d2e1b713ca9e2869b211fcce03d3c1c # v2
         with:

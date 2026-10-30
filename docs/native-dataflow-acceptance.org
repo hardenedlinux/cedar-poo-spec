@@ -162,12 +162,22 @@ The native gate executes governance, procurement and delegation checks between
 checksums of the three actual .olean files; any mutation fails before linking.
 A fresh project-only lib/ir/bin build rechecks the cold native path. Frozen
 performance binaries and raw evidence are retained outside those generated paths.
-Lean cache namespace =lean-native-setup-v4= excludes the contaminated generation;
-all cache keys include source and recipe owners. The intermediate v3 attempt
-still restored the legacy prefix and carried its contamination forward; the
-final v4 generation changes both primary and restore prefixes, excluding both
-legacy and v3 cache entries. Cargo cache owners/paths are
-unchanged. This removes the competing writer instead of relying on cache clearing.
+The original repair used numbered cache namespaces, and an intermediate restore
+prefix still selected the contaminated artifacts. The current cache uses
+content-derived compatibility instead: the actual Lean/Lake/bundled C compiler
+identities (including target), platform, pinned dependency/configuration files,
+and artifact-writing recipes determine a SHA-256 identity. Neither a manual
+version number nor the whole CI workflow acts as an invalidation switch.
+
+Dependencies and project outputs have separate caches, scoped by job so one
+job's partial build cannot permanently occupy another job's exact key. Project
+keys cover every owned Lean source family, including Productions; source-only
+changes may restore within the same compatibility/job prefix, then Lake traces
+revalidate the outputs. There is no fallback across the compatibility boundary.
+The workflow reports the requested identity and exact-hit state; a restored
+prefix is not an exact hit or proof of artifact acceptance. The existing native
+artifact mutation, cold-link and replay gates still determine acceptance.
+Cargo cache owners and paths are unchanged.
 
 The initial and pre-repair cohorts qualify their saved =a0dc449= source/artifact
 identities. The final cohort reruns every process using freshly built canonical-ABI

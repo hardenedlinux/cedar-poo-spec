@@ -1,0 +1,51 @@
+name: Lean artifact cache
+description: Cache immutable dependencies and job-scoped Lake outputs by build compatibility.
+runs:
+  using: composite
+  steps:
+    - name: Compute build compatibility
+      id: identity
+      shell: bash
+      env:
+        SOURCE_INPUTS: ${{ hashFiles('CedarPooSpec.lean', 'CedarPooSpec/**/*.lean', 'Examples.lean', 'Examples/**/*.lean', 'Productions.lean', 'Productions/**/*.lean', 'Tests.lean', 'Tests/**/*.lean', 'Benchmarks/**/*.lean') }}
+        BUILD_INPUTS: ${{ hashFiles('lean-toolchain', 'lakefile.toml', 'lake-manifest.json', '**/Justfile', 'Justfile', 'Tests/*.just', '.github/actions/lean-cache/action.yml') }}
+      run: |
+        set -euo pipefail
+        # Actual compiler identity includes the target triple. Installation paths
+        # are not ABI inputs; the pinned toolchain owns its bundled C compiler.
+        {
+          lean --version
+          lake --version
+          "$(lean --print-prefix)/bin/leanc" --version | sed '/^InstalledDir:/d'
+          printf '%s\n' "$RUNNER_OS" "$RUNNER_ARCH" "$BUILD_INPUTS"
+        } > "$RUNNER_TEMP/lean-build-identity.txt"
+        cat "$RUNNER_TEMP/lean-build-identity.txt"
+        compatibility=$(sha256sum "$RUNNER_TEMP/lean-build-identity.txt" | cut -d ' ' -f 1)
+        echo "sources=$SOURCE_INPUTS" >> "$GITHUB_OUTPUT"
+        echo "compatibility=$compatibility" >> "$GITHUB_OUTPUT"
+    - name: Restore immutable Lean dependencies
+      id: dependencies
+      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+      with:
+        path: .lake/packages
+        key: lean-dependencies-${{ steps.identity.outputs.compatibility }}-${{ github.job }}
+    - name: Restore project Lake artifacts
+      id: project
+      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+      with:
+        path: .lake/build
+        key: lean-project-${{ steps.identity.outputs.compatibility }}-${{ github.job }}-${{ steps.identity.outputs.sources }}
+        # Source changes may reuse compatible outputs. Lake's own traces decide
+        # what to rebuild. Never restore across a compiler/configuration boundary.
+        restore-keys: |
+          lean-project-${{ steps.identity.outputs.compatibility }}-${{ github.job }}-
+    - name: Report cache identity
+      shell: bash
+      env:
+        COMPATIBILITY: ${{ steps.identity.outputs.compatibility }}
+        DEPENDENCIES_HIT: ${{ steps.dependencies.outputs.cache-hit }}
+        PROJECT_HIT: ${{ steps.project.outputs.cache-hit }}
+        PROJECT_KEY: lean-project-${{ steps.identity.outputs.compatibility }}-${{ github.job }}-${{ steps.identity.outputs.sources }}
+      run: |
+        printf 'Lean compatibility: %s\nDependency exact hit: %s\nProject exact hit: %s\nProject requested key: %s\n' \
+          "$COMPATIBILITY" "$DEPENDENCIES_HIT" "$PROJECT_HIT" "$PROJECT_KEY"
