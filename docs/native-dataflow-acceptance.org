@@ -8,9 +8,10 @@ algorithm in one migration. Type/Contract/proof and complete Case/Rust replay
 acceptance pass. Complete process/resource evidence is recorded, including the
 initial regressions and both revision-preparation cohorts. The latest empty
 revision allocations decrease across all nine families; literal revisions also
-improve against the preceding dataflow revision. The measurements still do NOT
-establish a whole-application speedup. PR #8 remains unmerged and auto-merge stays
-disabled.
+improve against the preceding dataflow revision. The later shared-normalization
+cohort improves complete producer/Rust CPU in all three observed pairs, with a
+10% median reduction. Wall-clock latency remains unstable, so no latency SLO is
+closed by these measurements. PR #8 remains unmerged and auto-merge stays disabled.
 
 The pre-migration Cedar baseline is
 =5ce4bd2c92cc79609221a9cad3a4c3af3893ce7f= with POO
@@ -18,7 +19,8 @@ The pre-migration Cedar baseline is
 =1b1d41eafe6c979387c4fa69e194fb921bd4befe= from existing PR #13. That exact
 upstream revision passed all 17 GitHub CI jobs. Cedar retains Lean 4.34.1 and
 its Cedar pin; no compiler-profile, Cargo-jobs, timeout, heap, sample or workload
-exception was introduced.
+exception was introduced. Concurrent Gateway profile/authority/Delta changes
+are retained and included in the complete integrated gate.
 
 * One shared implementation across all domains
 
@@ -232,7 +234,8 @@ completed children, 15 full wire comparisons, 486 object observations and 1836
 ordinary Rust entry timings. The fixed three pairs, fresh-file observations,
 120-second/3-second supervision, workloads and guards are unchanged. Both exact
 POO revisions passed all 17 remote CI jobs; both immutable dependency pins passed
-the complete local Cedar gate. The Python process/resource suite passed 14 tests.
+the complete local Cedar gate. The Python process/resource suite passed 14 tests at that checkpoint; its
+later dependency-identity controls bring the current suite to 16 tests.
 
 Counts below are medians per 128 fresh named structural revisions (nine
 observations per cell). They are small-allocation heartbeat counts, not bytes.
@@ -273,6 +276,96 @@ unattributed; this evidence does not identify antivirus, filesystem, scheduling
 or another host mechanism as its cause. Synthetic revision allocation savings
 therefore cannot stand in for catalog/startup or complete process acceptance.
 
+* Invocation-scoped policy body preparation
+
+The complete catalog contains 1000 policy normalization observations across
+221 revisions, with 335 distinct sources within their individual manifest
+invocations. A JSON-keyed diagnostic reused 665 results but still paid for
+=Policy.to_json()= on every observation. In pinned Cedar SDK 4.12.0, that operation
+converts lossless text to EST by parsing the text again; it is not a cheap AST
+projection. See the [[https://docs.rs/cedar-policy/4.12.0/src/cedar_policy/api.rs.html][pinned SDK source]] and the
+[[https://docs.rs/cedar-policy/4.12.0/cedar_policy/struct.Policy.html#method.to_cedar][original-text API contract]].
+
+The private =ParsedTextPolicies= owner can only be created by the text parser.
+Its policy iterator therefore supplies static policies with their complete
+original text, rather than a lossy display of JSON/PST/linked objects. A
+=PreparedPolicyBodies= owner keys pure canonical bodies by those exact source
+strings before entering =to_json()=. Every miss runs the original normalizer;
+only successful results are retained. Different source formatting conservatively
+misses even when the normalized result agrees. Policy IDs, revision labels,
+credentials, contexts and observed decisions do not establish identity.
+
+The owner belongs to one manifest invocation and is dropped on return. It is
+not a global cache or an authorization cache. Each revision still loads its
+actual JSON source, independently parses its complete rendered text, compares
+body multiplicities and retains both actual authorizers. Every request and both
+authorizations still execute. Schema validation/error ordering and conflicting
+revision-output refusal remain unchanged. The independent original-workflow
+oracle disables body preparation sharing as well as entity reuse.
+
+The full emitted-catalog Rust test checks 335 actual normalizations, 665 reuses,
+a maximum owner inventory of 21, and all 2560 authorizations. Smaller controls
+cover changed bodies under the same policy ID, source formatting, exact uncached
+normalizer equality and invocation retirement. The inventory of 21 is a measured
+fixed-corpus maximum, not a heap/RSS or arbitrary-input bound.
+
+Direct Cargo, Justfile and CI now use the same workspace-owned =rust/target=
+through =.cargo/config.toml=. The Justfile-only target environment setting is
+removed; compiler profiles, job defaults and limits are unchanged. The package
+boundary audit uses actual Cargo package names from flattened package records,
+so a checkout path containing =cedar-policy=, =mrr-data= or =p256= cannot masquerade
+as a dependency. Real direct/transitive prohibited packages remain refused.
+
+* Complete pipeline result after sharing actual normalization work
+
+The [[file:native-shared-policy-preparation-evidence.json][third complete cohort]] retains all 48 naturally completed children,
+15 full wire comparisons, [[file:native-shared-policy-preparation-object-observations.csv][486 object observations]] and
+[[file:native-shared-policy-preparation-entry-timings.csv][1836 ordinary Rust entry timings]]. The independent
+[[file:native-shared-policy-preparation-allocation.json][three-sample instrumented allocation receipt]] is kept separate from ordinary
+latency. Together, this revision-preparation work preserves three fixed cohorts:
+144 children, 45 complete wire comparisons and every first-file observation.
+Earlier no-speedup results remain unchanged.
+
+The baseline is Cedar =2ccc2a7718262d07a4b06719f9c254360e63a348= with the same
+POO =1b1d41eafe6c979387c4fa69e194fb921bd4befe=. All three Lean executables are
+byte-identical between variants. The local source import closures (166 producer,
+68 object-driver and 22 Functional-driver modules) contain no changed Gateway
+source; external Lean/Cedar pins are unchanged. The ordinary Rust executable
+changes only for the current source-bound preparation and its observations.
+The baseline, frozen executable hashes and current exact source snapshot are
+recorded in the receipt. Full integrated correctness gates precede measurement;
+no build or test from this task overlaps it.
+
+| Measure | Before | After |
+|---------+--------+-------|
+| Rust replay CPU median | 440 ms | 370 ms |
+| Sequential producer/Rust CPU median | 600 ms | 540 ms |
+| Pipeline peak-child RSS median | 119.78 MiB | 117.95 MiB |
+| Text normalization median, 9 paired ordinary samples | 118.05 ms | 50.14 ms |
+
+Complete pipeline CPU pairs are 580/600/610 -> 570/520/540 ms. The first pair's
+10-ms difference is at the OS accounting quantum; the later pairs reduce CPU
+by 80 and 70 ms. These are bounded observations, not a universal machine-time
+proof. Real work changes from 1000 normalizations to 335 normalizations plus 665
+exact-source reuses, with a maximum invocation-local body inventory of 21.
+All 221 source loads, 2560 authorizations, 53 entity parses, 1227 entity reuses,
+six entity replacements and the one-slot entity owner remain unchanged.
+
+Wall pairs are 2776.31/872.18/954.01 -> 2657.23/1011.12/818.06 ms. Their medians
+are 954.01 -> 1011.12 ms; the middle pair regresses despite lower CPU. Wall latency
+therefore has no stable improvement. Even the byte-identical producer control
+moves from a 160-ms CPU median to 180 ms in this cohort. Host scheduling/cache/IO
+and first-file behavior remain uncontrolled and unattributed. No extra samples,
+changed limits, selected-pair omission or environment tuning converts this into
+a wall-latency pass. Peak-child RSS is not a sum, retained heap or universal bound.
+
+A separate existing-CLI attribution diagnostic uses the same frozen producer
+with full, selected and rejected entry arguments. Its CPU medians are about
+170/110/110 ms respectively. Generated C initializes manifest globals before CLI
+selection. This suggests substantial initialization cost, but does not isolate
+every initialization operation. These different-workload diagnostics are not
+counted in any fixed complete-pipeline performance acceptance.
+
 * Reproduction and next complete optimization boundary
 
 =Benchmarks/DataflowLifecycle.py= is process/artifact glue using the existing
@@ -302,10 +395,10 @@ entries, rather than another family-specific revision benchmark:
    separately while preserving the ordinary complete-process control and exact
    wire bytes. The new object algorithm's savings are not visible as a producer
    CPU improvement in either cohort.
-2. Audit invocation-scoped immutable policy/schema preparation and canonical text
-   normalization in Rust. Existing measured subphases show preparation, not just
-   authorization, remains material. Keep the independent text-side parser,
-   compiled/rendered authorizers, strict error ordering and uncached reference.
+2. Source-bound text normalization sharing is implemented and measured. Audit
+   the remaining immutable policy/schema preparation across the whole catalog;
+   retain the independent per-revision text parser, compiled/rendered authorizers,
+   strict error ordering and uncached reference. Do not cache request decisions.
 3. If persistent graph/execution patching is implemented, require exact per-key
    source equations, complete support and current dependency ranks. Empty-node
    sharing is already implemented; nonempty graph/index rebuilding remains.
