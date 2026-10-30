@@ -169,6 +169,12 @@ identities (including target), platform, pinned dependency/configuration files,
 and artifact-writing recipes determine a SHA-256 identity. Neither a manual
 version number nor the whole CI workflow acts as an invalidation switch.
 
+The pinned =lean-action= also enables a whole-=.lake= GitHub restore/save by
+default, independently of =auto-config/build/test/lint=. The first content-key
+CI log exposed that second owner before the explicit restores. All three setup
+steps now set =use-github-cache: false=; only the shared cache action restores
+and saves Lean artifacts. See the [[https://github.com/leanprover/lean-action/blob/50fcf42d2e460296f1a34b402e990d1b24f8b596/action.yml][pinned action implementation]].
+
 Dependencies and project outputs have separate caches, scoped by job so one
 job's partial build cannot permanently occupy another job's exact key. Project
 keys cover every owned Lean source family, including Productions; source-only
