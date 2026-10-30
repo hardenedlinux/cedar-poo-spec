@@ -162,8 +162,11 @@ The native gate executes governance, procurement and delegation checks between
 checksums of the three actual .olean files; any mutation fails before linking.
 A fresh project-only lib/ir/bin build rechecks the cold native path. Frozen
 performance binaries and raw evidence are retained outside those generated paths.
-Lean cache namespace =lean-native-setup-v3= excludes the contaminated generation;
-all cache keys include source and recipe owners. Cargo cache owners/paths are
+Lean cache namespace =lean-native-setup-v4= excludes the contaminated generation;
+all cache keys include source and recipe owners. The intermediate v3 attempt
+still restored the legacy prefix and carried its contamination forward; the
+final v4 generation changes both primary and restore prefixes, excluding both
+legacy and v3 cache entries. Cargo cache owners/paths are
 unchanged. This removes the competing writer instead of relying on cache clearing.
 
 The initial and pre-repair cohorts qualify their saved =a0dc449= source/artifact

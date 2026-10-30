@@ -35,9 +35,9 @@ jobs:
           path: |
             .lake/packages
             .lake/build
-          key: lean-native-setup-v3-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain', 'lakefile.toml', 'lake-manifest.json') }}-${{ hashFiles('CedarPooSpec.lean', 'CedarPooSpec/**/*.lean', 'Examples/**/*.lean', 'Tests/**/*.lean', 'Benchmarks/**/*.lean', 'Justfile', 'Examples/**/Justfile', 'Tests/*.just', 'Benchmarks/Justfile', '.github/workflows/ci.yml') }}
+          key: lean-native-setup-v4-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain', 'lakefile.toml', 'lake-manifest.json') }}-${{ hashFiles('CedarPooSpec.lean', 'CedarPooSpec/**/*.lean', 'Examples/**/*.lean', 'Tests/**/*.lean', 'Benchmarks/**/*.lean', 'Justfile', 'Examples/**/Justfile', 'Tests/*.just', 'Benchmarks/Justfile', '.github/workflows/ci.yml') }}
           restore-keys: |
-            lean-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain', 'lakefile.toml', 'lake-manifest.json') }}-
+            lean-native-setup-v4-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain', 'lakefile.toml', 'lake-manifest.json') }}-
       - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
       - run: just check-lean
       - run: just bench-functional-reuse
@@ -88,9 +88,9 @@ jobs:
           path: |
             .lake/packages
             .lake/build
-          key: lean-native-setup-v3-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain', 'lakefile.toml', 'lake-manifest.json') }}-${{ hashFiles('CedarPooSpec.lean', 'CedarPooSpec/**/*.lean', 'Examples/**/*.lean', 'Tests/**/*.lean', 'Benchmarks/**/*.lean', 'Justfile', 'Examples/**/Justfile', 'Tests/*.just', 'Benchmarks/Justfile', '.github/workflows/ci.yml') }}
+          key: lean-native-setup-v4-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain', 'lakefile.toml', 'lake-manifest.json') }}-${{ hashFiles('CedarPooSpec.lean', 'CedarPooSpec/**/*.lean', 'Examples/**/*.lean', 'Tests/**/*.lean', 'Benchmarks/**/*.lean', 'Justfile', 'Examples/**/Justfile', 'Tests/*.just', 'Benchmarks/Justfile', '.github/workflows/ci.yml') }}
           restore-keys: |
-            lean-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain', 'lakefile.toml', 'lake-manifest.json') }}-
+            lean-native-setup-v4-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain', 'lakefile.toml', 'lake-manifest.json') }}-
       - name: Restore Cargo cache
         uses: Swatinem/rust-cache@49a0bdc70d2e1b713ca9e2869b211fcce03d3c1c # v2
         with:
@@ -151,9 +151,9 @@ jobs:
           path: |
             .lake/packages
             .lake/build
-          key: lean-native-setup-v3-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain', 'lakefile.toml', 'lake-manifest.json') }}-${{ hashFiles('CedarPooSpec.lean', 'CedarPooSpec/**/*.lean', 'Examples/**/*.lean', 'Tests/**/*.lean', 'Benchmarks/**/*.lean', 'Justfile', 'Examples/**/Justfile', 'Tests/*.just', 'Benchmarks/Justfile', '.github/workflows/ci.yml') }}
+          key: lean-native-setup-v4-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain', 'lakefile.toml', 'lake-manifest.json') }}-${{ hashFiles('CedarPooSpec.lean', 'CedarPooSpec/**/*.lean', 'Examples/**/*.lean', 'Tests/**/*.lean', 'Benchmarks/**/*.lean', 'Justfile', 'Examples/**/Justfile', 'Tests/*.just', 'Benchmarks/Justfile', '.github/workflows/ci.yml') }}
           restore-keys: |
-            lean-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain', 'lakefile.toml', 'lake-manifest.json') }}-
+            lean-native-setup-v4-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain', 'lakefile.toml', 'lake-manifest.json') }}-
       - name: Restore Cargo cache
         uses: Swatinem/rust-cache@49a0bdc70d2e1b713ca9e2869b211fcce03d3c1c # v2
         with:
