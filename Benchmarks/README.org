@@ -111,3 +111,11 @@ was about 102.02 MB; instrumented OS RSS was 129.84 MB. Requested bytes are
 cumulative traffic, not simultaneous live memory, and the requested-live high
 water mark is not an OS RSS bound. Allocation instrumentation uses a different
 executable and does not qualify the ordinary latency table.
+
+* Lifecycle follow-up
+
+The [[file:../docs/native-performance-plan.org][native lifecycle audit]] supersedes interpreting the single earlier
+process pair as a repeatable regression. The benchmark now emits =lifecycle=
+and per-sample =catalog= stages/entry coverage, and measures explicit cleanup.
+OS elapsed minus the measured body is a combined external residual, not startup
+alone. Fixed ordinary and allocation recipes retain these fields in CI output.

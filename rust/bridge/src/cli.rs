@@ -19,11 +19,15 @@ struct TemplateSourceBundle {
 
 /// Read one JSON manifest from standard input and check all cases.
 pub fn run() -> Result<(), String> {
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    let input_started = (args == ["benchmark-catalog"]).then(std::time::Instant::now);
     let mut input = String::new();
     io::stdin()
         .read_to_string(&mut input)
         .map_err(|error| error.to_string())?;
-    let args: Vec<String> = std::env::args().skip(1).collect();
+    if let Some(started) = input_started {
+        return crate::benchmark::run(&input, started.elapsed().as_nanos());
+    }
     dispatch(&input, &args)
 }
 
@@ -40,10 +44,6 @@ fn dispatch(input: &str, args: &[String]) -> Result<(), String> {
             .map_err(|error| format!("template source bundle JSON: {error}"))?;
         check_template_source(&bundle.source, &bundle.materialized)?;
         println!("Cedar template source matches Lean materialization");
-        return Ok(());
-    }
-    if args == ["benchmark-catalog"] {
-        crate::catalog::benchmark(input)?;
         return Ok(());
     }
     if args == ["replay-catalog"] {

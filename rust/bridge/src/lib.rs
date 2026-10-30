@@ -1,5 +1,7 @@
 //! Command-line application for Cedar conformance checks.
+mod benchmark;
 mod catalog;
+mod catalog_observation;
 pub mod cli;
 mod financial;
 

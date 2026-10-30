@@ -37,6 +37,18 @@ fn emitted_catalog_rejects_cross_artifact_tampering() {
     .expect("official Lean catalog must be emitted first");
     let catalog: serde_json::Value = serde_json::from_str(&input).expect("catalog JSON");
     let output = replay(&input).expect("unmodified complete catalog");
+    let mut stages = crate::catalog_observation::CatalogObservation::default();
+    let mut metrics = cedar_poo_runtime::ReplayMetrics::default();
+    let profiled = super::replay_observed(&input, Some(&mut metrics), Some(&mut stages))
+        .expect("observed complete catalog");
+    assert_eq!(
+        profiled, output,
+        "observation and early retirement preserve every receipt"
+    );
+    assert_eq!(stages.entries.len(), 51);
+    assert_eq!(stages.retained_manifests, 3);
+    assert_eq!(metrics.authorization_calls, 2560);
+
     assert_eq!(
         output.as_object().expect("catalog receipt object").len(),
         51
@@ -84,12 +96,12 @@ fn emitted_catalog_rejects_cross_artifact_tampering() {
 fn measured_catalog_preserves_complete_output_and_refuses_the_same_invalid_input() {
     let input = fixture().to_string();
     let mut metrics = cedar_poo_runtime::ReplayMetrics::default();
-    let measured = super::replay_measured(&input, &mut metrics).expect("measured");
+    let measured = super::replay_observed(&input, Some(&mut metrics), None).expect("measured");
     assert_eq!(measured, replay(&input).expect("ordinary"));
     assert_eq!(metrics.authorization_calls, 2);
     assert_eq!(metrics.prepared_revisions, 1);
     assert_eq!(
-        super::replay_measured("{}", &mut metrics).expect_err("empty measured catalog"),
+        super::replay_observed("{}", Some(&mut metrics), None).expect_err("empty measured catalog"),
         replay("{}").expect_err("empty ordinary catalog")
     );
 }
