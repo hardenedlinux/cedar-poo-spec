@@ -147,9 +147,14 @@ text parse, compiled/rendered body normalization and hashing. Account for catalo
 normalization/DTO conversion/retention separately, with units and nested-phase
 boundaries. Reproduce the CPU/allocation observation against those subphases
 before choosing an API replacement. Do not add a threshold based on this one
-sampling window. Inspect CI cache/target paths separately: the action currently
-names =target= while Just uses =rust/target=; confirm actual cache ownership and
-hit/miss output before calling that a build bottleneck or changing it.
+sampling window. The build-cache audit found a separate ownership mismatch: the action names
+=target= while Just exports =rust/target=. Completed baseline CI run 41003179614
+logs explicitly list the repository-root =target= as the cached workspace path
+in all three Rust-consuming jobs, each with a full cache hit (~23 MB). A cache
+hit therefore does not establish reuse of Just's compiled artifacts. Align that
+path in the next build-lifecycle change and verify actual restored artifacts and
+rebuild work; the current audit does not quantify a build-time speedup or assign
+this mismatch to application-runtime/first-file latency.
 
 Deliverables: an all-domain phase/resource table, exact inputs and artifact SHA,
 first-file versus repeat receipts, and an explicit map of which public SDK
