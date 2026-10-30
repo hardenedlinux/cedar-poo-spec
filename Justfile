@@ -39,7 +39,7 @@ check-docs:
 
 check: check-functional-consumers check-tests check-docs
     just check-conformance
-    just bench-functional-catalog
+    just bench-functional-allocation
     just bench-functional-native
     just check-policy-reuse
     just example governance attested-views

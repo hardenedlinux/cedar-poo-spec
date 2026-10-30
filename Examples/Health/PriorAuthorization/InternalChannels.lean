@@ -48,8 +48,13 @@ def verificationProfile : DisclosureProfile.Object :=
   (DisclosureProfile.define "VerificationChannel" verificationTemplate).toOption.get
     (by native_decide)
 
+/-- One admission for all projections of this exact immutable profile. -/
+def verificationProfileAccess : CedarPooSpec.Functional.ObjectProfile.Session DisclosureProfile.contract (CedarPooSpec.Functional.ObjectProfile.factory DisclosureProfile.contract) verificationProfile :=
+  (CedarPooSpec.Functional.ObjectProfile.Session.open DisclosureProfile.contract
+    (CedarPooSpec.Functional.ObjectProfile.factory DisclosureProfile.contract) verificationProfile).toOption.get (by native_decide)
+
 def verificationObject : DisclosureChannel :=
-  (DisclosureProfile.channel? verificationProfile).get (by native_decide)
+  (verificationProfileAccess.read .channel).get (by native_decide)
 
 def memoryProfile : DisclosureProfile.Object :=
   (verificationProfile.extendWith "MemoryChannel" do
@@ -60,14 +65,19 @@ def memoryProfile : DisclosureProfile.Object :=
     LeanPoo.Object.Declaration.Builder.value .payloadClass "workflow-handle").toOption.get
       (by native_decide)
 
+/-- One admission for all projections of this exact immutable profile. -/
+def memoryProfileAccess : CedarPooSpec.Functional.ObjectProfile.Session DisclosureProfile.contract (CedarPooSpec.Functional.ObjectProfile.factory DisclosureProfile.contract) memoryProfile :=
+  (CedarPooSpec.Functional.ObjectProfile.Session.open DisclosureProfile.contract
+    (CedarPooSpec.Functional.ObjectProfile.factory DisclosureProfile.contract) memoryProfile).toOption.get (by native_decide)
+
 def memoryObject : DisclosureChannel :=
-  (DisclosureProfile.channel? memoryProfile).get (by native_decide)
+  (memoryProfileAccess.read .channel).get (by native_decide)
 
 def verificationPolicy : Policy :=
-  (DisclosureProfile.policy? verificationProfile).get (by native_decide)
+  (verificationProfileAccess.read .policy).get (by native_decide)
 
 def memoryPolicy : Policy :=
-  (DisclosureProfile.policy? memoryProfile).get (by native_decide)
+  (memoryProfileAccess.read .policy).get (by native_decide)
 def revokedChannel : Policy :=
   policy "revoked-internal-delegation" .forbid
     (.actionInAny [delegate, remember]) .any (not_ (fact "delegationActive"))

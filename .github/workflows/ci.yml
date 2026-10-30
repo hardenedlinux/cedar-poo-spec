@@ -103,7 +103,7 @@ jobs:
       - run: just check-replay-receipts
       - run: just check-schema-bound-receipts
       - run: just check-schema-bound-scenarios
-      - run: just bench-functional-catalog
+      - run: just bench-functional-allocation
       - run: just example aws financial-services lakehouse
       - run: just example aws financial-services multi-account-banking
       - run: just example aws financial-services claim-settlement

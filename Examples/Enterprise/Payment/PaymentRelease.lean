@@ -115,11 +115,16 @@ def controllerProfile : ControllerReleaseProfile.Object :=
   (ControllerReleaseProfile.define "ControllerRelease" controllerTemplate).toOption.get
     (by native_decide)
 
+/-- One admission for all projections of this exact immutable profile. -/
+def controllerProfileAccess : CedarPooSpec.Functional.ObjectProfile.Session ControllerReleaseProfile.contract (CedarPooSpec.Functional.ObjectProfile.factory ControllerReleaseProfile.contract) controllerProfile :=
+  (CedarPooSpec.Functional.ObjectProfile.Session.open ControllerReleaseProfile.contract
+    (CedarPooSpec.Functional.ObjectProfile.factory ControllerReleaseProfile.contract) controllerProfile).toOption.get (by native_decide)
+
 def controllerRelease : ControllerRelease :=
-  (ControllerReleaseProfile.control? controllerProfile).get (by native_decide)
+  (controllerProfileAccess.read .control).get (by native_decide)
 
 def controllerPolicy : Policy :=
-  (ControllerReleaseProfile.policy? controllerProfile).get (by native_decide)
+  (controllerProfileAccess.read .policy).get (by native_decide)
 
 def restrictedControllerProfile : ControllerReleaseProfile.Object :=
   (ControllerReleaseProfile.withThreshold controllerProfile "RestrictedControllerRelease"

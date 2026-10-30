@@ -317,3 +317,16 @@ The same acceptance unit also compiles the existing Functional reuse source as
 =objectProfilesNative=. Both native Lean processes run in CI alongside the
 release Rust catalog replay. Their results remain separate from Lean-run
 measurements; the unchanged cold/hot/churn checks expose timing tradeoffs.
+
+* A-D prepared reuse and resource evidence
+
+The [[file:../functional-coverage.org][whole-domain acceptance unit]] extends the existing owners with factory-bound
+multi-field sessions, schema-local Rust source/parse reuse and complete native
+resource observations. No cross-schema or digest-only cache is introduced.
+Root scaling is measured before replacing lookup representation; ordered
+preparation and exact first failures remain authoritative. All nine domain
+families participate in accepted/refused native workloads, while complete Cedar
+catalog equivalence is checked against the independent original schema workflow.
+Rust allocator observations, Lean heartbeat counters and OS process RSS remain
+separate evidence. Existing simulations qualify modeled lifecycle behavior;
+real Host access is not a prerequisite. PR 8 remains unmerged.

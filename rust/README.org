@@ -214,3 +214,18 @@ The bridge =benchmark-catalog= requires identical complete ordinary/measured
 outputs across three fixed full-catalog samples and separately times transport
 serialization. =just bench-functional-catalog= runs it as a release executable.
 This is native Cedar conformance evidence, not native Lean or provider timing.
+
+* Schema-local prepared reuse
+
+The private replay owner reuses policies already loaded and strictly validated
+within the current schema invocation. SourcePolicies seals the original source
+body and revision alongside its parse; replay checks the complete binding before
+using it. All strict validation still precedes request execution, and independent
+rendered-text parsing/authorization remains required. The test-only original
+workflow compares complete schema-bound catalog receipts and refusal errors.
+
+=allocation-observation= is an opt-in bridge application feature. Its executable
+uses a forwarding System allocator with nonallocating atomic counters. Ordinary
+latency is measured without that feature; instrumented allocation/RSS observations
+run separately. Rust allocation requests, requested-live peaks and OS process RSS
+have different meanings and are never authority or admission inputs.

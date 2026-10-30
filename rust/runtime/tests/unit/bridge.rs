@@ -1,12 +1,13 @@
-use super::{
-    Case, Manifest, check_direct_sources, check_manifest, check_template_source, json_sha256,
-    load_policy_set, load_template_source, render_artifacts, render_identified_policy_sources,
-    replay_manifest, verify_replay_receipts,
-};
+use crate::bridge::json_sha256;
 use crate::schema::{
     SchemaEvolutionBundle, ValidatedManifest, render_validated_policy_sources,
     replay_schema_only_revision, replay_validated_manifest, verify_schema_only_revision,
     verify_validated_replay_receipts,
+};
+use crate::{
+    Case, Manifest, check_direct_sources, check_manifest, check_template_source, load_policy_set,
+    load_template_source, render_artifacts, render_identified_policy_sources, replay_manifest,
+    verify_replay_receipts,
 };
 use serde_json::json;
 use std::ops::Deref;
@@ -717,20 +718,20 @@ fn measured_replay_retains_receipts_failures_and_actual_reuse_counts() {
         cases: vec![first, second],
     };
     let reference = replay_manifest(&manifest).expect("reference");
-    let mut metrics = super::ReplayMetrics::default();
-    let observed = super::replay_manifest_measured(&manifest, &mut metrics).expect("observed");
+    let mut metrics = crate::ReplayMetrics::default();
+    let observed = crate::replay_manifest_measured(&manifest, &mut metrics).expect("observed");
     assert_eq!(reference, observed);
     assert_eq!(metrics.prepared_revisions, 1);
     assert_eq!(metrics.authorization_calls, 4);
     manifest.cases[1].revision = "changed".into();
-    let mut metrics = super::ReplayMetrics::default();
-    super::replay_manifest_measured(&manifest, &mut metrics).expect("changed root");
+    let mut metrics = crate::ReplayMetrics::default();
+    crate::replay_manifest_measured(&manifest, &mut metrics).expect("changed root");
     assert_eq!(metrics.prepared_revisions, 2);
     assert_eq!(metrics.authorization_calls, 4);
     manifest.cases[1].expected = "deny".into();
     assert_eq!(
         replay_manifest(&manifest).expect_err("original failure"),
-        super::replay_manifest_measured(&manifest, &mut metrics)
+        crate::replay_manifest_measured(&manifest, &mut metrics)
             .expect_err("same observed failure")
     );
 }
@@ -738,7 +739,7 @@ fn measured_replay_retains_receipts_failures_and_actual_reuse_counts() {
 #[test]
 fn measured_schema_replay_preserves_strict_errors_and_receipt_bindings() {
     let mut manifest = validated(receipt());
-    let mut metrics = super::ReplayMetrics::default();
+    let mut metrics = crate::ReplayMetrics::default();
     let measured =
         crate::replay_validated_manifest_measured(&manifest, &mut metrics).expect("schema replay");
     assert_eq!(
@@ -796,4 +797,117 @@ fn replay_distinguishes_explicit_empty_geography_from_missing_and_other_values()
     assert_eq!(receipts.len(), 3);
     assert_eq!(receipts[0].decision, "deny");
     assert!(receipts[1].error_free_allow && receipts[2].error_free_allow);
+}
+
+#[test]
+fn schema_preparation_reuses_policies_and_preserves_validation_before_request_errors() {
+    let mut manifest = validated(receipt());
+    let mut next = receipt();
+    next.name = "later".into();
+    manifest.cases.push(next);
+    let mut metrics = crate::ReplayMetrics::default();
+    crate::replay_validated_manifest_measured(&manifest, &mut metrics).expect("same revision");
+    assert_eq!(metrics.source_policy_loads, 1);
+    assert_eq!(metrics.prepared_revisions, 1);
+    assert_eq!(metrics.authorization_calls, 4);
+    manifest.cases[0].request.context = json!({"unlisted":true});
+    manifest.cases[1].revision = "later".into();
+    manifest.cases[1].policies = serde_json::from_value(json!({
+        "staticPolicies":{"base":{"effect":"permit","principal":{"op":"All"},"action":{"op":"All"},
+        "resource":{"op":"All"},"conditions":[{"kind":"when","body":{".":{"left":{"Var":"principal"},"attr":"missing"}}}]}},
+        "templates":{},"templateLinks":[]})).expect("wire AST");
+    // Invalid policy input must win over an earlier invalid request, as before.
+    let error = replay_validated_manifest(&manifest).expect_err("invalid later policy");
+    assert!(
+        error.contains("strict policy validation"),
+        "validation must precede request preparation: {error}"
+    );
+}
+
+// Independent pre-optimization schema workflow, retained only as a test oracle.
+fn original_validated_replay(
+    manifest: &ValidatedManifest,
+) -> Result<Vec<crate::SchemaBoundReceipt>, String> {
+    use cedar_policy::{Schema, ValidationMode, Validator};
+    let schema = Schema::from_json_value(manifest.schema.clone())
+        .map_err(|e| format!("Cedar schema: {e}"))?;
+    let validator = Validator::new(schema);
+    let mut roots = std::collections::BTreeSet::new();
+    for case in &manifest.cases {
+        if roots.insert(&case.revision) {
+            let policies = load_policy_set(&case.policies)?;
+            let result = validator.validate(&policies, ValidationMode::Strict);
+            if !result.validation_passed() {
+                return Err(format!(
+                    "{}: Cedar strict policy validation failed: {result:?}",
+                    case.revision
+                ));
+            }
+        }
+    }
+    let hash = json_sha256(&manifest.schema)?;
+    crate::replay::check_manifest_inner(&manifest.cases, true, Some(validator.schema())).map(
+        |rows| {
+            rows.into_iter()
+                .map(|replay| crate::SchemaBoundReceipt {
+                    schema_sha256: hash.clone(),
+                    replay,
+                })
+                .collect()
+        },
+    )
+}
+
+#[test]
+#[ignore = "requires official emitted catalog; run just check-functional-catalog"]
+fn prepared_catalog_matches_original_schema_workflow() {
+    let input = std::fs::read_to_string(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../.lake/build/functional-catalog.json"
+    ))
+    .expect("official Lean catalog");
+    let catalog: std::collections::BTreeMap<String, serde_json::Value> =
+        serde_json::from_str(&input).expect("catalog");
+    let mut checked = 0;
+    for (name, value) in catalog {
+        if value.get("schema").is_none() || value.get("cases").is_none() {
+            continue;
+        }
+        let mut manifest: ValidatedManifest =
+            serde_json::from_value(value).expect("validated manifest");
+        let expected = original_validated_replay(&manifest).expect("original workflow");
+        let mut metrics = crate::ReplayMetrics::default();
+        let actual = crate::replay_validated_manifest_measured(&manifest, &mut metrics)
+            .expect("prepared workflow");
+        assert_eq!(actual, expected, "complete receipts: {name}");
+        assert_eq!(metrics.source_policy_loads, metrics.prepared_revisions);
+        manifest.cases[0].expected = if manifest.cases[0].expected == "allow" {
+            "deny"
+        } else {
+            "allow"
+        }
+        .into();
+        assert_eq!(
+            replay_validated_manifest(&manifest).expect_err("prepared refusal"),
+            original_validated_replay(&manifest).expect_err("original refusal"),
+            "{name}"
+        );
+        checked += 1;
+    }
+    assert_eq!(checked, 23, "schema-bearing catalog coverage changed");
+}
+
+#[test]
+fn prepared_source_cannot_be_rebound_to_same_named_different_policy_body() {
+    let case = receipt();
+    let mut other = receipt();
+    let mut wire = other.policies.deref().clone();
+    wire["staticPolicies"]["base"]["effect"] = json!("forbid");
+    other.policies = serde_json::from_value(wire).expect("changed source");
+    let prepared = crate::bridge::SourcePolicies::new(&other).expect("parse changed body");
+    let mut loaded = std::collections::BTreeMap::new();
+    loaded.insert(case.revision.clone(), prepared);
+    let error = crate::replay::check_manifest_prepared(&[case], true, None, None, loaded)
+        .expect_err("source binding must fail before replay");
+    assert!(error.contains("prepared policy source mismatch"), "{error}");
 }

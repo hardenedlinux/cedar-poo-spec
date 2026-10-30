@@ -40,3 +40,74 @@ speedup, process-RSS bound or hardware-independent latency guarantee.
 
 The native gate also runs =objectProfilesNative= using the same nine-family
 Contract check inventory as [[file:../Tests/Functional/Profiles.lean][the Lean tests]]. It must pass every public-getter check and exit naturally.
+
+* Complete prepared-resource acceptance
+
+=bench-functional-native= now includes nine-family accepted/forged/missing batch
+projection measurements and actual 8/32/128-root lookup scaling. Each measured
+operation constructs fresh inputs and forces its result before ending timing.
+Native process identity, exit status and peak RSS are collected by the existing
+Python testing package; heartbeat counters are reported with their Lean units.
+Selected-family runs include shared executable startup/fixture state, so their
+RSS is not attributed exclusively to one family's object heap.
+
+=bench-functional-allocation= depends on the full ordinary catalog benchmark,
+then runs a separately compiled allocation-instrumented release bridge. Its
+three complete outputs still match ordinary replay. JSON source loads must equal
+prepared revisions; both authorizers and all old mutation tests remain gates.
+Instrumented durations are not ordinary latency measurements. See the
+[[file:../docs/functional-coverage.org][coverage and resource matrix]] for ownership and measurement limits.
+
+* A-D local native observations (2026-10-30)
+
+macOS arm64, fixed 128 fresh valid objects per sample, three samples per family.
+Times below are per-family sample medians; heartbeat deltas are Lean current-thread
+small-allocation counts per sample, not bytes. Rust acceptance was also running on
+this host; these observations are not isolated throughput qualifications.
+
+| Family | Per-field ms | Shared-session ms | Per-field small allocations | Shared small allocations |
+|--------+--------------+-------------------+-----------------------------+--------------------------|
+| banking | 1.018 | 0.690 | 36736 | 26880 |
+| controller | 3.374 | 1.588 | 136832 | 64384 |
+| disclosure | 4.931 | 2.203 | 217088 | 89728 |
+| handoff | 2.241 | 1.507 | 53632 | 33536 |
+| lineage | 1.614 | 1.273 | 66176 | 54272 |
+| location | 2.459 | 1.221 | 99712 | 48384 |
+| policy | 0.955 | 0.683 | 38912 | 29056 |
+| protection | 2.659 | 1.328 | 102656 | 51328 |
+| source | 0.895 | 0.621 | 36736 | 26880 |
+
+All 81 accepted/forged/missing measurements passed, plus nine independently
+selected-family processes. Those selected processes observed 40.86-41.04 MB
+OS high-water RSS including the shared startup/check inventory. Native root
+preparation for 8/32/128 roots took 0.102/0.474/3.752 ms; 128 last-root
+lookups took 10.7/15.4/40.3 microseconds. The root counts also matched the
+kernel-checked retained-cardinality law. This does not establish arbitrary-scale
+lookup complexity or a memory bound.
+
+Same-host release comparison against pre-A-D commit
+ =3f8161bcfbf514bb0c3d38f8212e3de510ebe543= used the exact same emitted
+catalog, compiler/dependency pins, fixed warmup and three samples. Baseline ran
+before current, once each; no randomized-order or cross-host claim follows.
+Project-package release artifacts were rebuilt after detecting a shared-target
+baseline metadata collision; the values below come from the corrected binaries.
+Complete =replay-catalog= output bytes were identical.
+
+| Build | Three replay samples (ms) | Process peak RSS (MB, decimal) |
+|-------+---------------------------+--------------------------------|
+| baseline | 518.23 / 516.89 / 509.14 | 232.34 |
+| current | 497.59 / 495.53 / 495.51 | 130.50 |
+
+Baseline executable SHA-256:
+=a2fea80c84908105db32240fa7340994f6750a1a49a389dcb88d10bc3ac31b23=.
+Current ordinary executable SHA-256:
+=34867485eed0679ad6859b7c7ba451143d517999773ed96deb0bb57ce653c7e4=.
+
+Every current sample retained 1280 rows, 2560 authorization calls, 221 prepared
+revisions and exactly 221 JSON source-policy loads. Separate instrumented
+samples observed 6,870,331-6,870,335 successful allocation requests and about
+1.222 GB cumulatively requested per replay. Process-wide requested-live peak
+was about 102.02 MB; instrumented OS RSS was 129.84 MB. Requested bytes are
+cumulative traffic, not simultaneous live memory, and the requested-live high
+water mark is not an OS RSS bound. Allocation instrumentation uses a different
+executable and does not qualify the ordinary latency table.

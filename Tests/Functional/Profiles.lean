@@ -1,3 +1,4 @@
+import Tests.Functional.ProfileWorkloads
 import CedarPooSpec.PolicyProfile
 import CedarPooSpec.Functional.ObjectProfile
 import Examples.Enterprise.AWS.FinancialServices.MultiAccountBanking.MultiAccountBanking
@@ -35,32 +36,60 @@ private def protectedProfile : Data.ProtectionProfile.Object :=
 private def joined := AgenticAI.LanguageModel.Disclosure.joinedPrototype.toOption.get (by native_decide)
 
 /-- One check inventory shared by kernel-facing tests and the native process. -/
-def nativeChecks : List (String × Bool) := [
-  ("policy", guards policyProfile .policy Policy.allowAll PolicyProfile.policy?),
-  ("banking", guards MultiAccountBankingExample.transactionProfile .owner
+def probes : List FunctionalProfileWorkloads.Probe := [
+  { name := "policy", guards := (guards policyProfile .policy Policy.allowAll PolicyProfile.policy?),
+    fields := (LeanPoo.allSlots policyProfile.plan).length,
+    consume := (FunctionalProfileWorkloads.consume PolicyProfile.contract policyProfile .policy Policy.allowAll) },
+  { name := "banking", guards := (guards MultiAccountBankingExample.transactionProfile .owner
     { MultiAccountBankingExample.transactionTemplate with actions := [] }
     Vertical.FinancialServices.BankingToolProfile.owner?),
-  ("location", guards LakehouseGatewayExample.euProfile .boundary
+    fields := (LeanPoo.allSlots MultiAccountBankingExample.transactionProfile.plan).length,
+    consume := (FunctionalProfileWorkloads.consume Vertical.FinancialServices.BankingToolProfile.contract MultiAccountBankingExample.transactionProfile .owner
+    { MultiAccountBankingExample.transactionTemplate with actions := [] }) },
+  { name := "location", guards := (guards LakehouseGatewayExample.euProfile .boundary
     { LakehouseGatewayExample.euTemplate with inputKey := "substituted" }
     Data.Lakehouse.LocationProfile.boundary?),
-  ("source", guards Cloud.Pipeline.GoogleThreatCase.productionProfile .control
+    fields := (LeanPoo.allSlots LakehouseGatewayExample.euProfile.plan).length,
+    consume := (FunctionalProfileWorkloads.consume Data.Lakehouse.LocationProfile.contract LakehouseGatewayExample.euProfile .boundary
+    { LakehouseGatewayExample.euTemplate with inputKey := "substituted" }) },
+  { name := "source", guards := (guards Cloud.Pipeline.GoogleThreatCase.productionProfile .control
     { Cloud.Pipeline.GoogleThreatCase.sourceControl with protectedBranch := "unprotected" }
     Cloud.Pipeline.SourceProfile.control?),
-  ("protection", guards protectedProfile .intent
+    fields := (LeanPoo.allSlots Cloud.Pipeline.GoogleThreatCase.productionProfile.plan).length,
+    consume := (FunctionalProfileWorkloads.consume Cloud.Pipeline.SourceProfile.contract Cloud.Pipeline.GoogleThreatCase.productionProfile .control
+    { Cloud.Pipeline.GoogleThreatCase.sourceControl with protectedBranch := "unprotected" }) },
+  { name := "protection", guards := (guards protectedProfile .intent
     { Data.ProtectedStorageFixture.baseIntent with keyVersion := "substituted" }
     Data.ProtectionProfile.intent?),
-  ("controller", guards PaymentReleaseExample.controllerProfile .control
+    fields := (LeanPoo.allSlots protectedProfile.plan).length,
+    consume := (FunctionalProfileWorkloads.consume Data.ProtectionProfile.contract protectedProfile .intent
+    { Data.ProtectedStorageFixture.baseIntent with keyVersion := "substituted" }) },
+  { name := "controller", guards := (guards PaymentReleaseExample.controllerProfile .control
     { PaymentReleaseExample.controllerTemplate with amountAttribute := "substituted" }
     Vertical.FinancialServices.ControllerReleaseProfile.control?),
-  ("disclosure", guards PriorAuthorizationInternalChannels.verificationProfile .channel
+    fields := (LeanPoo.allSlots PaymentReleaseExample.controllerProfile.plan).length,
+    consume := (FunctionalProfileWorkloads.consume Vertical.FinancialServices.ControllerReleaseProfile.contract PaymentReleaseExample.controllerProfile .control
+    { PaymentReleaseExample.controllerTemplate with amountAttribute := "substituted" }) },
+  { name := "disclosure", guards := (guards PriorAuthorizationInternalChannels.verificationProfile .channel
     { PriorAuthorizationInternalChannels.verificationTemplate with purposeKey := "substituted" }
     Vertical.Health.DisclosureProfile.channel?),
-  ("handoff", guards AWS.ClaimSettlementHandoff.caseProfile .scope
+    fields := (LeanPoo.allSlots PriorAuthorizationInternalChannels.verificationProfile.plan).length,
+    consume := (FunctionalProfileWorkloads.consume Vertical.Health.DisclosureProfile.contract PriorAuthorizationInternalChannels.verificationProfile .channel
+    { PriorAuthorizationInternalChannels.verificationTemplate with purposeKey := "substituted" }) },
+  { name := "handoff", guards := (guards AWS.ClaimSettlementHandoff.caseProfile .scope
     { AWS.ClaimSettlementHandoff.selected.scope with sourceRoot := "substituted" }
     Admission.Handoff.scope?),
-  ("lineage", guards joined .artifact
+    fields := (LeanPoo.allSlots AWS.ClaimSettlementHandoff.caseProfile.plan).length,
+    consume := (FunctionalProfileWorkloads.consume Admission.Handoff.contract AWS.ClaimSettlementHandoff.caseProfile .scope
+    { AWS.ClaimSettlementHandoff.selected.scope with sourceRoot := "substituted" }) },
+  { name := "lineage", guards := (guards joined .artifact
     { AgenticAI.LanguageModel.Disclosure.joinedResult with digest := "substituted" }
-    Data.LineageProfile.artifact?)]
+    Data.LineageProfile.artifact?),
+    fields := (LeanPoo.allSlots joined.plan).length,
+    consume := (FunctionalProfileWorkloads.consume Data.LineageProfile.contract joined .artifact
+    { AgenticAI.LanguageModel.Disclosure.joinedResult with digest := "substituted" }) }]
+
+def nativeChecks : List (String × Bool) := probes.map fun probe => (probe.name, probe.guards)
 
 example : nativeChecks.length = 9 ∧ nativeChecks.all Prod.snd = true := by native_decide
 
@@ -71,6 +100,12 @@ def runNative : IO Unit := do
   for (name, passed) in nativeChecks do
     unless passed do throw (IO.userError s!"native object profile failed: {name}")
     IO.println s!"OBJECT-PROFILE-NATIVE-OK {name} valid/forged/missing/actual-read"
+
+def runWorkloads (selected : Option String) : IO Unit := do
+  let chosen := probes.filter fun probe => selected.isNone || selected == some probe.name
+  unless chosen.length == (if selected.isNone then 9 else 1) do
+    throw (IO.userError "unknown or incomplete native profile selection")
+  for probe in chosen do FunctionalProfileWorkloads.run probe
 
 open LeanPoo.Functional.ObjectContract Functional.ObjectProfile
 
@@ -170,10 +205,26 @@ example (profile : PolicyProfile.Object String)
     have _ : Checked _right profile := _checked
   trivial
 
+example (contract : Functional.ObjectProfile.Check PolicyProfile.Key (PolicyProfile.Value String))
+    (profile : PolicyProfile.Object String)
+    (left _right : LeanPoo.Functional.Factory (PolicyProfile.Object String)
+      (fun object => Except (List (LeanPoo.Functional.ObjectContract.Issue PolicyProfile.Key String))
+        (Functional.ObjectProfile.Access contract object)))
+    (_session : Functional.ObjectProfile.Session contract left profile) : True := by
+  fail_if_success
+    have _ : Functional.ObjectProfile.Session contract _right profile := _session
+  trivial
+
 open Lean in
 run_cmd do
   let allowed := ["propext", "Classical.choice", "Quot.sound"]
   for declaration in [``Functional.ObjectProfile.coherent,
+      ``Functional.prepareProgram_retained,
+      ``Functional.ObjectProfile.admit_read_eq,
+      ``Functional.ObjectProfile.Access.read_matches,
+      ``Functional.ObjectProfile.Access.accepted,
+      ``Functional.ObjectProfile.Session.read_matches,
+      ``Functional.ObjectProfile.Session.no_session_if_refused,
       ``Functional.ObjectProfile.prepare_missing,
       ``Functional.ObjectProfile.read_requires_contract,
       ``Functional.ObjectProfile.read_matches_projection,
@@ -182,5 +233,5 @@ run_cmd do
     for dependency in ← collectAxioms declaration do
       unless allowed.contains dependency.toString do
         throwError "Object Profile axiom boundary changed: {declaration}: {dependency}"
-  logInfo "OBJECT-PROFILES-AXIOMS-OK six universal laws; nine object families"
+  logInfo "OBJECT-PROFILES-AXIOMS-OK twelve universal laws; nine object families"
 end CedarPooSpec.FunctionalProfilesTest

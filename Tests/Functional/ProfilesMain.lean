@@ -1,3 +1,8 @@
 import Tests.Functional.Profiles
 
-def main : IO Unit := CedarPooSpec.FunctionalProfilesTest.runNative
+def main (args : List String) : IO Unit := do
+  CedarPooSpec.FunctionalProfilesTest.runNative
+  match args with
+  | [] => CedarPooSpec.FunctionalProfilesTest.runWorkloads none
+  | ["--probe", name] => CedarPooSpec.FunctionalProfilesTest.runWorkloads (some name)
+  | _ => throw (IO.userError "usage: objectProfilesNative [--probe NAME]")

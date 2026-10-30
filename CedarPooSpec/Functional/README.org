@@ -306,3 +306,19 @@ be slower and is retained as a negative control, never hidden by a new workload.
 
 The native gate also runs =objectProfilesNative= using the same nine-family
 Contract check inventory as [[file:../../Tests/Functional/Profiles.lean][the Lean tests]]. It must pass every public-getter check and exit naturally.
+
+* Prepared multi-field sessions
+
+=ObjectProfile.factory= selects operations once. =Session.open= creates a retained
+admission indexed by the actual contract, producing factory and immutable object.
+=Session.read= preserves the old optional projection exactly, without repeating
+diagnosis for each field. Payment controller and medical channel consumers use
+this path for paired control/channel and policy projections. A changed factory
+or object cannot receive an old session by type coercion, and a refusing factory
+cannot produce a session. The original public one-field getters remain valid.
+
+[[file:../../Tests/Functional/ProfileWorkloads.lean][Native profile workloads]] exercise every family on accepted, forged and missing
+objects, forcing work inside the clock interval. [[file:../../docs/functional-coverage.org][The acceptance matrix]] records
+root-scaling, logical retention, allocation-counter units, process RSS and the
+separate ordinary/instrumented Rust observations. Resource evidence does not
+replace type, Contract, proof or complete Cedar receipt equality.

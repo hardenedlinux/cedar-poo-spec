@@ -1,7 +1,9 @@
 //! Strict Cedar schema validation and schema-bound replay records.
+use crate::observation::ReplayMetrics;
+use crate::replay::check_manifest_prepared;
 
 use crate::bridge::{
-    Case, ReplayMetrics, ReplayReceipt, check_manifest_observed, json_sha256, load_policy_set,
+    Case, ReplayReceipt, SourcePolicies, json_sha256, load_policy_set,
     render_identified_policy_sources,
 };
 use cedar_policy::{Entities, Schema, ValidationMode, Validator};
@@ -101,34 +103,45 @@ fn replay_validated_observed(
     let schema = Schema::from_json_value(manifest.schema.clone())
         .map_err(|error| format!("Cedar schema: {error}"))?;
     let validator = Validator::new(schema);
-    let mut revisions = BTreeSet::new();
+    let mut revisions = BTreeMap::new();
     for case in &manifest.cases {
-        if revisions.insert(&case.revision) {
-            let policies = load_policy_set(&case.policies)?;
-            let result = validator.validate(&policies, ValidationMode::Strict);
+        if !revisions.contains_key(&case.revision) {
+            let policies = SourcePolicies::new(case)?;
+            if let Some(stats) = metrics.as_deref_mut() {
+                stats.source_policy_loads += 1;
+            }
+            let result = validator.validate(policies.policies(), ValidationMode::Strict);
             if !result.validation_passed() {
                 return Err(format!(
                     "{}: Cedar strict policy validation failed: {result:?}",
                     case.revision
                 ));
             }
+            revisions.insert(case.revision.clone(), policies);
         }
     }
     let schema_sha256 = json_sha256(&manifest.schema)?;
     if let (Some(stats), Some(started)) = (metrics.as_deref_mut(), started) {
-        stats.runtime_preparation_ns += started.elapsed().as_nanos();
+        let elapsed = started.elapsed().as_nanos();
+        stats.runtime_preparation_ns += elapsed;
+        stats.schema_preparation_ns += elapsed;
     }
-    check_manifest_observed(&manifest.cases, true, Some(validator.schema()), metrics).map(
-        |receipts| {
-            receipts
-                .into_iter()
-                .map(|replay| SchemaBoundReceipt {
-                    schema_sha256: schema_sha256.clone(),
-                    replay,
-                })
-                .collect()
-        },
+    check_manifest_prepared(
+        &manifest.cases,
+        true,
+        Some(validator.schema()),
+        metrics,
+        revisions,
     )
+    .map(|receipts| {
+        receipts
+            .into_iter()
+            .map(|replay| SchemaBoundReceipt {
+                schema_sha256: schema_sha256.clone(),
+                replay,
+            })
+            .collect()
+    })
 }
 
 /// Recompute schema-bound receipts against the current official Cedar runtime.

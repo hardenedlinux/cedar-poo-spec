@@ -24,12 +24,21 @@ bench-functional-reuse: build
 # Native Rust, fixed full catalog. Time observations never change admission.
 bench-functional-catalog: check-functional-catalog
     cargo build --release --locked -p cedar-poo-bridge --manifest-path Cargo.toml
-    timeout --signal=TERM --kill-after=3s 120s rust/target/release/cedar-poo-bridge benchmark-catalog < .lake/build/functional-catalog.json > .lake/build/functional-native-benchmark.json
+    timeout --signal=TERM --kill-after=3s 120s uv run --project python --package cedar-poo-py-test --locked python -m cedar_poo_py_test.resources --output .lake/build/resources/rust-latency.json rust/target/release/cedar-poo-bridge benchmark-catalog < .lake/build/functional-catalog.json > .lake/build/functional-native-benchmark.json
     jq -e '.kind == "native-catalog-benchmark" and .build_profile == "release" and .warmup == 1 and (.samples | length) == 3 and all(.samples[]; .rows == 1280 and .runtime.authorization_calls == 2560 and .runtime.prepared_revisions > 0)' .lake/build/functional-native-benchmark.json > /dev/null
     jq -c '{build_profile,warmup,samples:[.samples[] | {sample,rows,replay_ns,serialization_ns,runtime}]}' .lake/build/functional-native-benchmark.json
 
 # Same source/workload as the Lean-run probe, compiled to a native executable.
 bench-functional-native: build
     lake build functionalReuseNative objectProfilesNative
-    timeout --signal=TERM --kill-after=3s 120s .lake/build/bin/objectProfilesNative
-    timeout --signal=TERM --kill-after=3s 120s .lake/build/bin/functionalReuseNative CrossAgentGoverned
+    timeout --signal=TERM --kill-after=3s 120s uv run --project python --package cedar-poo-py-test --locked python -m cedar_poo_py_test.resources --output .lake/build/resources/lean-profiles.json .lake/build/bin/objectProfilesNative
+    timeout --signal=TERM --kill-after=3s 120s uv run --project python --package cedar-poo-py-test --locked python -m cedar_poo_py_test.resources --output .lake/build/resources/lean-reuse.json .lake/build/bin/functionalReuseNative CrossAgentGoverned
+    timeout --signal=TERM --kill-after=3s 120s uv run --project python --package cedar-poo-py-test --locked python -m cedar_poo_py_test.resources --output .lake/build/resources/lean-root-scale.json .lake/build/bin/functionalReuseNative --root-scale
+    for family in policy banking location source protection controller disclosure handoff lineage; do timeout --signal=TERM --kill-after=3s 120s uv run --project python --package cedar-poo-py-test --locked python -m cedar_poo_py_test.resources --output ".lake/build/resources/lean-$family.json" .lake/build/bin/objectProfilesNative --probe "$family" > ".lake/build/resources/lean-$family.log" || exit $?; done
+
+# Separate instrumented process: allocation counters do not qualify ordinary latency.
+bench-functional-allocation: bench-functional-catalog
+    cargo build --release --locked -p cedar-poo-bridge --features allocation-observation --manifest-path Cargo.toml
+    timeout --signal=TERM --kill-after=3s 120s uv run --project python --package cedar-poo-py-test --locked python -m cedar_poo_py_test.resources --output .lake/build/resources/rust-allocation.json rust/target/release/cedar-poo-bridge benchmark-catalog < .lake/build/functional-catalog.json > .lake/build/functional-allocation-benchmark.json
+    jq -e '(.samples | length) == 3 and all(.samples[]; .rows == 1280 and .runtime.authorization_calls == 2560 and .runtime.source_policy_loads == .runtime.prepared_revisions and .allocation.allocation_requests > 0)' .lake/build/functional-allocation-benchmark.json > /dev/null
+    jq -c '{build_profile,warmup,samples}' .lake/build/functional-allocation-benchmark.json

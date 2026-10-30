@@ -39,7 +39,34 @@ def measureSlot (rootAt : Nat → String) (count : Nat) : IO (Nat × Nat × Nat)
     | .ok ready => checksum := checksum + observe ready index
   return ((← IO.monoNanosNow) - start, checksum, hits)
 
+/-- Isolate retained-root lookup from policy evaluation using actual prepared roots. -/
+def measureRootScale : IO Unit := do
+  for size in [8, 32, 128] do
+    let modules := (List.range size).map fun index =>
+      ({ name := s!"Scale{index}", edits := [.extend { Policy.allowAll with id := "scale" }] } : CedarPooSpec.PolicyModules.Module)
+    let scaled : CedarPooSpec.PolicyModules.Model := { modules }
+    let names := modules.map (·.name)
+    let start ← IO.monoNanosNow
+    let retained ← match prepareProgram standard scaled schema names with
+      | .ok value => pure value
+      | .error error => throw (IO.userError error.message)
+    let preparationNs := (← IO.monoNanosNow) - start
+    unless retained.entries.length == size do throw (IO.userError "retained root inventory changed")
+    let target := s!"Scale{size - 1}"
+    let start ← IO.monoNanosNow
+    let mut checksum := 0
+    for _ in List.range 128 do
+      match retained.at target with
+      | .error error => throw (IO.userError error.message)
+      | .ok ready => checksum := checksum + ready.checked.policies.length
+    let lookupNs := (← IO.monoNanosNow) - start
+    unless checksum == 128 do throw (IO.userError "root lookup changed policies")
+    IO.println s!"ROOT-SCALE roots={size} retained={retained.entries.length} lookups=128 preparation_ns={preparationNs} lookup_ns={lookupNs} checksum={checksum}"
+
 def main (args : List String) : IO Unit := do
+  if args == ["--root-scale"] then
+    measureRootScale
+    return
   let root := args.headD "CrossAgentGoverned"
   for (label, rootAt) in [("hot", fun (_ : Nat) => root),
       ("churn", fun index => if index % 2 == 0 then root else "CrossAgentIncident")] do

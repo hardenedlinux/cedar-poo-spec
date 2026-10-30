@@ -149,6 +149,40 @@ def prepareProgram (provider : Operations) (model : PolicyModules.Model) (schema
       (fun ready => (⟨root, ready⟩ : (root : String) × Ready ⟨model, root, schema⟩))) roots.eraseDups
   return ⟨entries, factory⟩
 
+private theorem traverse_length {E A B : Type} (check : A → Except E B) (items : List A)
+    (result : List B) (success : Validation.traverse check items = .ok result) :
+    result.length = items.length := by
+  induction items generalizing result with
+  | nil => simp [Validation.traverse] at success; subst result; rfl
+  | cons head tail ih =>
+    simp only [Validation.traverse] at success
+    cases h : check head with
+    | error error => simp [h, Except.bind] at success
+    | ok value =>
+      cases t : Validation.traverse check tail with
+      | error error => simp [h, t, Except.bind, Except.map] at success
+      | ok rest =>
+        simp [h, t, Except.bind, Except.map] at success
+        subst result
+        simp [ih rest t]
+
+/-- Retention counts actual distinct requested roots, without a process-RSS claim. -/
+theorem prepareProgram_retained (provider : Operations) (model : PolicyModules.Model)
+    (schema : Schema) (roots : List String) (program : Program model schema)
+    (success : prepareProgram provider model schema roots = .ok program) :
+    program.entries.length = roots.eraseDups.length := by
+  unfold prepareProgram at success
+  cases prepared : prepare provider with
+  | error error => simp [prepared, Except.mapError, bind, Except.bind] at success
+  | ok selected =>
+    simp only [prepared, Except.mapError, bind, Except.bind, pure, Except.pure] at success
+    split at success
+    · simp_all
+    · rename_i entries built
+      simp only [Except.pure, Except.ok.injEq] at success
+      subst program
+      exact traverse_length _ _ entries built
+
 def Program.find? (program : Program model schema) (root : String) :
     Option (Ready ⟨model, root, schema⟩) :=
   program.entries.findSome? fun entry =>

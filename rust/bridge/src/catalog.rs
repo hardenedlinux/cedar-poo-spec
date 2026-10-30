@@ -171,8 +171,10 @@ pub(crate) fn benchmark(input: &str) -> Result<(), String> {
         })
         .sum();
 
-    let mut results = Vec::new();
+    drop(source);
+    let mut results = Vec::with_capacity(3);
     for sample in 1..=3 {
+        let allocation_before = crate::allocation::snapshot();
         let mut metrics = ReplayMetrics::default();
         let started = std::time::Instant::now();
         let output = replay_measured(input, &mut metrics)?;
@@ -198,7 +200,19 @@ pub(crate) fn benchmark(input: &str) -> Result<(), String> {
                 "measured replay did not execute every compiled/rendered authorization".into(),
             );
         }
-        results.push(json!({"sample":sample, "rows":rows, "replay_ns":replay_ns,
+        let allocation = allocation_before.zip(crate::allocation::snapshot()).map(|(before, after)| json!({
+            "allocation_requests":after[0]-before[0], "requested_bytes":after[1]-before[1],
+            "process_requested_live_bytes":after[2], "process_requested_peak_bytes":after[3],
+            "scope":"Rust allocator requests; peak is process-wide, excludes allocator overhead and foreign allocations"
+        }));
+        let accounted = metrics.runtime_preparation_ns
+            + metrics.authorization_ns
+            + metrics.diagnostics_ns
+            + metrics.receipt_ns;
+        if accounted > replay_ns {
+            return Err("overlapping replay phase observations".into());
+        }
+        results.push(json!({"sample":sample,"allocation":allocation,"unattributed_ns":replay_ns-accounted, "rows":rows, "replay_ns":replay_ns,
             "serialization_ns":serialize_ns, "receipt_bytes":encoded.len(), "runtime":metrics}));
     }
     println!(

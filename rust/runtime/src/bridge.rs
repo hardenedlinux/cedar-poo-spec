@@ -1,4 +1,5 @@
-//! Parse official Cedar JSON and compare Rust authorization to Lean receipts.
+//! Policy parsing, source verification and individual Cedar case execution.
+use crate::observation::ReplayMetrics;
 
 use crate::{CompiledPolicyJson, TemplateSourceJson};
 use cedar_policy::{
@@ -13,24 +14,6 @@ use std::ops::Deref;
 use std::path::Path;
 use std::str::FromStr;
 use std::time::Instant;
-
-/// Optional observations of the canonical replay, excluding JSON transport and diagnostics.
-/// Durations are observations, never authorization inputs or acceptance thresholds.
-#[derive(Default, Debug, Serialize)]
-pub struct ReplayMetrics {
-    pub runtime_preparation_ns: u128,
-    pub authorization_ns: u128,
-    pub prepared_revisions: usize,
-    pub authorization_calls: usize,
-}
-
-/// Measure the same replay implementation used by ordinary conformance.
-pub fn replay_manifest_measured(
-    manifest: &Manifest,
-    metrics: &mut ReplayMetrics,
-) -> Result<Vec<ReplayReceipt>, String> {
-    check_manifest_observed(&manifest.cases, true, None, Some(metrics))
-}
 
 /// Request fields emitted from the Lean Cedar model.
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -79,116 +62,13 @@ pub struct ReplayReceipt {
     pub error_free_allow: bool,
 }
 
-/// Reject empty bundles, parse every policy set, and compare every decision.
-pub fn check_manifest(manifest: &Manifest) -> Result<(), String> {
-    check_manifest_inner(&manifest.cases, false, None).map(|_| ())
-}
-
-/// Check Lean's manifest against Cedar and return content-bound replay records.
-pub fn replay_manifest(manifest: &Manifest) -> Result<Vec<ReplayReceipt>, String> {
-    check_manifest_inner(&manifest.cases, true, None)
-}
-
-pub(crate) fn check_manifest_inner(
-    cases: &[Case],
-    collect_receipts: bool,
-    schema: Option<&Schema>,
-) -> Result<Vec<ReplayReceipt>, String> {
-    check_manifest_observed(cases, collect_receipts, schema, None)
-}
-
-pub(crate) fn check_manifest_observed(
-    cases: &[Case],
-    collect_receipts: bool,
-    schema: Option<&Schema>,
-    mut metrics: Option<&mut ReplayMetrics>,
-) -> Result<Vec<ReplayReceipt>, String> {
-    if cases.is_empty() {
-        return Err("manifest has no cases".into());
-    }
-    let mut names = BTreeSet::new();
-    let mut revisions = BTreeMap::new();
-    let mut receipts = if collect_receipts {
-        Vec::with_capacity(cases.len())
-    } else {
-        Vec::new()
-    };
-    for case in cases {
-        if !valid_revision_name(&case.revision) {
-            return Err(format!("{}: invalid revision name", case.name));
-        }
-        if !names.insert(&case.name) {
-            return Err(format!("duplicate case name: {}", case.name));
-        }
-        if !revisions.contains_key(&case.revision) {
-            let started = metrics.as_ref().map(|_| Instant::now());
-            let checked = CheckedRevision::new(case, collect_receipts)
-                .map_err(|error| format!("{}: {error}", case.name))?;
-            if let (Some(stats), Some(started)) = (metrics.as_deref_mut(), started) {
-                stats.runtime_preparation_ns += started.elapsed().as_nanos();
-                stats.prepared_revisions += 1;
-            }
-            revisions.insert(case.revision.clone(), checked);
-        }
-        let revision = &revisions[&case.revision];
-        if revision.source != *case.policies.deref() {
-            return Err(format!("{}: conflicting revision output", case.revision));
-        }
-        let observed = check_case(
-            case,
-            &revision.policies,
-            &revision.rendered,
-            &revision.compiled_bodies,
-            &revision.rendered_bodies,
-            schema,
-            metrics.as_deref_mut(),
-        )
-        .map_err(|error| format!("{}: {error}", case.name))?;
-        if collect_receipts {
-            let error_free_allow =
-                observed.decision == "allow" && observed.error_policy_ids.is_empty();
-            receipts.push(ReplayReceipt {
-                format_version: 1,
-                cedar_policy_version: cedar_policy::get_sdk_version().to_string(),
-                cedar_language_version: cedar_policy::get_lang_version().to_string(),
-                case_name: case.name.clone(),
-                revision: case.revision.clone(),
-                policies_sha256: revision
-                    .policy_sha256
-                    .as_ref()
-                    .ok_or("missing policy digest for replay receipt")?
-                    .clone(),
-                entities_sha256: json_sha256(&case.entities)?,
-                request_sha256: json_sha256(&case.request)?,
-                decision: observed.decision,
-                reasons: observed.reasons,
-                error_policy_ids: observed.error_policy_ids,
-                error_free_allow,
-            });
-        }
-    }
-    Ok(receipts)
-}
-
-fn valid_revision_name(revision: &str) -> bool {
+pub(crate) fn valid_revision_name(revision: &str) -> bool {
     revision.split('.').all(|segment| {
         !segment.is_empty()
             && segment
                 .chars()
                 .all(|character| character.is_ascii_alphanumeric() || character == '-')
     })
-}
-
-/// Recompute official Cedar decisions and reject any drift from stored records.
-/// The caller must authenticate the stored records separately.
-pub fn verify_replay_receipts(
-    manifest: &Manifest,
-    receipts: &[ReplayReceipt],
-) -> Result<(), String> {
-    if replay_manifest(manifest)? != receipts {
-        return Err("Cedar replay receipts differ from the current manifest or runtime".into());
-    }
-    Ok(())
 }
 
 pub(crate) fn json_sha256(value: &impl Serialize) -> Result<String, String> {
@@ -237,18 +117,51 @@ fn write_canonical_json(value: &Value, output: &mut Vec<u8>) -> Result<(), Strin
     Ok(())
 }
 
-struct CheckedRevision {
-    source: Value,
-    policy_sha256: Option<String>,
-    policies: PolicySet,
-    rendered: PolicySet,
-    compiled_bodies: BTreeMap<String, String>,
-    rendered_bodies: BTreeMap<String, String>,
+pub(crate) struct CheckedRevision {
+    pub(crate) source: Value,
+    pub(crate) policy_sha256: Option<String>,
+    pub(crate) policies: PolicySet,
+    pub(crate) rendered: PolicySet,
+    pub(crate) compiled_bodies: BTreeMap<String, String>,
+    pub(crate) rendered_bodies: BTreeMap<String, String>,
 }
 
+/// A sealed source/parse pair. Validation can borrow it but cannot replace its body.
+pub(crate) struct SourcePolicies {
+    revision: String,
+    source: Value,
+    policies: PolicySet,
+}
+impl SourcePolicies {
+    pub(crate) fn new(case: &Case) -> Result<Self, String> {
+        Ok(Self {
+            revision: case.revision.clone(),
+            source: case.policies.deref().clone(),
+            policies: load_policy_set(&case.policies)?,
+        })
+    }
+    pub(crate) fn policies(&self) -> &PolicySet {
+        &self.policies
+    }
+    pub(crate) fn checked(
+        self,
+        case: &Case,
+        hash_for_receipt: bool,
+    ) -> Result<CheckedRevision, String> {
+        if self.revision != case.revision || self.source != *case.policies.deref() {
+            return Err("prepared policy source mismatch".into());
+        }
+        CheckedRevision::from_source(self, hash_for_receipt)
+    }
+}
 impl CheckedRevision {
-    fn new(case: &Case, hash_for_receipt: bool) -> Result<Self, String> {
-        let policies = load_policy_set(&case.policies)?;
+    pub(crate) fn new(case: &Case, hash_for_receipt: bool) -> Result<Self, String> {
+        SourcePolicies::new(case)?.checked(case, hash_for_receipt)
+    }
+    fn from_source(source: SourcePolicies, hash_for_receipt: bool) -> Result<Self, String> {
+        let SourcePolicies {
+            source, policies, ..
+        } = source;
         let text = render_loaded_policy_set(&policies)?;
         let rendered = PolicySet::from_str(&text)
             .map_err(|error| format!("rendered Cedar text parse: {error}"))?;
@@ -257,13 +170,14 @@ impl CheckedRevision {
         if policy_body_counts(&compiled_bodies) != policy_body_counts(&rendered_bodies) {
             return Err("rendered Cedar text changed policy bodies".into());
         }
+        let policy_sha256 = if hash_for_receipt {
+            Some(json_sha256(&source)?)
+        } else {
+            None
+        };
         Ok(Self {
-            source: case.policies.deref().clone(),
-            policy_sha256: if hash_for_receipt {
-                Some(json_sha256(case.policies.deref())?)
-            } else {
-                None
-            },
+            source,
+            policy_sha256,
             policies,
             rendered,
             compiled_bodies,
@@ -586,13 +500,13 @@ pub fn render_artifacts(manifest: &Manifest) -> Result<BTreeMap<String, String>,
         .collect())
 }
 
-struct ObservedDecision {
-    decision: String,
-    reasons: Vec<String>,
-    error_policy_ids: Vec<String>,
+pub(crate) struct ObservedDecision {
+    pub(crate) decision: String,
+    pub(crate) reasons: Vec<String>,
+    pub(crate) error_policy_ids: Vec<String>,
 }
 
-fn check_case(
+pub(crate) fn check_case(
     case: &Case,
     policies: &PolicySet,
     rendered: &PolicySet,
@@ -628,7 +542,9 @@ fn check_case(
     )
     .map_err(|error| format!("Cedar schema request: {error}"))?;
     if let (Some(stats), Some(started)) = (metrics.as_deref_mut(), started) {
-        stats.runtime_preparation_ns += started.elapsed().as_nanos();
+        let elapsed = started.elapsed().as_nanos();
+        stats.runtime_preparation_ns += elapsed;
+        stats.request_preparation_ns += elapsed;
     }
     let started = metrics.as_ref().map(|_| Instant::now());
     let response = Authorizer::new().is_authorized(&request, policies, &entities);
@@ -636,6 +552,7 @@ fn check_case(
         stats.authorization_ns += started.elapsed().as_nanos();
         stats.authorization_calls += 1;
     }
+    let diagnostic_start = metrics.as_ref().map(|_| Instant::now());
     let decision = match response.decision() {
         Decision::Allow => "allow",
         Decision::Deny => "deny",
@@ -678,12 +595,16 @@ fn check_case(
             error_policies
         ));
     }
+    if let (Some(stats), Some(started)) = (metrics.as_deref_mut(), diagnostic_start) {
+        stats.diagnostics_ns += started.elapsed().as_nanos();
+    }
     let started = metrics.as_ref().map(|_| Instant::now());
     let reparsed = Authorizer::new().is_authorized(&request, rendered, &entities);
-    if let (Some(stats), Some(started)) = (metrics, started) {
+    if let (Some(stats), Some(started)) = (metrics.as_deref_mut(), started) {
         stats.authorization_ns += started.elapsed().as_nanos();
         stats.authorization_calls += 1;
     }
+    let diagnostic_start = metrics.as_ref().map(|_| Instant::now());
     let rendered_reasons = diagnostic_body_counts(
         reparsed.diagnostics().reason().map(ToString::to_string),
         rendered_bodies,
@@ -701,6 +622,9 @@ fn check_case(
         || rendered_errors != compiled_errors
     {
         return Err("rendered Cedar text changed authorization diagnostics".into());
+    }
+    if let (Some(stats), Some(started)) = (metrics, diagnostic_start) {
+        stats.diagnostics_ns += started.elapsed().as_nanos();
     }
     Ok(ObservedDecision {
         decision: decision.into(),

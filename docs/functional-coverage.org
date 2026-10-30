@@ -179,3 +179,75 @@ for same-root reads; alternating reads were roughly 17.3-17.6 ms on both paths.
 The earlier run's slower slot-churn observations remain recorded above where
 applicable; the workload/source and acceptance checks were unchanged. These
 runs document timing variation and root locality, not a guaranteed churn gain.
+
+* A-D: prepared reuse and resource qualification
+
+This acceptance unit retains the nine-family coverage above and the complete
+51-entry catalog. It does not introduce a second profile engine or new provider
+registry. Actual paired projections in payment and medical channels now retain
+one admitted session. Single-projection consumers keep the same public getter.
+
+=ObjectProfile.factory= retains the selected operations. =Access.read= projects
+without repeating diagnosis. =Session contract family profile= additionally
+retains the exact producing factory equation. Changing an object, Contract or
+operation family therefore requires a new appropriately indexed session; no
+function equality decision or nominal provider-name cache is introduced.
+Universal exact old-read equality, actual projection, Contract acceptance and
+refused-family impossibility join the existing standard-axiom audit. Preparing
+a Program also proves exact retained-entry cardinality against the distinct
+requested roots. This is a logical retention statement, not a heap/RSS bound.
+
+The existing native profile executable measures all nine families, each with
+valid, forged and missing input, three samples and 128 fresh constructions per
+sample. Ordinary per-field diagnosis and one-admission batch projection must
+produce identical cardinalities, including zero on refusal. Both paths construct
+the same input inside a non-inlined measured operation and force its result
+before reading the ending clock. This avoids measuring a precomputed closure.
+Reported heartbeat deltas use Lean's current-thread small-allocation counter;
+they are not allocated bytes, all allocations, or retained memory.
+
+=--root-scale= on the existing Functional executable prepares 8, 32 and 128
+actual distinct roots and performs 128 lookups of the last root. It verifies
+retained cardinality and complete policy-count checksums. The observed local
+lookup totals were approximately 10/15/39 microseconds. Linear lookup remains
+explicitly documented at this bounded scale; no unordered replacement or new
+index changes first-error/policy ordering without a measured need.
+
+Rust strict schema validation still finishes for all revisions before replay
+observes any request. Its loaded policy sets are now reused in revision
+preparation. A sealed source/parse pair retains the full source body and revision;
+same-name/different-body rebinding refuses. Scope remains one invocation with
+one checked schema. Rendered-text reparsing and both authorizers remain independent
+conformance controls. The counter =source_policy_loads= counts JSON source loads,
+not rendered-text parses; it must equal actual prepared revision count. An
+independent pre-optimization schema workflow compares every complete result in
+all 23 schema-bearing catalog entries and exact refusal strings. Changed-source,
+strict-policy-before-request, changed-schema, expiry, revocation and consumption
+controls remain required in the existing shared lifecycle/Case gates.
+
+Runtime observations separately expose schema, revision and request preparation,
+authorization, diagnostic checking and receipt/hash work. The remaining replay
+cost is reported explicitly as unattributed; JSON transport/catalog conversion,
+schema-evolution and cross-artifact work are not relabeled as authorization.
+Ordinary replay does not read clocks. Allocation observations are opt-in on the
+bridge application and run in a separate process, never used to qualify normal
+latency or authorize a request. They count successful Rust allocator requests,
+requested bytes, and process-wide requested-live high-water marks; foreign
+allocations, allocator overhead and temporary realloc internals are outside
+those counters.
+
+The existing Python testing package owns only process/artifact collection via
+=cedar_poo_py_test.resources=. It invokes the native binary with the OS time
+utility, records its SHA-256, architecture, exit status and process peak RSS in
+bytes, and preserves child failure. RSS includes startup/shared mappings and is
+an observation, not a steady-state heap bound or cold-filesystem measurement.
+The unchanged 120-second outer timeout applies. Nine selected-family processes,
+the all-family process, root scaling, hot/churn execution, ordinary Rust release
+and allocation-instrumented Rust produce separate resource receipts. A
+resource-collector regression requires a failed child to remain failed.
+
+=just check= and CI use the existing native and catalog owners for this unit.
+The original 48 artifact byte hashes, all 51 entries, 1280 Cedar rows, both
+compiled/rendered authorization paths, current-head CI and all negative controls
+remain acceptance requirements. Neither favorable timings nor peak RSS alone
+admit provider I/O, cryptographic execution or a real Host deployment.

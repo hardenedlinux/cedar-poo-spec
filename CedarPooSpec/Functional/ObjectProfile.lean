@@ -131,10 +131,76 @@ theorem prepare_missing (contract : Check Key Value) (operations : Operations co
     prepare contract operations = .error key ↔ Requirements.prepare operations required = .error key :=
   Requirements.prepareConsumer_error_iff _ _ _ _ _ key
 
+/-- Retain selection independently of the actual immutable object being admitted. -/
+def factory (contract : Check Key Value) :
+    Factory (Object Key Value) (fun profile => Except (List (Issue Key String)) (Access contract profile)) :=
+  (prepare contract (standard contract)).toOption.get (by rfl)
+
+def admit? (contract : Check Key Value) (profile : Object Key Value) : Option (Access contract profile) :=
+  (factory contract profile).toOption
+
+/-- Read any number of fields from the same admitted object without re-diagnosing it. -/
+def Access.read {contract : Check Key Value} {profile : Object Key Value} (access : Access contract profile) (key : Key) : Option (Value key) :=
+  (access.project key).map Subtype.val
+
+theorem Access.read_matches {contract : Check Key Value} {profile : Object Key Value} (access : Access contract profile) (key : Key) (value : Value key)
+    (found : access.read key = some value) : profile.read key = some value := by
+  unfold Access.read at found
+  cases result : access.project key with
+  | none => simp [result] at found
+  | some actual =>
+    have same : actual.val = value := by simpa [result] using found
+    exact same ▸ actual.property
+
+theorem Access.accepted {contract : Check Key Value} {profile : Object Key Value} (access : Access contract profile) : diagnose contract profile [] = [] :=
+  access.checked.down.accepted
+
+/-- A retained admission is additionally indexed by the actual selected factory.
+No decidable equality over functions or nominal provider labels is assumed. -/
+structure Session (contract : Check Key Value)
+    (family : Factory (Object Key Value) (fun profile => Except (List (Issue Key String)) (Access contract profile)))
+    (profile : Object Key Value) where
+  access : Access contract profile
+  produced : family profile = .ok access
+
+def Session.open (contract : Check Key Value)
+    (family : Factory (Object Key Value) (fun profile => Except (List (Issue Key String)) (Access contract profile)))
+    (profile : Object Key Value) : Except (List (Issue Key String)) (Session contract family profile) :=
+  match result : family profile with
+  | .error issues => .error issues
+  | .ok access => .ok ⟨access, result⟩
+
+def Session.read {contract : Check Key Value} {family} {profile : Object Key Value}
+    (session : Session contract family profile) (key : Key) : Option (Value key) :=
+  session.access.read key
+
+theorem Session.read_matches {contract : Check Key Value} {family} {profile : Object Key Value}
+    (session : Session contract family profile) (key : Key) (value : Value key)
+    (found : session.read key = some value) : profile.read key = some value :=
+  session.access.read_matches key value found
+
+
+theorem Session.no_session_if_refused (contract : Check Key Value)
+    (family : Factory (Object Key Value) (fun profile => Except (List (Issue Key String)) (Access contract profile)))
+    (profile : Object Key Value) (issues : List (Issue Key String))
+    (refused : family profile = .error issues) : ¬ Nonempty (Session contract family profile) := by
+  intro ⟨session⟩
+  have impossible := session.produced.symm.trans refused
+  cases impossible
+
 def read (contract : Check Key Value) (profile : Object Key Value) (key : Key) : Option (Value key) := do
   let factory ← (prepare contract (standard contract)).toOption
   let access ← (factory profile).toOption
   return (← access.project key).val
+
+/-- Batch projection has exactly the original optional value, including absence/refusal. -/
+theorem admit_read_eq (contract : Check Key Value) (profile : Object Key Value) (key : Key) :
+    ((admit? contract profile).bind fun access => access.read key) = read contract profile key := by
+  have prepared : (prepare contract (standard contract)).toOption = some (factory contract) := by rfl
+  cases result : (factory contract profile).toOption with
+  | none => simp [admit?, read, prepared, result]
+  | some access =>
+    cases projection : access.project key <;> simp [admit?, Access.read, read, prepared, result, projection]
 
 theorem read_requires_contract (contract : Check Key Value) (profile : Object Key Value)
     (key : Key) (value : Value key) (accepted : read contract profile key = some value) :
