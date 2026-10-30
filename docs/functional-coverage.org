@@ -6,7 +6,7 @@
 The migration covers consumer orchestration throughout =Examples/= and
 =CedarPooSpec/=, with =Productions/= included in the import and artifact gates.
 It is not a financial-only slice. The immutable LeanPOO revision remains
-=b577371fe4e2717e198a29eefe16ec8ae0380e0d=; Cedar and Lean pins are unchanged.
+=c03da1ab399ac8ea57fdefd4b460e725541d88e6=; Cedar and Lean pins are unchanged.
 The library and Productions remain independent of Examples and Tests.
 
 | Surface | Actual shared path | Retained domain boundary |

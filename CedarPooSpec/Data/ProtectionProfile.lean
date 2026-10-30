@@ -1,5 +1,5 @@
 import CedarPooSpec.Data.ProtectedStorage
-import LeanPoo.Object.Definition
+import LeanPoo.Object.Dataflow
 import CedarPooSpec.Functional.ObjectProfile
 
 /-!
@@ -9,6 +9,7 @@ inheritance and recomputes the final intent when a child overrides a slot.
 -/
 
 namespace CedarPooSpec.Data.ProtectionProfile
+open LeanPoo.Object.Dataflow (Expr)
 
 open CedarPooSpec.Data LeanPoo
 
@@ -26,34 +27,33 @@ abbrev Value : Key → Type
   | .profile | .keyRef | .keyVersion | .residency => String
   | .intent => ProtectionIntent
 
-abbrev Object := LeanPoo.Object.Memoized Key Value
+abbrev Object := LeanPoo.Object.Dataflow.Instance Key Value
 
 def define (name : String) (intent : ProtectionIntent) :
-    Except C4.Error Object :=
-  LeanPoo.Object.define name do
-    LeanPoo.Object.Declaration.Builder.value .storage intent.storage
-    LeanPoo.Object.Declaration.Builder.value .profile intent.profile
-    LeanPoo.Object.Declaration.Builder.value .keyRef intent.keyRef
-    LeanPoo.Object.Declaration.Builder.value .keyVersion intent.keyVersion
-    LeanPoo.Object.Declaration.Builder.value .residency intent.residency
-    LeanPoo.Object.Declaration.Builder.slot .intent
-      (.self fun self => do
-        let storage ← self .storage
-        let profile ← self .profile
-        let keyRef ← self .keyRef
-        let keyVersion ← self .keyVersion
-        let residency ← self .residency
-        pure { storage, profile, keyRef, keyVersion, residency })
+    Except (LeanPoo.Object.Dataflow.Error Key) Object :=
+  LeanPoo.Object.Dataflow.define name do
+    LeanPoo.Object.Dataflow.Builder.value .storage intent.storage
+    LeanPoo.Object.Dataflow.Builder.value .profile intent.profile
+    LeanPoo.Object.Dataflow.Builder.value .keyRef intent.keyRef
+    LeanPoo.Object.Dataflow.Builder.value .keyVersion intent.keyVersion
+    LeanPoo.Object.Dataflow.Builder.value .residency intent.residency
+    LeanPoo.Object.Dataflow.Builder.derived .intent
+      ((fun storage profile keyRef keyVersion residency => { storage, profile, keyRef, keyVersion, residency })
+        <$> Expr.need (Value := Value) .storage
+        <*> Expr.need (Value := Value) .profile
+        <*> Expr.need (Value := Value) .keyRef
+        <*> Expr.need (Value := Value) .keyVersion
+        <*> Expr.need (Value := Value) .residency)
 
 def withStorage (parent : Object) (name : String) (storage : StorageEffect) :
-    Except C4.Error Object :=
+    Except (LeanPoo.Object.Dataflow.Error Key) Object :=
   parent.extendWith name do
-    LeanPoo.Object.Declaration.Builder.value .storage storage
+    LeanPoo.Object.Dataflow.Builder.value .storage storage
 
 def withKeyVersion (parent : Object) (name keyVersion : String) :
-    Except C4.Error Object :=
+    Except (LeanPoo.Object.Dataflow.Error Key) Object :=
   parent.extendWith name do
-    LeanPoo.Object.Declaration.Builder.value .keyVersion keyVersion
+    LeanPoo.Object.Dataflow.Builder.value .keyVersion keyVersion
 
 open LeanPoo.Functional.ObjectContract
 

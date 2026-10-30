@@ -34,7 +34,7 @@ def emptyPurpose : DisclosureProfile.Object :=
 
 def forgedPolicy : DisclosureProfile.Object :=
   (verificationProfile.extendWith "ForgedPolicy" do
-    LeanPoo.Object.Declaration.Builder.value .policy Policy.allowAll).toOption.get
+    LeanPoo.Object.Dataflow.Builder.value .policy Policy.allowAll).toOption.get
       (by native_decide)
 
 def emptyPayload : DisclosureProfile.Object :=
@@ -43,7 +43,7 @@ def emptyPayload : DisclosureProfile.Object :=
 
 def forgedChannel : DisclosureProfile.Object :=
   (verificationProfile.extendWith "ForgedChannel" do
-    LeanPoo.Object.Declaration.Builder.value .channel
+    LeanPoo.Object.Dataflow.Builder.value .channel
       { verificationTemplate with purpose := "unrequested-purpose" }).toOption.get
         (by native_decide)
 
@@ -99,7 +99,7 @@ example : (ControllerReleaseProfile.policy? controllerProfile).isSome = true := 
 
 def forgedControl : ControllerReleaseProfile.Object :=
   (controllerProfile.extendWith "ForgedControl" do
-    LeanPoo.Object.Declaration.Builder.value .control
+    LeanPoo.Object.Dataflow.Builder.value .control
       { controllerTemplate with threshold := "99999.0000" }).toOption.get
         (by native_decide)
 

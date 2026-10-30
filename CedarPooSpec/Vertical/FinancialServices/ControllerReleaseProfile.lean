@@ -1,13 +1,14 @@
 import CedarPooSpec.Vertical.FinancialServices.ControllerRelease
-import LeanPoo.Object.Definition
+import LeanPoo.Object.Dataflow
 import CedarPooSpec.Functional.ObjectProfile
 
 /-! Controller-owned release settings and their inherited Cedar policy.
 Changing a threshold does not replace the controller or senior approver slots. -/
 namespace CedarPooSpec.Vertical.FinancialServices.ControllerReleaseProfile
+open LeanPoo.Object.Dataflow (Expr)
 
 open Cedar.Spec LeanPoo
-open LeanPoo.Object.Declaration.Builder
+open LeanPoo.Object.Dataflow.Builder
 
 inductive Key where
   | template
@@ -21,22 +22,23 @@ abbrev Value : Key → Type
   | .control => ControllerRelease
   | .policy => Policy
 
-abbrev Object := LeanPoo.Object.Memoized Key Value
+abbrev Object := LeanPoo.Object.Dataflow.Instance Key Value
 
-def define (name : String) (initial : ControllerRelease) : Except C4.Error Object :=
-  LeanPoo.Object.define name do
-    LeanPoo.Object.Declaration.Builder.value .template initial
+def define (name : String) (initial : ControllerRelease) : Except (LeanPoo.Object.Dataflow.Error Key) Object :=
+  LeanPoo.Object.Dataflow.define name do
+    LeanPoo.Object.Dataflow.Builder.value .template initial
     value .threshold initial.threshold
     value .controllerGroup initial.controllerGroup
     value .seniorGroup initial.seniorGroup
-    slot .control (.self fun self => do
-      let threshold ← self .threshold
-      let controllerGroup ← self .controllerGroup
-      let seniorGroup ← self .seniorGroup
-      pure { initial with threshold, controllerGroup, seniorGroup })
-    slot .policy (.self fun self => (self .control).map ControllerRelease.bounded)
+    derived .control
+      ((fun threshold controllerGroup seniorGroup => { initial with threshold, controllerGroup, seniorGroup })
+        <$> Expr.need (Value := Value) .threshold
+        <*> Expr.need (Value := Value) .controllerGroup
+        <*> Expr.need (Value := Value) .seniorGroup)
+    derived .policy (ControllerRelease.bounded
+        <$> Expr.need (Value := Value) .control)
 
-def withThreshold (parent : Object) (name threshold : String) : Except C4.Error Object :=
+def withThreshold (parent : Object) (name threshold : String) : Except (LeanPoo.Object.Dataflow.Error Key) Object :=
   parent.extendWith name do value .threshold threshold
 
 open LeanPoo.Functional.ObjectContract

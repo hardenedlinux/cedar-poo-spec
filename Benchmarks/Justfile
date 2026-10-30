@@ -54,3 +54,13 @@ bench-functional-allocation: bench-functional-catalog
 probe-native-launch:
     cargo build --release --locked -p cedar-poo-bridge --example launch_probe --manifest-path Cargo.toml
     timeout --signal=TERM --kill-after=3s 120s uv run --project python --package cedar-poo-py-test --locked python -m cedar_poo_py_test.launch rust/target/release/examples/launch_probe --output-directory .lake/build/launch-probe
+
+# Baseline artifacts are immutable inputs from the documented pre-migration revision.
+bench-dataflow-lifecycle artifacts output:
+    lake build caseManifestsNative objectProfilesNative functionalReuseNative
+    cargo build --release --locked -p cedar-poo-bridge --manifest-path Cargo.toml
+    cp .lake/build/bin/caseManifestsNative {{quote(artifacts)}}/after-case-manifests
+    cp .lake/build/bin/objectProfilesNative {{quote(artifacts)}}/after-object-profiles
+    cp .lake/build/bin/functionalReuseNative {{quote(artifacts)}}/after-functional-reuse
+    cp rust/target/release/cedar-poo-bridge {{quote(artifacts)}}/after-bridge
+    uv run --project python --package cedar-poo-py-test --locked python -u Benchmarks/DataflowLifecycle.py --artifacts {{quote(artifacts)}} --output {{quote(output)}}

@@ -1,6 +1,67 @@
 #+title: First-file launch attribution and the next integrated performance unit
 #+options: toc:2
 
+The [[file:native-revision-acceptance.org][shared revision/object implementation and acceptance]] records bounded preparation
+improvements. It does not close P0-P2: the POO evaluator itself requires the
+algorithm redesign below. The original launch audit remains a separate boundary.
+
+The [[file:native-dataflow-acceptance.org][complete nine-family migration and native lifecycle acceptance]] now records
+the executed algorithm migration, final source-owner refinement, full correctness
+gates and retained performance regressions. Its bounded observations supersede
+interpreting the earlier preparation improvements as complete performance closure.
+
+* Algorithm redesign: integrated execution order
+
+The legacy POO Memoized recursive local thunk table is compiled as a recursive
+function. Dependency self lookup can rebuild every field thunk. Precomputing
+methods or names does not provide sharing of field results. The root repair
+belongs to POO's object execution algorithm, before Cedar-specific tuning.
+
+** P0: POO source-bound field execution
+
+Use explicit dependent Computation programs for finite field dependencies. Compile
+actual C4-selected inherited fragments through GeneralizedFragments, then reuse
+GeneralizedGraph scheduling and the existing ConstructionCache materializer.
+Prepare resolver/read-set tables once. Materialized instance state and membership
+use dependent hash tables/sets with exact source equations. Preserve defaults,
+delayed super, missing-field semantics, strict duplicate refusal and disjoint
+family declaration ownership. ObjectContract must admit the actual typed instance.
+Schedule reuse checks complete dependency equality; instance values remain fresh.
+
+The POO implementation is published in existing PR #13 at
+=c03da1ab399ac8ea57fdefd4b460e725541d88e6=, with actual closed-state/read/inventory
+proofs and 13 native semantic controls. Its integrated 355-file local gate passed.
+The exact pinned POO Lean CI run41054581098 passed all 17 jobs.
+Cedar now consumes this revision and its full local gate passes; see the final
+acceptance report for exact source identities, observations and remaining costs.
+Pin the reviewed public POO commit with the complete downstream migration.
+Arbitrary opaque recursion and conservative conditional cycles remain outside
+this finite static-DAG path. No unsafe heap knot or unproved self equation is used.
+
+** P1: one complete Cedar migration
+
+Migrate Policy, banking tools, controller release, pipeline source, lakehouse
+location, protection, disclosure, admission handoff and lineage together. Replace
+opaque self callbacks with typed dependencies, preserving each captured template
+and actual final-self access. Migrate complex independent-family/default/super
+Cases and forged/missing/duplicate controls in the same change. Preserve the
+existing shared Functional Contract, exact projections, admission sessions and
+proofs. Do not leave a domain on a detached compatibility evaluator or substitute
+a simpler workload for fresh structural revisions.
+
+** P2: unchanged full acceptance and process evidence
+
+Require all 51 catalog entries, nine families and 81 original workload observations,
+all relevant type/Contract/proof/negative checks and full Rust replay. Compare
+actual baseline/candidate receipt bytes and retain refusal order, scope retirement,
+resource bounds and previous regressions. Measure ordinary native executables in
+alternating complete process cohorts, with CPU, RSS, allocations, preparation and
+execution separated. Record first-file launch separately; an algorithm microstudy
+cannot establish macOS launch improvement or application latency. Preserve all
+observations and disclose concurrent-build contamination rather than dropping it.
+Verify current-head Linux CI and cache identities before downstream closure.
+PR #8 remains unmerged with auto-merge disabled.
+
 * Decision and scope
 
 The 2026-10-30 audit separates macOS first-file execution assessment from Cedar

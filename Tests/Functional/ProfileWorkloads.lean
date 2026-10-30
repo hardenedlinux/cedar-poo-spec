@@ -15,11 +15,11 @@ expressions cannot be precomputed while building a benchmark closure. -/
 @[noinline] def consume {Key : Type} {Value : Key → Type} [DecidableEq Key] [BEq Key]
     [LawfulBEq Key] [Hashable Key] (contract : Check Key Value)
     (profile : Object Key Value) (key : Key) (forged : Value key)
-    (iteration : Nat) (mode : String) (reuse : Bool) : Except String Nat := do
-  let current ← (if mode == "missing" then LeanPoo.Object.define s!"Missing{iteration}" (pure ())
+    (iteration : Nat) (mode : String) (reuse : Bool) : Except String Nat :=
+  ( (if mode == "missing" then LeanPoo.Object.Dataflow.define s!"Missing{iteration}" (pure ⟨⟩)
     else profile.extendWith s!"Current{iteration}" do
-      if mode == "forged" then LeanPoo.Object.Declaration.Builder.value key forged else pure ())
-    |>.mapError (fun _ => "profile construction failed")
+      if mode == "forged" then LeanPoo.Object.Dataflow.Builder.value key forged else pure ⟨⟩)
+    |>.mapError (fun _ => "profile construction failed")).bind fun current => do
   let keys := LeanPoo.allSlots profile.plan
   if reuse then
     match Session.open contract (factory contract) current with

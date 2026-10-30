@@ -1,0 +1,166 @@
+#+TITLE: Complete Cedar typed dataflow migration and native lifecycle evidence
+#+OPTIONS: toc:2
+
+* Result and acceptance boundary
+
+All nine applicable dependent-field object families now use the POO dataflow
+algorithm in one migration. Type/Contract/proof and complete Case/Rust replay
+acceptance pass. Complete process/resource evidence is recorded, including the
+initial regressions. The measurements do NOT establish a whole-application speedup
+or uniform small-object allocation non-regression. PR #8 remains unmerged and
+auto-merge stays disabled.
+
+The pre-migration Cedar baseline is
+=5ce4bd2c92cc79609221a9cad3a4c3af3893ce7f= with POO
+=b577371fe4e2717e198a29eefe16ec8ae0380e0d=. The final dependency is POO
+=c03da1ab399ac8ea57fdefd4b460e725541d88e6= from existing PR #13. That exact
+upstream revision passed all 17 GitHub CI jobs. Cedar retains Lean 4.34.1 and
+its Cedar pin; no compiler-profile, Cargo-jobs, timeout, heap, sample or workload
+exception was introduced.
+
+* One shared implementation across all domains
+
+| Family | Actual dependencies retained | Refusal and revision controls |
+|--------+------------------------------+-------------------------------|
+| Policy | current setting and selected renderer -> policy | wrong callback type, forged policy and changed setting |
+| Banking | current actions -> captured original owner template | forged template/owner; legitimate empty action set |
+| Controller | threshold/controller/senior -> control -> policy | decimal positivity, hidden-field substitution and forged control/policy |
+| Source | branch -> captured source-control boundary | inherited branch change, source-owner/Cedar decision checks |
+| Location | policy ID/action scope/location/deny-missing -> boundary | missing vs empty string, substituted hidden field, geographic decisions |
+| Protection | storage/profile/key reference/version/residency -> intent | key rotation, original parent, storage matrix and custody |
+| Disclosure | policy ID/action/destination/purpose/payload -> channel -> policy | missing/empty purpose and payload, forged channel/policy |
+| Handoff | Case ID/claim digest -> captured actor/root/credential scope | mock Host admission, invalid scope and factory retirement |
+| Lineage | sources/digest -> artifact | independent family merge, inherited defaults/delayed super, empty digest |
+
+=Functional.ObjectProfile= is the common actual instance/Contract/projection/
+Session owner. Derived fields use typed =Expr.need= and Applicative composition,
+not provider-wide self callbacks. Each key fixes its value type. Captured initial
+records and final-self reads preserve their original distinction; a changed
+nominal template cannot silently change the renderer's meaning or pass Contract.
+
+The POO definition owns =PreparedDeclaration=: raw declaration, lowered metadata
+and exact equality proof. Source extension shares prior owners. C4-selected
+fragments compile through GeneralizedFragments and GeneralizedGraph scheduling;
+ConstructionCache performs actual once-per-field materialization using dependent
+indexed values. No new evaluator, unsafe heap knot, nominal-only cache hit,
+serialized proof token or decision cache is introduced.
+
+Eighteen generic report/provider/admission/materialized-read/inventory/source/
+lowering laws pass the unchanged standard-axiom audit. Existing domain-specific
+proofs and wrong-slot/callback/object/Contract/factory controls remain active.
+Every family's native guard checks actual evaluated keys and inventory. The
+complex medical lineage preserves hospital/research source order and current-self
+digest while keeping its original families/default/super behavior.
+
+Inspectable computations inhabit Type 1. Diagnostics generalize the Carrier
+universe; standard heterogeneous Option.bind/Except.bind project ordinary Type 0
+observations. No cast or parallel compatibility carrier is used. PolicyModules'
+separate literal policy/tombstone C4 edit/provenance protocol has no self-field
+dependencies and is preserved; all its consumers remain in acceptance.
+
+* Complete correctness and wire acceptance
+
+The final all-target build covers Examples, Productions, Tests, both existing
+native benchmarks and the compiled existing Examples.Manifests entrypoint.
+=just check= passes against the final pinned POO revision. It includes layer
+isolation, type/Contract/proof controls, all conformance scenarios, production
+storage fixtures, full Rust workspace checks and independent original-workflow
+comparison/mutation controls.
+
+=check-native-catalog= compares native and Lean entrypoint output byte for byte.
+All 51 frozen manifest hash records remain valid. Full Rust replay retains all
+51 entries (23 schema-bearing, 24 raw and four special fixtures), 1280 rows and
+14 settlement handoffs with only ready admitted. Every native Rust benchmark
+sample retains 2560 authorizations, 221 policy source loads, 53 entity parses,
+1227 entity reuses, six replacements and one retained slot entry. No request,
+actor context, credential, admission decision or Host fact becomes cached.
+
+* Evidence and complete process measurements
+
+The [[file:native-dataflow-initial-evidence.json][initial complete cohort]] and
+[[file:native-dataflow-initial-object-observations.csv][initial object observations]] retain the first migration's increased preparation
+cost. The [[file:native-dataflow-evidence.json][final complete cohort]],
+[[file:native-dataflow-object-observations.csv][final object observations]] and
+[[file:native-dataflow-entry-timings.csv][all native Rust entry timings]] retain the owner-reuse refinement.
+Each cohort contains 48 native child processes: three alternating complete
+before/after pairs plus separate fresh-file/repeated-file producer and Rust
+observations. All processes exit zero naturally under their unchanged 120-second
+limit. Each cohort contains 486 family/mode/sample observations and 15 exact wire
+comparisons. Final Rust metrics contain 36 ordinary samples across repeated and
+fresh-file cohorts and 1836 entry timing records. Instrumented allocation uses
+three separate samples; those clocks never qualify ordinary latency.
+
+No task-owned build/test overlaps either paired cohort. External host scheduling,
+file assessment and cache state remain uncontrolled. All first-use and subsequent
+observations are retained. RSS is a process high-water mark, not live heap or a
+proved memory bound. Pipeline CPU sums sequential children; pipeline peak RSS is
+the maximum child observation, not their sum. Heartbeat deltas count small
+allocations, not bytes. The end-to-end ledger follows the actual sequential
+native producer -> catalog artifact -> Rust replay path.
+
+Final OS observations, in pair order, including first use of each frozen path:
+
+| Process or ledger | Before wall ms | After wall ms | Before CPU ms | After CPU ms |
+|-------------------+----------------+---------------+---------------+--------------|
+| Full nine-family object process | 1529 / 196 / 195 | 1491 / 236 / 238 | 210 / 180 / 180 | 240 / 220 / 220 |
+| All-Case producer | 1582 / 180 / 156 | 1452 / 160 / 157 | 170 / 140 / 140 | 170 / 140 / 140 |
+| Producer + complete Rust replay | 2901 / 558 / 528 | 2201 / 528 / 593 | 570 / 500 / 500 | 560 / 500 / 520 |
+| Rust full benchmark process | 1740 / 1517 / 1518 | 1567 / 1617 / 1623 | 1600 / 1500 / 1500 | 1550 / 1560 / 1510 |
+
+The ordinary Rust executable SHA is identical between variants; catalog and full
+replay bytes also match. Rust time movements are therefore a negative control,
+not evidence of POO acceleration. Producer CPU is unchanged at this precision;
+the complete pipeline does not show a stable net improvement. Object process CPU
+increases even though algorithm-scale wide dependency graphs improve markedly.
+Peak RSS in the final pairs is about 39 MiB for the object process, 66 MiB for the
+producer and 120-123 MiB for Rust. No meaningful RSS reduction is established.
+
+Final valid-mode median small allocations per 128 fresh named revisions, shared
+admission path (nine observations per cell):
+
+| Family | Before | Initial dataflow | Final retained declaration owners |
+|--------+--------+------------------+-----------------------------------|
+| policy | 27776 | 40064 | 36992 |
+| banking | 25600 | 37632 | 34560 |
+| location | 43648 | 62976 | 57216 |
+| source | 25600 | 37632 | 34560 |
+| protection | 46592 | 65408 | 59648 |
+| controller | 59648 | 68480 | 62720 |
+| disclosure | 81408 | 84096 | 76544 |
+| handoff | 31360 | 46080 | 42112 |
+| lineage | 52992 | 63360 | 57728 |
+
+Every original valid/forged/missing workload and fresh structural node name is
+preserved. The benchmark was not replaced by repeated instantiation of an old
+identical plan. Full raw timings, including initial handoff/lineage slow samples,
+remain in the CSVs. Retained preparation removes real repeated lowering, but
+most small graphs still pay more for explicit code/dependency/execution tables.
+Proof terms are erased; this is runtime preparation/index overhead, not proof
+execution cost. The disclosure family pays back more repeated legacy self reads;
+small three-field shapes often do not amortize the new preparation.
+
+* Reproduction and next complete optimization boundary
+
+=Benchmarks/DataflowLifecycle.py= is process/artifact glue using the existing
+Python package resource recorder. Lean/Rust and existing conformance gates own
+policy, Contract, replay and semantic/resource invariants. It adds no domain
+assertion framework or tools directory.
+
+Build the baseline from the pinned pre-migration revision, adding only the same
+=caseManifestsNative= Lake target for its existing Examples.Manifests entrypoint.
+Freeze before-bridge, before-object-profiles, before-functional-reuse and
+before-case-manifests with their SHA identities in baseline-identities.json.
+The saved evidence includes those exact identities and configuration exception.
+Then run =just bench-dataflow-lifecycle ARTIFACTS NEW_OUTPUT_DIRECTORY= after
+stopping task-owned builds/tests. Output directories are new and every process
+receipt/output remains preserved. The existing raw catalog benchmark jq gate
+continues to check every Rust sample.
+
+The remaining performance unit is shared prepared structural revision, across
+all nine families together: prove exact per-key C4 code equivalence and complete
+key coverage, update changed methods/read sets while framing unchanged owners,
+and avoid rebuilding full prepared tables for empty/literal-only revisions.
+Keep fresh source topology/node identities and actual new values. Reuse cannot
+be justified by matching labels, sampled outputs, or a schedule alone. Re-run the
+same complete native producer/Rust/Case evidence before any uniform performance
+acceptance. No timeout, case-count, admission or resource guard may be relaxed.

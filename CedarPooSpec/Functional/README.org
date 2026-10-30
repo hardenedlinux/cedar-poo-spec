@@ -271,15 +271,14 @@ receipt/compilation equivalence and audit six laws, plus forged-projection
 refusal and inherited-child controls.
 
 =just check-functional-consumers= prevents direct legacy consumer dispatchers
-from returning. =just check-functional-catalog= freezes all 48 original manifest
-bytes and replays all 51 catalog entries through the Rust bridge. Its three new
+from returning. =just check-functional-catalog= checks all 51 frozen manifest hashes and replays all 51 catalog entries through the Rust bridge. Its three new
 settlement entries include 14 typed handoff simulations. Construction/provenance
 proofs and independent Cedar evaluation oracles retain their original owners.
 
 * Industry object admission and projection
 
 [[file:ObjectProfile.lean][ObjectProfile]] reuses upstream ObjectContract, C4 assembly, Requirements and
-CertifiedConsumer for all nine memoized domain families. Contract admission and
+CertifiedConsumer for all nine materialized domain families. Contract admission and
 field projection are separate selected capabilities. A Checked witness names the
 actual object and contract; projections carry equality to the actual inherited
 read. Missing methods fail before object observation. Domain Contracts retain
@@ -328,3 +327,8 @@ replace type, Contract, proof or complete Cedar receipt equality.
 The [[file:../../docs/native-preparation-acceptance.org][integrated acceptance report]] records invocation/schema-bound Entities
 reuse, proved fused Contract reports, canonical hashing, full lifecycle/CPU/RSS
 evidence and all-domain closure. Requests/decisions are never cached.
+
+The [[file:../../docs/native-dataflow-acceptance.org][POO dataflow migration]] binds each actual materialized object to its
+C4 source, compiled closure and exact inventory. Derived dependencies use the
+existing typed Computation language. The native controls check real per-field
+materialization work for all nine families; Contract admission stays per object.

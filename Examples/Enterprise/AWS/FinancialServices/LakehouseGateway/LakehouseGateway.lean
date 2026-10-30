@@ -93,9 +93,9 @@ def euProfile : LocationProfile.Object :=
 
 def restrictedProfile : LocationProfile.Object :=
   (euProfile.extendWith "RestrictedProfile" do
-    LeanPoo.Object.Declaration.Builder.value .policyId "restricted-geography"
-    LeanPoo.Object.Declaration.Builder.value .actionScope (.actionInAny tools)
-    LeanPoo.Object.Declaration.Builder.value .location "RESTRICTED")
+    LeanPoo.Object.Dataflow.Builder.value .policyId "restricted-geography"
+    LeanPoo.Object.Dataflow.Builder.value .actionScope (.actionInAny tools)
+    LeanPoo.Object.Dataflow.Builder.value .location "RESTRICTED")
     |>.toOption.get (by native_decide)
 
 def euControl : LocationBoundary :=
@@ -108,9 +108,9 @@ def restrictedControl : LocationBoundary :=
     EU or RESTRICTED rules. -/
 def unresolvedProfile : LocationProfile.Object :=
   (restrictedProfile.extendWith "UnresolvedProfile" do
-    LeanPoo.Object.Declaration.Builder.value .policyId "unresolved-geography"
-    LeanPoo.Object.Declaration.Builder.value .location "UNKNOWN"
-    LeanPoo.Object.Declaration.Builder.value .denyMissing true)
+    LeanPoo.Object.Dataflow.Builder.value .policyId "unresolved-geography"
+    LeanPoo.Object.Dataflow.Builder.value .location "UNKNOWN"
+    LeanPoo.Object.Dataflow.Builder.value .denyMissing true)
     |>.toOption.get (by native_decide)
 
 def unresolvedControl : LocationBoundary :=

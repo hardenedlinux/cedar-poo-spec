@@ -60,31 +60,29 @@ abbrev LineageKey := CedarPooSpec.Data.LineageProfile.Key
 abbrev LineageValue := CedarPooSpec.Data.LineageProfile.Value
 
 /-- The inherited computation observes the final source list and digest. -/
-def hospitalPrototype : Except (LeanPoo.Object.DefinitionError LineageKey)
-    (LeanPoo.Object.Memoized LineageKey LineageValue) :=
-  LeanPoo.Object.defineStrict "HospitalLineage" do
-    LeanPoo.Object.Declaration.StrictBuilder.default .sources [source hospital]
-    LeanPoo.Object.Declaration.StrictBuilder.value .digest "hospital-result"
-    LeanPoo.Object.Declaration.StrictBuilder.slot .artifact
-      (.self fun self => do
-        let sources ← self .sources
-        let digest ← self .digest
-        some { digest, sources })
+def hospitalPrototype : Except (LeanPoo.Object.Dataflow.Error LineageKey)
+    (LeanPoo.Object.Dataflow.Instance LineageKey LineageValue) :=
+  LeanPoo.Object.Dataflow.defineStrict "HospitalLineage" do
+    LeanPoo.Object.Dataflow.StrictBuilder.default .sources [source hospital]
+    LeanPoo.Object.Dataflow.StrictBuilder.value .digest "hospital-result"
+    LeanPoo.Object.Dataflow.StrictBuilder.derived .artifact
+      ((fun sources digest => { digest, sources }) <$> LeanPoo.Object.Dataflow.Expr.need (Value := LineageValue) .sources
+        <*> LeanPoo.Object.Dataflow.Expr.need (Value := LineageValue) .digest)
 
 /-- A reusable research-source amendment composes with any compatible
     source prototype; it does not replace inherited provenance. -/
-def researchAmendment : Except (LeanPoo.Object.DefinitionError LineageKey)
-    (LeanPoo.Object.Memoized LineageKey LineageValue) :=
-  LeanPoo.Object.defineStrict "ResearchAmendment" do
-    LeanPoo.Object.Declaration.StrictBuilder.modifyInherited .sources
+def researchAmendment : Except (LeanPoo.Object.Dataflow.Error LineageKey)
+    (LeanPoo.Object.Dataflow.Instance LineageKey LineageValue) :=
+  LeanPoo.Object.Dataflow.defineStrict "ResearchAmendment" do
+    LeanPoo.Object.Dataflow.StrictBuilder.modifyInherited .sources
       (Option.map (· ++ [source research]))
 
 def joinedPrototype : Except String
-    (LeanPoo.Object.Memoized LineageKey LineageValue) := do
+    (LeanPoo.Object.Dataflow.Instance LineageKey LineageValue) := do
   let hospital ← hospitalPrototype.mapError (fun _ => "invalid hospital prototype")
   let research ← researchAmendment.mapError (fun _ => "invalid research amendment")
   (hospital.defineStrictFrom "JoinedLineage" [research] do
-    LeanPoo.Object.Declaration.StrictBuilder.value .digest "joined-result").mapError
+    LeanPoo.Object.Dataflow.StrictBuilder.value .digest "joined-result").mapError
       (fun _ => "invalid joined prototype")
 
 def joinedResult : DerivedArtifact :=

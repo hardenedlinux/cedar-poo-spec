@@ -1,5 +1,5 @@
 import Cedar.Spec.Policy
-import LeanPoo.Object.Definition
+import LeanPoo.Object.Dataflow
 import CedarPooSpec.Functional.ObjectProfile
 
 /-! A value-level cross-organization handoff contract. A trusted Host must
@@ -7,6 +7,7 @@ authenticate the grant and bind its claim digest to the actual data before
 calling admission. This module does not issue or verify credentials. -/
 
 namespace CedarPooSpec.Admission.Handoff
+open LeanPoo.Object.Dataflow (Expr)
 
 open Cedar.Spec LeanPoo
 
@@ -47,25 +48,24 @@ abbrev Value : Key → Type
   | .claimDigest => String
   | .scope => Scope
 
-abbrev Object := LeanPoo.Object.Memoized Key Value
+abbrev Object := LeanPoo.Object.Dataflow.Instance Key Value
 
-def define (name : String) (initial : Scope) : Except C4.Error Object :=
-  LeanPoo.Object.define name do
-    LeanPoo.Object.Declaration.Builder.value .template initial
-    LeanPoo.Object.Declaration.Builder.value .caseId initial.caseId
-    LeanPoo.Object.Declaration.Builder.value .claimDigest initial.claimDigest
-    LeanPoo.Object.Declaration.Builder.slot .scope
-      (.self fun self => do
-        let caseId ← self .caseId
-        let claimDigest ← self .claimDigest
-        pure ⟨caseId, claimDigest, initial.sourceActor, initial.targetActor,
+def define (name : String) (initial : Scope) : Except (LeanPoo.Object.Dataflow.Error Key) Object :=
+  LeanPoo.Object.Dataflow.define name do
+    LeanPoo.Object.Dataflow.Builder.value .template initial
+    LeanPoo.Object.Dataflow.Builder.value .caseId initial.caseId
+    LeanPoo.Object.Dataflow.Builder.value .claimDigest initial.claimDigest
+    LeanPoo.Object.Dataflow.Builder.derived .scope
+      ((fun caseId claimDigest => ⟨caseId, claimDigest, initial.sourceActor, initial.targetActor,
           initial.sourceRoot, initial.targetRoot, initial.credentialMode⟩)
+        <$> Expr.need (Value := Value) .caseId
+        <*> Expr.need (Value := Value) .claimDigest)
 
 def onCase (parent : Object) (name caseId claimDigest : String) :
-    Except C4.Error Object :=
+    Except (LeanPoo.Object.Dataflow.Error Key) Object :=
   parent.extendWith name do
-    LeanPoo.Object.Declaration.Builder.value .caseId caseId
-    LeanPoo.Object.Declaration.Builder.value .claimDigest claimDigest
+    LeanPoo.Object.Dataflow.Builder.value .caseId caseId
+    LeanPoo.Object.Dataflow.Builder.value .claimDigest claimDigest
 
 open LeanPoo.Functional.ObjectContract
 

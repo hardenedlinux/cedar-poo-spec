@@ -4,7 +4,8 @@ import LeanPoo.Functional.ObjectContract
 The prepared report is indexed by, and pointwise equal to, the original Contract. -/
 namespace CedarPooSpec.Functional
 open LeanPoo.Functional ObjectContract ObjectDiagnostics
-variable {Carrier Key Value Detail : Type}
+universe u
+variable {Carrier : Type u} {Key Value Detail : Type}
 
 structure PreparedDiagnostics [DecidableEq Key] (contract : Contract Carrier Key Value Detail) where
   report : Carrier → List (Issue Key Detail)

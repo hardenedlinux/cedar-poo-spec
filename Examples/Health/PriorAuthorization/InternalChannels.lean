@@ -58,11 +58,11 @@ def verificationObject : DisclosureChannel :=
 
 def memoryProfile : DisclosureProfile.Object :=
   (verificationProfile.extendWith "MemoryChannel" do
-    LeanPoo.Object.Declaration.Builder.value .policyId "write-shared-memory"
-    LeanPoo.Object.Declaration.Builder.value .action remember
-    LeanPoo.Object.Declaration.Builder.value .destination memory
-    LeanPoo.Object.Declaration.Builder.value .purpose "resume-prior-authorization"
-    LeanPoo.Object.Declaration.Builder.value .payloadClass "workflow-handle").toOption.get
+    LeanPoo.Object.Dataflow.Builder.value .policyId "write-shared-memory"
+    LeanPoo.Object.Dataflow.Builder.value .action remember
+    LeanPoo.Object.Dataflow.Builder.value .destination memory
+    LeanPoo.Object.Dataflow.Builder.value .purpose "resume-prior-authorization"
+    LeanPoo.Object.Dataflow.Builder.value .payloadClass "workflow-handle").toOption.get
       (by native_decide)
 
 /-- One admission for all projections of this exact immutable profile. -/

@@ -1,0 +1,2122 @@
+{
+  "format": "cedar-poo-dataflow-lifecycle-v1",
+  "baseline_commit": "5ce4bd2c92cc79609221a9cad3a4c3af3893ce7f",
+  "baseline_provenance": {
+    "format": "cedar-poo-dataflow-baseline-v1",
+    "cedar_commit": "5ce4bd2c92cc79609221a9cad3a4c3af3893ce7f",
+    "poo_revision": "b577371fe4e2717e198a29eefe16ec8ae0380e0d",
+    "toolchain": "leanprover/lean4:v4.34.1",
+    "configuration_change": "Only caseManifestsNative target added to the baseline Lake configuration; existing Examples.Manifests entrypoint unchanged.",
+    "executables": {
+      "before-bridge": "0466a55215a6f597c2fc78e272bf4accdd21f982ec88cf14bc7692e5b89c8a80",
+      "before-functional-reuse": "5f4d122b00da81cb37f9eebc0ac9e5bb51a43a76d65eae4176ec5a19599c5452",
+      "before-object-profiles": "624e21731017f2e2c67f4b004386c5317164128d459856ec5c98badd56463357",
+      "before-case-manifests": "8e757f36e437ebd765d12789d5f3d6ce5fcfae8fe4cfeea754b9f846537168d6"
+    }
+  },
+  "poo_revision": "d91bb8281075219b15ccfda46c2a53806365f99a",
+  "source_snapshot_sha256": "d77e56d597e33de21abfa00668bac5d217816490e525519464ceb1bd165fa0b8",
+  "source_inputs": {
+    "Benchmarks/FunctionalReuse.lean": "b5727882daab558cbd3572db49bd21ad0e440b2e045183fc0fd3e01222cd4392",
+    "Benchmarks/PolicyReuse.lean": "54f5464d5d682fa071d648390d474f23f423f02958af322ba48049d026c4398e",
+    "CedarPooSpec/Admission/AuthorityConsumption.lean": "bf2e087cd9947f87963df04355e8862b5ff3ad31bacf32f96dc2c7264e5cdd42",
+    "CedarPooSpec/Admission/BoundOperation.lean": "3af9a4d890ecdacd206fcc5a208c6eb0faeb9cccd3607b9ba8af5ca170d2715d",
+    "CedarPooSpec/Admission/Handoff.lean": "74adef67150ccec4d46e6fb8b754b0d289d9bb7c175c161d1d4cb5c4b38ea078",
+    "CedarPooSpec/Admission/OperationIdentity.lean": "378a8ccb99743ac18775e0aa5a01f58d09711fc5d46d42eb7698a3ec2284d011",
+    "CedarPooSpec/Admission/PolicySnapshot.lean": "d2bb1bc0722dbefef694cb3c7e0f3771ec5acf48596d1862f56dc043f02929c7",
+    "CedarPooSpec/Admission/SourceNetwork.lean": "41ba48f8ec9ac57a3d91b8e7b8ac0dd25b9d6150b493b75217cfa05c79b65faa",
+    "CedarPooSpec/AgenticAI/Boundary.lean": "564415e971bfcdfccde110d3a4bdb3c36aae0f35b27678badd3db15a61013342",
+    "CedarPooSpec/AgenticAI/Commerce/Acceptance.lean": "7061f0cfcfe33e1ee7998315187fd9d25f7f0f022810f2e1397bf0c2920b2563",
+    "CedarPooSpec/AgenticAI/Commerce/Budget.lean": "c32fe84410778965fb00b48259df6abee5cc7922f5c33b06d63af8c6a4cc335d",
+    "CedarPooSpec/AgenticAI/Commerce/Consumption.lean": "a6ce8b2106e626954aeabf55441c85c0eb4d4a47aaa05601059d7c494887b43e",
+    "CedarPooSpec/AgenticAI/Commerce/Credential.lean": "188fcc9185ec72ab4af91284d14c9823ef303dfc14bb8ef63debe91e03f009dd",
+    "CedarPooSpec/AgenticAI/Commerce/Delegation.lean": "f1c357d26ecac5cdc70e32c117c7378029f0d16f539595e34db775a88af35e0d",
+    "CedarPooSpec/AgenticAI/Commerce/Presentation.lean": "982ebcd232c778977498c8102cb066f45739a7627f07561a40c369f8d510d9fd",
+    "CedarPooSpec/AgenticAI/Commerce/Projection.lean": "b0fc6739d44954acad6ae4d76dc72639556ded4c804abb16ba2d6b43529249d7",
+    "CedarPooSpec/AgenticAI/Commerce/SharedBudget.lean": "caac44b5815ebe857286de6956259eac8627f46637f6ab28ed4f5d8f721279d1",
+    "CedarPooSpec/AuthorizationDelta.lean": "efda214335953fb840eaa654ef89db3858caaac07568305e8af091766b95da21",
+    "CedarPooSpec/AuthorizationDeltaBooleanCore.lean": "ceca1014ca4587c9e301bd3fa4271f02aa4cde4de4259188bf1a89fb74c05a70",
+    "CedarPooSpec/AuthorizationDeltaCompound.lean": "5399a252552f1cee9e7335162421491569815c4f3f97f556dea2b2283923fbdd",
+    "CedarPooSpec/AuthorizationDeltaEffectiveReasons.lean": "d48b6b89499b901b02b93fb3be60d8b283845ca796358280e0027f72d06491c0",
+    "CedarPooSpec/AuthorizationDeltaEffectiveReasonsProof.lean": "2e0cc6ce572f6f4770b0fb37f7b655cfa1e8206e413d81e5a45118149ad09624",
+    "CedarPooSpec/AuthorizationDeltaEvidence.lean": "2f66b9cb3fbf60e27c93545e5fd177dd5a83c8652a216594073171d5359c20ce",
+    "CedarPooSpec/AuthorizationDeltaInteraction.lean": "096e03482831994c8c90fabc9a5b474f742112f801a4a613f1e52ac0e9932b74",
+    "CedarPooSpec/AuthorizationDeltaJson.lean": "09fdcbe83080fe0458682b1ac944189eca8eef608ef7a806d056a959877dc621",
+    "CedarPooSpec/AuthorizationDeltaOperational.lean": "fb7fa8cc729753c51340f8ca425f5657a7faead6a39e2111762e65b058eb1d13",
+    "CedarPooSpec/AuthorizationDeltaOperationalExact.lean": "0b4a59ba550d2a82e8af1b5f5c19cdbfb365951ec2710649c6f61e6f82b0ff9f",
+    "CedarPooSpec/AuthorizationDeltaOperationalExactProof.lean": "d762340336321e1253009b62dc6adb96532a5baa6a99fea9a8a67353f510f704",
+    "CedarPooSpec/AuthorizationDeltaProof.lean": "80911a212598da44f1bb75ad71001835194bb774e51bef1eca12c002b3feb119",
+    "CedarPooSpec/AuthorizationDeltaReasons.lean": "5def201a5740ea8880075bf16312b2e00f8fcb0079ef91d35092314c8824c024",
+    "CedarPooSpec/AuthorizationDeltaRelease.lean": "761a4fe0e819ceebb0abaede67f5f77ca5cae5af4032bf5b3a40b2418a459505",
+    "CedarPooSpec/AuthorizationDeltaTrace.lean": "430f6f47387e105b165f881b6b0128d19a060fb301d72cb264167d85a05306c3",
+    "CedarPooSpec/Cloud/DataProtection/PseudonymizationGate.lean": "4bb73a3636fe4cce7b54249d1c5fbba6a8adf02db3b860f5baf3d0841609ed51",
+    "CedarPooSpec/Cloud/Pipeline/DeploymentBoundary.lean": "8e1a93e1d7ded4f4661defbabbafde2485c8ac02e8bbe9a91866a8433e3b9893",
+    "CedarPooSpec/Cloud/Pipeline/Evidence.lean": "1184c082317699149e9417ac26cbcc934201d25a3e7415f461e870d9baa6f3ed",
+    "CedarPooSpec/Cloud/Pipeline/ReleaseBoundary.lean": "9f438a2c7a9c5931ae07bb11b0ee35552d4b144261983d261b4001f12a4f9442",
+    "CedarPooSpec/Cloud/Pipeline/SourceControlBoundary.lean": "88c07149c6d28e337178575d0e908ce38757f58950e01a5379456909e089a199",
+    "CedarPooSpec/Cloud/Pipeline/SourceProfile.lean": "27d9214e1e733d901973c1c63de4fd4310b33c6f5f5d7aaa0f37ecaf3d0353a1",
+    "CedarPooSpec/Composition.lean": "6415f61b598aadd9002708e4a8136572d7179a2534f5cd3555cb13b468b5f792",
+    "CedarPooSpec/CompoundAuthorization.lean": "607e08079ece95f7a8edd0b086d40c3f81f70358e5060822064384e387082ac3",
+    "CedarPooSpec/Data/ArtifactAssessment.lean": "abc39cac0966aeb8106f9559ec5919ee677bb912fcd7984a3f4fdad5521a3fff",
+    "CedarPooSpec/Data/CumulativeDisclosure.lean": "41ba28a403a8f99ca317ebd2fcccd6ad9959f5793d005c975bed03432191b12e",
+    "CedarPooSpec/Data/DerivedArtifact.lean": "e434493213f345af3839341e0b1c467e3ffbcf811c4365377ba15aaed7e6e333",
+    "CedarPooSpec/Data/Lakehouse/LocationBoundary.lean": "3969afc14a48bd6cf706d6adb4f752a88dc2d7878dc8dc4570533fbd7bde816b",
+    "CedarPooSpec/Data/Lakehouse/LocationProfile.lean": "bba9c4cfdeb97b03d60f5446f98abc6bc05d193e8d1c6cc0b601fbd8845ec998",
+    "CedarPooSpec/Data/Lineage.lean": "43684712cf601a40aad8b99d81f6113f301eb4ca2b23867cd7ef5a0149cb6aa6",
+    "CedarPooSpec/Data/LineageProfile.lean": "c35940bc86154ad22e7c73d54220338fa104d3205396000f87545c2f1644c84c",
+    "CedarPooSpec/Data/LineageUse.lean": "ee64b5a9e65c7f1abda0b5d7f98fadb9c9c0417010482750c419666a8ce8db05",
+    "CedarPooSpec/Data/ProtectedRead.lean": "37c9da6163f907c69fd22e1d7fced464f415d6f99ac0dc80d8ad3fe77281e07f",
+    "CedarPooSpec/Data/ProtectedStorage.lean": "f33734600064d6b4f575de16140c3a2efcc08397ac050d4eb3283c52076bd7cf",
+    "CedarPooSpec/Data/ProtectionProfile.lean": "7dc576fa11fe9aefa867ad5b5db9a3a94f7076a6b6c382b84c23db2bd9907cfe",
+    "CedarPooSpec/Data/Relation.lean": "e897637d050f90c90762110fbeb88142ca6110eed22e687bcd075e7061b721bc",
+    "CedarPooSpec/Data/StorageEffect.lean": "53c01850df36dae461075700dba391fa89d0f51c71a34a13843562b8fe190c33",
+    "CedarPooSpec/Evaluation.lean": "dda6b0e45bdeb82fbfc4c37b4c1df5c2a98c86ad5faeb4cecd7a8d132e7b9ac3",
+    "CedarPooSpec/Functional/Admission.lean": "5ea2621e84d3dca91797eb88b2d33dc7b08b6512727c7d48636c73891857542a",
+    "CedarPooSpec/Functional/Capabilities.lean": "a4dd8712426bc562c157ebfb2f66d823d5942ff66eb53b281a8ecb27d8b1383b",
+    "CedarPooSpec/Functional/Compilation.lean": "f69c729ffdbe10550a30cd6873cf6287848bd50ec1edd98aeb0b8244a5b31ceb",
+    "CedarPooSpec/Functional/CompilationJson.lean": "c6d38c787b8b148ea06cead755a2cea4fcdb212bd7c1baad603a5051db942fb2",
+    "CedarPooSpec/Functional/ObjectProfile.lean": "310969935bee313316456c5cc77fbb1e2d6fa82ac558634ac5717251823f3ca6",
+    "CedarPooSpec/Functional/PreparedDiagnostics.lean": "dfdcb1bef0efb77566e93b5e54d5d5f4806ff9814c50f8adec943034c1186b26",
+    "CedarPooSpec/Functional/Reuse.lean": "01cdfc2e9787a38d91c7282a43c8cb14061a3646b956aebae88b2fe1badc0b28",
+    "CedarPooSpec/Governance/MemberGrant.lean": "72f97d63c882a341fa9212445337434adacf41636b8d77d76988834c6813d11a",
+    "CedarPooSpec/Governance/Personnel/Admission.lean": "173ecd0a5ec180e4bd4d89d0e8a56b79ec8a0f6224960f7076af72626aa0684f",
+    "CedarPooSpec/Governance/Personnel/AssetAccess.lean": "50249c49a5e60d6b204c2d939867136a4a183ec3656e9672803ff1c2ab050123",
+    "CedarPooSpec/Governance/Personnel/Assignment.lean": "0cbcf474c7b5da119343680d54eb5caa26257d4ca4826511761ba1b314d2dfec",
+    "CedarPooSpec/Governance/Personnel/Delegation.lean": "45ede4828493c733b4e53f3e1536677907b43e21107a8ab7d0d531e5ab4f24b6",
+    "CedarPooSpec/Governance/Personnel/KnowledgeScope.lean": "67a29e695fd7d2099ab97a2934df7ef1a70b4c680d4a2bf791e8db5c635ad5f2",
+    "CedarPooSpec/Governance/Personnel/Status.lean": "59dd969e2a20588ce1e54f312fff2307685962452c0a91547ba12798a66f817a",
+    "CedarPooSpec/Governance/ScopedApproval.lean": "04ca6111f935686440748fd43ec17174f9684f58e12df92eec4d8159bb6f6f87",
+    "CedarPooSpec/Governance/SeparationOfDuties.lean": "17841d44368a5be6fdb742181528523320b753ed3e95cc6eb841fdc056b640d6",
+    "CedarPooSpec/Governance/Veto.lean": "d64c1cd7416fe050a1d3fead528c947bfc326bca12fe474176b17d001869e14b",
+    "CedarPooSpec/Platform/AWS/AgentCore/Gateway.lean": "62fb47226183763f74a3829dfa6746e36266b531e6db6360bc4610691a306824",
+    "CedarPooSpec/Platform/Google/SensitiveDataProtection.lean": "5a35f613bd5ba2906864fc819fa8325e02f24bc357f631df10d3aff7c31a273e",
+    "CedarPooSpec/PolicyJson.lean": "24cce7d142222b4c82fbc24817439319b7e4c3453c27a0ccd88bfa47c14e670f",
+    "CedarPooSpec/PolicyModules.lean": "47e2c23dff83421a740572ed0d08a0e3f897d952918f07453c4048da9a8e1009",
+    "CedarPooSpec/PolicyPreparation.lean": "a4f04ef42dcae520e9e16871d9d936c1337677aa95fc2b0c84ac7c4a1a328b0f",
+    "CedarPooSpec/PolicyProfile.lean": "ed61fd88cb571d256a306e2c44090a604971bac3ddb98c84de551ee30111722f",
+    "CedarPooSpec/PolicyValidation.lean": "3fad316f6f7eb0d83a8a7857e90c92907d4db5731a250f91ab48b4b76a354da0",
+    "CedarPooSpec/Pseudonymization.lean": "03a7cf21601ef8b578be6f186e6620d8c0fd4f275a532e81bcc3b98a1b969f36",
+    "CedarPooSpec/Pseudonymization/Compatibility.lean": "501c66541fb99698e0dafe09f0e979d7bd1be4f8d615f83ea6f8033cb5492989",
+    "CedarPooSpec/Pseudonymization/Mode.lean": "dc06ebfaa8d87fc5dd48e5d96d88e0a0e5ef522a4ece9403eb87bf04e2e693fd",
+    "CedarPooSpec/Pseudonymization/ResultRelease.lean": "192dbbe39d40823dbaa5b3e04fd829314c7a2cc3aaac9db263b21d79bb7eeb3d",
+    "CedarPooSpec/Pseudonymization/TableBatch.lean": "cebe76d77b8a77543c245f57ca9568475868c5d3daab256e39e4178b03062e70",
+    "CedarPooSpec/Pseudonymization/TableBatchWire.lean": "4d417c9bd96186dcecd3b93f0983f65c672a7ee0aa5832c25b0521bf6d70d77c",
+    "CedarPooSpec/Pseudonymization/Tabular.lean": "91e8fa8c464e38cc8cbc62488c7d2b764ca9258fe1b41b5d350e3d4ef25a880e",
+    "CedarPooSpec/Pseudonymization/TokenCatalog.lean": "20f5c1dec574a77facebf972028c3a59f2a305c79838d0c3d3f0815c9740cf9c",
+    "CedarPooSpec/Revision.lean": "61cd700c49941e24c544fc8b5ee12c97b9506482f15b79e0bba686c4613f5ba9",
+    "CedarPooSpec/SchemaAdmission.lean": "186a7a7cb99247d584d1b30d94b9acfa569fc07ff28d61f8f8f90d808d3a2cdf",
+    "CedarPooSpec/SchemaJson.lean": "48d501c0b7c95d375deaf9f58fa2f450cbae963684ed27130ef81b286a0720eb",
+    "CedarPooSpec/Slicing.lean": "0b6efe2767ec824f4c814fa124973d850cadd34be623d56f6e0b67c181715e4a",
+    "CedarPooSpec/Soundness.lean": "62220a98506c0735d0af9b4f0f50d393686c516bb7fca54ddac6843c6843cf07",
+    "CedarPooSpec/TemplateValidation.lean": "ff62e4e00704e858a439e170ee5e885caa5e07d57199ed09343319ff8e870461",
+    "CedarPooSpec/Validation.lean": "cc581c89043213ba37c3362aef1ddff87825f66360c5cc143eeba9b60e21be36",
+    "CedarPooSpec/Vertical/FinancialServices/AgenticCommercePayment.lean": "d0c7ba845783dd1d62932b4a71bacb96345483ca2169e4ac0daab2f5239f2411",
+    "CedarPooSpec/Vertical/FinancialServices/BankingToolOwner.lean": "af5f127b9047587e5363a8b4af3834c0e152aac4511b6eecb6b98608688e34f7",
+    "CedarPooSpec/Vertical/FinancialServices/BankingToolProfile.lean": "652676edde501273018f4a1f99c4e75861f76afecf457eacb5f404c1a20bd675",
+    "CedarPooSpec/Vertical/FinancialServices/ClaimSummaryVeto.lean": "27fe2d2a82588f29cae030f360be0712fa58268ca4ddc889bc578ec60cbb2c2f",
+    "CedarPooSpec/Vertical/FinancialServices/ControllerRelease.lean": "50ad08ae15d3b9ad1cb41a9b51759d1e1277f5cc1bc01989363c5c930ece6739",
+    "CedarPooSpec/Vertical/FinancialServices/ControllerReleaseProfile.lean": "23722525e1d72a2edbe43da2a97f026ef41c6350aab6ff39efe00875fc5f3503",
+    "CedarPooSpec/Vertical/FinancialServices/PaymentLedger.lean": "1d8499ccc4c3cae8c1544569e03821f7e9c856239dd0f85d759874606370c193",
+    "CedarPooSpec/Vertical/FinancialServices/PaymentLifecycle.lean": "87d951f7c5273bdde215b66723d59ab2eb6250684cf0de546f819b279b0d50f1",
+    "CedarPooSpec/Vertical/FinancialServices/PaymentOperation.lean": "115b2b9112d20125b20b8aaa8cd41ceea709f758dda45fc2766474ac792699ec",
+    "CedarPooSpec/Vertical/Health/ClinicalEvidence.lean": "a5e3550c5b7b6da68f97e9843de860ab85e91750d466357ae6dd40712cdd62c8",
+    "CedarPooSpec/Vertical/Health/ClinicalExchange.lean": "e38fba9c974ded70e63fc6331541e220c5b33a147750a21e0573f9309a26788d",
+    "CedarPooSpec/Vertical/Health/DisclosureChannel.lean": "7bc2c137bee20903fb1c0ac8c070fb01221b7b67cdde76907924b6821d64104f",
+    "CedarPooSpec/Vertical/Health/DisclosureProfile.lean": "f617711f080cbb05692cf412dbd505cafa937a688ce03017edf0e965f6d1e06f",
+    "CedarPooSpec/Vertical/Health/EmergencyAccess.lean": "9af843439c959b8536e03a6ef20e5774cfdbd84c4247c4d03939e82e067fd0bd",
+    "CedarPooSpec/Vertical/Health/FHIR/ConsumerAccess.lean": "3e35e4ba5d5e253d7676e1027e74e931e6960e4ce3d43c172ebb282189cd6800",
+    "CedarPooSpec/Vertical/Health/Region/Australia.lean": "d10fbc70643d390d08506ca2bdf987722231b4a01700d770614fef1e92eeff0c",
+    "CedarPooSpec/Vertical/Health/Region/PackageMetadata.lean": "6f5c8c6dca87bf2bdf1a872736dfe72828fb02a2d2c211e9abde0827c99e88d1",
+    "CedarPooSpec/Vertical/Health/Region/UnitedStates.lean": "0e229e1b5a1a690620a3574769cb06bb3044c3a61d5180fbf7313bb83d26ea59",
+    "Examples/AuthorizationSoundness.lean": "844200d7feb1388b841ff83f29e96316175c727d0ffeec52ad7509799ff8698e",
+    "Examples/Cloud/DataProtection/FixtureMain.lean": "21f441ccefa06ab00746a457f560a888a1619a4bfdce7d3a15696c7fdccb1411",
+    "Examples/Cloud/DataProtection/GoogleSdpRelease.lean": "83bb0be73d4865ec0b7acffe9f829845dcf6c1e830941a768a86a87d929e8c2a",
+    "Examples/Cloud/DataProtection/ReplayExport.lean": "e2a54be440cfe1ee181beb0e4c779ab1e425950c7b0aff8c74babe6399dd14b1",
+    "Examples/Cloud/DataProtection/ReplayMain.lean": "8a2251aec7bef3429ba4886c5d711277448eacfc25bdd144155edf33208d0624",
+    "Examples/Cloud/Pipeline/Deployment.lean": "d2dc1b06682ab544af0335831248163e6f391fb978cda931668087e1d32dd9e9",
+    "Examples/Cloud/Pipeline/DeploymentCase.lean": "748f476195813f3981116ceb2515c8f402f936aa4df004af1d79e983a1278bfa",
+    "Examples/Cloud/Pipeline/DeploymentReplayExport.lean": "352d6deef0297a6d4dd5e6ef9f9b859aa532d778e67a0c07dc38ce727edec035",
+    "Examples/Cloud/Pipeline/DeploymentReplayMain.lean": "f8f61d4f2037980272620a5b3fd78c824deb5b1150158927195695f15201dacb",
+    "Examples/Cloud/Pipeline/GoogleThreatCase.lean": "9000e62d1283274d10f8e4abb5e354b9c67de6b78d0ccac0b43ccbb8615f3873",
+    "Examples/Cloud/Pipeline/ReplayExport.lean": "847d1bd06c9675e811ff7a8df109653f3e29f958331e36d1146e69c0d4345c8f",
+    "Examples/Cloud/Pipeline/ReplayMain.lean": "69e8eb01d181231097e8c0465a24580448c794ba1f003620933a1cf450e11285",
+    "Examples/Composition.lean": "f1286b0cbfb2d70c12721fb420716eafce5bd91748abe91503c3e2580cd7fa49",
+    "Examples/Enterprise/AWS/AgenticPlatform/Expense/Expense.lean": "d8cd5345f166bd4465af81c3aed926bdee585cc05c7813263a1a470a1625a896",
+    "Examples/Enterprise/AWS/AgenticPlatform/Expense/ValidatedExport.lean": "6ee57af1ed9e30ae8d2ca02c46ecb757193f229e9a9dfcb158ead1f4eb32d24a",
+    "Examples/Enterprise/AWS/FinancialServices/ClaimSettlement.lean": "1ac18e8b3f8397eda216f00bc544c8c432b95c08ca370b1cc34e5a05de5658d7",
+    "Examples/Enterprise/AWS/FinancialServices/ClaimSettlementExport.lean": "a28af517c76f7dd62741415e04e5ebb1efcb6da32c5e06dd7681cb749c7f9f7b",
+    "Examples/Enterprise/AWS/FinancialServices/ClaimSettlementHandoff.lean": "3dc19c83223739e62daf2670b38fd271d34f06ba2ecfa9353db5727ac75e9aaf",
+    "Examples/Enterprise/AWS/FinancialServices/ClaimSettlementRevision.lean": "9f2b61dff1aa96e93fef02edfd4a0b4074e20041306a6fa7f4511302c1e8a499",
+    "Examples/Enterprise/AWS/FinancialServices/LakehouseGateway/LakehouseGateway.lean": "7f16b6d951831d73693548000663c0be789973bb7db6e43dc10ad56ede15e0d5",
+    "Examples/Enterprise/AWS/FinancialServices/LakehouseGateway/ValidatedExport.lean": "09e3de33d220ff9678a7d022765ee7e2c1914865c3ae3f18a3133a5c6a177c4a",
+    "Examples/Enterprise/AWS/FinancialServices/MultiAccountBanking/Lineage.lean": "e8a705b2f95f3ace026fc599312b85b37d0b258a1fc01ec107093a0b7fa8030b",
+    "Examples/Enterprise/AWS/FinancialServices/MultiAccountBanking/MultiAccountBanking.lean": "180ed4a91383badfd1ba872b9c2dd8b3fb2e0f950c2860452a902b330b4f4114",
+    "Examples/Enterprise/AWS/FinancialServices/MultiAccountBanking/ValidatedExport.lean": "b3f7d00e0754116713916a2c6305e70ddde26661c4bf7bb3a8ef5cccd8fb4d82",
+    "Examples/Enterprise/AWS/FinancialServices/Reconciliation/Reconciliation.lean": "e9317c65ffc08b103ffba62a3caf7c498bf5c2a8af663cc9a4c0f57345e58e49",
+    "Examples/Enterprise/AWS/FinancialServices/Reconciliation/ValidatedExport.lean": "71d76be86d6c4ac8491296ad53bdf6df70104366d06df1917fe5016315b168d7",
+    "Examples/Enterprise/AWS/FinancialServices/Reconciliation/Workflow.lean": "c5c95a0d309704c372a3362eb84c76a677d4ab5be3c5b7545aad018ebc247be0",
+    "Examples/Enterprise/Agent/Chain/AgentChain.lean": "91faa1242d5274d39e60284a60eff91fdd9b560220695719432ee978102e029f",
+    "Examples/Enterprise/Agent/Chain/AgentChainExport.lean": "70959c1027192b1a2715277eccf5cada8f89a1cea54b51f85085b18de192779d",
+    "Examples/Enterprise/Agent/DataFlow/AgentDataFlow.lean": "fbf34126487bddc40c659cb6f9842321241f190338f3991140a4bb45d71583ca",
+    "Examples/Enterprise/Agent/DataFlow/AgentDataFlowExport.lean": "a1e0ecc695737a601a986bf4476aebf45069602ac342328fcfa720bef7970099",
+    "Examples/Enterprise/Agent/DataFlow/ValidatedExport.lean": "b4d8c7d2550b92fffd2f609655c4d61edc6a18f091d4f2dc19680f1c6908a015",
+    "Examples/Enterprise/Agent/Delegation/AgentDelegation.lean": "b2ac48ab189ffbe98bf87316a89c150d56061751858a60f4eaecdb6214d3beb2",
+    "Examples/Enterprise/Agent/Delegation/AgentDelegationExport.lean": "7b49f688632873b0a57ed4bb0392dec203dd6d4896e9b6339bfb8eb5ce1d5dc6",
+    "Examples/Enterprise/Agent/Department/DepartmentSynthesis.lean": "fae60881916cc6e3340bbc52d3c3fcdfb89997b4d7e79d2beaeae153831d4234",
+    "Examples/Enterprise/Agent/Department/Simulation.lean": "5181c291285ce7a99541802abd4e5eca04ce5a1b9735d0b09fd7195fef036f51",
+    "Examples/Enterprise/Agent/Department/ValidatedExport.lean": "538b4b49bb2775013d28d276059b89c9d7999f5d7c7cb3486ce3ba6eca89292c",
+    "Examples/Enterprise/Agent/Fanout/CrossAgentEgress.lean": "ed765b5c3515b1a1606ac2b20d3df0e0ddd30cca025eeec759303d08ffc91ae6",
+    "Examples/Enterprise/Agent/Fanout/CrossAgentEgressValidatedExport.lean": "4d963af963b82d18a3169ab987e581d4e64071267a55058da6f5b8675900c67f",
+    "Examples/Enterprise/Agent/Fanout/SharedBudget.lean": "a2735faa3700f821a7d0438a44d4649050b4cfa43ba6d6446c1097bb71ebc53e",
+    "Examples/Enterprise/Agent/Fanout/SharedBudgetExport.lean": "897085c6912e2ca715df814f57b5ee318b2bd074018eea3f955a4a07f76b6910",
+    "Examples/Enterprise/Agent/Payment/AgentPayment.lean": "c34eb28bdc3706b01685da4130b128b9eb95e86b4fdb22085734fec24bd87a5c",
+    "Examples/Enterprise/Agent/Payment/AgentPaymentExport.lean": "4df3a358e3974423d45b0095fc898b05bc69cb85a086934e8451ec61f192081d",
+    "Examples/Enterprise/Agent/Payment/AuthorizationDelta.lean": "18253a9627b095fe459b46ba81a6b8ee3f90ca3129ec4917325c41884a3179ac",
+    "Examples/Enterprise/Agent/Payment/JointRelease.lean": "6d946ed990cb7ef67b3812a4556c80b9b7fc12707d1c53c3037f0acf533c1701",
+    "Examples/Enterprise/Agent/Payment/PaymentAudit.lean": "5fcaeef1e61a6ce21087f5d7b3b727565ddb948fe43d1a8abd3e24944fa9a693",
+    "Examples/Enterprise/Agent/Payment/ValidatedExport.lean": "793187ad39b7b15d1c765cdc76fb5916d06e843a19c9d59e9648ec6a1a2fee95",
+    "Examples/Enterprise/Agent/Session/AuthorizationTraceDelta.lean": "d33f373c065faf5b9eb5b7ce60ac0b4d06558aa1206a27897eba0d26433ef401",
+    "Examples/Enterprise/Agent/Session/BoundedSession.lean": "33a69c03d2d00fb2395a932bf100ac235687acfbc35d54ac3d4143a890c29b5d",
+    "Examples/Enterprise/Agent/Session/BoundedSessionExport.lean": "7a6fe82ca734a2cab7d0adad5e16ee40de071b24b5a3effe17b7ec436995594b",
+    "Examples/Enterprise/Agent/Session/HostSafety.lean": "6a553f9253b35ecd806a8f4032318cb9c7ee69f68457ce07e82dac8fe48c5f3b",
+    "Examples/Enterprise/Payment/PaymentRelease.lean": "37c3092b1fd8bdb954a22b368116b91a784a81d73a85b2d460ffca6ff6b319fd",
+    "Examples/Enterprise/Payment/PaymentReleaseExport.lean": "75e268536e8996c40632f44881879cefce695bb1800f586f5055d7f7e7487ea9",
+    "Examples/Enterprise/Payment/PublishedPayment.lean": "b74b8b23193f0846075f1f037462d7840b8056a8258641104d9cae96b52dad13",
+    "Examples/Enterprise/Personnel/SourceCustody.lean": "eecdeeecf2602b3799f89a44efc5acd8b024c5e2c05ac77e9b30a5ffb26cacf6",
+    "Examples/Enterprise/Personnel/ValidatedExport.lean": "35e0d2ec0cba43eb37b7453981a97a9df65219fc2903521ed6736b791faa34be",
+    "Examples/Enterprise/Procurement/DelegatedApproval.lean": "5a0a00a679c83ef917f958b733afa949c0d1a57b8bcf9c3e7c20cfdb713681bf",
+    "Examples/Enterprise/Procurement/DelegatedApprovalExport.lean": "e62934aff0fb0d4148bb7f7647f7bbd39ab5b662bcb7e92dbd4b97b0c9cfe6e8",
+    "Examples/Enterprise/Procurement/DelegatedApprovalMatrixExport.lean": "016e04ba39b862a629912107171f485205b86585ce7829500ca837a53361b331",
+    "Examples/Enterprise/Procurement/PublishedPolicy.lean": "3a35663ab38d2ddd2e5715b65d18e1b61ceedae6f9e3eac4b445bee731188636",
+    "Examples/Enterprise/Procurement/PurchaseApproval.lean": "dd0f9833eeea0ad5a51884f8eab33154200abef644cbc74211325d5e71c4ad1a",
+    "Examples/Enterprise/Procurement/PurchaseApprovalExport.lean": "d15f00901db3758d5a05139f2bbcb1cf0a7209c613ce8dcb936e7fb316bb7252",
+    "Examples/Enterprise/Vehicle/Mission/MaintenanceComparison.lean": "f2fe5cae8e80f805a3eece4ff40516c89295faab0581ee3c6ac1efb7263369d1",
+    "Examples/Enterprise/Vehicle/Mission/SuccessorBoundary.lean": "6782bd8a0bde853b5ff844abf55c86092e7f9dcbaee7e72a2fe84ed60dac0b67",
+    "Examples/Enterprise/Vehicle/Mission/SuccessorBoundaryExport.lean": "7cf90fdb3460c29ff35bbac7519c5d74dfb7f662e5cd05e45d4471f33c3ebbfd",
+    "Examples/Enterprise/Vehicle/Mission/TrajectoryReplay.lean": "7a7143e4607d34c9364f19e876218325b88e6dbea6a7e3781eccf1ccd8dd9063",
+    "Examples/Enterprise/Vehicle/TARA/TaraHandoff.lean": "21a2b94afc55031a76903297755f8be108abde03e61d87735fdd9b0b457702ef",
+    "Examples/Enterprise/Vehicle/TARA/TaraProjection.lean": "1844a5b93134fc069448cbcaf8f66c601dc7d43ca5beee7d19326b44fecc7ef0",
+    "Examples/Enterprise/Vehicle/Uptane/SupplierTransition.lean": "a2073094c6a0ee1dd6e969248ebd7fa69590d71fd842f55972d95e3a95c6083f",
+    "Examples/Enterprise/Vehicle/Uptane/SupplierTransitionExport.lean": "ddb180e4319106851f964f99a9b5ce79b149c660afbe9475d24ed7db76df1743",
+    "Examples/Enterprise/Vehicle/VLA/CommandBoundary.lean": "1a128a3b6d5a9b3aea9efe1cc38166a89131c4116f1bd3ee2858e52948fe687f",
+    "Examples/Enterprise/Vehicle/VLA/CommandBoundaryExport.lean": "ed8bc5290b648988e48d6491162602fb512837aee912d816f01d753e35425054",
+    "Examples/Evaluation.lean": "9a5e4ada9bf8e5cb1f08cbd66e3907f757bba34d8507f125167e4b17d3816065",
+    "Examples/Governance/AttestedDataAccess.lean": "7415ef4fac4270742915a3bf02abf1a01bec1f7416df8906b0eba13b7d221805",
+    "Examples/Governance/AttestedDataAccessExport.lean": "959d20fe78ec2b3a75398c9e7425e261e0aaf8beef8002f121c46da3c8a4ed53",
+    "Examples/Governance/AttestedManifest.lean": "c61ee93aeda16c6510c85ef59d44e8c96ab6f12145107e7f508db99031f84ad8",
+    "Examples/Governance/AttestedSchemaEvolutionExport.lean": "532c9ec5d79781a6fef17dea1915e64413eebb7430b3769ac5552e2ca376bc54",
+    "Examples/Governance/AttestedViewsValidatedExport.lean": "df8be7cd929688e9a4d29075abf32f1c8cb1c1728ffc902cc4ddf0da383f3546",
+    "Examples/Governance/AuthorizationDelta.lean": "9ddce3aa36ae1c7dc7a8eab9451b90dd77bc6e2450a4dc5ec0689718d0c346eb",
+    "Examples/Governance/CountryApproval.lean": "373206b0ff76c3d83655ff7c07cb2eee2af8b247ef7b1f102dd259fbe7ad9f3b",
+    "Examples/Governance/CountryApprovalExport.lean": "2b41ca74a189d3f13bbd1ff5fd69e88b0c7d9c3ae2dfbc0ada2681f54c236d52",
+    "Examples/Governance/CountryApprovalValidatedExport.lean": "de9324556fe220b4b26b7227617da4fff10810a9ec011e9a068a989b64d6ceaf",
+    "Examples/Governance/ExpandedPolicy.lean": "c1692b7d07638c6e279963a524e766f9f15b3f7c314b4568fbb47242c2fe9157",
+    "Examples/Governance/TemplateSourceExport.lean": "96e089e257c6937f3abf0cc313a965c82c362f05bc32696ad1a0f0aa9e9b516e",
+    "Examples/Governance/TicketSharing.lean": "7a89b7a9f143fc092b00b740e05b52862e478d68067429a1d3cc09c9e7eef728",
+    "Examples/Governance/TicketSharingExport.lean": "6e543c5d697b77ba17119d5be18d86171213e75ff2beca140a589462ada496f2",
+    "Examples/Governance/TrustedNetworkDataAccess.lean": "87c8c85e00e3cb34bb2851c3ef0980be1a79dcab09a4402f788f799f59a38240",
+    "Examples/Governance/TrustedNetworkDataAccessExport.lean": "d3f32981d71350551d9ab856fd7983d623f9883bcb303872ffb66f4e85189fc5",
+    "Examples/Governance/TrustedNetworkValidatedExport.lean": "e8618dcd3369032af6170c699612e86fe2dbbc7e2914382cb28d2c87a856318f",
+    "Examples/Health/AgenticAI/LanguageModel/CrossStep.lean": "3e85f930d5097c7417977e869ac7b411b5046e6af7b48ef66ef2df332e09d2f4",
+    "Examples/Health/AgenticAI/LanguageModel/Disclosure.lean": "7a617b135c98088ba8f41bd8fb4093460dfd2282adae20e1e5faf93840354be0",
+    "Examples/Health/AgenticAI/LanguageModel/DisclosureExport.lean": "08f5ffa71c8f143fd05f71903f158d326b7a377c3fd5e0652d317d507c3c7796",
+    "Examples/Health/ClinicalBreakGlass.lean": "54bae4762edc5379c1c1cc5661592d9d734a16b78ad257a0fad277c5770daef8",
+    "Examples/Health/ClinicalBreakGlassExport.lean": "a9a847218fc8f4dca76dc9c9762e3c083e7a5a3a7d339cc22741c52fd2aab2ae",
+    "Examples/Health/Interoperability/Admission.lean": "a1ee9f9c7828696d8e10d2cc5906e2837f83bbbbc723c4db609ad70a06faaa2a",
+    "Examples/Health/Interoperability/AustralianEMR.lean": "54f97e932164401b6ac9f4aa1c87ec00f703f094fe9cbf2f261da1636a86655c",
+    "Examples/Health/Interoperability/UnitedStatesAdmission.lean": "04833c89fcfe878ed89792c0ed91f03eac2938c86d17acef2317a75abe8e0f8a",
+    "Examples/Health/Interoperability/UnitedStatesExport.lean": "5dcaa969dbe3ea6e6f1e1947b1e7e66cdead45afbd1d12b523b2091cf969fe4c",
+    "Examples/Health/Interoperability/UnitedStatesPayer.lean": "f3731cde94e40a1dd0aafbbbff155c4034f58d1adb6f168004a4dc77449c3ec1",
+    "Examples/Health/Interoperability/ValidatedExport.lean": "f948e8d1c4a2b9ca5a63296cd0aeec9e958e5ca7f4c062d42e75bad1673cc444",
+    "Examples/Health/ModelStewardship.lean": "95b6e8daceeb5527f1d66484f5383231bd5a70c2d90b74256cf8ebb72777fd71",
+    "Examples/Health/ModelStewardship/Admission.lean": "ad91bb44207a798c07a73b5af9bae25b484eedcda4f67ec89c414e295feda7d7",
+    "Examples/Health/ModelStewardship/ReplayExport.lean": "231917bf12d7a8b61e722f88ec81c7b66486bae43d1aa4c89942f08e21852c94",
+    "Examples/Health/ModelStewardship/ReplayMain.lean": "d44549f82f37f8935f728e2904ddfe32b40871e89cd3de5f62fde49535678bf0",
+    "Examples/Health/MultiHospitalAI.lean": "2e4e47a8b870995af5612dca80e2daf7b33ddf6675e586fb40f1cd29399bb77d",
+    "Examples/Health/MyHealthRecord/ConsumerPlatform.lean": "d3898e1304bee03c6447f6559c87f451aad821b6f3de41c64058d0eac971f678",
+    "Examples/Health/MyHealthRecord/Lifecycle.lean": "5b537ace55f47437c86be20fec13aa1649734d230119e369c1796a30c9156a93",
+    "Examples/Health/MyHealthRecord/ValidatedExport.lean": "af2620f4052fc97964bb6007d8680894cb7a8a098603ca43e08c299d3859d1d6",
+    "Examples/Health/PriorAuthorization/InternalChannels.lean": "fb3f5e921932edde33c523c1690e00aec9dd5679659dd283de8ed0dc0ce4516c",
+    "Examples/Health/PriorAuthorization/InternalChannelsExport.lean": "5e250526efb77ec95f86185db8afdda52dde6d30c19a15c2dc219b0e27086a33",
+    "Examples/Health/PriorAuthorization/PriorAuthorization.lean": "d0020f7affe6a2cbf40e71efa25359a1299adfdbb0be3c00505f634c2fc8ad53",
+    "Examples/Health/PriorAuthorization/ValidatedExport.lean": "e8ea3b4c4f7fb26eb776f0798ccd0ccb2ba184ec7ce3e72247d4c741a9722fbc",
+    "Examples/Health/Pseudonymization.lean": "ab4b4566e67a483b28a4423444240e437c40cd24bbfcf855ad6404038dd215cc",
+    "Examples/Health/Pseudonymization/AuthorizationImpact.lean": "1a1cad8d06bf665b031bed2e5fb8bacac2cd19e52a0fdf071de9fd2090f01c46",
+    "Examples/Health/Pseudonymization/Deployment.lean": "748ee7500daba55762afed856dee913fc439461b26ff185f860060707688ae38",
+    "Examples/Health/Pseudonymization/Lifecycle.lean": "bff6e3dc1322f4bdc5a36d1aa0045e52604a8976d8c063cf7650478565aae337",
+    "Examples/Health/Pseudonymization/Tabular.lean": "53d1b68ffab9482a5ae9e2fce275c3585e450805f652993ce4179136517044bd",
+    "Examples/Health/PseudonymizationExport.lean": "93fc89f280334a7d980f004cdd0b2591422ae3e254b666f195d74cd290901226",
+    "Examples/Health/WearableTriage.lean": "e4b6651888159f14f8a31acb0e809e4d5b9790770761f76934f59b91a9869d74",
+    "Examples/Health/WearableTriageExport.lean": "f2c36ba2bd769a47e45127d9fbf0529189e9ad2d177477bd92a2a10823e3c0d6",
+    "Examples/Language/ExtensionCoverage.lean": "202168266bb4198b0a9b326de012b6b156ac4c845721ecc1f6ef5c649f0bc604",
+    "Examples/Language/ExtensionCoverageExport.lean": "01c5b80f303609109aa1d6311a44a727c4745281044c36b267fc99ca982be499",
+    "Examples/Language/NamespacedEnum.lean": "96ea81d74d48d79b1cb43e4c1d8ae514081cd18c3b4fdd1f028f58a640dedecb",
+    "Examples/Language/NamespacedEnumValidatedExport.lean": "1f74a0b3258f0d0ffd7a0b6456b3b53426175a56418862017995b19e75f29d3b",
+    "Examples/Language/ScopeAndPattern.lean": "14aab8229b36a0a3cd4c9a36e1e8cf217016f9977207fe11b571d17819300537",
+    "Examples/Language/ScopeAndPatternExport.lean": "fc34361530a71b9fdca59581b14560b80afda6bc67d5f7cf07df5c12304f0559",
+    "Examples/Language/ScopeAndPatternValidatedExport.lean": "bb1a1f1cd4a9c9e2e35832a601e62be0a67abae63cdf0671c1929bcd7621d05b",
+    "Examples/Manifests.lean": "c280f4334a11b34a882d4fee93267fb90d834d53963e54d173386294661e2a33",
+    "Examples/Scenarios/TenantDevicePolicyEvolution.lean": "e1f78cd2c378d2baadc7dfb979a2dabc604964a9231b12cff1722c3555318bbd",
+    "Examples/Scenarios/TenantDevicePolicyEvolutionExport.lean": "ee129f9c0c956a685ea73a1572e749f8f65e018aed913f7d1c9ca1d1a273c091",
+    "Productions/Data/ProtectedStorageFixture.lean": "4e80e0e73f5743f845bb58253d07593b4a63ce11df3296f52197d836e4b157ea",
+    "Productions/Data/ProtectedStorageFixtureMain.lean": "8ca83ed4641a8b057e2d1b3b7cb242e8ae5f96a0f2561798e0f1f93048b769c9",
+    "Productions/Data/StorageEffectFixture.lean": "a848e7434932b7d7523d52cb462cb38de69164cb16532f73d3ee46831905a0e2",
+    "Productions/Data/StorageEffectFixtureMain.lean": "f7c45010dfef92c5dd49c857ec03d4ba0d0458fff1e6825a48a4ab89596fc14a",
+    "Productions/Data/StorageProfileMatrix.lean": "5fb85a658994d555970e3e0db4f3609def30d1748119bbd8bfa810f520fadc6c",
+    "Productions/Data/StorageProfileMatrixMain.lean": "b9e86f6fded137fc71dbb11ea58e55c04dfde3169ac03f7d2f4f02f6ebb4e747",
+    "Productions/Health/Interoperability/PackageCheck.lean": "185a64f1576cab9561ff4d72f860c35f8ba43923235ec9b92e8b194d4ed6acce",
+    "Productions/Pseudonymization/TableBatchFixture.lean": "efaa0f420231ddc86094a3de9fc6ac8e80ab6fc196bc989a44caf09cfbd17c86",
+    "Productions/Pseudonymization/TableBatchFixtureMain.lean": "ba8258ce8d51929e784d37607b84fc0b868b6fe6d6ff407d51c6a08605e97d65",
+    "Tests/AgenticAI/Boundary.lean": "e865b8c3f4de7293a17d5fa84957046f31f00c6b28d41f8d0fa3e831fa6cb060",
+    "Tests/AgenticAI/Commerce/Acceptance.lean": "306b0373f68605b0b92e2c8d77058c3c16502577085d8107400dfab24c939d38",
+    "Tests/AgenticAI/Commerce/Admission.lean": "3bed3c42928221192635a7b1aabc4f455e73593a280504e0cf46a57b67afd62a",
+    "Tests/AgenticAI/Commerce/Consumption.lean": "7176672bf4e9182da65559da7d665e48d6f71e336b392ae1c694fe1fd3d4d461",
+    "Tests/AgenticAI/Commerce/Presentation.lean": "c7aeb030d0d829d7bd22580564b15b73703563871c534f4aea42a050de933b12",
+    "Tests/AgenticAI/Commerce/Projection.lean": "9a4983e86e0b0729045a11b5af069ace78d3d77f2fef142a60e5a862e0a6b020",
+    "Tests/Artifacts.just": "b368d72a19871154892f5cbc3dafdc2f7d11a742b5c65e26a88e9f85602f9aea",
+    "Tests/Cloud/DataProtection/GoogleSdpRelease.lean": "a45d16c4481a122834da779ff33603c0ed1082b188f27f38ce6ca75aa087f306",
+    "Tests/Cloud/Pipeline/DeploymentCase.lean": "4e61654fdc72bf5766c80d9f394067ffd612aef1fb216aefd959af6f54dcf3b7",
+    "Tests/Cloud/Pipeline/GoogleThreatCase.lean": "93a8be3f70c3760c105a9a444c8117c19f0749198e0365230a4e44e034b52170",
+    "Tests/Conformance.just": "cc6a4ba0fd6c2740ce83e68f654d19ac6464cf08aeb390c4f737b94c5a769609",
+    "Tests/Data/ProtectedStorage.lean": "9ad58535bc5cd572ea9dc61ae7aae9d3d5dee7c6ea386957522004f676fe2cc5",
+    "Tests/Data/ProtectionProfile.lean": "f670d93295a91d30eb3f254e61f00542c1a58e29c7415063629dae6a472aecfc",
+    "Tests/Data/StorageEffect.lean": "9bf64668ad10c29fcd52379345da88f20e4859f92c2ee46cf41f92d6a3b7c467",
+    "Tests/Data/StorageProfileMatrix.lean": "1bd96a1698fc43595c71a4708932e653fbbc671fe31d081f7e8ccdb9d543106d",
+    "Tests/Enterprise/AWS/BankingToolProfile.lean": "79a3e6aab6cdeba7402c3e199a2f11ff5fe2a86cc003ec8ac1fd0441d39ea49f",
+    "Tests/Enterprise/AWS/ClaimSettlementHandoff.lean": "de20ef71ae73d7672827f686b2ae0345ad6dc69f1d9eea8b0a492dd432e596a4",
+    "Tests/Enterprise/AWS/ExpenseDepartmentProfile.lean": "81b23a15a914320be7b30b8bddc67d6d69451b37245efbdc169d06b9b43c357d",
+    "Tests/Enterprise/AWS/LakehouseLocationProfile.lean": "07ef4cf918a7737d7c75ca5106ff8923c8626842003bd7b45f8b478284c051ca",
+    "Tests/Enterprise/AWS/ReconciliationProfile.lean": "9588b8f8084dfb5c292ff2dc78c9cf13b5ba465326a52ba2647bbb689f23db94",
+    "Tests/Enterprise/Agent/DataFlow/Dispatch.lean": "65bd95b60a636ba41e4530aa166429eb8b0837a04ff58da45ff4f71cbd809073",
+    "Tests/Enterprise/Agent/Payment/CompiledPlan.lean": "56007a54673cbe88c900e78d270a0ec73d66868c7ff617dd02dd5558ae52cc63",
+    "Tests/Enterprise/Agent/Payment/PaymentAudit.lean": "9a42aab948cc4f2399fc8bfa7f846b1589c50e78a16a316f0517ed64f7766cf9",
+    "Tests/Enterprise/Personnel/SourceCustody.lean": "e8e8918ee7c94d35f7d7b19c91c5e44f8c02cf68cd99e3361b517f783b29551c",
+    "Tests/Functional/Capabilities.lean": "da96118c83d1e146d4328488713b5b7d8ebef4267c209cd38dd36a6436a65e2d",
+    "Tests/Functional/Effectful.lean": "083e36583b3383524546e66fb240de628ea8efcaaac4dcc04eb66e66d8b895db",
+    "Tests/Functional/ExtendedCoverage.lean": "8eaf5269b69174e0ab3e5361b1748b394365b1cf40b6094b6f4f610b08833aed",
+    "Tests/Functional/ProfileWorkloads.lean": "d12a619582be6af8a1d17c29923ac405679836f2b4f175006e29dc51d7e2013f",
+    "Tests/Functional/Profiles.lean": "0445b4f9510b4bc1166414ef3db27c65b52c9d635e17fdd2cdbeb81faa3fa48f",
+    "Tests/Functional/ProfilesMain.lean": "9c523b1007d75a9a558be697c8b136d0ba22036d251b29e612b63754fc202de5",
+    "Tests/Functional/Reuse.lean": "49aaeeb98d6bc84439b76db5b2298ac01ed0a8745593e8829c24fd906ac29637",
+    "Tests/Functional/RootFamilies.lean": "e9a6e5e617ee1507a81c783e0fd792ee4a5be6321e2b611106d61f68fccc16fb",
+    "Tests/Functional/WholeMigration.lean": "e29015a128e7c936da34f94867bfa8c31c8114b903831bc0a9b104b1e9b8306f",
+    "Tests/Governance/AuthorizationDeltaAxiomAudit.lean": "e9d731ab40e035eaebc26257a4f504b9ca0af2ef0c530a0a279bbf4c853c24a6",
+    "Tests/Governance/AuthorizationDeltaDirect.lean": "d02e2e2897b700b848dc25c718e174f9dbf1351aae4aa994cd0857d9e897b0bd",
+    "Tests/Governance/AuthorizationDeltaEffectiveReasons.lean": "a13356e6a0fbd2d37904eb3ffa86999803aaaea9d0762d8d1228fb73f1c5142a",
+    "Tests/Governance/AuthorizationDeltaFormula.lean": "2e2a78b1ce3c3b43c556d2b710ab218b490e97b40ed624a7ccc00c5c67b80d1a",
+    "Tests/Governance/AuthorizationDeltaInvalidation.lean": "6d8c90151c88cd070fa9e9e871d47ef65568aa3618368e536fbf322043db03b1",
+    "Tests/Governance/AuthorizationDeltaOperational.lean": "e850147616e53d079b232cbc0aea401ee48ec7e19ec83372e76e17fd38cbbb4b",
+    "Tests/Governance/AuthorizationDeltaProofProbe.lean": "ef95c676839f20a37f8ebb6d1f7edd972f36018656c1ed7e351f718d77477615",
+    "Tests/Governance/AuthorizationDeltaReasonModels.lean": "ca571ef7b5598e619e61e04894771cc951a0418657967bc7a1bbc91d78d99632",
+    "Tests/Governance/AuthorizationDeltaReasons.lean": "d13b8811eb2a98f1d2ea41ea2ac0e13e658c9314dcd3b07690cc5f86e0b71456",
+    "Tests/Health/ModelStewardship.lean": "b348845a142b249b86e5078aa33ede27229925fb59e169d0a3766e86b5192b80",
+    "Tests/Health/MultiHospitalAI.lean": "9059d9088a8670f6b90fc440a7b666ae956eda927573f5b4571448117a998f5f",
+    "Tests/Health/Pseudonymization.lean": "e56af64c285c17fb528f79d5823c38b0a731783547a249caa4359389933975b4",
+    "Tests/Language/LeanPooAlignment.lean": "dba2dc1b6042c9d8e9d4680ed5362bda936c5c1048871f882b4f20c8e4f20108",
+    "Tests/Language/SchemaProjection.lean": "33ae9dc26184c3404836c53b38ee33a28a01756823a5b5336610ebd527b19e07",
+    "Tests/Language/VerticalProfiles.lean": "616b061e8716696fa9da743168be2eddab5ba981e952719d0d39df83b039ac3b",
+    "Tests/Manifests.just": "af98328582ae5e178851caea21596414580bbc8a822b8dec6308627fef0214b4",
+    "Tests/Pseudonymization/TableBatch.lean": "9b2b3acce2e6481ee8eba1b44fe7bf8f502e6d4c271ac6d915355880d86a974e",
+    "Tests/ReuseScale.lean": "151c4cf9fd3d9604e6f9195d593027ef67abe0a330ce8b9e2d4ca0c3977217a1",
+    "rust/agentic/src/boundary.rs": "4328e927586ff5bf1053e5294d4f3eaa519f3acf06547eba9d12e4d1f631a4dd",
+    "rust/agentic/src/lib.rs": "3eb0a21ed0e3e932085bacfa15f05a1017f05d8b6ad06073a85517956f66163e",
+    "rust/agentic/tests/unit/agentic_ai_boundary.rs": "3aa28181dee81ad9b107484c4e7ebbeaeec2b7f9f198097edc1d4bb143a6cf77",
+    "rust/bridge/examples/export_latency.rs": "241898d8968d8fc9a85ae3d623001f4796624a99b57ad717fba5b3f1941ce860",
+    "rust/bridge/examples/launch_probe.rs": "38e279978c9ef6cc4934f898529776aafbc207aa69ab105125511f35f80fd7c6",
+    "rust/bridge/src/allocation/enabled.rs": "09945dcf50602090c36a4f1a66680d3cd47612e71375d52ae07a935d3f3d7a28",
+    "rust/bridge/src/allocation/mod.rs": "6cd1216a7d5e4e864472838d18eb1736adc5ed0c9e90b3e783dfacbe5c3bee15",
+    "rust/bridge/src/allocation/snapshot.rs": "f268c908cb1b9aeeb94be4727b2dcfc5a9eb7da22c4fb92331668cd9f2b1086f",
+    "rust/bridge/src/benchmark.rs": "66e259b0be68d277eeca825800a13ea96f7f11bdb7834fc5d5893bb0e827edcc",
+    "rust/bridge/src/catalog.rs": "1602749046b75e094777945a555c1e611f47fd8d83234e35792728fbd4f289f8",
+    "rust/bridge/src/catalog_observation.rs": "87f47e50fd845e1a5f257db9a3af8630b8f095f0adefe5fabeb3952aa48cab6a",
+    "rust/bridge/src/cli.rs": "8e2d086586a77a7c6ae30c1c95285b79b208c90191e3aa520455b03999a06bbe",
+    "rust/bridge/src/financial.rs": "4ee3f255f1f8c0f8c720c8e0c75ba387aaf639d5408e836a25b2d0ab6d24b5b5",
+    "rust/bridge/src/lib.rs": "7f3503f39ba5dc867ac28e70fd09d3c44ade25e6f426912d30a5c089dd5767ff",
+    "rust/bridge/src/main.rs": "edcadb5ac95e7d1fa338a67d7323a91984877b5765c36fb376651dee9ff3ad8e",
+    "rust/bridge/tests/unit/catalog.rs": "28843eccda934c766a37920662ee45564af5360afdc55970686f691832f56c9c",
+    "rust/commerce-case/src/lib.rs": "b9610c5f87f24afd46656f6764ee1000082f1f9f721ff8e35e4aca30e6be1082",
+    "rust/commerce-case/tests/integration/agentic_ai_commerce_acceptance_consumer.rs": "5cfba190cfc7e1e4fa1c4d3f458b171f8e7fea62b5602a617cba66c8965ecc5e",
+    "rust/commerce-case/tests/integration/agentic_ai_commerce_admission_consumer.rs": "430d098f3d1511199e9a1fceba3647bf6d38a02363fba34a6da8ad6cf21835ea",
+    "rust/commerce-case/tests/integration/agentic_ai_commerce_coordination_consumer.rs": "0c7808e166328d8f0963c3a082bd22f848fe3a73ff8e07a176545f1f22839e57",
+    "rust/commerce-case/tests/integration/agentic_ai_commerce_mandate_consumer.rs": "9be009d3fa91137155fa0da2fc1b66fffa09f613eaca474f4af9fa32c9f450de",
+    "rust/commerce-case/tests/integration/agentic_ai_commerce_presentation_consumer.rs": "1a31991c6c1b25edd12986264be3ca3be930f2f40ba07db817c881a5179e8a4d",
+    "rust/commerce-case/tests/integration/agentic_ai_commerce_projection_consumer.rs": "c10bb121b8c5899c62de829ed077ade4f31324fd00a116eea83c5c524dce10a3",
+    "rust/commerce-case/tests/integration/agentic_ai_commerce_signatures_consumer.rs": "7d6d9e8bf36d8ef521df7f83aaada4522f31aeb32d541c20414696305e4bfc96",
+    "rust/commerce-mandate/src/checkout.rs": "5a3852966df7959a9d91f59d6dae460cc2132464d463d2a2fb1ca300b3b83a9b",
+    "rust/commerce-mandate/src/constraints.rs": "30cc1312dd106a480a043ca11bac8bc208bb6c76abcacd27f1194886986839d3",
+    "rust/commerce-mandate/src/contract.rs": "3a6d2631b61386959281ca6965a9901b09a82a5fa9b73c7b340b6bcbc7412ec4",
+    "rust/commerce-mandate/src/disclosures.rs": "ee9011de57bfb63dfab0c673e12a2029fa1a0b98b0b9e59955fddec5cbff02bf",
+    "rust/commerce-mandate/src/lib.rs": "c711034c66be5ddc9de4512cdaae52395fcef779bf7baee6ed800344d108dd33",
+    "rust/commerce-mandate/src/wire.rs": "62881ea042bbddb25a3dd7fd28b9b14172c38e15db21885fe6a9be4c6fe3dc73",
+    "rust/commerce/src/acceptance.rs": "b68bdfbf167c515de3455410f5d5b4f5c0a53d9a891a496457ec48df5dd38bb0",
+    "rust/commerce/src/admission.rs": "886ea2ce4e8d55f5644444a7a86610e93f8a09c181926c6a0e3ccf14bdfb24db",
+    "rust/commerce/src/coordination/mod.rs": "1f284b2270ae7ef050ae85616e987af5de0fbd5ba08a0b262195facfafd99de1",
+    "rust/commerce/src/coordination/snapshot.rs": "dad0adad7698b64b7239f8e05f33369d0cc8f5eb06488bc8dbdd239465618784",
+    "rust/commerce/src/coordination/state.rs": "402d834f818c8b97627f9f4fbb0b64361c253d73e8f7e50247d86c40a0bd6e6c",
+    "rust/commerce/src/lib.rs": "9fd0379c5aaa88ccb4a4db2732916186ae2d7beb259cf69411e5e7da86165cf7",
+    "rust/commerce/src/presentation/mod.rs": "9c8996d37f4da0f4e246bd9d8033ed46e4de4cdacccf79e05ee7135be8154e0f",
+    "rust/commerce/src/presentation/receipt.rs": "e2aee2d93a663dd12e66ef6b7d09955d10afeeabaa80e2e28862bc5d697d6287",
+    "rust/commerce/src/projection.rs": "e88ce118340f6e8ca35452ac4fce53c1132726ad2f4e694829b5c68c1a169d6f",
+    "rust/commerce/src/signatures.rs": "fe6f8dff76c078aec7fca6ae7340058476359050e72d0eafc1c3c4708ee45719",
+    "rust/commerce/tests/unit/signatures.rs": "d949808ce7ba497ef28dff8cb00ec53a71f2f5698877cea57bbb0179b2c6b8aa",
+    "rust/core/src/artifact.rs": "8e0fd33ba967aa7fe05b53903f78c9464935c5e7175e0f327b6b93989bf3f812",
+    "rust/core/src/authority_consumption.rs": "57c1cd40b64e7abea812ef09c49a96d014d8a07a740f1dbbdc1eea310d60489e",
+    "rust/core/src/handoff.rs": "ff9260ce6c9ee52e1c4c5c56004b20976dbbb5ddb4c700ca27fe97fe0077a845",
+    "rust/core/src/lib.rs": "6053d57ff9f8287967111b8be06c394513e2eef76c33de27ca3da850e9973933",
+    "rust/core/src/operation_identity.rs": "ca65c45cf8d8c98c3abeabd45390f9b2edcb9cb5962115b98a3231ff8fe37832",
+    "rust/core/tests/unit/authority_consumption.rs": "27795d608856057c1d78b3390fc238b5450ffef9bc55586e3a5083cc7bb5efa6",
+    "rust/core/tests/unit/handoff.rs": "2e1950da961334ee1331c3678a079c57408e59090d16f8c1026b8db22738ec3d",
+    "rust/core/tests/unit/operation_identity.rs": "641f4f6842aeedd78c3165ccdf7d513f82a3658b865c80b0a1a804ba6ff3eb0b",
+    "rust/disclosure-case/examples/agentic_ai_language_model_disclosure_host.rs": "53efb88a61fed3e70eb7fde7bead5d9f1b9b7784735866d858f7a9719b9263d5",
+    "rust/disclosure-case/src/lib.rs": "b9610c5f87f24afd46656f6764ee1000082f1f9f721ff8e35e4aca30e6be1082",
+    "rust/disclosure-host/src/host.rs": "14baaa8ed98cfb72a064bfdaf2933984b3444e96dc9cb24df0c2a5463bcb12e8",
+    "rust/disclosure-host/src/lib.rs": "834cb9e9d00da4e8e113f4b0b9fc4f7bb61c0c60e659e2c53768a1bc3537e1d3",
+    "rust/google-sdp-host/src/host.rs": "18e65c2826a2a1b7052041ce577dfbb92b35810ef42a41dfc90110690b921506",
+    "rust/google-sdp-host/src/lib.rs": "e8ab5b1ccd58e9ac41733f6ca14b885651fcef41cdeeaebfd198e935f757c87d",
+    "rust/google-sdp-host/tests/unit/google_sdp_host.rs": "a0ebc5905c70802997aec68f2c7ef30d7238605ccff3da88b7299958b033fec8",
+    "rust/pseudonymization-case/examples/pseudonymization_google_admission.rs": "1989f274fecec6234e374fe1a7c85a72cddfa059e75c0fbf4224554748861727",
+    "rust/pseudonymization-case/examples/pseudonymization_google_contract.rs": "bdbae717e8e346a2e2250e004521dcac8ee68dbb4d1cc07eccf6696cc562041a",
+    "rust/pseudonymization-case/examples/pseudonymization_local.rs": "c69a79be725311f116e280a7ee2eeda7c84a2feb61b43ec99b5b50068bbe1682",
+    "rust/pseudonymization-case/src/lib.rs": "b9610c5f87f24afd46656f6764ee1000082f1f9f721ff8e35e4aca30e6be1082",
+    "rust/pseudonymization-case/tests/integration/pseudonymization_crypto.rs": "e7838e587ba5de349fb855df32369c31003be945655b8805258e67d81b085a90",
+    "rust/pseudonymization-case/tests/integration/pseudonymization_crypto/cases.rs": "52eb9d8d210c32758920bd5d2d41046814f0d0b6290a14b6c5ae9fbb79109995",
+    "rust/pseudonymization/src/google_sdp.rs": "1a4ea96c099a9f92fba8036770aee3bc74f689b8f9fd4b2434c0ccf04c1c4371",
+    "rust/pseudonymization/src/lib.rs": "ece809b3b35735cd6bfd479b4c1737dd4215a957bab4cf4b5829217da1b6a66e",
+    "rust/pseudonymization/src/pseudonymization.rs": "ef2ac3cb22fcf3705edc44163b7234c766a325b523bfac3a4302ad7b72d92fd1",
+    "rust/pseudonymization/tests/unit/google_sdp.rs": "10737e0aed739a8e602c17dd523497998bbee9e3eb710177f086aa2c5e5f2a8c",
+    "rust/pseudonymization/tests/unit/pseudonymization.rs": "e6c099787afcdca3c7cc5a5996bbeb81718defbf2548e5232c5c30da9ecf7123",
+    "rust/runtime/src/bridge.rs": "ce752d703fc734befe61d9472f813693be214d1ac8c6c0ffc4264d7daf38791f",
+    "rust/runtime/src/canonical.rs": "f82e778e9ab5fd063b4acd9c124548304de8af69f5f8e1af65cd80554009a63b",
+    "rust/runtime/src/entities.rs": "b49956334c5294458b677fe4f66492ba1511585e105aa4d1c3c35aa98aed3b0a",
+    "rust/runtime/src/lib.rs": "da4570f6a7c087dc1f39a9accc89ab3e208ebb5884c2396a0a14c3605908c67a",
+    "rust/runtime/src/observation.rs": "c1209f5f64f403abccd7d793d8d2ed91e801aec20b637db4530f41a987321836",
+    "rust/runtime/src/replay.rs": "a02bb59a24a78f451226d2a3a8b4b9e0189a3b64dcfe2d11d1eb2263e718e668",
+    "rust/runtime/src/schema.rs": "154e95157f1b98a24109023144caaf1fcb74dd517534ea93429b045aa6fd9e84",
+    "rust/runtime/tests/unit/bridge.rs": "1afd9a6a04de23ee8bcf122a73c6bcb1c73e961f0c6acd6a918b5541a62be4ca",
+    "rust/runtime/tests/unit/canonical.rs": "9838e3e63683ed71cd789bc3105f14bce30b16fa22deeb7ab3559b33a1419c27",
+    "rust/runtime/tests/unit/entities.rs": "edf5bd7322b4a8d167bce3cdea57f5fcc6ce2412158a1671f54d245113bde4e1",
+    "rust/runtime/tests/unit/preparation.rs": "07a971c33980e2f67b41edc08bc265ec0a6fd0e32761b94eeb87fc4d962487dd",
+    "lakefile.toml": "414fd28f2489998a200b3274568355fa3367c1c3fd8e99dcac576714d148aea5",
+    "lake-manifest.json": "e90603069e8121adbd73642b8cf88e3fa5495846bef8dd2c342207f005bb67b2",
+    "Cargo.toml": "00eea7d84c09b0327fc747f1d07685b6381c349ca6bd17948ea61e385317fa90",
+    "Cargo.lock": "563f2256a5efdc6fa8fe08b7bf41f32a1328bc86b3be585f08a878a6fcec0e2e",
+    "Justfile": "2024da1c666ce82ace45dd60bffe8c9955392efd33c9ac2b911d45b35aa2572e",
+    "Benchmarks/DataflowLifecycle.py": "6c47edfa86bfe250696613c8f74aa73a4ac6bb9b3b492fd153654532691e972b"
+  },
+  "binaries": {
+    "before": {
+      "bridge": {
+        "path": "/private/tmp/cedar-architecture-audit-20261030/.lake/build/dataflow-migration/before-bridge",
+        "sha256": "0466a55215a6f597c2fc78e272bf4accdd21f982ec88cf14bc7692e5b89c8a80"
+      },
+      "profiles": {
+        "path": "/private/tmp/cedar-architecture-audit-20261030/.lake/build/dataflow-migration/before-object-profiles",
+        "sha256": "624e21731017f2e2c67f4b004386c5317164128d459856ec5c98badd56463357"
+      },
+      "functional": {
+        "path": "/private/tmp/cedar-architecture-audit-20261030/.lake/build/dataflow-migration/before-functional-reuse",
+        "sha256": "5f4d122b00da81cb37f9eebc0ac9e5bb51a43a76d65eae4176ec5a19599c5452"
+      },
+      "producer": {
+        "path": "/private/tmp/cedar-architecture-audit-20261030/.lake/build/dataflow-migration/before-case-manifests",
+        "sha256": "8e757f36e437ebd765d12789d5f3d6ce5fcfae8fe4cfeea754b9f846537168d6"
+      }
+    },
+    "after": {
+      "bridge": {
+        "path": "/private/tmp/cedar-architecture-audit-20261030/.lake/build/dataflow-migration/after-bridge",
+        "sha256": "0466a55215a6f597c2fc78e272bf4accdd21f982ec88cf14bc7692e5b89c8a80"
+      },
+      "profiles": {
+        "path": "/private/tmp/cedar-architecture-audit-20261030/.lake/build/dataflow-migration/after-object-profiles",
+        "sha256": "c0bc540fce9b2558475ab6bcb95d81a483ba6b45d2e3f9318be2a7cebe8a40d0"
+      },
+      "functional": {
+        "path": "/private/tmp/cedar-architecture-audit-20261030/.lake/build/dataflow-migration/after-functional-reuse",
+        "sha256": "5f4d122b00da81cb37f9eebc0ac9e5bb51a43a76d65eae4176ec5a19599c5452"
+      },
+      "producer": {
+        "path": "/private/tmp/cedar-architecture-audit-20261030/.lake/build/dataflow-migration/after-case-manifests",
+        "sha256": "11544af7250c15900213f4045fcb9397088fa187758240b86f8694d9425dee4c"
+      }
+    }
+  },
+  "process_limit_seconds": 120,
+  "kill_after_seconds": 3,
+  "scope": "Sequential native producer -> artifact -> Rust consumer; full child lifetime. No task-owned builds/tests overlap this cohort. Host scheduling and scan caches are not controlled.",
+  "measurement": "OS RSS is a process high-water mark. Pipeline CPU is the sum of sequential children; pipeline peak RSS is their maximum, not a sum or a proven memory bound. Lean heartbeat deltas count small allocations, not bytes.",
+  "records": [
+    {
+      "tag": "pair-1-before-objects",
+      "variant": "before",
+      "role": "profiles",
+      "arguments": [],
+      "supervised_elapsed_ns": 3079666125,
+      "returncode": 0,
+      "stdout": "pair-1-before-objects.stdout",
+      "stdout_sha256": "0592b9b1a7dbadb5889e3c250919d4cc8158e3216967562a5a1ca65b4f75135b",
+      "stderr": "pair-1-before-objects.stderr",
+      "resource": {
+        "architecture": "arm64",
+        "arguments": [],
+        "elapsed_ns": 2919941583,
+        "executable": "/private/tmp/cedar-architecture-audit-20261030/.lake/build/dataflow-migration/before-object-profiles",
+        "executable_sha256": "624e21731017f2e2c67f4b004386c5317164128d459856ec5c98badd56463357",
+        "format": "cedar-poo-native-process-v1",
+        "os_elapsed_ns": 2900000000,
+        "os_elapsed_resolution_ns": 10000000,
+        "os_time_scope": "OS time command accounting including waited-for children; rounded at reported precision",
+        "peak_rss_bytes": 41140224,
+        "returncode": 0,
+        "scope": "OS process high-water RSS including native startup; not retained heap or an RSS bound",
+        "system": "Darwin",
+        "system_cpu_ns": 30000000,
+        "user_cpu_ns": 200000000
+      }
+    },
+    {
+      "tag": "pair-1-before-functional",
+      "variant": "before",
+      "role": "functional",
+      "arguments": [
+        "CrossAgentGoverned"
+      ],
+      "supervised_elapsed_ns": 3957363084,
+      "returncode": 0,
+      "stdout": "pair-1-before-functional.stdout",
+      "stdout_sha256": "daf71080bfe35901ae5df27fca5aa63d9f6f4675b8d37146974d6a7a81b6dfc0",
+      "stderr": "pair-1-before-functional.stderr",
+      "resource": {
+        "architecture": "arm64",
+        "arguments": [
+          "CrossAgentGoverned"
+        ],
+        "elapsed_ns": 3807539375,
+        "executable": "/private/tmp/cedar-architecture-audit-20261030/.lake/build/dataflow-migration/before-functional-reuse",
+        "executable_sha256": "5f4d122b00da81cb37f9eebc0ac9e5bb51a43a76d65eae4176ec5a19599c5452",
+        "format": "cedar-poo-native-process-v1",
+        "os_elapsed_ns": 3790000000,
+        "os_elapsed_resolution_ns": 10000000,
+        "os_time_scope": "OS time command accounting including waited-for children; rounded at reported precision",
+        "peak_rss_bytes": 38764544,
+        "returncode": 0,
+        "scope": "OS process high-water RSS including native startup; not retained heap or an RSS bound",
+        "system": "Darwin",
+        "system_cpu_ns": 30000000,
+        "user_cpu_ns": 210000000
+      }
+    },
+    {
+      "tag": "pair-1-before-roots",
+      "variant": "before",
+      "role": "functional",
+      "arguments": [
+        "--root-scale"
+      ],
+      "supervised_elapsed_ns": 217302208,
+      "returncode": 0,
+      "stdout": "pair-1-before-roots.stdout",
+      "stdout_sha256": "63ffec20db622e9e3e8ff4e7a58c757763c5b59c9b709b18f4c544374e9eb71b",
+      "stderr": "pair-1-before-roots.stderr",
+      "resource": {
+        "architecture": "arm64",
+        "arguments": [
+          "--root-scale"
+        ],
+        "elapsed_ns": 61181084,
+        "executable": "/private/tmp/cedar-architecture-audit-20261030/.lake/build/dataflow-migration/before-functional-reuse",
+        "executable_sha256": "5f4d122b00da81cb37f9eebc0ac9e5bb51a43a76d65eae4176ec5a19599c5452",
+        "format": "cedar-poo-native-process-v1",
+        "os_elapsed_ns": 50000000,
+        "os_elapsed_resolution_ns": 10000000,
+        "os_time_scope": "OS time command accounting including waited-for children; rounded at reported precision",
+        "peak_rss_bytes": 38912000,
+        "returncode": 0,
+        "scope": "OS process high-water RSS including native startup; not retained heap or an RSS bound",
+        "system": "Darwin",
+        "system_cpu_ns": 0,
+        "user_cpu_ns": 30000000
+      }
+    },
+    {
+      "tag": "pair-1-before-catalog",
+      "variant": "before",
+      "role": "producer",
+      "arguments": [
+        "catalog"
+      ],
+      "supervised_elapsed_ns": 3319684166,
+      "returncode": 0,
+      "stdout": "pair-1-before-catalog.stdout",
+      "stdout_sha256": "ae43e5c709b31f8fd7dcedd391a5218e5a7af05166e16cce846ef0a2508f7875",
+      "stderr": "pair-1-before-catalog.stderr",
+      "resource": {
+        "architecture": "arm64",
+        "arguments": [
+          "catalog"
+        ],
+        "elapsed_ns": 3179577333,
+        "executable": "/private/tmp/cedar-architecture-audit-20261030/.lake/build/dataflow-migration/before-case-manifests",
+        "executable_sha256": "8e757f36e437ebd765d12789d5f3d6ce5fcfae8fe4cfeea754b9f846537168d6",
+        "format": "cedar-poo-native-process-v1",
+        "os_elapsed_ns": 3170000000,
+        "os_elapsed_resolution_ns": 10000000,
+        "os_time_scope": "OS time command accounting including waited-for children; rounded at reported precision",
+        "peak_rss_bytes": 68780032,
+        "returncode": 0,
+        "scope": "OS process high-water RSS including native startup; not retained heap or an RSS bound",
+        "system": "Darwin",
+        "system_cpu_ns": 30000000,
+        "user_cpu_ns": 160000000
+      }
+    },
+    {
+      "tag": "pair-1-before-replay",
+      "variant": "before",
+      "role": "bridge",
+      "arguments": [
+        "replay-catalog"
+      ],
+      "supervised_elapsed_ns": 5429587208,
+      "returncode": 0,
+      "stdout": "pair-1-before-replay.stdout",
+      "stdout_sha256": "f2de8a782d2ebeb4acf294e40e96dad8c9dce55391d2c536e07d60fa4c017293",
+      "stderr": "pair-1-before-replay.stderr",
+      "resource": {
+        "architecture": "arm64",
+        "arguments": [
+          "replay-catalog"
+        ],
+        "elapsed_ns": 5362591208,
+        "executable": "/private/tmp/cedar-architecture-audit-20261030/.lake/build/dataflow-migration/before-bridge",
+        "executable_sha256": "0466a55215a6f597c2fc78e272bf4accdd21f982ec88cf14bc7692e5b89c8a80",
+        "format": "cedar-poo-native-process-v1",
+        "os_elapsed_ns": 5350000000,
+        "os_elapsed_resolution_ns": 10000000,
+        "os_time_scope": "OS time command accounting including waited-for children; rounded at reported precision",
+        "peak_rss_bytes": 125272064,
+        "returncode": 0,
+        "scope": "OS process high-water RSS including native startup; not retained heap or an RSS bound",
+        "system": "Darwin",
+        "system_cpu_ns": 20000000,
+        "user_cpu_ns": 460000000
+      }
+    },
+    {
+      "tag": "pair-1-before-benchmark",
+      "variant": "before",
+      "role": "bridge",
+      "arguments": [
+        "benchmark-catalog"
+      ],
+      "supervised_elapsed_ns": 5687775292,
+      "returncode": 0,
+      "stdout": "pair-1-before-benchmark.stdout",
+      "stdout_sha256": "daf334300290dd4792a74e2d88654ad17bf4f80023dd1c55996cae0231adb7a0",
+      "stderr": "pair-1-before-benchmark.stderr",
+      "resource": {
+        "architecture": "arm64",
+        "arguments": [
+          "benchmark-catalog"
+        ],
+        "elapsed_ns": 5610365917,
+        "executable": "/private/tmp/cedar-architecture-audit-20261030/.lake/build/dataflow-migration/before-bridge",
+        "executable_sha256": "0466a55215a6f597c2fc78e272bf4accdd21f982ec88cf14bc7692e5b89c8a80",
+        "format": "cedar-poo-native-process-v1",
+        "os_elapsed_ns": 5600000000,
+        "os_elapsed_resolution_ns": 10000000,
+        "os_time_scope": "OS time command accounting including waited-for children; rounded at reported precision",
+        "peak_rss_bytes": 129155072,
+        "returncode": 0,
+        "scope": "OS process high-water RSS including native startup; not retained heap or an RSS bound",
+        "system": "Darwin",
+        "system_cpu_ns": 40000000,
+        "user_cpu_ns": 1910000000
+      }
+    },
+    {
+      "tag": "pair-1-after-objects",
+      "variant": "after",
+      "role": "profiles",
+      "arguments": [],
+      "supervised_elapsed_ns": 2368705833,
+      "returncode": 0,
+      "stdout": "pair-1-after-objects.stdout",
+      "stdout_sha256": "508c6c7b5a0dd9c12c39553c056e4ec188700364100088fbda4b6078c41a4279",
+      "stderr": "pair-1-after-objects.stderr",
+      "resource": {
+        "architecture": "arm64",
+        "arguments": [],
+        "elapsed_ns": 2209552166,
+        "executable": "/private/tmp/cedar-architecture-audit-20261030/.lake/build/dataflow-migration/after-object-profiles",
+        "executable_sha256": "c0bc540fce9b2558475ab6bcb95d81a483ba6b45d2e3f9318be2a7cebe8a40d0",
+        "format": "cedar-poo-native-process-v1",
+        "os_elapsed_ns": 2190000000,
+        "os_elapsed_resolution_ns": 10000000,
+        "os_time_scope": "OS time command accounting including waited-for children; rounded at reported precision",
+        "peak_rss_bytes": 40861696,
+        "returncode": 0,
+        "scope": "OS process high-water RSS including native startup; not retained heap or an RSS bound",
+        "system": "Darwin",
+        "system_cpu_ns": 20000000,
+        "user_cpu_ns": 250000000
+      }
+    },
+    {
+      "tag": "pair-1-after-functional",
+      "variant": "after",
+      "role": "functional",
+      "arguments": [
+        "CrossAgentGoverned"
+      ],
+      "supervised_elapsed_ns": 2430935375,
+      "returncode": 0,
+      "stdout": "pair-1-after-functional.stdout",
+      "stdout_sha256": "9742d582c6f404a9a6b4493dbad616fc95003f73caab1247b28e1483423588e4",
+      "stderr": "pair-1-after-functional.stderr",
+      "resource": {
+        "architecture": "arm64",
+        "arguments": [
+          "CrossAgentGoverned"
+        ],
+        "elapsed_ns": 2220631750,
+        "executable": "/private/tmp/cedar-architecture-audit-20261030/.lake/build/dataflow-migration/after-functional-reuse",
+        "executable_sha256": "5f4d122b00da81cb37f9eebc0ac9e5bb51a43a76d65eae4176ec5a19599c5452",
+        "format": "cedar-poo-native-process-v1",
+        "os_elapsed_ns": 2210000000,
+        "os_elapsed_resolution_ns": 10000000,
+        "os_time_scope": "OS time command accounting including waited-for children; rounded at reported precision",
+        "peak_rss_bytes": 38846464,
+        "returncode": 0,
+        "scope": "OS process high-water RSS including native startup; not retained heap or an RSS bound",
+        "system": "Darwin",
+        "system_cpu_ns": 20000000,
+        "user_cpu_ns": 200000000
+      }
+    },
+    {
+      "tag": "pair-1-after-roots",
+      "variant": "after",
+      "role": "functional",
+      "arguments": [
+        "--root-scale"
+      ],
+      "supervised_elapsed_ns": 259516291,
+      "returncode": 0,
+      "stdout": "pair-1-after-roots.stdout",
+      "stdout_sha256": "465f90f01e312984a0da695716a5489263ab5c1e9d856d1e2e64f26337ed836a",
+      "stderr": "pair-1-after-roots.stderr",
+      "resource": {
+        "architecture": "arm64",
+        "arguments": [
+          "--root-scale"
+        ],
+        "elapsed_ns": 54656458,
+        "executable": "/private/tmp/cedar-architecture-audit-20261030/.lake/build/dataflow-migration/after-functional-reuse",
+        "executable_sha256": "5f4d122b00da81cb37f9eebc0ac9e5bb51a43a76d65eae4176ec5a19599c5452",
+        "format": "cedar-poo-native-process-v1",
+        "os_elapsed_ns": 40000000,
+        "os_elapsed_resolution_ns": 10000000,
+        "os_time_scope": "OS time command accounting including waited-for children; rounded at reported precision",
+        "peak_rss_bytes": 38944768,
+        "returncode": 0,
+        "scope": "OS process high-water RSS including native startup; not retained heap or an RSS bound",
+        "system": "Darwin",
+        "system_cpu_ns": 0,
+        "user_cpu_ns": 30000000
+      }
+    },
+    {
+      "tag": "pair-1-after-catalog",
+      "variant": "after",
+      "role": "producer",
+      "arguments": [
+        "catalog"
+      ],
+      "supervised_elapsed_ns": 2024768625,
+      "returncode": 0,
+      "stdout": "pair-1-after-catalog.stdout",
+      "stdout_sha256": "ae43e5c709b31f8fd7dcedd391a5218e5a7af05166e16cce846ef0a2508f7875",
+      "stderr": "pair-1-after-catalog.stderr",
+      "resource": {
+        "architecture": "arm64",
+        "arguments": [
+          "catalog"
+        ],
+        "elapsed_ns": 1879740792,
+        "executable": "/private/tmp/cedar-architecture-audit-20261030/.lake/build/dataflow-migration/after-case-manifests",
+        "executable_sha256": "11544af7250c15900213f4045fcb9397088fa187758240b86f8694d9425dee4c",
+        "format": "cedar-poo-native-process-v1",
+        "os_elapsed_ns": 1860000000,
+        "os_elapsed_resolution_ns": 10000000,
+        "os_time_scope": "OS time command accounting including waited-for children; rounded at reported precision",
+        "peak_rss_bytes": 69173248,
+        "returncode": 0,
+        "scope": "OS process high-water RSS including native startup; not retained heap or an RSS bound",
+        "system": "Darwin",
+        "system_cpu_ns": 30000000,
+        "user_cpu_ns": 190000000
+      }
+    },
+    {
+      "tag": "pair-1-after-replay",
+      "variant": "after",
+      "role": "bridge",
+      "arguments": [
+        "replay-catalog"
+      ],
+      "supervised_elapsed_ns": 2146643542,
+      "returncode": 0,
+      "stdout": "pair-1-after-replay.stdout",
+      "stdout_sha256": "f2de8a782d2ebeb4acf294e40e96dad8c9dce55391d2c536e07d60fa4c017293",
+      "stderr": "pair-1-after-replay.stderr",
+      "resource": {
+        "architecture": "arm64",
+        "arguments": [
+          "replay-catalog"
+        ],
+        "elapsed_ns": 2070868000,
+        "executable": "/private/tmp/cedar-architecture-audit-20261030/.lake/build/dataflow-migration/after-bridge",
+        "executable_sha256": "0466a55215a6f597c2fc78e272bf4accdd21f982ec88cf14bc7692e5b89c8a80",
+        "format": "cedar-poo-native-process-v1",
+        "os_elapsed_ns": 2060000000,
+        "os_elapsed_resolution_ns": 10000000,
+        "os_time_scope": "OS time command accounting including waited-for children; rounded at reported precision",
+        "peak_rss_bytes": 124928000,
+        "returncode": 0,
+        "scope": "OS process high-water RSS including native startup; not retained heap or an RSS bound",
+        "system": "Darwin",
+        "system_cpu_ns": 20000000,
+        "user_cpu_ns": 470000000
+      }
+    },
+    {
+      "tag": "pair-1-after-benchmark",
+      "variant": "after",
+      "role": "bridge",
+      "arguments": [
+        "benchmark-catalog"
+      ],
+      "supervised_elapsed_ns": 4111305125,
+      "returncode": 0,
+      "stdout": "pair-1-after-benchmark.stdout",
+      "stdout_sha256": "c8a10b667cc1bd4b89a962dd481f016cd4fac1cadcfc0498ba0eace8804b033c",
+      "stderr": "pair-1-after-benchmark.stderr",
+      "resource": {
+        "architecture": "arm64",
+        "arguments": [
+          "benchmark-catalog"
+        ],
+        "elapsed_ns": 3988934125,
+        "executable": "/private/tmp/cedar-architecture-audit-20261030/.lake/build/dataflow-migration/after-bridge",
+        "executable_sha256": "0466a55215a6f597c2fc78e272bf4accdd21f982ec88cf14bc7692e5b89c8a80",
+        "format": "cedar-poo-native-process-v1",
+        "os_elapsed_ns": 3980000000,
+        "os_elapsed_resolution_ns": 10000000,
+        "os_time_scope": "OS time command accounting including waited-for children; rounded at reported precision",
+        "peak_rss_bytes": 129892352,
+        "returncode": 0,
+        "scope": "OS process high-water RSS including native startup; not retained heap or an RSS bound",
+        "system": "Darwin",
+        "system_cpu_ns": 50000000,
+        "user_cpu_ns": 1810000000
+      }
+    },
+    {
+      "tag": "pair-2-after-objects",
+      "variant": "after",
+      "role": "profiles",
+      "arguments": [],
+      "supervised_elapsed_ns": 1097728375,
+      "returncode": 0,
+      "stdout": "pair-2-after-objects.stdout",
+      "stdout_sha256": "f0c919c897d7bc0dfc38351f0e02092f42e671ae3ba48de169fb5293512a02d4",
+      "stderr": "pair-2-after-objects.stderr",
+      "resource": {
+        "architecture": "arm64",
+        "arguments": [],
+        "elapsed_ns": 772465875,
+        "executable": "/private/tmp/cedar-architecture-audit-20261030/.lake/build/dataflow-migration/after-object-profiles",
+        "executable_sha256": "c0bc540fce9b2558475ab6bcb95d81a483ba6b45d2e3f9318be2a7cebe8a40d0",
+        "format": "cedar-poo-native-process-v1",
+        "os_elapsed_ns": 760000000,
+        "os_elapsed_resolution_ns": 10000000,
+        "os_time_scope": "OS time command accounting including waited-for children; rounded at reported precision",
+        "peak_rss_bytes": 40910848,
+        "returncode": 0,
+        "scope": "OS process high-water RSS including native startup; not retained heap or an RSS bound",
+        "system": "Darwin",
+        "system_cpu_ns": 10000000,
+        "user_cpu_ns": 260000000
+      }
+    },
+    {
+      "tag": "pair-2-after-functional",
+      "variant": "after",
+      "role": "functional",
+      "arguments": [
+        "CrossAgentGoverned"
+      ],
+      "supervised_elapsed_ns": 903265958,
+      "returncode": 0,
+      "stdout": "pair-2-after-functional.stdout",
+      "stdout_sha256": "a8017ff6d6559ccebeaa21bbd644486587f36fa6710bfda7cfc1ab4684202c71",
+      "stderr": "pair-2-after-functional.stderr",
+      "resource": {
+        "architecture": "arm64",
+        "arguments": [
+          "CrossAgentGoverned"
+        ],
+        "elapsed_ns": 659645916,
+        "executable": "/private/tmp/cedar-architecture-audit-20261030/.lake/build/dataflow-migration/after-functional-reuse",
+        "executable_sha256": "5f4d122b00da81cb37f9eebc0ac9e5bb51a43a76d65eae4176ec5a19599c5452",
+        "format": "cedar-poo-native-process-v1",
+        "os_elapsed_ns": 650000000,
+        "os_elapsed_resolution_ns": 10000000,
+        "os_time_scope": "OS time command accounting including waited-for children; rounded at reported precision",
+        "peak_rss_bytes": 38797312,
+        "returncode": 0,
+        "scope": "OS process high-water RSS including native startup; not retained heap or an RSS bound",
+        "system": "Darwin",
+        "system_cpu_ns": 10000000,
+        "user_cpu_ns": 210000000
+      }
+    },
+    {
+      "tag": "pair-2-after-roots",
+      "variant": "after",
+      "role": "functional",
+      "arguments": [
+        "--root-scale"
+      ],
+      "supervised_elapsed_ns": 464950917,
+      "returncode": 0,
+      "stdout": "pair-2-after-roots.stdout",
+      "stdout_sha256": "42e372045bbfc105f139e9a5682d4b303d3a8a4eb92d86632ffbf5585105c189",
+      "stderr": "pair-2-after-roots.stderr",
+      "resource": {
+        "architecture": "arm64",
+        "arguments": [
+          "--root-scale"
+        ],
+        "elapsed_ns": 146941291,
+        "executable": "/private/tmp/cedar-architecture-audit-20261030/.lake/build/dataflow-migration/after-functional-reuse",
+        "executable_sha256": "5f4d122b00da81cb37f9eebc0ac9e5bb51a43a76d65eae4176ec5a19599c5452",
+        "format": "cedar-poo-native-process-v1",
+        "os_elapsed_ns": 130000000,
+        "os_elapsed_resolution_ns": 10000000,
+        "os_time_scope": "OS time command accounting including waited-for children; rounded at reported precision",
+        "peak_rss_bytes": 39010304,
+        "returncode": 0,
+        "scope": "OS process high-water RSS including native startup; not retained heap or an RSS bound",
+        "system": "Darwin",
+        "system_cpu_ns": 0,
+        "user_cpu_ns": 30000000
+      }
+    },
+    {
+      "tag": "pair-2-after-catalog",
+      "variant": "after",
+      "role": "producer",
+      "arguments": [
+        "catalog"
+      ],
+      "supervised_elapsed_ns": 1526879458,
+      "returncode": 0,
+      "stdout": "pair-2-after-catalog.stdout",
+      "stdout_sha256": "ae43e5c709b31f8fd7dcedd391a5218e5a7af05166e16cce846ef0a2508f7875",
+      "stderr": "pair-2-after-catalog.stderr",
+      "resource": {
+        "architecture": "arm64",
+        "arguments": [
+          "catalog"
+        ],
+        "elapsed_ns": 1074254875,
+        "executable": "/private/tmp/cedar-architecture-audit-20261030/.lake/build/dataflow-migration/after-case-manifests",
+        "executable_sha256": "11544af7250c15900213f4045fcb9397088fa187758240b86f8694d9425dee4c",
+        "format": "cedar-poo-native-process-v1",
+        "os_elapsed_ns": 1060000000,
+        "os_elapsed_resolution_ns": 10000000,
+        "os_time_scope": "OS time command accounting including waited-for children; rounded at reported precision",
+        "peak_rss_bytes": 69222400,
+        "returncode": 0,
+        "scope": "OS process high-water RSS including native startup; not retained heap or an RSS bound",
+        "system": "Darwin",
+        "system_cpu_ns": 10000000,
+        "user_cpu_ns": 200000000
+      }
+    },
+    {
+      "tag": "pair-2-after-replay",
+      "variant": "after",
+      "role": "bridge",
+      "arguments": [
+        "replay-catalog"
+      ],
+      "supervised_elapsed_ns": 3558674875,
+      "returncode": 0,
+      "stdout": "pair-2-after-replay.stdout",
+      "stdout_sha256": "f2de8a782d2ebeb4acf294e40e96dad8c9dce55391d2c536e07d60fa4c017293",
+      "stderr": "pair-2-after-replay.stderr",
+      "resource": {
+        "architecture": "arm64",
+        "arguments": [
+          "replay-catalog"
+        ],
+        "elapsed_ns": 3393709708,
+        "executable": "/private/tmp/cedar-architecture-audit-20261030/.lake/build/dataflow-migration/after-bridge",
+        "executable_sha256": "0466a55215a6f597c2fc78e272bf4accdd21f982ec88cf14bc7692e5b89c8a80",
+        "format": "cedar-poo-native-process-v1",
+        "os_elapsed_ns": 3380000000,
+        "os_elapsed_resolution_ns": 10000000,
+        "os_time_scope": "OS time command accounting including waited-for children; rounded at reported precision",
+        "peak_rss_bytes": 125763584,
+        "returncode": 0,
+        "scope": "OS process high-water RSS including native startup; not retained heap or an RSS bound",
+        "system": "Darwin",
+        "system_cpu_ns": 30000000,
+        "user_cpu_ns": 550000000
+      }
+    },
+    {
+      "tag": "pair-2-after-benchmark",
+      "variant": "after",
+      "role": "bridge",
+      "arguments": [
+        "benchmark-catalog"
+      ],
+      "supervised_elapsed_ns": 8026640375,
+      "returncode": 0,
+      "stdout": "pair-2-after-benchmark.stdout",
+      "stdout_sha256": "ef52643562412f97658efdadaa5c8155d190c5c86cf6ed48053adda6549b2094",
+      "stderr": "pair-2-after-benchmark.stderr",
+      "resource": {
+        "architecture": "arm64",
+        "arguments": [
+          "benchmark-catalog"
+        ],
+        "elapsed_ns": 7929795333,
+        "executable": "/private/tmp/cedar-architecture-audit-20261030/.lake/build/dataflow-migration/after-bridge",
+        "executable_sha256": "0466a55215a6f597c2fc78e272bf4accdd21f982ec88cf14bc7692e5b89c8a80",
+        "format": "cedar-poo-native-process-v1",
+        "os_elapsed_ns": 7920000000,
+        "os_elapsed_resolution_ns": 10000000,
+        "os_time_scope": "OS time command accounting including waited-for children; rounded at reported precision",
+        "peak_rss_bytes": 129482752,
+        "returncode": 0,
+        "scope": "OS process high-water RSS including native startup; not retained heap or an RSS bound",
+        "system": "Darwin",
+        "system_cpu_ns": 60000000,
+        "user_cpu_ns": 2090000000
+      }
+    },
+    {
+      "tag": "pair-2-before-objects",
+      "variant": "before",
+      "role": "profiles",
+      "arguments": [],
+      "supervised_elapsed_ns": 542114958,
+      "returncode": 0,
+      "stdout": "pair-2-before-objects.stdout",
+      "stdout_sha256": "56fc074f3638f07da38e73b17fe0694c6c396b25e316cbbe8bcb6a6ca29345af",
+      "stderr": "pair-2-before-objects.stderr",
+      "resource": {
+        "architecture": "arm64",
+        "arguments": [],
+        "elapsed_ns": 355058834,
+        "executable": "/private/tmp/cedar-architecture-audit-20261030/.lake/build/dataflow-migration/before-object-profiles",
+        "executable_sha256": "624e21731017f2e2c67f4b004386c5317164128d459856ec5c98badd56463357",
+        "format": "cedar-poo-native-process-v1",
+        "os_elapsed_ns": 340000000,
+        "os_elapsed_resolution_ns": 10000000,
+        "os_time_scope": "OS time command accounting including waited-for children; rounded at reported precision",
+        "peak_rss_bytes": 41205760,
+        "returncode": 0,
+        "scope": "OS process high-water RSS including native startup; not retained heap or an RSS bound",
+        "system": "Darwin",
+        "system_cpu_ns": 30000000,
+        "user_cpu_ns": 210000000
+      }
+    },
+    {
+      "tag": "pair-2-before-functional",
+      "variant": "before",
+      "role": "functional",
+      "arguments": [
+        "CrossAgentGoverned"
+      ],
+      "supervised_elapsed_ns": 560967042,
+      "returncode": 0,
+      "stdout": "pair-2-before-functional.stdout",
+      "stdout_sha256": "a7def5189ae5534fd80ce1990ac70f80ee637884da8981c366651b26de70cbcc",
+      "stderr": "pair-2-before-functional.stderr",
+      "resource": {
+        "architecture": "arm64",
+        "arguments": [
+          "CrossAgentGoverned"
+        ],
+        "elapsed_ns": 440933083,
+        "executable": "/private/tmp/cedar-architecture-audit-20261030/.lake/build/dataflow-migration/before-functional-reuse",
+        "executable_sha256": "5f4d122b00da81cb37f9eebc0ac9e5bb51a43a76d65eae4176ec5a19599c5452",
+        "format": "cedar-poo-native-process-v1",
+        "os_elapsed_ns": 430000000,
+        "os_elapsed_resolution_ns": 10000000,
+        "os_time_scope": "OS time command accounting including waited-for children; rounded at reported precision",
+        "peak_rss_bytes": 38830080,
+        "returncode": 0,
+        "scope": "OS process high-water RSS including native startup; not retained heap or an RSS bound",
+        "system": "Darwin",
+        "system_cpu_ns": 30000000,
+        "user_cpu_ns": 240000000
+      }
+    },
+    {
+      "tag": "pair-2-before-roots",
+      "variant": "before",
+      "role": "functional",
+      "arguments": [
+        "--root-scale"
+      ],
+      "supervised_elapsed_ns": 174147500,
+      "returncode": 0,
+      "stdout": "pair-2-before-roots.stdout",
+      "stdout_sha256": "fc2a239c325c3e4ec8ad8c84630fb2e2cf1c6928ba48d3399a537013abf2d76a",
+      "stderr": "pair-2-before-roots.stderr",
+      "resource": {
+        "architecture": "arm64",
+        "arguments": [
+          "--root-scale"
+        ],
+        "elapsed_ns": 58617875,
+        "executable": "/private/tmp/cedar-architecture-audit-20261030/.lake/build/dataflow-migration/before-functional-reuse",
+        "executable_sha256": "5f4d122b00da81cb37f9eebc0ac9e5bb51a43a76d65eae4176ec5a19599c5452",
+        "format": "cedar-poo-native-process-v1",
+        "os_elapsed_ns": 50000000,
+        "os_elapsed_resolution_ns": 10000000,
+        "os_time_scope": "OS time command accounting including waited-for children; rounded at reported precision",
+        "peak_rss_bytes": 39010304,
+        "returncode": 0,
+        "scope": "OS process high-water RSS including native startup; not retained heap or an RSS bound",
+        "system": "Darwin",
+        "system_cpu_ns": 0,
+        "user_cpu_ns": 30000000
+      }
+    },
+    {
+      "tag": "pair-2-before-catalog",
+      "variant": "before",
+      "role": "producer",
+      "arguments": [
+        "catalog"
+      ],
+      "supervised_elapsed_ns": 382902917,
+      "returncode": 0,
+      "stdout": "pair-2-before-catalog.stdout",
+      "stdout_sha256": "ae43e5c709b31f8fd7dcedd391a5218e5a7af05166e16cce846ef0a2508f7875",
+      "stderr": "pair-2-before-catalog.stderr",
+      "resource": {
+        "architecture": "arm64",
+        "arguments": [
+          "catalog"
+        ],
+        "elapsed_ns": 242154958,
+        "executable": "/private/tmp/cedar-architecture-audit-20261030/.lake/build/dataflow-migration/before-case-manifests",
+        "executable_sha256": "8e757f36e437ebd765d12789d5f3d6ce5fcfae8fe4cfeea754b9f846537168d6",
+        "format": "cedar-poo-native-process-v1",
+        "os_elapsed_ns": 230000000,
+        "os_elapsed_resolution_ns": 10000000,
+        "os_time_scope": "OS time command accounting including waited-for children; rounded at reported precision",
+        "peak_rss_bytes": 68878336,
+        "returncode": 0,
+        "scope": "OS process high-water RSS including native startup; not retained heap or an RSS bound",
+        "system": "Darwin",
+        "system_cpu_ns": 30000000,
+        "user_cpu_ns": 160000000
+      }
+    },
+    {
+      "tag": "pair-2-before-replay",
+      "variant": "before",
+      "role": "bridge",
+      "arguments": [
+        "replay-catalog"
+      ],
+      "supervised_elapsed_ns": 2847153958,
+      "returncode": 0,
+      "stdout": "pair-2-before-replay.stdout",
+      "stdout_sha256": "f2de8a782d2ebeb4acf294e40e96dad8c9dce55391d2c536e07d60fa4c017293",
+      "stderr": "pair-2-before-replay.stderr",
+      "resource": {
+        "architecture": "arm64",
+        "arguments": [
+          "replay-catalog"
+        ],
+        "elapsed_ns": 2776877458,
+        "executable": "/private/tmp/cedar-architecture-audit-20261030/.lake/build/dataflow-migration/before-bridge",
+        "executable_sha256": "0466a55215a6f597c2fc78e272bf4accdd21f982ec88cf14bc7692e5b89c8a80",
+        "format": "cedar-poo-native-process-v1",
+        "os_elapsed_ns": 2760000000,
+        "os_elapsed_resolution_ns": 10000000,
+        "os_time_scope": "OS time command accounting including waited-for children; rounded at reported precision",
+        "peak_rss_bytes": 125485056,
+        "returncode": 0,
+        "scope": "OS process high-water RSS including native startup; not retained heap or an RSS bound",
+        "system": "Darwin",
+        "system_cpu_ns": 30000000,
+        "user_cpu_ns": 490000000
+      }
+    },
+    {
+      "tag": "pair-2-before-benchmark",
+      "variant": "before",
+      "role": "bridge",
+      "arguments": [
+        "benchmark-catalog"
+      ],
+      "supervised_elapsed_ns": 11513652541,
+      "returncode": 0,
+      "stdout": "pair-2-before-benchmark.stdout",
+      "stdout_sha256": "5d723a7c1425ef406e96fb88433fc8cf6a42946e23408711f04b9035f1e37832",
+      "stderr": "pair-2-before-benchmark.stderr",
+      "resource": {
+        "architecture": "arm64",
+        "arguments": [
+          "benchmark-catalog"
+        ],
+        "elapsed_ns": 11409412667,
+        "executable": "/private/tmp/cedar-architecture-audit-20261030/.lake/build/dataflow-migration/before-bridge",
+        "executable_sha256": "0466a55215a6f597c2fc78e272bf4accdd21f982ec88cf14bc7692e5b89c8a80",
+        "format": "cedar-poo-native-process-v1",
+        "os_elapsed_ns": 11390000000,
+        "os_elapsed_resolution_ns": 10000000,
+        "os_time_scope": "OS time command accounting including waited-for children; rounded at reported precision",
+        "peak_rss_bytes": 129466368,
+        "returncode": 0,
+        "scope": "OS process high-water RSS including native startup; not retained heap or an RSS bound",
+        "system": "Darwin",
+        "system_cpu_ns": 70000000,
+        "user_cpu_ns": 2220000000
+      }
+    },
+    {
+      "tag": "pair-3-before-objects",
+      "variant": "before",
+      "role": "profiles",
+      "arguments": [],
+      "supervised_elapsed_ns": 1391658667,
+      "returncode": 0,
+      "stdout": "pair-3-before-objects.stdout",
+      "stdout_sha256": "ac15a6fe626c22d4f390d9faf9de4765e9f80ed1298570a8583bb6ad790d644d",
+      "stderr": "pair-3-before-objects.stderr",
+      "resource": {
+        "architecture": "arm64",
+        "arguments": [],
+        "elapsed_ns": 1064118583,
+        "executable": "/private/tmp/cedar-architecture-audit-20261030/.lake/build/dataflow-migration/before-object-profiles",
+        "executable_sha256": "624e21731017f2e2c67f4b004386c5317164128d459856ec5c98badd56463357",
+        "format": "cedar-poo-native-process-v1",
+        "os_elapsed_ns": 1040000000,
+        "os_elapsed_resolution_ns": 10000000,
+        "os_time_scope": "OS time command accounting including waited-for children; rounded at reported precision",
+        "peak_rss_bytes": 41172992,
+        "returncode": 0,
+        "scope": "OS process high-water RSS including native startup; not retained heap or an RSS bound",
+        "system": "Darwin",
+        "system_cpu_ns": 30000000,
+        "user_cpu_ns": 220000000
+      }
+    },
+    {
+      "tag": "pair-3-before-functional",
+      "variant": "before",
+      "role": "functional",
+      "arguments": [
+        "CrossAgentGoverned"
+      ],
+      "supervised_elapsed_ns": 921113584,
+      "returncode": 0,
+      "stdout": "pair-3-before-functional.stdout",
+      "stdout_sha256": "63ae96dd1fd49b8a2cf8345a9d584256531b670e1a399a15c2cf0b90559bca0b",
+      "stderr": "pair-3-before-functional.stderr",
+      "resource": {
+        "architecture": "arm64",
+        "arguments": [
+          "CrossAgentGoverned"
+        ],
+        "elapsed_ns": 655356542,
+        "executable": "/private/tmp/cedar-architecture-audit-20261030/.lake/build/dataflow-migration/before-functional-reuse",
+        "executable_sha256": "5f4d122b00da81cb37f9eebc0ac9e5bb51a43a76d65eae4176ec5a19599c5452",
+        "format": "cedar-poo-native-process-v1",
+        "os_elapsed_ns": 640000000,
+        "os_elapsed_resolution_ns": 10000000,
+        "os_time_scope": "OS time command accounting including waited-for children; rounded at reported precision",
+        "peak_rss_bytes": 38846464,
+        "returncode": 0,
+        "scope": "OS process high-water RSS including native startup; not retained heap or an RSS bound",
+        "system": "Darwin",
+        "system_cpu_ns": 20000000,
+        "user_cpu_ns": 210000000
+      }
+    },
+    {
+      "tag": "pair-3-before-roots",
+      "variant": "before",
+      "role": "functional",
+      "arguments": [
+        "--root-scale"
+      ],
+      "supervised_elapsed_ns": 254302625,
+      "returncode": 0,
+      "stdout": "pair-3-before-roots.stdout",
+      "stdout_sha256": "a8f79aad209472216f2654e3c72d0f4de248f459eb93b0925a43fb80e8203041",
+      "stderr": "pair-3-before-roots.stderr",
+      "resource": {
+        "architecture": "arm64",
+        "arguments": [
+          "--root-scale"
+        ],
+        "elapsed_ns": 51848167,
+        "executable": "/private/tmp/cedar-architecture-audit-20261030/.lake/build/dataflow-migration/before-functional-reuse",
+        "executable_sha256": "5f4d122b00da81cb37f9eebc0ac9e5bb51a43a76d65eae4176ec5a19599c5452",
+        "format": "cedar-poo-native-process-v1",
+        "os_elapsed_ns": 40000000,
+        "os_elapsed_resolution_ns": 10000000,
+        "os_time_scope": "OS time command accounting including waited-for children; rounded at reported precision",
+        "peak_rss_bytes": 38862848,
+        "returncode": 0,
+        "scope": "OS process high-water RSS including native startup; not retained heap or an RSS bound",
+        "system": "Darwin",
+        "system_cpu_ns": 0,
+        "user_cpu_ns": 20000000
+      }
+    },
+    {
+      "tag": "pair-3-before-catalog",
+      "variant": "before",
+      "role": "producer",
+      "arguments": [
+        "catalog"
+      ],
+      "supervised_elapsed_ns": 938874625,
+      "returncode": 0,
+      "stdout": "pair-3-before-catalog.stdout",
+      "stdout_sha256": "ae43e5c709b31f8fd7dcedd391a5218e5a7af05166e16cce846ef0a2508f7875",
+      "stderr": "pair-3-before-catalog.stderr",
+      "resource": {
+        "architecture": "arm64",
+        "arguments": [
+          "catalog"
+        ],
+        "elapsed_ns": 737955000,
+        "executable": "/private/tmp/cedar-architecture-audit-20261030/.lake/build/dataflow-migration/before-case-manifests",
+        "executable_sha256": "8e757f36e437ebd765d12789d5f3d6ce5fcfae8fe4cfeea754b9f846537168d6",
+        "format": "cedar-poo-native-process-v1",
+        "os_elapsed_ns": 710000000,
+        "os_elapsed_resolution_ns": 10000000,
+        "os_time_scope": "OS time command accounting including waited-for children; rounded at reported precision",
+        "peak_rss_bytes": 69042176,
+        "returncode": 0,
+        "scope": "OS process high-water RSS including native startup; not retained heap or an RSS bound",
+        "system": "Darwin",
+        "system_cpu_ns": 40000000,
+        "user_cpu_ns": 190000000
+      }
+    },
+    {
+      "tag": "pair-3-before-replay",
+      "variant": "before",
+      "role": "bridge",
+      "arguments": [
+        "replay-catalog"
+      ],
+      "supervised_elapsed_ns": 3229495833,
+      "returncode": 0,
+      "stdout": "pair-3-before-replay.stdout",
+      "stdout_sha256": "f2de8a782d2ebeb4acf294e40e96dad8c9dce55391d2c536e07d60fa4c017293",
+      "stderr": "pair-3-before-replay.stderr",
+      "resource": {
+        "architecture": "arm64",
+        "arguments": [
+          "replay-catalog"
+        ],
+        "elapsed_ns": 2998721583,
+        "executable": "/private/tmp/cedar-architecture-audit-20261030/.lake/build/dataflow-migration/before-bridge",
+        "executable_sha256": "0466a55215a6f597c2fc78e272bf4accdd21f982ec88cf14bc7692e5b89c8a80",
+        "format": "cedar-poo-native-process-v1",
+        "os_elapsed_ns": 2980000000,
+        "os_elapsed_resolution_ns": 10000000,
+        "os_time_scope": "OS time command accounting including waited-for children; rounded at reported precision",
+        "peak_rss_bytes": 121864192,
+        "returncode": 0,
+        "scope": "OS process high-water RSS including native startup; not retained heap or an RSS bound",
+        "system": "Darwin",
+        "system_cpu_ns": 100000000,
+        "user_cpu_ns": 600000000
+      }
+    },
+    {
+      "tag": "pair-3-before-benchmark",
+      "variant": "before",
+      "role": "bridge",
+      "arguments": [
+        "benchmark-catalog"
+      ],
+      "supervised_elapsed_ns": 9596497458,
+      "returncode": 0,
+      "stdout": "pair-3-before-benchmark.stdout",
+      "stdout_sha256": "71c5279586123fbfee281bfbd20e174d5c23bc49779ba63bfcdfffea14a477ce",
+      "stderr": "pair-3-before-benchmark.stderr",
+      "resource": {
+        "architecture": "arm64",
+        "arguments": [
+          "benchmark-catalog"
+        ],
+        "elapsed_ns": 9500361125,
+        "executable": "/private/tmp/cedar-architecture-audit-20261030/.lake/build/dataflow-migration/before-bridge",
+        "executable_sha256": "0466a55215a6f597c2fc78e272bf4accdd21f982ec88cf14bc7692e5b89c8a80",
+        "format": "cedar-poo-native-process-v1",
+        "os_elapsed_ns": 9480000000,
+        "os_elapsed_resolution_ns": 10000000,
+        "os_time_scope": "OS time command accounting including waited-for children; rounded at reported precision",
+        "peak_rss_bytes": 126435328,
+        "returncode": 0,
+        "scope": "OS process high-water RSS including native startup; not retained heap or an RSS bound",
+        "system": "Darwin",
+        "system_cpu_ns": 80000000,
+        "user_cpu_ns": 2180000000
+      }
+    },
+    {
+      "tag": "pair-3-after-objects",
+      "variant": "after",
+      "role": "profiles",
+      "arguments": [],
+      "supervised_elapsed_ns": 1235199583,
+      "returncode": 0,
+      "stdout": "pair-3-after-objects.stdout",
+      "stdout_sha256": "b866da83bfbc846d5c52b9b67e12ef74277e9429426318d493f915de499a0952",
+      "stderr": "pair-3-after-objects.stderr",
+      "resource": {
+        "architecture": "arm64",
+        "arguments": [],
+        "elapsed_ns": 949681833,
+        "executable": "/private/tmp/cedar-architecture-audit-20261030/.lake/build/dataflow-migration/after-object-profiles",
+        "executable_sha256": "c0bc540fce9b2558475ab6bcb95d81a483ba6b45d2e3f9318be2a7cebe8a40d0",
+        "format": "cedar-poo-native-process-v1",
+        "os_elapsed_ns": 930000000,
+        "os_elapsed_resolution_ns": 10000000,
+        "os_time_scope": "OS time command accounting including waited-for children; rounded at reported precision",
+        "peak_rss_bytes": 40861696,
+        "returncode": 0,
+        "scope": "OS process high-water RSS including native startup; not retained heap or an RSS bound",
+        "system": "Darwin",
+        "system_cpu_ns": 30000000,
+        "user_cpu_ns": 270000000
+      }
+    },
+    {
+      "tag": "pair-3-after-functional",
+      "variant": "after",
+      "role": "functional",
+      "arguments": [
+        "CrossAgentGoverned"
+      ],
+      "supervised_elapsed_ns": 837951791,
+      "returncode": 0,
+      "stdout": "pair-3-after-functional.stdout",
+      "stdout_sha256": "737efaacd800883687c551cc5d499407cf53cfb71a549d053aafecc2c622b678",
+      "stderr": "pair-3-after-functional.stderr",
+      "resource": {
+        "architecture": "arm64",
+        "arguments": [
+          "CrossAgentGoverned"
+        ],
+        "elapsed_ns": 635806375,
+        "executable": "/private/tmp/cedar-architecture-audit-20261030/.lake/build/dataflow-migration/after-functional-reuse",
+        "executable_sha256": "5f4d122b00da81cb37f9eebc0ac9e5bb51a43a76d65eae4176ec5a19599c5452",
+        "format": "cedar-poo-native-process-v1",
+        "os_elapsed_ns": 620000000,
+        "os_elapsed_resolution_ns": 10000000,
+        "os_time_scope": "OS time command accounting including waited-for children; rounded at reported precision",
+        "peak_rss_bytes": 38764544,
+        "returncode": 0,
+        "scope": "OS process high-water RSS including native startup; not retained heap or an RSS bound",
+        "system": "Darwin",
+        "system_cpu_ns": 20000000,
+        "user_cpu_ns": 220000000
+      }
+    },
+    {
+      "tag": "pair-3-after-roots",
+      "variant": "after",
+      "role": "functional",
+      "arguments": [
+        "--root-scale"
+      ],
+      "supervised_elapsed_ns": 230962458,
+      "returncode": 0,
+      "stdout": "pair-3-after-roots.stdout",
+      "stdout_sha256": "d5a1d494575f5a372080b89acd6591f775b21dea8c176c5347b96bd6283827cf",
+      "stderr": "pair-3-after-roots.stderr",
+      "resource": {
+        "architecture": "arm64",
+        "arguments": [
+          "--root-scale"
+        ],
+        "elapsed_ns": 50018833,
+        "executable": "/private/tmp/cedar-architecture-audit-20261030/.lake/build/dataflow-migration/after-functional-reuse",
+        "executable_sha256": "5f4d122b00da81cb37f9eebc0ac9e5bb51a43a76d65eae4176ec5a19599c5452",
+        "format": "cedar-poo-native-process-v1",
+        "os_elapsed_ns": 40000000,
+        "os_elapsed_resolution_ns": 10000000,
+        "os_time_scope": "OS time command accounting including waited-for children; rounded at reported precision",
+        "peak_rss_bytes": 38928384,
+        "returncode": 0,
+        "scope": "OS process high-water RSS including native startup; not retained heap or an RSS bound",
+        "system": "Darwin",
+        "system_cpu_ns": 0,
+        "user_cpu_ns": 30000000
+      }
+    },
+    {
+      "tag": "pair-3-after-catalog",
+      "variant": "after",
+      "role": "producer",
+      "arguments": [
+        "catalog"
+      ],
+      "supervised_elapsed_ns": 763961833,
+      "returncode": 0,
+      "stdout": "pair-3-after-catalog.stdout",
+      "stdout_sha256": "ae43e5c709b31f8fd7dcedd391a5218e5a7af05166e16cce846ef0a2508f7875",
+      "stderr": "pair-3-after-catalog.stderr",
+      "resource": {
+        "architecture": "arm64",
+        "arguments": [
+          "catalog"
+        ],
+        "elapsed_ns": 460945250,
+        "executable": "/private/tmp/cedar-architecture-audit-20261030/.lake/build/dataflow-migration/after-case-manifests",
+        "executable_sha256": "11544af7250c15900213f4045fcb9397088fa187758240b86f8694d9425dee4c",
+        "format": "cedar-poo-native-process-v1",
+        "os_elapsed_ns": 440000000,
+        "os_elapsed_resolution_ns": 10000000,
+        "os_time_scope": "OS time command accounting including waited-for children; rounded at reported precision",
+        "peak_rss_bytes": 69140480,
+        "returncode": 0,
+        "scope": "OS process high-water RSS including native startup; not retained heap or an RSS bound",
+        "system": "Darwin",
+        "system_cpu_ns": 30000000,
+        "user_cpu_ns": 160000000
+      }
+    },
+    {
+      "tag": "pair-3-after-replay",
+      "variant": "after",
+      "role": "bridge",
+      "arguments": [
+        "replay-catalog"
+      ],
+      "supervised_elapsed_ns": 2670399917,
+      "returncode": 0,
+      "stdout": "pair-3-after-replay.stdout",
+      "stdout_sha256": "f2de8a782d2ebeb4acf294e40e96dad8c9dce55391d2c536e07d60fa4c017293",
+      "stderr": "pair-3-after-replay.stderr",
+      "resource": {
+        "architecture": "arm64",
+        "arguments": [
+          "replay-catalog"
+        ],
+        "elapsed_ns": 2577914792,
+        "executable": "/private/tmp/cedar-architecture-audit-20261030/.lake/build/dataflow-migration/after-bridge",
+        "executable_sha256": "0466a55215a6f597c2fc78e272bf4accdd21f982ec88cf14bc7692e5b89c8a80",
+        "format": "cedar-poo-native-process-v1",
+        "os_elapsed_ns": 2560000000,
+        "os_elapsed_resolution_ns": 10000000,
+        "os_time_scope": "OS time command accounting including waited-for children; rounded at reported precision",
+        "peak_rss_bytes": 121683968,
+        "returncode": 0,
+        "scope": "OS process high-water RSS including native startup; not retained heap or an RSS bound",
+        "system": "Darwin",
+        "system_cpu_ns": 60000000,
+        "user_cpu_ns": 540000000
+      }
+    },
+    {
+      "tag": "pair-3-after-benchmark",
+      "variant": "after",
+      "role": "bridge",
+      "arguments": [
+        "benchmark-catalog"
+      ],
+      "supervised_elapsed_ns": 6863451958,
+      "returncode": 0,
+      "stdout": "pair-3-after-benchmark.stdout",
+      "stdout_sha256": "d5d9ac2b6fd1b5c43b073e4215d4b8f0c1cf15d643cd1b27bdc8efe44edd6001",
+      "stderr": "pair-3-after-benchmark.stderr",
+      "resource": {
+        "architecture": "arm64",
+        "arguments": [
+          "benchmark-catalog"
+        ],
+        "elapsed_ns": 6728363417,
+        "executable": "/private/tmp/cedar-architecture-audit-20261030/.lake/build/dataflow-migration/after-bridge",
+        "executable_sha256": "0466a55215a6f597c2fc78e272bf4accdd21f982ec88cf14bc7692e5b89c8a80",
+        "format": "cedar-poo-native-process-v1",
+        "os_elapsed_ns": 6710000000,
+        "os_elapsed_resolution_ns": 10000000,
+        "os_time_scope": "OS time command accounting including waited-for children; rounded at reported precision",
+        "peak_rss_bytes": 126746624,
+        "returncode": 0,
+        "scope": "OS process high-water RSS including native startup; not retained heap or an RSS bound",
+        "system": "Darwin",
+        "system_cpu_ns": 60000000,
+        "user_cpu_ns": 1920000000
+      }
+    },
+    {
+      "tag": "file-cohort-before-fresh-catalog",
+      "variant": "before",
+      "role": "producer",
+      "arguments": [
+        "catalog"
+      ],
+      "supervised_elapsed_ns": 1617125584,
+      "returncode": 0,
+      "stdout": "file-cohort-before-fresh-catalog.stdout",
+      "stdout_sha256": "ae43e5c709b31f8fd7dcedd391a5218e5a7af05166e16cce846ef0a2508f7875",
+      "stderr": "file-cohort-before-fresh-catalog.stderr",
+      "resource": {
+        "architecture": "arm64",
+        "arguments": [
+          "catalog"
+        ],
+        "elapsed_ns": 1464297750,
+        "executable": "/private/tmp/cedar-architecture-audit-20261030/.lake/build/dataflow-lifecycle-v1/fresh-before/producer",
+        "executable_sha256": "8e757f36e437ebd765d12789d5f3d6ce5fcfae8fe4cfeea754b9f846537168d6",
+        "format": "cedar-poo-native-process-v1",
+        "os_elapsed_ns": 1450000000,
+        "os_elapsed_resolution_ns": 10000000,
+        "os_time_scope": "OS time command accounting including waited-for children; rounded at reported precision",
+        "peak_rss_bytes": 68730880,
+        "returncode": 0,
+        "scope": "OS process high-water RSS including native startup; not retained heap or an RSS bound",
+        "system": "Darwin",
+        "system_cpu_ns": 30000000,
+        "user_cpu_ns": 160000000
+      }
+    },
+    {
+      "tag": "file-cohort-before-fresh-benchmark",
+      "variant": "before",
+      "role": "bridge",
+      "arguments": [
+        "benchmark-catalog"
+      ],
+      "supervised_elapsed_ns": 4887815209,
+      "returncode": 0,
+      "stdout": "file-cohort-before-fresh-benchmark.stdout",
+      "stdout_sha256": "aa2237c1d6342d1e950d3af887a033aaa55596d6ee2962b9776994cd31961f60",
+      "stderr": "file-cohort-before-fresh-benchmark.stderr",
+      "resource": {
+        "architecture": "arm64",
+        "arguments": [
+          "benchmark-catalog"
+        ],
+        "elapsed_ns": 4819803208,
+        "executable": "/private/tmp/cedar-architecture-audit-20261030/.lake/build/dataflow-lifecycle-v1/fresh-before/bridge",
+        "executable_sha256": "0466a55215a6f597c2fc78e272bf4accdd21f982ec88cf14bc7692e5b89c8a80",
+        "format": "cedar-poo-native-process-v1",
+        "os_elapsed_ns": 4810000000,
+        "os_elapsed_resolution_ns": 10000000,
+        "os_time_scope": "OS time command accounting including waited-for children; rounded at reported precision",
+        "peak_rss_bytes": 129466368,
+        "returncode": 0,
+        "scope": "OS process high-water RSS including native startup; not retained heap or an RSS bound",
+        "system": "Darwin",
+        "system_cpu_ns": 40000000,
+        "user_cpu_ns": 1900000000
+      }
+    },
+    {
+      "tag": "file-cohort-before-repeated-1-catalog",
+      "variant": "before",
+      "role": "producer",
+      "arguments": [
+        "catalog"
+      ],
+      "supervised_elapsed_ns": 387307458,
+      "returncode": 0,
+      "stdout": "file-cohort-before-repeated-1-catalog.stdout",
+      "stdout_sha256": "ae43e5c709b31f8fd7dcedd391a5218e5a7af05166e16cce846ef0a2508f7875",
+      "stderr": "file-cohort-before-repeated-1-catalog.stderr",
+      "resource": {
+        "architecture": "arm64",
+        "arguments": [
+          "catalog"
+        ],
+        "elapsed_ns": 208608708,
+        "executable": "/private/tmp/cedar-architecture-audit-20261030/.lake/build/dataflow-lifecycle-v1/fresh-before/producer",
+        "executable_sha256": "8e757f36e437ebd765d12789d5f3d6ce5fcfae8fe4cfeea754b9f846537168d6",
+        "format": "cedar-poo-native-process-v1",
+        "os_elapsed_ns": 200000000,
+        "os_elapsed_resolution_ns": 10000000,
+        "os_time_scope": "OS time command accounting including waited-for children; rounded at reported precision",
+        "peak_rss_bytes": 68812800,
+        "returncode": 0,
+        "scope": "OS process high-water RSS including native startup; not retained heap or an RSS bound",
+        "system": "Darwin",
+        "system_cpu_ns": 10000000,
+        "user_cpu_ns": 160000000
+      }
+    },
+    {
+      "tag": "file-cohort-before-repeated-1-benchmark",
+      "variant": "before",
+      "role": "bridge",
+      "arguments": [
+        "benchmark-catalog"
+      ],
+      "supervised_elapsed_ns": 4673170333,
+      "returncode": 0,
+      "stdout": "file-cohort-before-repeated-1-benchmark.stdout",
+      "stdout_sha256": "6e824f6621298bfaed47a46ea5c6704f8330e03c1a9d8fb389ffe816e4a038a7",
+      "stderr": "file-cohort-before-repeated-1-benchmark.stderr",
+      "resource": {
+        "architecture": "arm64",
+        "arguments": [
+          "benchmark-catalog"
+        ],
+        "elapsed_ns": 4605970958,
+        "executable": "/private/tmp/cedar-architecture-audit-20261030/.lake/build/dataflow-lifecycle-v1/fresh-before/bridge",
+        "executable_sha256": "0466a55215a6f597c2fc78e272bf4accdd21f982ec88cf14bc7692e5b89c8a80",
+        "format": "cedar-poo-native-process-v1",
+        "os_elapsed_ns": 4590000000,
+        "os_elapsed_resolution_ns": 10000000,
+        "os_time_scope": "OS time command accounting including waited-for children; rounded at reported precision",
+        "peak_rss_bytes": 129662976,
+        "returncode": 0,
+        "scope": "OS process high-water RSS including native startup; not retained heap or an RSS bound",
+        "system": "Darwin",
+        "system_cpu_ns": 40000000,
+        "user_cpu_ns": 1930000000
+      }
+    },
+    {
+      "tag": "file-cohort-before-repeated-2-catalog",
+      "variant": "before",
+      "role": "producer",
+      "arguments": [
+        "catalog"
+      ],
+      "supervised_elapsed_ns": 441612000,
+      "returncode": 0,
+      "stdout": "file-cohort-before-repeated-2-catalog.stdout",
+      "stdout_sha256": "ae43e5c709b31f8fd7dcedd391a5218e5a7af05166e16cce846ef0a2508f7875",
+      "stderr": "file-cohort-before-repeated-2-catalog.stderr",
+      "resource": {
+        "architecture": "arm64",
+        "arguments": [
+          "catalog"
+        ],
+        "elapsed_ns": 256535708,
+        "executable": "/private/tmp/cedar-architecture-audit-20261030/.lake/build/dataflow-lifecycle-v1/fresh-before/producer",
+        "executable_sha256": "8e757f36e437ebd765d12789d5f3d6ce5fcfae8fe4cfeea754b9f846537168d6",
+        "format": "cedar-poo-native-process-v1",
+        "os_elapsed_ns": 240000000,
+        "os_elapsed_resolution_ns": 10000000,
+        "os_time_scope": "OS time command accounting including waited-for children; rounded at reported precision",
+        "peak_rss_bytes": 68943872,
+        "returncode": 0,
+        "scope": "OS process high-water RSS including native startup; not retained heap or an RSS bound",
+        "system": "Darwin",
+        "system_cpu_ns": 10000000,
+        "user_cpu_ns": 160000000
+      }
+    },
+    {
+      "tag": "file-cohort-before-repeated-2-benchmark",
+      "variant": "before",
+      "role": "bridge",
+      "arguments": [
+        "benchmark-catalog"
+      ],
+      "supervised_elapsed_ns": 4198188875,
+      "returncode": 0,
+      "stdout": "file-cohort-before-repeated-2-benchmark.stdout",
+      "stdout_sha256": "08e97d389cd9ae2938387b376cf283ee513f702be50cffeab34e7f1c1b30e21f",
+      "stderr": "file-cohort-before-repeated-2-benchmark.stderr",
+      "resource": {
+        "architecture": "arm64",
+        "arguments": [
+          "benchmark-catalog"
+        ],
+        "elapsed_ns": 4088944209,
+        "executable": "/private/tmp/cedar-architecture-audit-20261030/.lake/build/dataflow-lifecycle-v1/fresh-before/bridge",
+        "executable_sha256": "0466a55215a6f597c2fc78e272bf4accdd21f982ec88cf14bc7692e5b89c8a80",
+        "format": "cedar-poo-native-process-v1",
+        "os_elapsed_ns": 4080000000,
+        "os_elapsed_resolution_ns": 10000000,
+        "os_time_scope": "OS time command accounting including waited-for children; rounded at reported precision",
+        "peak_rss_bytes": 129384448,
+        "returncode": 0,
+        "scope": "OS process high-water RSS including native startup; not retained heap or an RSS bound",
+        "system": "Darwin",
+        "system_cpu_ns": 40000000,
+        "user_cpu_ns": 1950000000
+      }
+    },
+    {
+      "tag": "file-cohort-after-fresh-catalog",
+      "variant": "after",
+      "role": "producer",
+      "arguments": [
+        "catalog"
+      ],
+      "supervised_elapsed_ns": 1434167000,
+      "returncode": 0,
+      "stdout": "file-cohort-after-fresh-catalog.stdout",
+      "stdout_sha256": "ae43e5c709b31f8fd7dcedd391a5218e5a7af05166e16cce846ef0a2508f7875",
+      "stderr": "file-cohort-after-fresh-catalog.stderr",
+      "resource": {
+        "architecture": "arm64",
+        "arguments": [
+          "catalog"
+        ],
+        "elapsed_ns": 1318956042,
+        "executable": "/private/tmp/cedar-architecture-audit-20261030/.lake/build/dataflow-lifecycle-v1/fresh-after/producer",
+        "executable_sha256": "11544af7250c15900213f4045fcb9397088fa187758240b86f8694d9425dee4c",
+        "format": "cedar-poo-native-process-v1",
+        "os_elapsed_ns": 1310000000,
+        "os_elapsed_resolution_ns": 10000000,
+        "os_time_scope": "OS time command accounting including waited-for children; rounded at reported precision",
+        "peak_rss_bytes": 69042176,
+        "returncode": 0,
+        "scope": "OS process high-water RSS including native startup; not retained heap or an RSS bound",
+        "system": "Darwin",
+        "system_cpu_ns": 30000000,
+        "user_cpu_ns": 150000000
+      }
+    },
+    {
+      "tag": "file-cohort-after-fresh-benchmark",
+      "variant": "after",
+      "role": "bridge",
+      "arguments": [
+        "benchmark-catalog"
+      ],
+      "supervised_elapsed_ns": 5088851417,
+      "returncode": 0,
+      "stdout": "file-cohort-after-fresh-benchmark.stdout",
+      "stdout_sha256": "356139b90f11ce9d162f8f6acba29f5714801ab40eace0cc5631a8587d09eaab",
+      "stderr": "file-cohort-after-fresh-benchmark.stderr",
+      "resource": {
+        "architecture": "arm64",
+        "arguments": [
+          "benchmark-catalog"
+        ],
+        "elapsed_ns": 5012058292,
+        "executable": "/private/tmp/cedar-architecture-audit-20261030/.lake/build/dataflow-lifecycle-v1/fresh-after/bridge",
+        "executable_sha256": "0466a55215a6f597c2fc78e272bf4accdd21f982ec88cf14bc7692e5b89c8a80",
+        "format": "cedar-poo-native-process-v1",
+        "os_elapsed_ns": 5000000000,
+        "os_elapsed_resolution_ns": 10000000,
+        "os_time_scope": "OS time command accounting including waited-for children; rounded at reported precision",
+        "peak_rss_bytes": 129531904,
+        "returncode": 0,
+        "scope": "OS process high-water RSS including native startup; not retained heap or an RSS bound",
+        "system": "Darwin",
+        "system_cpu_ns": 40000000,
+        "user_cpu_ns": 1840000000
+      }
+    },
+    {
+      "tag": "file-cohort-after-repeated-1-catalog",
+      "variant": "after",
+      "role": "producer",
+      "arguments": [
+        "catalog"
+      ],
+      "supervised_elapsed_ns": 303727416,
+      "returncode": 0,
+      "stdout": "file-cohort-after-repeated-1-catalog.stdout",
+      "stdout_sha256": "ae43e5c709b31f8fd7dcedd391a5218e5a7af05166e16cce846ef0a2508f7875",
+      "stderr": "file-cohort-after-repeated-1-catalog.stderr",
+      "resource": {
+        "architecture": "arm64",
+        "arguments": [
+          "catalog"
+        ],
+        "elapsed_ns": 175740584,
+        "executable": "/private/tmp/cedar-architecture-audit-20261030/.lake/build/dataflow-lifecycle-v1/fresh-after/producer",
+        "executable_sha256": "11544af7250c15900213f4045fcb9397088fa187758240b86f8694d9425dee4c",
+        "format": "cedar-poo-native-process-v1",
+        "os_elapsed_ns": 170000000,
+        "os_elapsed_resolution_ns": 10000000,
+        "os_time_scope": "OS time command accounting including waited-for children; rounded at reported precision",
+        "peak_rss_bytes": 69206016,
+        "returncode": 0,
+        "scope": "OS process high-water RSS including native startup; not retained heap or an RSS bound",
+        "system": "Darwin",
+        "system_cpu_ns": 0,
+        "user_cpu_ns": 150000000
+      }
+    },
+    {
+      "tag": "file-cohort-after-repeated-1-benchmark",
+      "variant": "after",
+      "role": "bridge",
+      "arguments": [
+        "benchmark-catalog"
+      ],
+      "supervised_elapsed_ns": 2470071792,
+      "returncode": 0,
+      "stdout": "file-cohort-after-repeated-1-benchmark.stdout",
+      "stdout_sha256": "6d8a97d81b7d9fef6cd7d86e788b4ea64bf41e301669fd7f506c71459c561256",
+      "stderr": "file-cohort-after-repeated-1-benchmark.stderr",
+      "resource": {
+        "architecture": "arm64",
+        "arguments": [
+          "benchmark-catalog"
+        ],
+        "elapsed_ns": 2390802917,
+        "executable": "/private/tmp/cedar-architecture-audit-20261030/.lake/build/dataflow-lifecycle-v1/fresh-after/bridge",
+        "executable_sha256": "0466a55215a6f597c2fc78e272bf4accdd21f982ec88cf14bc7692e5b89c8a80",
+        "format": "cedar-poo-native-process-v1",
+        "os_elapsed_ns": 2380000000,
+        "os_elapsed_resolution_ns": 10000000,
+        "os_time_scope": "OS time command accounting including waited-for children; rounded at reported precision",
+        "peak_rss_bytes": 129040384,
+        "returncode": 0,
+        "scope": "OS process high-water RSS including native startup; not retained heap or an RSS bound",
+        "system": "Darwin",
+        "system_cpu_ns": 40000000,
+        "user_cpu_ns": 1790000000
+      }
+    },
+    {
+      "tag": "file-cohort-after-repeated-2-catalog",
+      "variant": "after",
+      "role": "producer",
+      "arguments": [
+        "catalog"
+      ],
+      "supervised_elapsed_ns": 406290417,
+      "returncode": 0,
+      "stdout": "file-cohort-after-repeated-2-catalog.stdout",
+      "stdout_sha256": "ae43e5c709b31f8fd7dcedd391a5218e5a7af05166e16cce846ef0a2508f7875",
+      "stderr": "file-cohort-after-repeated-2-catalog.stderr",
+      "resource": {
+        "architecture": "arm64",
+        "arguments": [
+          "catalog"
+        ],
+        "elapsed_ns": 282861041,
+        "executable": "/private/tmp/cedar-architecture-audit-20261030/.lake/build/dataflow-lifecycle-v1/fresh-after/producer",
+        "executable_sha256": "11544af7250c15900213f4045fcb9397088fa187758240b86f8694d9425dee4c",
+        "format": "cedar-poo-native-process-v1",
+        "os_elapsed_ns": 270000000,
+        "os_elapsed_resolution_ns": 10000000,
+        "os_time_scope": "OS time command accounting including waited-for children; rounded at reported precision",
+        "peak_rss_bytes": 69156864,
+        "returncode": 0,
+        "scope": "OS process high-water RSS including native startup; not retained heap or an RSS bound",
+        "system": "Darwin",
+        "system_cpu_ns": 10000000,
+        "user_cpu_ns": 180000000
+      }
+    },
+    {
+      "tag": "file-cohort-after-repeated-2-benchmark",
+      "variant": "after",
+      "role": "bridge",
+      "arguments": [
+        "benchmark-catalog"
+      ],
+      "supervised_elapsed_ns": 3089948125,
+      "returncode": 0,
+      "stdout": "file-cohort-after-repeated-2-benchmark.stdout",
+      "stdout_sha256": "909ad16d2bcfbe6cfc1401ad69a0cb2b067ce2335c1662f5fc2704b105967076",
+      "stderr": "file-cohort-after-repeated-2-benchmark.stderr",
+      "resource": {
+        "architecture": "arm64",
+        "arguments": [
+          "benchmark-catalog"
+        ],
+        "elapsed_ns": 3026961916,
+        "executable": "/private/tmp/cedar-architecture-audit-20261030/.lake/build/dataflow-lifecycle-v1/fresh-after/bridge",
+        "executable_sha256": "0466a55215a6f597c2fc78e272bf4accdd21f982ec88cf14bc7692e5b89c8a80",
+        "format": "cedar-poo-native-process-v1",
+        "os_elapsed_ns": 3020000000,
+        "os_elapsed_resolution_ns": 10000000,
+        "os_time_scope": "OS time command accounting including waited-for children; rounded at reported precision",
+        "peak_rss_bytes": 129597440,
+        "returncode": 0,
+        "scope": "OS process high-water RSS including native startup; not retained heap or an RSS bound",
+        "system": "Darwin",
+        "system_cpu_ns": 50000000,
+        "user_cpu_ns": 1880000000
+      }
+    }
+  ],
+  "pipelines": [
+    {
+      "pair": 1,
+      "variant": "before",
+      "children": [
+        "pair-1-before-catalog",
+        "pair-1-before-replay"
+      ],
+      "child_elapsed_ns": 8542168541,
+      "cpu_ns": 670000000,
+      "peak_child_rss_bytes": 125272064
+    },
+    {
+      "pair": 1,
+      "variant": "after",
+      "children": [
+        "pair-1-after-catalog",
+        "pair-1-after-replay"
+      ],
+      "child_elapsed_ns": 3950608792,
+      "cpu_ns": 710000000,
+      "peak_child_rss_bytes": 124928000
+    },
+    {
+      "pair": 2,
+      "variant": "after",
+      "children": [
+        "pair-2-after-catalog",
+        "pair-2-after-replay"
+      ],
+      "child_elapsed_ns": 4467964583,
+      "cpu_ns": 790000000,
+      "peak_child_rss_bytes": 125763584
+    },
+    {
+      "pair": 2,
+      "variant": "before",
+      "children": [
+        "pair-2-before-catalog",
+        "pair-2-before-replay"
+      ],
+      "child_elapsed_ns": 3019032416,
+      "cpu_ns": 710000000,
+      "peak_child_rss_bytes": 125485056
+    },
+    {
+      "pair": 3,
+      "variant": "before",
+      "children": [
+        "pair-3-before-catalog",
+        "pair-3-before-replay"
+      ],
+      "child_elapsed_ns": 3736676583,
+      "cpu_ns": 930000000,
+      "peak_child_rss_bytes": 121864192
+    },
+    {
+      "pair": 3,
+      "variant": "after",
+      "children": [
+        "pair-3-after-catalog",
+        "pair-3-after-replay"
+      ],
+      "child_elapsed_ns": 3038860042,
+      "cpu_ns": 790000000,
+      "peak_child_rss_bytes": 121683968
+    }
+  ],
+  "wire_comparisons": [
+    {
+      "name": "pair-1-before-catalog-vs-current-Lean",
+      "first_sha256": "ae43e5c709b31f8fd7dcedd391a5218e5a7af05166e16cce846ef0a2508f7875",
+      "second_sha256": "ae43e5c709b31f8fd7dcedd391a5218e5a7af05166e16cce846ef0a2508f7875",
+      "returncode": 0
+    },
+    {
+      "name": "pair-1-after-catalog-vs-current-Lean",
+      "first_sha256": "ae43e5c709b31f8fd7dcedd391a5218e5a7af05166e16cce846ef0a2508f7875",
+      "second_sha256": "ae43e5c709b31f8fd7dcedd391a5218e5a7af05166e16cce846ef0a2508f7875",
+      "returncode": 0
+    },
+    {
+      "name": "pair-1-complete-replay",
+      "first_sha256": "f2de8a782d2ebeb4acf294e40e96dad8c9dce55391d2c536e07d60fa4c017293",
+      "second_sha256": "f2de8a782d2ebeb4acf294e40e96dad8c9dce55391d2c536e07d60fa4c017293",
+      "returncode": 0
+    },
+    {
+      "name": "pair-2-after-catalog-vs-current-Lean",
+      "first_sha256": "ae43e5c709b31f8fd7dcedd391a5218e5a7af05166e16cce846ef0a2508f7875",
+      "second_sha256": "ae43e5c709b31f8fd7dcedd391a5218e5a7af05166e16cce846ef0a2508f7875",
+      "returncode": 0
+    },
+    {
+      "name": "pair-2-before-catalog-vs-current-Lean",
+      "first_sha256": "ae43e5c709b31f8fd7dcedd391a5218e5a7af05166e16cce846ef0a2508f7875",
+      "second_sha256": "ae43e5c709b31f8fd7dcedd391a5218e5a7af05166e16cce846ef0a2508f7875",
+      "returncode": 0
+    },
+    {
+      "name": "pair-2-complete-replay",
+      "first_sha256": "f2de8a782d2ebeb4acf294e40e96dad8c9dce55391d2c536e07d60fa4c017293",
+      "second_sha256": "f2de8a782d2ebeb4acf294e40e96dad8c9dce55391d2c536e07d60fa4c017293",
+      "returncode": 0
+    },
+    {
+      "name": "pair-3-before-catalog-vs-current-Lean",
+      "first_sha256": "ae43e5c709b31f8fd7dcedd391a5218e5a7af05166e16cce846ef0a2508f7875",
+      "second_sha256": "ae43e5c709b31f8fd7dcedd391a5218e5a7af05166e16cce846ef0a2508f7875",
+      "returncode": 0
+    },
+    {
+      "name": "pair-3-after-catalog-vs-current-Lean",
+      "first_sha256": "ae43e5c709b31f8fd7dcedd391a5218e5a7af05166e16cce846ef0a2508f7875",
+      "second_sha256": "ae43e5c709b31f8fd7dcedd391a5218e5a7af05166e16cce846ef0a2508f7875",
+      "returncode": 0
+    },
+    {
+      "name": "pair-3-complete-replay",
+      "first_sha256": "f2de8a782d2ebeb4acf294e40e96dad8c9dce55391d2c536e07d60fa4c017293",
+      "second_sha256": "f2de8a782d2ebeb4acf294e40e96dad8c9dce55391d2c536e07d60fa4c017293",
+      "returncode": 0
+    },
+    {
+      "name": "file-cohort-before-fresh-catalog",
+      "first_sha256": "ae43e5c709b31f8fd7dcedd391a5218e5a7af05166e16cce846ef0a2508f7875",
+      "second_sha256": "ae43e5c709b31f8fd7dcedd391a5218e5a7af05166e16cce846ef0a2508f7875",
+      "returncode": 0
+    },
+    {
+      "name": "file-cohort-before-repeated-1-catalog",
+      "first_sha256": "ae43e5c709b31f8fd7dcedd391a5218e5a7af05166e16cce846ef0a2508f7875",
+      "second_sha256": "ae43e5c709b31f8fd7dcedd391a5218e5a7af05166e16cce846ef0a2508f7875",
+      "returncode": 0
+    },
+    {
+      "name": "file-cohort-before-repeated-2-catalog",
+      "first_sha256": "ae43e5c709b31f8fd7dcedd391a5218e5a7af05166e16cce846ef0a2508f7875",
+      "second_sha256": "ae43e5c709b31f8fd7dcedd391a5218e5a7af05166e16cce846ef0a2508f7875",
+      "returncode": 0
+    },
+    {
+      "name": "file-cohort-after-fresh-catalog",
+      "first_sha256": "ae43e5c709b31f8fd7dcedd391a5218e5a7af05166e16cce846ef0a2508f7875",
+      "second_sha256": "ae43e5c709b31f8fd7dcedd391a5218e5a7af05166e16cce846ef0a2508f7875",
+      "returncode": 0
+    },
+    {
+      "name": "file-cohort-after-repeated-1-catalog",
+      "first_sha256": "ae43e5c709b31f8fd7dcedd391a5218e5a7af05166e16cce846ef0a2508f7875",
+      "second_sha256": "ae43e5c709b31f8fd7dcedd391a5218e5a7af05166e16cce846ef0a2508f7875",
+      "returncode": 0
+    },
+    {
+      "name": "file-cohort-after-repeated-2-catalog",
+      "first_sha256": "ae43e5c709b31f8fd7dcedd391a5218e5a7af05166e16cce846ef0a2508f7875",
+      "second_sha256": "ae43e5c709b31f8fd7dcedd391a5218e5a7af05166e16cce846ef0a2508f7875",
+      "returncode": 0
+    }
+  ]
+}

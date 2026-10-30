@@ -132,8 +132,15 @@ check-agentic-ai-commerce-wire-sdk sdk_root:
 check-agentic-ai-commerce-constraint-sdk sdk_root:
     uv run --project python --package cedar-poo-py-test --extra ap2-sdk --locked cedar-poo-py-test ap2-constraints --sdk-root {{quote(sdk_root)}}
 
+# Compile the existing manifest entrypoint; its output must match Lean execution byte for byte.
+check-native-catalog: build-examples
+    lake build caseManifestsNative
+    timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 --run Examples/Manifests.lean catalog > .lake/build/functional-catalog-lean.json
+    timeout --signal=TERM --kill-after=3s 120s .lake/build/bin/caseManifestsNative catalog > .lake/build/functional-catalog-native.json
+    cmp .lake/build/functional-catalog-lean.json .lake/build/functional-catalog-native.json
+
 # Complete catalog replay; preserve all pre-migration wire artifacts exactly.
-check-functional-catalog: build-examples
+check-functional-catalog: check-native-catalog
     timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 --run Examples/Manifests.lean all
     sha256sum -c Tests/Conformance/functional-manifests.sha256
     timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 --run Examples/Manifests.lean catalog > .lake/build/functional-catalog.json

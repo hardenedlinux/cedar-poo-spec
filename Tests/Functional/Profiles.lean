@@ -15,14 +15,24 @@ import Lean
 namespace CedarPooSpec.FunctionalProfilesTest
 open Cedar.Spec LeanPoo CedarPooSpec
 
+/-- Actual materializer work is checked for every domain, including shared dependencies. -/
+private def materializesOnce {Key : Type} {Value : Key → Type} [DecidableEq Key] [BEq Key]
+    [LawfulBEq Key] [Hashable Key] (profile : Object.Dataflow.Instance Key Value) : Bool :=
+  match profile.template.build with
+  | .error _ => false
+  | .ok (object,evaluated) =>
+    evaluated.length == profile.template.graph.keys.length &&
+    profile.template.graph.keys.all (fun key => evaluated.count key == 1) &&
+    object.slotNames == profile.slotNames
+
 /-- Exercise public consumers: present forged reads must not become admitted values. -/
 def guards {Key : Type} {Value : Key → Type} [DecidableEq Key] [BEq Key]
-    [LawfulBEq Key] [Hashable Key] (profile : Object.Memoized Key Value)
+    [LawfulBEq Key] [Hashable Key] (profile : Object.Dataflow.Instance Key Value)
     (key : Key) (forged : Value key)
-    (consume : Object.Memoized Key Value → Option (Value key)) : Bool :=
-  let changed := profile.extendWith "Forged" do Object.Declaration.Builder.value key forged
-  let missing : Except C4.Error (Object.Memoized Key Value) := Object.define "Missing" (pure ())
-  missing.isOk && (consume profile).isSome &&
+    (consume : Object.Dataflow.Instance Key Value → Option (Value key)) : Bool :=
+  let changed := profile.extendWith "Forged" do Object.Dataflow.Builder.value key forged
+  let missing : Except (Object.Dataflow.Error Key) (Object.Dataflow.Instance Key Value) := Object.Dataflow.define "Missing" (pure ⟨⟩)
+  materializesOnce profile && missing.isOk && (consume profile).isSome &&
     (changed.toOption.bind consume).isNone &&
     (missing.toOption.bind consume).isNone &&
     (changed.toOption.bind (fun object => object.read key)).isSome
@@ -112,12 +122,12 @@ open LeanPoo.Functional.ObjectContract Functional.ObjectProfile
 /-- Both source and output-policy changes cannot conceal a changed hidden field. -/
 private def doubleForged := PaymentReleaseExample.controllerProfile.extendWith "DoubleForged" do
   let control := { PaymentReleaseExample.controllerTemplate with amountAttribute := "substituted" }
-  Object.Declaration.Builder.value .control control
-  Object.Declaration.Builder.value .policy control.bounded
+  Object.Dataflow.Builder.value .control control
+  Object.Dataflow.Builder.value .policy control.bounded
 example : (doubleForged.toOption.bind Vertical.FinancialServices.ControllerReleaseProfile.policy?).isNone = true := by native_decide
 
 private def changedSetting := policyProfile.extendWith "Child" do
-  Object.Declaration.Builder.value .setting "child"
+  Object.Dataflow.Builder.value .setting "child"
 example : (changedSetting.toOption.bind PolicyProfile.policy?).map Policy.id = some "child" := by native_decide
 example : (PolicyProfile.policy? policyProfile).map Policy.id = some "owned" := by native_decide
 
@@ -130,11 +140,11 @@ private def emptyBranch := Cloud.Pipeline.SourceProfile.onBranch
 example : (emptyBranch.toOption.bind Cloud.Pipeline.SourceProfile.control?).isNone = true := by native_decide
 
 private def emptyKey := protectedProfile.extendWith "EmptyKey" do
-  Object.Declaration.Builder.value .keyRef ""
+  Object.Dataflow.Builder.value .keyRef ""
 example : (emptyKey.toOption.bind Data.ProtectionProfile.intent?).isNone = true := by native_decide
 
 private def emptyLocation := LakehouseGatewayExample.euProfile.extendWith "EmptyLocation" do
-  Object.Declaration.Builder.value .location ""
+  Object.Dataflow.Builder.value .location ""
 example : (emptyLocation.toOption.bind Data.Lakehouse.LocationProfile.boundary?) =
     some { LakehouseGatewayExample.euTemplate with deniedLocation := "" } := by native_decide
 
@@ -152,7 +162,7 @@ private def emptyLocationDecisions : Bool :=
 example : emptyLocationDecisions = true := by native_decide
 
 private def emptyDigest := joined.extendWith "EmptyDigest" do
-  Object.Declaration.Builder.value .digest ""
+  Object.Dataflow.Builder.value .digest ""
 example : (emptyDigest.toOption.bind Data.LineageProfile.artifact?).isNone = true := by native_decide
 
 -- Withdrawing all actions is a legitimate paused owner, not malformed configuration.
@@ -220,6 +230,10 @@ run_cmd do
   let allowed := ["propext", "Classical.choice", "Quot.sound"]
   for declaration in [``Functional.prepareDiagnostics_exact,
       ``Functional.ObjectProfile.coherent,
+      ``Functional.ObjectProfile.materialized_read,
+      ``Functional.ObjectProfile.materialized_inventory,
+      ``Functional.ObjectProfile.materialized_source,
+      ``Functional.ObjectProfile.materialized_lowering,
       ``Functional.ObjectProfile.standard_eq_assemble,
       ``Functional.prepareProgram_retained,
       ``Functional.ObjectProfile.admit_read_eq,
@@ -235,5 +249,5 @@ run_cmd do
     for dependency in ← collectAxioms declaration do
       unless allowed.contains dependency.toString do
         throwError "Object Profile axiom boundary changed: {declaration}: {dependency}"
-  logInfo "OBJECT-PROFILES-AXIOMS-OK fourteen universal laws; nine object families"
+  logInfo "OBJECT-PROFILES-AXIOMS-OK eighteen universal laws; nine object families"
 end CedarPooSpec.FunctionalProfilesTest

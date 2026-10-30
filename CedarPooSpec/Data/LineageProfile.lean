@@ -13,7 +13,7 @@ abbrev Value : Key → Type
   | .sources => List SourceLabel
   | .digest => String
   | .artifact => DerivedArtifact
-abbrev Object := LeanPoo.Object.Memoized Key Value
+abbrev Object := LeanPoo.Object.Dataflow.Instance Key Value
 
 def contract : Contract Object Key Unit String :=
   refine (Functional.ObjectProfile.shape [.sources, .digest, .artifact]) fun profile path =>

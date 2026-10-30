@@ -174,9 +174,9 @@ authorization boundaries.
 shared typed preparation, publication, authorization and bounded root reuse.
 [[file:docs/functional-coverage.org][Whole-repository coverage]] records all Example families and library consumers,
 actual PolicyProfile/Handoff Contracts, retained semantic proof oracles and the
-51-entry Rust catalog replay. All 48 original manifest files retain their bytes.
+51-entry Rust catalog replay. All 51 frozen manifest hash records retain their bytes.
 Library and Production imports remain independent of Examples.
-The shared ObjectProfile path now admits all nine memoized domain families
+The shared ObjectProfile path now admits all nine materialized domain families
 through executable projection Contracts and kernel-audited provider laws.
 =just bench-functional-catalog= measures the native release Rust replay under
 fixed workloads, alongside the separate Lean-run reuse measurement.
@@ -272,3 +272,12 @@ Apache License 2.0; see [[file:LICENSE][LICENSE]].
 The [[file:docs/native-performance-next.org][first-file launch attribution and next integrated plan]] separates matched macOS
 execution-assessment waits from remaining shared runtime and object allocation
 costs, with all 51 entries retained in one acceptance unit.
+
+The [[file:docs/native-revision-acceptance.org][shared revision and typed-object acceptance]] records retained canonical
+rendering, proved static Functional provider selection, root diagnostic traversal,
+and corrected Cargo cache ownership with complete-domain resource evidence.
+
+The [[file:docs/native-dataflow-acceptance.org][complete POO field-algorithm migration and lifecycle evidence]] records the
+nine-family typed dependency migration, actual materialization proofs and full
+Case-producer/Rust process comparisons. Algorithm-scale gains and application
+lifecycle observations have separate acceptance boundaries. PR #8 stays unmerged.

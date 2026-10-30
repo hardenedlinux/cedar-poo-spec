@@ -1,11 +1,12 @@
 import CedarPooSpec.Vertical.FinancialServices.BankingToolOwner
-import LeanPoo.Object.Definition
+import LeanPoo.Object.Dataflow
 import CedarPooSpec.Functional.ObjectProfile
 
 /-! A typed prototype for one banking tool owner. The parent keeps its
 original action list; an inherited slot rebuilds the owner from final self. -/
 
 namespace CedarPooSpec.Vertical.FinancialServices.BankingToolProfile
+open LeanPoo.Object.Dataflow (Expr)
 
 open Cedar.Spec LeanPoo
 
@@ -20,21 +21,21 @@ abbrev Value : Key → Type
   | .actions => List EntityUID
   | .owner => BankingToolOwner
 
-abbrev Object := LeanPoo.Object.Memoized Key Value
+abbrev Object := LeanPoo.Object.Dataflow.Instance Key Value
 
 def define (name : String) (initial : BankingToolOwner) :
-    Except C4.Error Object :=
-  LeanPoo.Object.define name do
-    LeanPoo.Object.Declaration.Builder.value .template initial
-    LeanPoo.Object.Declaration.Builder.value .actions initial.actions
-    LeanPoo.Object.Declaration.Builder.slot .owner
-      (.self fun self =>
-        (self .actions).map fun actions => { initial with actions })
+    Except (LeanPoo.Object.Dataflow.Error Key) Object :=
+  LeanPoo.Object.Dataflow.define name do
+    LeanPoo.Object.Dataflow.Builder.value .template initial
+    LeanPoo.Object.Dataflow.Builder.value .actions initial.actions
+    LeanPoo.Object.Dataflow.Builder.derived .owner
+      ((fun actions => { initial with actions })
+        <$> Expr.need (Value := Value) .actions)
 
 def onActions (parent : Object) (name : String) (actions : List EntityUID) :
-    Except C4.Error Object :=
+    Except (LeanPoo.Object.Dataflow.Error Key) Object :=
   parent.extendWith name do
-    LeanPoo.Object.Declaration.Builder.value .actions actions
+    LeanPoo.Object.Dataflow.Builder.value .actions actions
 
 open LeanPoo.Functional.ObjectContract
 

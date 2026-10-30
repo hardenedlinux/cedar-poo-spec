@@ -129,3 +129,16 @@ evidence and all-domain closure. Requests/decisions are never cached.
 The [[file:../docs/native-performance-next.org][first-file launch attribution and next integrated plan]] separates matched macOS
 execution-assessment waits from remaining shared runtime and object allocation
 costs, with all 51 entries retained in one acceptance unit.
+
+The [[file:../docs/native-revision-acceptance.org][shared revision and typed-object acceptance]] records retained canonical
+rendering, proved static Functional provider selection, root diagnostic traversal,
+and corrected Cargo cache ownership with complete-domain resource evidence.
+
+The [[file:../docs/native-dataflow-acceptance.org][materialized-object lifecycle study]] supersedes interpreting the old
+memoized-object timings as the new algorithm's application performance.
+=just bench-dataflow-lifecycle ARTIFACTS OUTPUT= runs fixed alternating complete
+native cohorts and separate fresh-file observations through existing process
+resource recording. The baseline must supply the documented immutable binaries
+and =baseline-identities.json=. Semantic ownership stays in Lean/Rust; the Python
+driver only coordinates processes, artifact hashes, wire-byte comparisons and
+OS resource receipts. No timed result changes an admission threshold.

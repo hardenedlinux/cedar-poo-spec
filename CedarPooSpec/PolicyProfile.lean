@@ -1,5 +1,5 @@
 import Cedar.Spec.Policy
-import LeanPoo.Object.Definition
+import LeanPoo.Object.Dataflow
 import CedarPooSpec.Functional.ObjectProfile
 
 /-! A typed LeanPOO profile for one Cedar policy owner. The setting is the
@@ -7,6 +7,7 @@ direct slot; the policy is an inherited computation over final self. Revising
 the setting retains the parent object and regenerates only this policy. -/
 
 namespace CedarPooSpec.PolicyProfile
+open LeanPoo.Object.Dataflow (Expr)
 
 open Cedar.Spec LeanPoo
 
@@ -21,24 +22,23 @@ abbrev Value (Setting : Type) : Key → Type
   | .render => Setting → Policy
   | .policy => Policy
 
-abbrev Object (Setting : Type) := LeanPoo.Object.Memoized Key (Value Setting)
+abbrev Object (Setting : Type) := LeanPoo.Object.Dataflow.Instance Key (Value Setting)
 
 def define {Setting : Type} (name : String) (initial : Setting)
-    (render : Setting → Policy) : Except C4.Error (Object Setting) :=
-  LeanPoo.Object.define name do
-    LeanPoo.Object.Declaration.Builder.value .setting initial
-    LeanPoo.Object.Declaration.Builder.value .render render
-    LeanPoo.Object.Declaration.Builder.slot .policy
-      (.self fun self => do
-        let setting ← self .setting
-        let selected ← self .render
-        pure (selected setting))
+    (render : Setting → Policy) : Except (LeanPoo.Object.Dataflow.Error Key) (Object Setting) :=
+  LeanPoo.Object.Dataflow.define name do
+    LeanPoo.Object.Dataflow.Builder.value .setting initial
+    LeanPoo.Object.Dataflow.Builder.value .render render
+    LeanPoo.Object.Dataflow.Builder.derived .policy
+      ((fun setting selected => selected setting)
+        <$> Expr.need (Value := Value Setting) .setting
+        <*> Expr.need (Value := Value Setting) .render)
 
 def revise {Setting : Type} (parent : Object Setting)
     (name : String) (setting : Setting) :
-    Except C4.Error (Object Setting) :=
+    Except (LeanPoo.Object.Dataflow.Error Key) (Object Setting) :=
   parent.extendWith name do
-    LeanPoo.Object.Declaration.Builder.value .setting setting
+    LeanPoo.Object.Dataflow.Builder.value .setting setting
 
 open LeanPoo.Functional.ObjectContract
 

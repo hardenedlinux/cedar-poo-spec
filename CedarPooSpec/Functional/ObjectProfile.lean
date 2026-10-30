@@ -1,5 +1,5 @@
 import CedarPooSpec.Functional.PreparedDiagnostics
-import LeanPoo.Object.Definition
+import LeanPoo.Object.Dataflow
 import LeanPoo.C4.ValidationInvariant
 import LeanPoo.Functional.ObjectContractRefinement
 import LeanPoo.Functional.CertifiedConsumer
@@ -12,9 +12,9 @@ open LeanPoo LeanPoo.Functional LeanPoo.Functional.ObjectContract
 variable {Key : Type} {Value : Key → Type} [DecidableEq Key]
   [BEq Key] [LawfulBEq Key] [Hashable Key]
 
-abbrev Object (Key : Type) (Value : Key → Type) [BEq Key] [LawfulBEq Key] [Hashable Key] :=
-  LeanPoo.Object.Memoized Key Value
-abbrev Check (Key : Type) (Value : Key → Type) [BEq Key] [LawfulBEq Key] [Hashable Key] :=
+abbrev Object (Key : Type) (Value : Key → Type) [DecidableEq Key] [BEq Key] [LawfulBEq Key] [Hashable Key] :=
+  LeanPoo.Object.Dataflow.Instance Key Value
+abbrev Check (Key : Type) (Value : Key → Type) [DecidableEq Key] [BEq Key] [LawfulBEq Key] [Hashable Key] :=
   Contract (Object Key Value) Key Unit String
 
 /-- Static dependent slots need presence/inventory checks, not dynamic casts. -/
@@ -22,13 +22,31 @@ def shape (keys : List Key) : Check Key Value where
   view := {
     isObject := fun _ => true
     prototype := fun _ => true
-    names := fun profile => LeanPoo.allSlots profile.plan
+    names := LeanPoo.Object.Dataflow.Instance.slotNames
     lookup := fun profile key => (profile.read key).map fun _ => () }
   fields := keys.map fun key => { name := key, check := fun _ _ => [] }
   strict := true
   constraints := []
   obligations := fun _ _ => []
   validInventory := Or.inl rfl
+
+/-- All domain objects retain the actual source-bound materialized closure. -/
+theorem materialized_read (profile : Object Key Value) (key : Key) :
+    profile.read key = (profile.template.scheduled.closed.raw key).bind Except.toOption :=
+  profile.read_reference key
+
+theorem materialized_inventory (profile : Object Key Value) :
+    profile.slotNames = LeanPoo.allSlots profile.plan := profile.slotNames_exact
+
+theorem materialized_source (profile : Object Key Value) :
+    profile.template.plan.schema = profile.template.source.schema := profile.template.sourceAligned
+
+/-- Retained C4 metadata is the lowering of the actual raw declaration at every name. -/
+theorem materialized_lowering (profile : Object Key Value) (name : String) :
+    profile.template.plan.schema.declaration name =
+      (profile.template.source.declaration name).map LeanPoo.Object.Dataflow.Declaration.metadata := by
+  rw [profile.template.sourceAligned]
+  exact profile.template.source.schema_declaration name
 
 structure Checked (contract : Check Key Value) (profile : Object Key Value) : Prop where
   accepted : diagnose contract profile [] = []
@@ -201,10 +219,9 @@ theorem Session.no_session_if_refused (contract : Check Key Value)
   have impossible := session.produced.symm.trans refused
   cases impossible
 
-def read (contract : Check Key Value) (profile : Object Key Value) (key : Key) : Option (Value key) := do
-  let factory ← (prepare contract (standard contract)).toOption
-  let access ← (factory profile).toOption
-  return (← access.project key).val
+def read (contract : Check Key Value) (profile : Object Key Value) (key : Key) : Option (Value key) :=
+  (prepare contract (standard contract)).toOption.bind fun factory =>
+    (factory profile).toOption.bind fun access => (access.project key).map Subtype.val
 
 /-- Batch projection has exactly the original optional value, including absence/refusal. -/
 theorem admit_read_eq (contract : Check Key Value) (profile : Object Key Value) (key : Key) :

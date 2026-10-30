@@ -32,7 +32,7 @@ open AWS.ClaimSettlementHandoff Admission
 
 def forgedHandoff : Handoff.Object :=
   (caseProfile.extendWith "ForgedHandoff" do
-    LeanPoo.Object.Declaration.Builder.value .scope { selected.scope with caseId := "forged" }).toOption.get (by native_decide)
+    LeanPoo.Object.Dataflow.Builder.value .scope { selected.scope with caseId := "forged" }).toOption.get (by native_decide)
 example : Handoff.scope? forgedHandoff = none := by native_decide
 example : Handoff.scope? caseProfile = some selected.scope := by native_decide
 def emptyHandoff : Handoff.Object :=
@@ -45,7 +45,7 @@ def policyProfile : PolicyProfile.Object String :=
 def child : PolicyProfile.Object String :=
   (PolicyProfile.revise policyProfile "Child" "child").toOption.get (by native_decide)
 def forgedPolicy : PolicyProfile.Object String :=
-  (child.extendWith "Forged" do LeanPoo.Object.Declaration.Builder.value .policy Policy.allowAll).toOption.get (by native_decide)
+  (child.extendWith "Forged" do LeanPoo.Object.Dataflow.Builder.value .policy Policy.allowAll).toOption.get (by native_decide)
 example : PolicyProfile.policy? policyProfile = some (render "parent") ∧
     PolicyProfile.policy? child = some (render "child") ∧
     PolicyProfile.policy? forgedPolicy = none := by native_decide
