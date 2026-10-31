@@ -9,6 +9,7 @@ import resource
 import subprocess
 import tempfile
 import time
+from .clock_anchor import clock_anchor
 
 
 def observations(stderr: bytes):
@@ -62,6 +63,7 @@ def main() -> None:
                 with tempfile.TemporaryFile() as input_file, stdout_path.open("wb") as output:
                     input_file.write(payload)
                     input_file.seek(0)
+                    anchor = clock_anchor()
                     wall_start = time.time_ns()
                     mono_start = time.monotonic_ns()
                     child = subprocess.Popen([str(executable.resolve()), *args.child_arguments], stdin=input_file,
@@ -90,6 +92,7 @@ def main() -> None:
                           "phases": [value for value in observations(stderr) if value.get("observation") == "native-phase"],
                           "child_rusage_delta": usage, "input_sha256": hashlib.sha256(payload).hexdigest(),
                           "arguments": args.child_arguments, "pid": child.pid, "executable_sha256": digest, "returncode": child.returncode,
+                          "clock_anchor": anchor, "wall_start_ns": wall_start, "monotonic_start_ns": mono_start,
                           "spawn_ns": created-mono_start, "before_main_ns": entry["unix_ns"]-wall_start,
                           "import_initialization_ns": entry.get("import_initialization_ns"),
                           "main_span_ns": returned["elapsed_ns"], "process_ns": mono_end-mono_start,

@@ -9,3 +9,6 @@ pub mod operation_identity;
 
 #[cfg(test)]
 asp_rust::asp_rust_cargo_test_gate!(mode = deny, config = asp_rust::default_asp_rust_config());
+
+mod entity_source;
+pub use entity_source::EntitySourceJson;

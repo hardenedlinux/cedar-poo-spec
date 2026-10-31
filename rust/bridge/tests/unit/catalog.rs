@@ -1,10 +1,16 @@
 use super::replay;
 use serde_json::json;
 fn fixture() -> serde_json::Value {
-    json!({"raw":{"cases":[{"name":"allow-all","revision":"published","policy_ids":["base"],
+    let inline = json!({"raw":{"cases":[{"name":"allow-all","revision":"published","policy_ids":["base"],
         "policies":{"staticPolicies":{"base":{"effect":"permit","principal":{"op":"All"},"action":{"op":"All"},"resource":{"op":"All"},"conditions":[]}},"templates":{},"templateLinks":[]},
         "entities":[],"request":{"principal":"User::\"alice\"","action":"Action::\"view\"","resource":"Document::\"one\"","context":{}},
-        "expected":"allow","expected_reasons":["base"],"expected_error_policies":[]}]}})
+        "expected":"allow","expected_reasons":["base"],"expected_error_policies":[]}]}});
+    let mut row = inline["raw"]["cases"][0].clone();
+    let policies = row.as_object_mut().unwrap().remove("policies").unwrap();
+    let entities = row.as_object_mut().unwrap().remove("entities").unwrap();
+    row["policy_ref"] = json!(0);
+    row["entities_ref"] = json!(0);
+    json!({"format_version":2,"sources":{"policies":[policies],"entities":[entities],"schemas":[]},"entries":{"raw":{"manifest_kind":"raw","revision_sources":{"published":0},"cases":[row]}}})
 }
 #[test]
 fn complete_cedar_receipts_are_returned_and_changed_expectations_fail() {
@@ -12,17 +18,24 @@ fn complete_cedar_receipts_are_returned_and_changed_expectations_fail() {
     let output = replay(&input.to_string()).expect("official Cedar replay");
     assert_eq!(output["raw"]["receipts"][0]["decision"], "allow");
     assert_eq!(output["raw"]["receipts"][0]["error_free_allow"], true);
-    input["raw"]["cases"][0]["expected"] = json!("deny");
+    input["entries"]["raw"]["cases"][0]["expected"] = json!("deny");
     assert!(replay(&input.to_string()).is_err());
 }
 #[test]
 fn unclassified_and_empty_catalogs_do_not_silently_pass() {
     assert!(replay("{}").is_err());
-    assert!(replay(r#"{"unknown":{"payload":true}}"#).is_err());
-    assert!(replay(r#"{"raw":{"cases":[]}}"#).is_err());
-    assert!(replay(r#"{"pseudonymization-tabular":{}}"#).is_err());
-    assert!(replay(r#"{"pseudonymization-deployable":[]}"#).is_err());
-    assert!(replay(r#"{"claim-settlement-handoff":[]}"#).is_err());
+    for entries in [
+        json!({}),
+        json!({"unknown":{"payload":true}}),
+        json!({"raw":{"manifest_kind":"raw","revision_sources":{},"cases":[]}}),
+        json!({"pseudonymization-tabular":{}}),
+        json!({"pseudonymization-deployable":[]}),
+        json!({"claim-settlement-handoff":[]}),
+    ] {
+        let mut input = fixture();
+        input["entries"] = entries;
+        assert!(replay(&input.to_string()).is_err());
+    }
 }
 
 // This test consumes the real Lean output instead of a second Rust scenario catalog.
@@ -79,11 +92,13 @@ fn emitted_catalog_rejects_cross_artifact_tampering() {
         output.as_object().expect("catalog receipt object").len(),
         51
     );
-    let financial = json!({
-        "claim-settlement-claims": catalog["claim-settlement-claims"],
-        "claim-settlement-banking": catalog["claim-settlement-banking"],
-        "claim-settlement-handoff": catalog["claim-settlement-handoff"]
+    let financial_entries = json!({
+        "claim-settlement-claims": catalog["entries"]["claim-settlement-claims"],
+        "claim-settlement-banking": catalog["entries"]["claim-settlement-banking"],
+        "claim-settlement-handoff": catalog["entries"]["claim-settlement-handoff"]
     });
+    let mut financial = catalog.clone();
+    financial["entries"] = financial_entries;
     let reject = |mutated: serde_json::Value, expected: &str| {
         let error = replay(&mutated.to_string()).expect_err("tampered artifact must refuse");
         assert!(
@@ -92,20 +107,21 @@ fn emitted_catalog_rejects_cross_artifact_tampering() {
         );
     };
     let mut changed = financial.clone();
-    changed["claim-settlement-handoff"][0]["scope"]["claimDigest"] = json!("forged");
+    changed["entries"]["claim-settlement-handoff"][0]["scope"]["claimDigest"] = json!("forged");
     reject(changed, "claim-settlement Lean/Rust mismatch: ready");
     let mut changed = financial.clone();
-    changed["claim-settlement-handoff"][0]["scope"]["targetActor"] =
+    changed["entries"]["claim-settlement-handoff"][0]["scope"]["targetActor"] =
         json!("AgentCore::OAuthUser::\"other\"");
     reject(changed, "handoff case root/actor mismatch");
     let mut changed = financial.clone();
-    changed["claim-settlement-handoff"][0]["claims"][0] = json!("claims-eu-claims-0");
+    changed["entries"]["claim-settlement-handoff"][0]["claims"][0] = json!("claims-eu-claims-0");
     reject(changed, "claims scenario/index binding mismatch");
     let mut changed = financial.clone();
-    changed["claim-settlement-handoff"][0]["banking"][0]["phase"] = json!("debit-source");
+    changed["entries"]["claim-settlement-handoff"][0]["banking"][0]["phase"] =
+        json!("debit-source");
     reject(changed, "bank phase/LOB/action/origin binding mismatch");
     let mut changed = financial;
-    changed["claim-settlement-handoff"][0]["banking"][0]["required"] = json!([
+    changed["entries"]["claim-settlement-handoff"][0]["banking"][0]["required"] = json!([
         "jwtAtLob",
         "m2mGatewayToLob",
         "userJwtAgentToGateway",
@@ -113,8 +129,23 @@ fn emitted_catalog_rejects_cross_artifact_tampering() {
         "retailDataPlane"
     ]);
     reject(changed, "banking requirement projection mismatch");
+    let mut changed = catalog.clone();
+    let original = catalog["entries"]["pseudonymization-deployable"][0]["policy_ref"]
+        .as_u64()
+        .unwrap() as usize;
+    let wrong = catalog["sources"]["policies"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .position(|value| value != &catalog["sources"]["policies"][original])
+        .unwrap();
+    changed["entries"]["pseudonymization-deployable"][0]["policy_ref"] = json!(wrong);
+    reject(
+        changed,
+        "deployment policy artifact differs from schema-bound source",
+    );
     let mut changed = catalog;
-    changed["pseudonymization-deployable"][0]["root"] = json!("Base");
+    changed["entries"]["pseudonymization-deployable"][0]["root"] = json!("Base");
     reject(changed, "invalid or duplicate deployment root");
 }
 
@@ -133,7 +164,7 @@ fn measured_catalog_preserves_complete_output_and_refuses_the_same_invalid_input
 }
 
 #[test]
-fn catalog_normalization_preserves_duplicate_wire_field_behavior() {
+fn source_reference_controls_reject_duplicate_wire_fields() {
     let ordinary = fixture().to_string();
     let duplicated = ordinary.replace(
         "\"name\":\"allow-all\"",
@@ -143,18 +174,8 @@ fn catalog_normalization_preserves_duplicate_wire_field_behavior() {
         ordinary, duplicated,
         "duplicate-field control must mutate input"
     );
-    assert_eq!(
-        replay(&duplicated).expect("normalized Value path"),
-        replay(&ordinary).expect("baseline")
-    );
-    // Direct typed decoding changes this accepted wire behavior. Keep the shared
-    // Value normalization owner instead of silently changing the transport contract.
-    assert!(
-        serde_json::from_str::<std::collections::BTreeMap<String, cedar_poo_runtime::Manifest>>(
-            &duplicated
-        )
-        .is_err()
-    );
+    replay(&ordinary).expect("ordinary source catalog");
+    assert!(replay(&duplicated).unwrap_err().contains("duplicate field"));
 }
 
 #[test]
@@ -169,8 +190,50 @@ fn complete_parse_errors_and_late_schema_inputs_keep_original_precedence() {
         error,
         "full input syntax before any domain error"
     );
+    assert!(
+        replay(r#"{"a":{"cases":[]},"z":{"cases":[],"schema":null}}"#)
+            .unwrap_err()
+            .contains("unknown field")
+    );
+}
+
+#[test]
+fn later_missing_schema_ref_does_not_hide_earlier_sdk_workflow_error() {
+    let mut input = fixture();
+    input["entries"] = json!({"a":{"cases":[],"manifest_kind":"raw","revision_sources":{}},"z":{"cases":[],"manifest_kind":"schema-bound","revision_sources":{},"schema_ref":999}});
     assert_eq!(
-        replay(r#"{"a":{"cases":[]},"z":{"cases":[],"schema":null}}"#).unwrap_err(),
+        replay(&input.to_string()).unwrap_err(),
         "manifest has no cases"
     );
+}
+
+#[test]
+fn source_envelope_version_duplicate_names_and_unknown_roles_are_refused() {
+    let mut input = fixture();
+    input["format_version"] = json!(1);
+    assert!(
+        replay(&input.to_string())
+            .unwrap_err()
+            .contains("unsupported catalog format")
+    );
+    input = fixture();
+    input["sources"]["extra_role"] = json!([]);
+    assert!(
+        replay(&input.to_string())
+            .unwrap_err()
+            .contains("unknown field")
+    );
+    let duplicate = fixture()
+        .to_string()
+        .replace("\"raw\":", "\"raw\":{},\"raw\":");
+    assert!(
+        replay(&duplicate)
+            .unwrap_err()
+            .contains("duplicate catalog entry")
+    );
+    let duplicate = fixture().to_string().replace(
+        "\"format_version\":2",
+        "\"format_version\":2,\"format_version\":2",
+    );
+    assert!(replay(&duplicate).unwrap_err().contains("duplicate field"));
 }

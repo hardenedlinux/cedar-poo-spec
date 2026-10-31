@@ -1,6 +1,13 @@
 #+TITLE: Complete catalog schema, revision and representation preparation
 #+OPTIONS: toc:2
 
+* Historical snapshot
+
+This is the accepted compatible representation audit at 04d/a06. The source-table
+wire migration proposed below is now implemented in [[file:native-source-table.org][the current canonical bulk audit]].
+Statements about unimplemented wire work in this older snapshot describe its
+historical boundary; its original receipts are preserved.
+
 * Scope and evidence boundary
 
 This change applies to all 51 published catalog entries and all nine existing POO

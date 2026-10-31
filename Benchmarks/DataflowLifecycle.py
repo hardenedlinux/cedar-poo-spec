@@ -126,7 +126,15 @@ def main():
         if run.returncode:
             raise SystemExit(f"Wire bytes changed: {name}; semantic acceptance remains with Rust/Lean")
 
-    expected = ROOT / ".lake/build/functional-catalog.json"
+    expected = {"after": ROOT / ".lake/build/functional-catalog.json",
+                "before": artifacts / "before-catalog.json"}
+    if not expected["before"].exists():
+        expected["before"] = expected["after"]
+    if expected["before"] != expected["after"] and digest(expected["before"]) != baseline.get("catalog_sha256"):
+        parser.error("Declared baseline wire golden changed")
+    # Bulk wire changes are declared in the frozen baseline. Each producer must
+    # match its own complete wire golden; full consumer receipts still compare.
+
     for pair in (1, 2, 3):
         order = ("after", "before") if pair == 2 else ("before", "after")
         receipts = {}
@@ -136,7 +144,7 @@ def main():
             observe(tag + "-functional", variant, "functional", ("CrossAgentGoverned",))
             observe(tag + "-roots", variant, "functional", ("--root-scale",))
             catalog, producer = observe(tag + "-catalog", variant, "producer", ("catalog",))
-            compare(tag + "-catalog-vs-current-Lean", catalog, expected)
+            compare(tag + "-catalog-vs-declared-wire", catalog, expected[variant])
             replay, consumer = observe(tag + "-replay", variant, "bridge", ("replay-catalog",), catalog)
             receipts[variant] = replay
             children = [producer["resource"], consumer["resource"]]
@@ -155,7 +163,7 @@ def main():
         for stage in ("fresh", "repeated-1", "repeated-2"):
             tag = f"file-cohort-{variant}-{stage}"
             catalog, _ = observe(tag + "-catalog", variant, "producer", ("catalog",), executable=producer)
-            compare(tag + "-catalog", catalog, expected)
+            compare(tag + "-catalog", catalog, expected[variant])
             observe(tag + "-benchmark", variant, "bridge", ("benchmark-catalog",), catalog, executable=bridge)
     save()
     print(f"DATAFLOW-LIFECYCLE-OK {len(records)} native child processes; all wire bytes retained; {output / 'receipt.json'}", flush=True)

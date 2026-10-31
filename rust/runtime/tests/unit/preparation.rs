@@ -83,7 +83,19 @@ fn prepared_catalog_matches_original_workflows() {
         serde_json::from_str(&input).expect("catalog");
     let mut checked = 0;
     let mut raw_checked = 0;
-    for (name, value) in catalog {
+    for name in catalog["entries"]
+        .as_object()
+        .expect("source catalog entries")
+        .keys()
+    {
+        let value: serde_json::Value = serde_json::from_str(
+            &std::fs::read_to_string(format!(
+                "{}/../../.lake/build/{name}-manifest.json",
+                env!("CARGO_MANIFEST_DIR")
+            ))
+            .expect("independent authoring manifest"),
+        )
+        .expect("manifest JSON");
         if value.get("cases").is_none() {
             continue;
         }
@@ -115,7 +127,8 @@ fn prepared_catalog_matches_original_workflows() {
             );
             let index = usize::from(manifest.cases.len() > 1);
             let saved = manifest.cases[index].clone();
-            manifest.cases[index].entities = json!({"invalid":"entity array"});
+            manifest.cases[index].entities =
+                serde_json::from_value(json!({"invalid":"entity array"})).expect("entity source");
             manifest.cases[index].request.action = "invalid uid".into();
             assert_eq!(
                 replay_manifest(&manifest).expect_err("entities before action"),
@@ -179,7 +192,8 @@ fn prepared_catalog_matches_original_workflows() {
         manifest.cases = original_cases;
         let index = usize::from(manifest.cases.len() > 1);
         let saved = manifest.cases[index].clone();
-        manifest.cases[index].entities = json!({"invalid":"entity array"});
+        manifest.cases[index].entities =
+            serde_json::from_value(json!({"invalid":"entity array"})).expect("entity source");
         manifest.cases[index].request.action = "invalid uid".into();
         assert_eq!(
             replay_validated_manifest(&manifest).expect_err("entities before action"),
@@ -238,8 +252,10 @@ fn prepared_source_cannot_be_rebound_to_same_named_different_policy_body() {
 #[test]
 fn entity_reuse_is_scoped_to_invocation_and_actual_schema_and_refusal_retry() {
     let mut original = validated(receipt());
-    original.cases[0].entities =
-        json!([{"uid":{"type":"User","id":"alice"},"attrs":{},"parents":[]}]);
+    original.cases[0].entities = serde_json::from_value(
+        json!([{"uid":{"type":"User","id":"alice"},"attrs":{},"parents":[]}]),
+    )
+    .expect("entity source");
     let mut changed = validated(original.cases[0].clone());
     changed.schema[""]["entityTypes"]["User"]["shape"]["attributes"]["age"] =
         json!({"type":"Long","required":true});
@@ -259,7 +275,7 @@ fn entity_replacement_and_simultaneous_faults_preserve_original_error_order() {
     let mut manifest = validated(receipt());
     let mut next = receipt();
     next.name = "second".into();
-    next.entities = json!({"invalid":"entities"});
+    next.entities = serde_json::from_value(json!({"invalid":"entities"})).expect("entity source");
     next.policy_ids = vec!["wrong".into()];
     manifest.cases.push(next);
     assert_eq!(
@@ -272,7 +288,8 @@ fn entity_replacement_and_simultaneous_faults_preserve_original_error_order() {
         original_validated_replay(&manifest).expect_err("reference changed entities")
     );
     manifest.cases[1].entities =
-        json!([{"uid":{"type":"User","id":"bob"},"attrs":{},"parents":[]}]);
+        serde_json::from_value(json!([{"uid":{"type":"User","id":"bob"},"attrs":{},"parents":[]}]))
+            .expect("entity source");
     let mut stats = crate::ReplayMetrics::default();
     let actual =
         crate::replay_validated_manifest_measured(&manifest, &mut stats).expect("replacement");
@@ -296,7 +313,7 @@ fn direct_source_batch_retains_error_prefixes_and_matches_fresh_preparation() {
     let valid = receipt();
     let mut invalid = valid.clone();
     invalid.name = "invalid".into();
-    invalid.entities = json!({"bad":"entities"});
+    invalid.entities = serde_json::from_value(json!({"bad":"entities"})).expect("entity source");
     let mut two_faults = invalid.clone();
     two_faults.name = "two-faults".into();
     two_faults.policy_ids.push("wrong".into());

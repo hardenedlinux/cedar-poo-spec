@@ -90,19 +90,6 @@ pub(crate) fn value(raw: &str) -> Result<Value, String> {
 #[path = "../tests/unit/catalog_input.rs"]
 mod tests;
 
-pub(crate) fn schema_sources(
-    catalog: &BTreeMap<String, &str>,
-) -> Vec<cedar_poo_core::SchemaSourceJson> {
-    catalog
-        .values()
-        .filter_map(|raw| {
-            let fields = spans::object(raw)?;
-            fields.get("cases")?;
-            serde_json::from_str(fields.get("schema")?).ok()
-        })
-        .collect()
-}
-
 struct SyntaxKey;
 impl<'de> Deserialize<'de> for SyntaxKey {
     fn deserialize<D: Deserializer<'de>>(decoder: D) -> Result<Self, D::Error> {
@@ -118,4 +105,65 @@ impl<'de> Deserialize<'de> for SyntaxKey {
         }
         decoder.deserialize_str(KeyVisitor)
     }
+}
+
+pub(crate) struct Document<'a> {
+    pub sources: cedar_poo_runtime::CatalogSources,
+    pub entries: BTreeMap<String, &'a str>,
+}
+pub(crate) fn fields(input: &str) -> BTreeMap<String, &str> {
+    spans::object(input).unwrap_or_default()
+}
+pub(crate) fn document(input: &str) -> Result<Document<'_>, String> {
+    // Preserve complete syntax/number/depth errors before transport or SDK checks.
+    let raw = decode(input)?;
+    #[derive(serde::Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct Envelope {
+        format_version: u32,
+        sources: serde::de::IgnoredAny,
+        entries: UniqueNames,
+    }
+    let header: Envelope = serde_json::from_str(input).map_err(|e| e.to_string())?;
+    if header.format_version != 2 {
+        return Err("unsupported catalog format version".into());
+    }
+    let _ = (header.sources, header.entries);
+    let sources: cedar_poo_runtime::CatalogSources =
+        serde_json::from_str(raw["sources"]).map_err(|e| e.to_string())?;
+    sources.check_unique()?;
+    Ok(Document {
+        sources,
+        entries: decode(raw["entries"])?,
+    })
+}
+struct UniqueNames;
+impl<'de> Deserialize<'de> for UniqueNames {
+    fn deserialize<D: Deserializer<'de>>(decoder: D) -> Result<Self, D::Error> {
+        struct Names;
+        impl<'de> Visitor<'de> for Names {
+            type Value = UniqueNames;
+            fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                f.write_str("unique catalog entry names")
+            }
+            fn visit_map<A: MapAccess<'de>>(self, mut map: A) -> Result<UniqueNames, A::Error> {
+                let mut names = std::collections::BTreeSet::new();
+                while let Some(name) = map.next_key::<String>()? {
+                    if !names.insert(name) {
+                        return Err(de::Error::custom("duplicate catalog entry"));
+                    }
+                    map.next_value::<serde::de::IgnoredAny>()?;
+                }
+                Ok(UniqueNames)
+            }
+        }
+        decoder.deserialize_map(Names)
+    }
+}
+
+pub(crate) fn is_schema_bound(fields: &BTreeMap<String, &str>) -> bool {
+    fields
+        .get("manifest_kind")
+        .and_then(|raw| serde_json::from_str::<String>(raw).ok())
+        .is_some_and(|kind| kind == "schema-bound")
 }

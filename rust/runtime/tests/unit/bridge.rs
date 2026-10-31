@@ -136,7 +136,7 @@ fn validated_sources_bind_one_schema_and_entity_snapshot_for_permit_and_forbid()
     );
     let mut invalid_entities = validated(allow.clone());
     invalid_entities.schema = manifest.schema.clone();
-    invalid_entities.cases[0].entities = json!({});
+    invalid_entities.cases[0].entities = serde_json::from_value(json!({})).expect("entity source");
     assert!(
         render_validated_policy_sources(&invalid_entities, "allow-all")
             .unwrap_err()

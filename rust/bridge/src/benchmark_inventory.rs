@@ -1,5 +1,4 @@
 //! Structural inventory of accepted input, one owned entry at a time.
-use serde_json::Value;
 use std::collections::BTreeSet;
 #[derive(Default)]
 pub(crate) struct Inventory {
@@ -11,40 +10,34 @@ pub(crate) struct Inventory {
     pub validations: usize,
 }
 pub(crate) fn read(input: &str) -> Result<Inventory, String> {
-    let source = crate::catalog_input::decode(input)?;
+    let doc = crate::catalog_input::document(input)?;
     let mut result = Inventory {
-        entries: source.len(),
+        entries: doc.entries.len(),
         ..Inventory::default()
     };
-    for raw in source.values() {
-        let entry = crate::catalog_input::value(raw)?;
-        result.entry(&entry)?;
-    }
-    Ok(result)
-}
-impl Inventory {
-    fn entry(&mut self, entry: &Value) -> Result<(), String> {
-        let Some(cases) = entry.get("cases").and_then(Value::as_array) else {
-            return Ok(());
+    for raw in doc.entries.values() {
+        let fields = crate::catalog_input::fields(raw);
+        if !fields.contains_key("cases") {
+            continue;
+        }
+        let schema = crate::catalog_input::is_schema_bound(&fields);
+        let cases = if schema {
+            doc.sources.validated_manifest(raw)?.cases
+        } else {
+            doc.sources.manifest(raw)?.cases
         };
-        let schema = entry.get("schema").is_some();
-        self.schemas += usize::from(schema);
+        result.schemas += usize::from(schema);
         let mut revisions = BTreeSet::new();
         let mut sources = BTreeSet::new();
-        for (index, case) in cases.iter().enumerate() {
-            self.entities +=
-                usize::from(index == 0 || case.get("entities") != cases[index - 1].get("entities"));
-            if let Some(revision) = case.get("revision").and_then(Value::as_str)
-                && revisions.insert(revision)
-            {
-                self.revisions += 1;
-                self.validations += usize::from(schema);
-                if let Some(source) = case.get("policies") {
-                    sources.insert(serde_json::to_string(source).map_err(|e| e.to_string())?);
-                }
+        for (i, case) in cases.iter().enumerate() {
+            result.entities += usize::from(i == 0 || case.entities != cases[i - 1].entities);
+            if revisions.insert(&case.revision) {
+                result.revisions += 1;
+                result.validations += usize::from(schema);
+                sources.insert(case.policies.source_identity()?.to_owned());
             }
         }
-        self.sources += sources.len();
-        Ok(())
+        result.sources += sources.len();
     }
+    Ok(result)
 }

@@ -86,3 +86,5 @@ import CedarPooSpec.AgenticAI.Commerce.Presentation
 
 import CedarPooSpec.Data.LineageProfile
 import CedarPooSpec.Functional.ObjectProfile
+
+import CedarPooSpec.Transport.SourceCatalog

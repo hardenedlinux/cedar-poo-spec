@@ -1,0 +1,269 @@
+#+TITLE: Canonical bulk source tables, complete replay and native startup
+#+OPTIONS: toc:2
+
+* Implemented scope
+
+The existing =catalog= producer and =replay-catalog=/=benchmark-catalog= consumers
+migrate directly to one bulk transport, format version 2. All 51 catalog entries
+participate. Raw/schema-bound manifests, both schema-evolution projections and
+named policy publications use the same kind-separated source pools. Opaque
+handoff/data fixtures retain their own contracts. No domain-specific runner or
+legacy bulk decoder is introduced. PR #8 remains unmerged.
+
+Single-manifest commands and all 51 frozen authoring projections remain the
+existing public Cedar interchange and independent reference inputs. They are not
+an alternative bulk implementation. The actual independent original-workflow test
+reads those official =all= exports, rather than expanding source references and
+then treating that expansion as an independent authoring oracle.
+
+#+begin_example
+{
+  "format_version": 2,
+  "sources": { "policies": [...], "entities": [...], "schemas": [...] },
+  "entries": {
+    "name": {
+      "manifest_kind": "schema-bound",
+      "schema_ref": 0,
+      "revision_sources": { "published": 0 },
+      "cases": [{ "revision": "published", "policy_ref": 0,
+                  "entities_ref": 0, "policy_ids": [...],
+                  "request": {...}, "expected": "allow", ... }]
+    }
+  }
+}
+#+end_example
+
+References are local to this immutable document and have separate policy/entity/
+schema types. They are not authority identifiers or digests. Every Case's policy
+reference must match its declared revision binding. An explicit manifest kind
+prevents a missing schema reference from silently selecting raw replay. References
+and named publications reject unknown control fields, duplicate fields/bindings,
+missing or out-of-range references and duplicate complete source definitions.
+Unknown format versions and unversioned bulk inputs fail closed.
+
+The full JSON syntax/number/depth pass still precedes transport and SDK checks.
+Source values retain normal Cedar JSON Value normalization. Version-2 reference
+control objects deliberately reject duplicate fields; this is an explicit new
+transport contract, not a claim of byte compatibility with the old bulk wire.
+SDK/schema/request errors for well-formed references still occur in their original
+ordered workflows. Source-use planning defers invalid later schema references to
+their entry; it does not hide an earlier workflow refusal.
+
+* Types, actual POO Contract and proofs
+
+=CedarPooSpec.Transport.SourceTable= owns kind-indexed =Snapshot=, =SourceRef= and
+=SourcePool=. A Snapshot carries the equality between its cached encoding and its
+actual JSON value. =publish= uses full encoded-source equality after a candidate
+lookup; even a corrupt candidate index cannot authorize a mismatched hit. Every
+actual publication returns a dependent =Publication= with a bound reference and
+an append frame preserving every prior entry.
+
+The actual =LeanPoo.Functional.ObjectContract= source view resolves the reference
+through its pool and checks complete source bytes. Four generic proofs apply to
+arbitrary pools, sources and kinds: binding, old-entry frame, published JSON value
+and Contract recognition. These proofs govern the publisher used by the real
+codec, rather than a second model interner. The executable controls reject changed
+and absent references. Their axiom inventories contain only the standard
+=propext=, =Classical.choice= and =Quot.sound=, without new native-decision axioms.
+Existing POO/type/Contract/Case/Delta proofs remain separate required gates.
+
+The codec itself is a native encoding implementation, not a formally proved
+round trip for arbitrary JSON or the SDK. Complete independent Case execution,
+source/binding mutations and byte-identical final receipts qualify that boundary.
+Neither a transport reference nor its Contract proves SDK validity, authenticity,
+Host authority or a deployed IO correspondence.
+
+* Runtime ownership and algorithm
+
+The producer publishes each unique complete source once. The current full
+catalog contains 158 policy, 40 entity and 22 schema JSON sources (including
+schema evolution). References and request/expected metadata stay per Case. Wire
+size changes from 5695478 to 1177069 bytes, a reduction of about 79.3%.
+
+Rust parses the complete source values once into immutable shared policy/entity
+objects. Typed reference DTOs resolve directly to runtime Cases; no complete
+inline Value tree is reconstructed. Entity snapshots now share ownership as well
+as policy snapshots. The existing SDK boundary explicitly clones the underlying
+entity Value only when the SDK needs an owned input, including disclosure Host
+admission. Editable source and Request/Context data remain separate.
+
+The source registry belongs to one catalog replay and retires at cleanup. The
+finite lazy Schema owner, per-manifest syntax preparation and per-invocation
+entity slot retain their established scopes. Wire parsing of 158 unique policy
+JSON values is not 158 SDK policy parses: the accepted per-manifest SDK count is
+still 194 with 27 source/syntax reuses across 221 revision bindings. All 112 strict
+schema-bound revision validations, 53 entity parses and 2560 compiled/rendered
+authorizations remain required. SDK validity and authorization results are not
+cached by the transport layer.
+
+Wire storage scales with unique full sources plus Case metadata, rather than
+repeating each source for every Case. Typed decoding allocates no per-Case source
+tree. The producer still computes complete encoded keys while interning candidate
+sources; this traversal/encoding cost is real and must be included in the full
+producer measurement. The =sources-ready= diagnostic marker is separated from
+final serialization through a noinline IO boundary, so these costs are observable.
+The codec imports JSON/HashMap and the actual POO Contract interfaces directly.
+
+* Complete acceptance and measurement protocol
+
+The integrated =just check= passes all applicable domains, including all original
+frozen manifest hashes, independent 23 schema/24 raw workflows, cross-artifact
+mutations, all nine object families, types/Contracts/proofs, workspace/feature
+checks and solver/Delta gates. The raw authoring artifacts and final complete
+receipt bytes remain unchanged. Source-table mutations additionally cover actual
+physical sharing, fresh requests/both authorizers, missing/stale/out-of-range and
+wrong-shaped references, duplicate definitions/bindings and stripped schemas.
+
+The ordinary baseline is =a06b565bad15a957c4aefe88bdede34f2410079f= with the same
+POO revision =1b1d41eafe6c979387c4fa69e194fb921bd4befe=. Both variants are copied into
+fresh execution paths symmetrically. Because the bulk wire intentionally changes,
+each producer must match its own declared complete wire golden; the frozen old
+wire has an independently checked hash. Full consumer receipts still compare
+across variants. The existing 48 children, three pairs, 15 comparisons, 486 object
+and 1836 entry observations remain fixed. Samples, reads, process supervision,
+heap/profile settings and default Cargo job count are unchanged.
+
+Ordinary lifecycle, instrumented allocation, true empty-target release build and
+pre-main diagnostics are distinct evidence. No system signing/security policy,
+allocator tuning or synthetic progress heartbeat is introduced.
+
+* Startup investigation boundary
+
+Prior actual copy and same-inode/new-path controls locate large local first-path
+spans before main; exact-head Ubuntu controls did not reproduce seconds-scale
+tails. Read-only system policy history was queried for this task. The accessible
+records did not contain a target-specific path match; that does not identify or
+exclude a particular policy service. Earlier sampling reached the initial dyld
+entry PC and is intrusive evidence, not proof of a named service's responsibility.
+
+Additional external process-state observation uses the existing full-catalog
+launcher with its unchanged two files/three trials. A separate observer may record
+process state/wait channel/CPU before the real main marker. Observer processes are
+siblings, outside the launcher's child resource accounting; host scheduling is
+still perturbed. These observations cannot qualify ordinary latency and absent
+wait-channel names are unavailable evidence, not zero waiting.
+
+* Measured results
+
+The final fixed-cohort, allocation, cold-build and startup receipts are published
+below after their source and executable identities are verified. Stable complete
+process acceleration is not assumed from a smaller wire or a hot replay alone.
+
+* Final ordinary process results
+
+Both fixed cohorts use byte-identical candidate production executables. The first
+cohort is retained in full; the final cohort additionally captures the new frozen
+bulk fixture and diagnostic-clock source inputs. After final measurement, one
+unit-test file strengthens domain refusal controls to use a valid v2 envelope.
+That exception and both hashes are explicit in the evidence; rebuilding the
+ordinary release produces exactly the measured bytes. Production measurements
+are not relabeled as having executed different code.
+
+| Final pair | Before pipeline wall ms | After pipeline wall ms | Before CPU ms | After CPU ms | Before max-child RSS MiB | After max-child RSS MiB |
+|------------+-------------------------+------------------------+---------------+--------------+-------------------------+------------------------|
+| 1 | 2600.94 | 3137.76 | 490 | 350 | 66.03 | 59.02 |
+| 2 | 445.92 | 356.30 | 410 | 330 | 66.14 | 58.98 |
+| 3 | 435.16 | 351.60 | 410 | 320 | 66.11 | 59.02 |
+
+Pipeline medians are 445.92 / 356.30 ms wall and 410 / 330 ms CPU. The repeated
+pairs improve by about 19--20% in wall time; the first-file pair still regresses.
+CPU is lower in all three pairs at the recorded OS accounting precision. The
+first cohort likewise records wall 2235.32 / 431.16 / 431.09 before and
+2318.42 / 344.87 / 348.86 after, with CPU 450 / 400 / 400 before and
+400 / 320 / 320 after. No favorable cohort is selected to hide the first-file tail.
+
+Ordinary Rust replay peak RSS medians are 36.02 / 25.92 MiB. Complete pipeline
+peak RSS medians are 66.11 / 59.02 MiB, still dominated by the Lean producer.
+The nine paired ordinary benchmark samples per variant locate the actual saving:
+
+| Span | Before ms | After ms |
+|------+-----------+----------|
+| complete replay | 280.14 | 175.90 |
+| remaining replay/transport time | 135.37 | 35.56 |
+| SDK/runtime preparation | 123.70 | 120.55 |
+| final receipt serialization | 0.48 | 0.49 |
+
+The principal improvement is transport/materialization and direct typed Case
+construction, not a claim of fewer mandatory SDK authorizations or a faster
+receipt writer. These medians are separate observations, not additive causal
+percentages. Stable arbitrary first-file/full-process wall acceleration remains
+unestablished despite consistent repeated-pipeline improvements in both cohorts.
+
+* Allocation and cold-build receipts
+
+The separate instrumented comparison uses each version's declared bulk wire and
+identical complete replay semantics. First-reference live requested allocation
+peaks are 21.89 / 13.66 MiB. Median allocation requests are 3248294 / 1931046;
+requested bytes are 604510165 / 418394586. Cleanup includes dropping the actual
+catalog registry, not only the per-entry owners. All reference phase records and
+all three allocation/cleanup samples are retained. These observations exclude
+allocator overhead/foreign allocation and are not RSS bounds or ordinary timings.
+
+A release build from a previously absent target directory takes 52.56 s and exits
+zero with default Cargo jobs. Its complete ordinary replay is byte-identical to
+the accepted receipts, with process peak RSS 25.75 MiB. Compiler peak child RSS
+is about 1806.98 MiB, a separate build observation. Existing Cargo source/download
+caches remain available; no compiled target artifacts are copied. This is a true
+empty-target Rust build, not a cold OS cache or a cold Lean build claim.
+
+* Pre-main path, raw clocks and observed policy events
+
+The unobserved-launch controls retain all 24 copy/hardlink processes, their full
+wire hashes, exits and clock bounds. Fresh copies still show long local before-main
+spans: Lean 1562.07 / 1207.51 ms versus 111.46--112.71 ms repeated; Rust
+588.95 / 468.25 ms versus 3.27--3.82 ms repeated. Same-inode new paths also retain
+tails, including one fast Rust hardlink first launch. File identity alone is not
+a sufficient explanation or a latency guarantee.
+
+External process-state diagnostics retain separate cohorts. During observed Rust
+pre-main waits the process is sleeping and accumulated CPU displays 0.00 s at ps
+precision; Popen itself returns in about 1--3 ms. Wait-channel names are unavailable.
+Lean also has an actual runnable initialization interval. These facts place the
+large Rust delay after process creation and before user main, not in source parsing.
+
+A first PID-matched system log query finds =syspolicyd= provenance events, but
+formatted event calendar times would place some repeated-execution events before their process spawn.
+They are therefore not used directly as a timing domain. The existing diagnostic
+launcher now records read-only bracketed Mach absolute/continuous clocks alongside
+wall and monotonic samples, using the [[https://raw.githubusercontent.com/apple-oss-distributions/xnu/main/osfmk/mach/mach_time.h][documented Darwin ABI]]. Both raw-clock
+projections are retained. This trace has no material absolute/continuous divergence;
+anchor brackets are 0.58--1.00 microseconds. Formatted log calendar time differs
+from the raw-clock projection by about -96.1 ms, so calendar-only joining would
+produce an invalid ordering. This is a measured correlation offset, not a claimed
+cause of the native delay or a universal OS clock defect.
+
+After raw-clock alignment, the following PID-matched events are observed:
+
+| Target | Fresh provenance event after spawn ms | Main after that event ms | Repeated event after spawn ms |
+|--------+---------------------------------------+--------------------------+------------------------------|
+| Rust copy 1 | 649.54 | 7.14 | 1.35--1.80 |
+| Rust copy 2 | 424.91 | 2.24 | 1.57--1.62 |
+| Lean copy 1 | 1429.25 | 138.77 | 2.10--2.23 |
+| Lean copy 2 | 1102.36 | 134.61 | 2.03--2.07 |
+
+Every repeat also logs =Process was already in provenance sandbox, skipping=;
+the first-file records lack that skip event. This positively identifies the
+provenance execution path and its first/repeated branch difference for the actual
+workload. It does not measure how the preceding wait divides among queueing,
+scanning, the kernel and other services; it does not prove syspolicyd consumed the
+whole interval. The exact stalled kernel call/service duration remains open.
+No signing, quarantine, security policy, endpoint service or system cache is
+changed. The observed linker signature is ad hoc; ordinary frozen files have no
+listed extended attributes. Policy participation is not inferred from xattrs.
+
+* Published evidence and remaining boundary
+
+- [[file:native-source-table-lifecycle.json][Final 48-child cohort and complete source/executable identities]]
+- [[file:native-source-table-first-lifecycle.json][Preserved first 48-child cohort]]
+- [[file:native-source-table-evidence.json][All ordinary benchmark spans, allocation, cold build, startup states and raw-clock policy correlations]]
+- [[file:native-source-table-object-observations.csv][All final 486 object observations]]
+- [[file:native-source-table-entry-timings.csv][All final 1836 entry observations]]
+
+The common wire/type/Contract/reference/replay boundary is implemented across the
+complete applicable inventory. The next performance boundary is the weighted
+SDK preparation and producer interning cost, while first-path OS waiting is
+investigated independently. Any further sharing must preserve per-revision strict
+validation, fresh Requests, both authorizers and full-source binding. A kernel or
+service attribution needs direct duration evidence; the current PID correlation
+is not substituted for that evidence. Exact-head Ubuntu CI remains a separate
+receipt recorded with the PR.

@@ -1,7 +1,17 @@
 #+TITLE: Complete Cedar typed dataflow migration and native lifecycle evidence
 #+OPTIONS: toc:2
 
-* Current Schema/revision and representation closure
+* Current canonical source-table closure
+
+The current [[file:native-source-table.org][canonical source-table audit]] covers all 51 entries, actual typed
+references/POO Contract/four generic proofs and full independent replay. Bulk wire
+shrinks 79.3%; the final paired ordinary benchmark replay is 280.14 / 175.90 ms.
+Pipeline repeated wall improves about 19--20%, Rust RSS is 36.02 / 25.92 MiB and
+pipeline RSS is 66.11 / 59.02 MiB. First-file wall still has a tail. Raw Mach
+anchors now relate actual PID-matched provenance events to the startup path,
+without claiming a complete service-duration attribution. PR #8 remains unmerged.
+
+* Previous compatible Schema/revision representation closure
 
 The latest integrated audit is [[file:native-schema-representation.org][shared Schema, revision and borrowed catalog representation]].
 All-domain =just check= passes. Ordinary Rust peak RSS falls from 119.56 to

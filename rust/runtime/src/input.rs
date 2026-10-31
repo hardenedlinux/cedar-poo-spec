@@ -20,7 +20,7 @@ pub struct Case {
     pub revision: String,
     pub policy_ids: Vec<String>,
     pub policies: CompiledPolicyJson,
-    pub entities: Value,
+    pub entities: cedar_poo_core::EntitySourceJson,
     pub request: RequestInput,
     pub expected: String,
     pub expected_reasons: Vec<String>,

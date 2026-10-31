@@ -2,10 +2,8 @@
 use crate::catalog_observation::{
     CatalogObservation, memory_end, memory_end_entry, memory_start, record,
 };
-use cedar_poo_core::CompiledPolicyJson;
 use cedar_poo_runtime::{
-    Manifest, ReplayMetrics, SchemaEvolutionBundle, ValidatedManifest,
-    render_identified_policy_sources, replay_manifest, replay_manifest_measured,
+    ReplayMetrics, render_identified_policy_sources, replay_manifest, replay_manifest_measured,
     replay_schema_only_revision,
 };
 use serde_json::{Value, json};
@@ -24,7 +22,9 @@ pub(crate) fn replay_observed(
 ) -> Result<Value, String> {
     let memory = memory_start(&observation);
     let decode = observation.as_ref().map(|_| Instant::now());
-    let catalog = crate::catalog_input::decode(input)?;
+    let document = crate::catalog_input::document(input)?;
+    let catalog = document.entries;
+    let sources = document.sources;
     memory_end(&mut observation, "decode", memory);
     if catalog.is_empty() {
         return Err("empty manifest catalog".into());
@@ -35,7 +35,10 @@ pub(crate) fn replay_observed(
     let memory = memory_start(&observation);
     let planned = observation.as_ref().map(|_| Instant::now());
     let mut schemas = cedar_poo_runtime::SchemaPreparation::from_sources(
-        crate::catalog_input::schema_sources(&catalog),
+        catalog
+            .values()
+            .filter(|raw| crate::catalog_input::is_schema_bound(&crate::catalog_input::fields(raw)))
+            .filter_map(|raw| sources.schema_source(raw).ok()),
     )?;
     if let (Some(observation), Some(started)) = (observation.as_deref_mut(), planned) {
         observation.shared_preparation_ns = started.elapsed().as_nanos();
@@ -49,11 +52,17 @@ pub(crate) fn replay_observed(
     for (name, raw) in catalog {
         let memory = memory_start(&observation);
         let started = observation.as_ref().map(|_| Instant::now());
-        let value = crate::catalog_input::value(raw)?;
-        let result = if value.get("cases").is_some() {
-            if value.get("schema").is_some() {
-                let manifest: ValidatedManifest =
-                    serde_json::from_value(value).map_err(|e| format!("{name}: {e}"))?;
+        let fields = crate::catalog_input::fields(raw);
+        let value = if fields.contains_key("cases") || name == "pseudonymization-deployable" {
+            Value::Null
+        } else {
+            crate::catalog_input::value(raw)?
+        };
+        let result = if fields.contains_key("cases") {
+            if crate::catalog_input::is_schema_bound(&fields) {
+                let manifest = sources
+                    .validated_manifest(raw)
+                    .map_err(|e| format!("{name}: {e}"))?;
                 let receipts = schemas.replay(&manifest, metrics.as_deref_mut())?;
                 let result = json!({"kind":"schema-bound","receipts":receipts});
                 // Only these existing cross-artifact consumers borrow a manifest later.
@@ -68,8 +77,7 @@ pub(crate) fn replay_observed(
                 }
                 result
             } else {
-                let manifest: Manifest =
-                    serde_json::from_value(value).map_err(|e| format!("{name}: {e}"))?;
+                let manifest = sources.manifest(raw).map_err(|e| format!("{name}: {e}"))?;
                 {
                     let receipts = if let Some(stats) = metrics.as_deref_mut() {
                         replay_manifest_measured(&manifest, stats)?
@@ -80,11 +88,10 @@ pub(crate) fn replay_observed(
                 }
             }
         } else if name == "attested-schema-evolution" {
-            let bundle: SchemaEvolutionBundle =
-                serde_json::from_value(value).map_err(|e| e.to_string())?;
+            let bundle = sources.evolution(raw)?;
             json!({"kind":"schema-evolution","receipt":replay_schema_only_revision(&bundle)?})
         } else if name == "pseudonymization-deployable" {
-            deployment = Some(value);
+            deployment = Some(raw);
             memory_end_entry(&mut observation, &name, memory);
             record(&mut observation, &name, started, "deferred-deployment", 0);
             continue;
@@ -137,9 +144,7 @@ pub(crate) fn replay_observed(
     let memory = memory_start(&observation);
     let finalization = observation.as_ref().map(|_| Instant::now());
     if let Some(value) = deployment {
-        let roots = value
-            .as_array()
-            .ok_or("deployment roots must be an array")?;
+        let roots = sources.policy_artifacts(value)?;
         let expected = BTreeSet::from([
             "HospitalSiv",
             "RandomizedGcm",
@@ -160,21 +165,13 @@ pub(crate) fn replay_observed(
             }
         }
         let mut seen = BTreeSet::new();
-        for root in roots {
-            let name = root
-                .get("root")
-                .and_then(Value::as_str)
-                .ok_or("missing deployment root")?;
+        for root in &roots {
+            let name = root.root.as_str();
             if !expected.contains(name) || !seen.insert(name) {
                 return Err("invalid or duplicate deployment root".into());
             }
-            let policies: CompiledPolicyJson = serde_json::from_value(
-                root.get("policies")
-                    .ok_or("missing deployment policies")?
-                    .clone(),
-            )
-            .map_err(|e| e.to_string())?;
-            render_identified_policy_sources(&policies)?;
+            let policies = &root.policies;
+            render_identified_policy_sources(policies)?;
             if by_root.get(name).copied() != Some(policies.deref()) {
                 return Err("deployment policy artifact differs from schema-bound source".into());
             }
@@ -207,6 +204,7 @@ pub(crate) fn replay_observed(
     let memory = memory_start(&observation);
     let cleanup = observation.as_ref().map(|_| Instant::now());
     drop(verified);
+    drop(sources);
     memory_end(&mut observation, "cleanup", memory);
     if let (Some(observation), Some(started)) = (observation, cleanup) {
         observation.cleanup_ns = started.elapsed().as_nanos();

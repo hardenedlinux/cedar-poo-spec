@@ -1,3 +1,4 @@
+import CedarPooSpec.Transport.SourceCatalog
 import Examples.Enterprise.AWS.FinancialServices.ClaimSettlementExport
 import Examples.Governance.TicketSharingExport
 import Examples.Health.ClinicalBreakGlassExport
@@ -112,6 +113,9 @@ def evaluate (produce : Unit → Except String Lean.Json) : IO Lean.Json :=
 /-- Keep compression inside the IO span: pure let bindings may be sunk past clocks. -/
 @[noinline] private def serialize (json : Lean.Json) : IO String := pure json.compress
 
+@[noinline] private def prepareSources (outputs : List (String × Lean.Json)) : IO Lean.Json :=
+  evaluate (fun _ => Transport.sourceCatalog outputs)
+
 private def phase (started : Option Nat) (name : String) : IO Unit := do
   if let some start := started then
     let elapsed := (← IO.monoNanosNow) - start
@@ -132,7 +136,9 @@ def run (args : List String) (observe : Bool := false) : IO Unit := do
         let json ← evaluate produce
         pure (name, json)
       phase started "catalog-ready"
-      let text ← serialize (Lean.Json.mkObj outputs)
+      let encoded ← prepareSources outputs
+      phase started "sources-ready"
+      let text ← serialize encoded
       phase started "serialized"
       IO.println text
       phase started "output-written"

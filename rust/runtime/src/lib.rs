@@ -32,3 +32,6 @@ pub use schema_preparation::SchemaPreparation;
 
 #[cfg(test)]
 asp_rust::asp_rust_cargo_test_gate!(mode = deny, config = asp_rust::default_asp_rust_config());
+
+mod source_transport;
+pub use source_transport::{CatalogSources, ResolvedPolicyArtifact};

@@ -54,7 +54,7 @@ pub fn render_validated_policy_sources(
             "Cedar strict policy validation failed: {validation:?}"
         ));
     }
-    Entities::from_json_value(case.entities.clone(), Some(&schema))
+    Entities::from_json_value((*case.entities).clone(), Some(&schema))
         .map_err(|error| format!("Cedar schema entities: {error}"))?;
     render_identified_policy_sources(&case.policies)
 }
