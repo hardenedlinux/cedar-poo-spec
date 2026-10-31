@@ -186,6 +186,33 @@ def Model.compilePlan (model : Model) (root : String) :
 private theorem Model.schema_graph (model : Model) : model.schema.graph = model.graph := by
   cases h : model.activeSchema? <;> simp [Model.schema, Model.graph, h]
 
+/-- The root Plan and provenance fold consume the same graph-bound C4 results.
+An existing object at its own root still retains its original Plan directly. -/
+private def Model.planAtPrepared (model : Model) (prepared : LeanPoo.C4.Prepared model.graph)
+    (root : String) : Except LeanPoo.C4.Error
+      (LeanPoo.Object.Plan PolicyID (fun _ => Option Policy)) := do
+  if let some object := model.currentObject? then
+    if object.plan.root == root then return object.plan
+  let bound : LeanPoo.C4.Prepared model.schema.graph := by
+    simpa only [model.schema_graph] using prepared
+  LeanPoo.Object.compilePrepared model.schema bound root
+
+private theorem Model.planAtPrepared_eq (model : Model)
+    (prepared : LeanPoo.C4.Prepared model.graph) (root : String) :
+    model.planAtPrepared prepared root = model.planAt root := by
+  simp only [Model.planAtPrepared, Model.planAt, LeanPoo.Object.compilePrepared_eq]
+
+def Model.compilePlanPrepared (model : Model) (prepared : LeanPoo.C4.Prepared model.graph)
+    (root : String) : Except LeanPoo.C4.Error
+      (LeanPoo.Object.CompiledPlan PolicyID (fun _ => Option Policy)) := do
+  let plan ← model.planAtPrepared prepared root
+  return plan.compileMemo
+
+theorem Model.compilePlanPrepared_eq (model : Model)
+    (prepared : LeanPoo.C4.Prepared model.graph) (root : String) :
+    model.compilePlanPrepared prepared root = model.compilePlan root := by
+  simp only [Model.compilePlanPrepared, Model.compilePlan, model.planAtPrepared_eq]
+
 private theorem Model.currentObject_graph (model : Model) (object)
     (found : model.currentObject? = some object) : object.plan.schema.graph = model.graph := by
   cases active : model.activeBuilt? with
@@ -295,15 +322,11 @@ private def applyEdit (owner : String) (ancestors : List String)
 
 /-- Share the compiled C4 plan with diagnostics without resolving the graph
     a second time. Cedar's fold retains edit intent, order, and provenance. -/
-private def Model.compileWithPlanBy (model : Model) (root : String)
-    (resolve : (compiled : LeanPoo.Object.CompiledPlan PolicyID (fun _ => Option Policy)) →
-      model.compilePlan root = .ok compiled → String → Except LeanPoo.C4.Error (List String)) :
+private def Model.compileSelected (model : Model)
+    (compiled : LeanPoo.Object.CompiledPlan PolicyID (fun _ => Option Policy))
+    (resolve : String → Except LeanPoo.C4.Error (List String)) :
     Except Error
-      (LeanPoo.Object.CompiledPlan PolicyID (fun _ => Option Policy) × Compilation) :=
-  match success : model.compilePlan root with
-  | .error error => .error (.c4 error)
-  | .ok compiled => do
-    let resolve := resolve compiled success
+      (LeanPoo.Object.CompiledPlan PolicyID (fun _ => Option Policy) × Compilation) := do
     let reversed ← compiled.plan.precedence.reverse.foldlM (fun current name => do
       let some module := model.modules.find? (fun item => item.name == name)
         | throw (.missingModule name)
@@ -321,20 +344,12 @@ private def Model.compileWithPlanBy (model : Model) (root : String)
       return compiled
     return (compiled, { policies, applied := reversed.2.reverse })
 
-private def Model.compileWithPlan (model : Model) (root : String) :=
-  model.compileWithPlanBy root fun compiled _ =>
+private def Model.compileWithPlan (model : Model) (root : String) :
+    Except Error
+      (LeanPoo.Object.CompiledPlan PolicyID (fun _ => Option Policy) × Compilation) := do
+    let compiled ← (model.compilePlan root).mapError .c4
     let graph := compiled.plan.schema.graph
-    fun name => LeanPoo.C4.linearize graph name
-
-private theorem Model.preparedResolver_eq (model : Model) (root : String)
-    (prepared : LeanPoo.C4.Prepared model.graph) :
-    (fun (compiled : LeanPoo.Object.CompiledPlan PolicyID (fun _ => Option Policy))
-      (_ : model.compilePlan root = .ok compiled) => prepared.at) =
-    (fun compiled (_ : model.compilePlan root = .ok compiled) =>
-      let graph := compiled.plan.schema.graph
-      fun name => LeanPoo.C4.linearize graph name) := by
-  funext compiled success name
-  rw [prepared.at_eq, model.compilePlan_graph root compiled success]
+    model.compileSelected compiled (fun name => LeanPoo.C4.linearize graph name)
 
 /-- C4 and compiled object slots choose policy bodies. The Cedar-specific fold
     checks edit intent, keeps policy order, and records provenance only. -/
@@ -353,17 +368,27 @@ def Model.compile (model : Model) (root : String) : Except Error Policies :=
 /-- One actual graph-owned C4 table is shared by every root in a Program.
 The compiled object still resolves policy bodies and edit checks stay ordered. -/
 def Model.compilePrepared (model : Model) (prepared : LeanPoo.C4.Prepared model.graph)
-    (root : String) : Except Error Policies :=
-  ((model.compileWithPlanBy root (fun _ _ => prepared.at)).map (·.2.policies)).map
-    (·.map CompiledPolicy.policy)
+    (root : String) : Except Error Policies := do
+  let compiled ← (model.compilePlanPrepared prepared root).mapError .c4
+  let result ← model.compileSelected compiled prepared.at
+  return result.2.policies.map CompiledPolicy.policy
 
 theorem Model.compilePrepared_eq (model : Model) (prepared : LeanPoo.C4.Prepared model.graph)
     (root : String) : model.compilePrepared prepared root = model.compile root := by
   unfold Model.compilePrepared Model.compile Model.compileWithProvenance Model.compileWithTrace
-  rw [model.preparedResolver_eq root prepared]
-  change ((model.compileWithPlan root).map (fun result => result.2.policies)).map
-    (fun policies => policies.map CompiledPolicy.policy) = _
-  cases model.compileWithPlan root <;> rfl
+  rw [model.compilePlanPrepared_eq]
+  unfold Model.compileWithPlan
+  cases success : model.compilePlan root with
+  | error error => rfl
+  | ok compiled =>
+    have same : prepared.at = (fun name => LeanPoo.C4.linearize compiled.plan.schema.graph name) := by
+      funext name
+      rw [prepared.at_eq, model.compilePlan_graph root compiled success]
+    rw [same]
+    change (model.compileSelected compiled _ >>= fun result =>
+      pure (result.2.policies.map CompiledPolicy.policy)) = _
+    cases h : model.compileSelected compiled (fun name => LeanPoo.C4.linearize compiled.plan.schema.graph name) <;>
+      simp [h, bind, pure, Except.pure, Except.mapError, Except.bind, Except.map]
 
 /-- Explain one policy ID after Cedar edit validation. Declaration nodes include
     tombstones; `effective` reports whether a policy survives those edits. -/

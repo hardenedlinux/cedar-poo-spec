@@ -105,5 +105,7 @@ end CedarPooSpec.Transport.SourceTableTest
 #print axioms CedarPooSpec.Transport.EncodedJson.certified
 #print axioms LeanPoo.C4.Prepared.at_eq
 #print axioms CedarPooSpec.PolicyModules.Model.compilePrepared_eq
+#print axioms CedarPooSpec.PolicyModules.Model.compilePlanPrepared_eq
+#print axioms LeanPoo.Object.compilePrepared_eq
 #print axioms CedarPooSpec.Transport.EncodedJson.detach_eq
 #print axioms CedarPooSpec.Transport.EncodedJson.detach_certified
