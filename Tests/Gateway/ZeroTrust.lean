@@ -95,4 +95,5 @@ end Counterexamples
 #print axioms ZeroTrust.framework_object_preserves_gateway_contract
 #print axioms ZeroTrust.specialization_preserves_core_and_original
 #print axioms ZeroTrust.continuing_use_preserves_original_consumption
+#print axioms ZeroTrust.continuing_objects_preserve_parent_and_consumption
 end CedarPooSpec.Gateway.ZeroTrustTest

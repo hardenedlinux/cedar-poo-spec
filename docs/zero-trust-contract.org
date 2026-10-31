@@ -30,11 +30,13 @@ operation/authority consumption. Its Proposal/FinalUse types belong to Gateway.
 The original operation is consumed once; ongoing releases use =continuing= with
 fresh assessment, original scope and explicit recovered =CommittedPrefix=.
 
-=fromFrameworkObject= reads an actual generic Zero Trust POO profile through its
-factory-indexed Session. The original index is the Gateway publication's framework
-requirement. =framework_object_preserves_gateway_contract= retains both the actual
-object projection and the original Gateway Contract when that selected function
-is invoked. This is an application consuming the generic framework object API.
+=fromFrameworkObject= requires both an independently required parent Session and
+the selected Session. It invokes =composeSessions= and returns a =Composed=
+requirement retaining both actual projections. The original type index is the
+Gateway publication's framework requirement. The composition theorem preserves
+the selected parent's condition and original Gateway Contract. Root-only shape
+recognition alone does not preserve extra ancestor requirements under raw POO
+overrides. Authenticating the required parent commitment remains a Host duty.
 
 =final_use_satisfies_framework= and
 =specialization_preserves_core_and_original= connect Gateway to the functional

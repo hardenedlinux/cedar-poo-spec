@@ -26,6 +26,16 @@ requirement as a type index and a proof of strengthening. Inherited extension
 conjoins new requirements rather than replacing the original. Source-bound
 Sessions retain the actual object's projection. No new object system is added.
 
+Root preservation does not imply preservation of every additional parent
+requirement under raw POO overrides. A root allowing values up to ten and an
+approved parent limiting them to five expose this distinction: overriding the
+selected field with a root-only profile still passes the root shape Contract.
+=composeSessions= retains the independently required parent Session and selected
+Session. =Composed.requirement= conjoins both actual projections, so invocation
+cannot discard that parent requirement. No general implication decider is added.
+The trusted publisher must identify the required parent from its authenticated
+source/Contract commitment; a parent chosen by the child request is insufficient.
+
 Gateway combines these functions with its own published profile and consumption
 types in =CedarPooSpec.Gateway.ZeroTrust=. Other applications can supply their own
 effects, views and persistence contracts without importing Gateway.

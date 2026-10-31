@@ -56,4 +56,41 @@ theorem selected_child_preserves_original (session : Session original object)
   ⟨Functional.ObjectProfile.Access.read_matches session.access .profile profile read,
     profile.refines effect view accepted⟩
 
+variable {parentObject selectedObject : Object original}
+
+/-- Root-index preservation and selected-parent preservation are distinct.
+Raw POO overrides may drop an ancestor's additional requirement while retaining
+the root. Keep the independently required parent Session and conjoin its actual
+projection with the selected Session; no implication solver is invented. -/
+structure Composed (requiredParent : Session original parentObject)
+    (selected : Session original selectedObject) where
+  parentProfile : Profile original
+  selectedProfile : Profile original
+  parentRead : requiredParent.read .profile = some parentProfile
+  selectedRead : selected.read .profile = some selectedProfile
+
+variable {requiredParent : Session original parentObject}
+  {selected : Session original selectedObject}
+
+def composeSessions (requiredParent : Session original parentObject)
+    (selected : Session original selectedObject) : Option (Composed requiredParent selected) :=
+  match parentRead : requiredParent.read .profile, selectedRead : selected.read .profile with
+  | some parentProfile, some selectedProfile =>
+    some ⟨parentProfile, selectedProfile, parentRead, selectedRead⟩
+  | _, _ => none
+
+def Composed.requirement (composition : Composed requiredParent selected) : Requirement E V :=
+  strengthen composition.parentProfile.requirement composition.selectedProfile.requirement
+
+theorem composed_preserves_actual_parent_and_original
+    (composition : Composed requiredParent selected)
+    (accepted : composition.requirement effect view) :
+    parentObject.read .profile = some composition.parentProfile ∧
+    selectedObject.read .profile = some composition.selectedProfile ∧
+    composition.parentProfile.requirement effect view ∧
+    composition.selectedProfile.requirement effect view ∧ original effect view :=
+  ⟨Functional.ObjectProfile.Access.read_matches requiredParent.access .profile _ composition.parentRead,
+    Functional.ObjectProfile.Access.read_matches selected.access .profile _ composition.selectedRead,
+    accepted.1, accepted.2, composition.parentProfile.refines _ _ accepted.1⟩
+
 end CedarPooSpec.ZeroTrust.ProfileObject

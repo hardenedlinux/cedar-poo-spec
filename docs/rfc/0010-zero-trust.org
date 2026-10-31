@@ -94,6 +94,14 @@ field; choosing which original is authoritative remains a Host obligation.
 Objects and inheritance interpret the generic functions. They do not put a
 Gateway operation, provider, protocol or account into the core.
 
+The root index alone does not retain every extra parent condition under raw
+overrides. The executable POO counterexample admits a root-only override of a
+stronger parent. =composeSessions= therefore retains the independently required
+parent and selected Sessions; =Composed.requirement= conjoins their actual reads.
+Gateway's =fromFrameworkObject= requires both. Its proof preserves parent
+requirements and the original Gateway Contract. The publisher must still bind
+the required parent's full source/Contract independently of the child request.
+
 * Continuity, mutable attributes and revocation
 
 The selected fragment formalizes checks at each new effect boundary.
@@ -153,6 +161,27 @@ Trust does not remove those premises or turn a solver report into a Lean proof.
 | Release completion after enqueue | Local released marker commits after the callback; queue insertion can precede commit failure | Unknown range/hold must remain; final release completion is not the consumption prerequisite |
 | Mutable attributes and revoked state | Fresh authoritative generation and actual assessments, not a cached informer/Allow | Local Policy/profile checks exist; general external fact/history/budget projection remains open |
 | Recovery prefix | Current operation history extends committed original consumption | SPEC proves the conditional law; independent rollback-resistant native recovery evidence remains open |
+| Reviewed Policy publication | Current Rust publication validates Policy/schema and CAS/fence | It does not yet require bound Delta/replay evidence; the authorized-widening native counterexample remains an unimplemented target |
+
+The final-callback component test independently observes the already durable
+canonical claim, original reservation, consumed provider state, dispatch burn
+and unknown range. An immediate second SQLite writer is blocked during that
+callback. Injected callback failure leaves the unknown frontier and hold through
+restart. This checks the local order, not the complete Host/IO refinement.
+
+The isolated CVC5 qualification uses the [[https://github.com/cvc5/cvc5/releases/tag/cvc5-1.4.2][official arm64 static 1.4.2 archive]],
+SHA-256 =24397f7d022e755876ca836193d4c5f9c1d4326f0f6c01f7d7fc1ddd6bc5096c=.
+Four existing recipes completed solver analysis, assertions and Rust Cedar replay:
+authorization-delta (four cases), authorization-delta-operational (four),
+payment-delta (two) and payment-interaction (four). Fourteen replay cases are
+finite observations; overlapping requests are not independent universal proofs.
+These solver reports are not Lean UNSAT certificates or runtime publication
+admission. Repository pins and historical raw evidence remain unchanged.
+
+The separate existing payment schema-bound producer/consumer gate also passed
+for thirty-two validated receipts and its manifest-relative assertions. This
+does not make the fourteen ordinary Delta replay cases schema-bound or enforce
+review evidence at Weaver's native publication endpoint.
 
 The Host must also establish authoritative identity/original selection, actual
 credential ownership, capability non-copyability, final ordering against all

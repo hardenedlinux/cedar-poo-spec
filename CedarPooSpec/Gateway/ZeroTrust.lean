@@ -111,25 +111,30 @@ theorem specialization_preserves_core_and_original
   ⟨CedarPooSpec.ZeroTrust.with_requirement_preserves_framework _ _ _ _ accepted,
     Gateway.published_profile_refines_authoritative_original proposal.receipt⟩
 
-/-- Gateway receives an actual inherited generic framework object, indexed by
-its own authoritative POO publication's framework. The factory-bound Session
-selects the functional requirement; no weaker original can be substituted. -/
+/-- The required parent Session is selected by authoritative publication, not
+by the child request. Retain its actual requirement even when raw POO overrides
+the child field with a weaker root-only profile. Parent authenticity remains a
+Host premise; source-bound projection alone is not authority selection. -/
 def fromFrameworkObject
-    {object : CedarPooSpec.ZeroTrust.ProfileObject.Object (framework proposal).required}
+    {parentObject object : CedarPooSpec.ZeroTrust.ProfileObject.Object (framework proposal).required}
+    (requiredParent : CedarPooSpec.ZeroTrust.ProfileObject.Session (framework proposal).required parentObject)
     (session : CedarPooSpec.ZeroTrust.ProfileObject.Session (framework proposal).required object) :=
-  session.read .profile
+  CedarPooSpec.ZeroTrust.ProfileObject.composeSessions requiredParent session
 
 theorem framework_object_preserves_gateway_contract
-    {object : CedarPooSpec.ZeroTrust.ProfileObject.Object (framework proposal).required}
+    {parentObject object : CedarPooSpec.ZeroTrust.ProfileObject.Object (framework proposal).required}
+    (requiredParent : CedarPooSpec.ZeroTrust.ProfileObject.Session (framework proposal).required parentObject)
     (session : CedarPooSpec.ZeroTrust.ProfileObject.Session (framework proposal).required object)
-    (profile : CedarPooSpec.ZeroTrust.ProfileObject.Profile (framework proposal).required)
-    (read : fromFrameworkObject proposal session = some profile)
-    (accepted : profile.requirement requested actual) :
-    object.read .profile = some profile ∧
+    (composition : CedarPooSpec.ZeroTrust.ProfileObject.Composed requiredParent session)
+    (_read : fromFrameworkObject proposal requiredParent session = some composition)
+    (accepted : composition.requirement requested actual) :
+    parentObject.read .profile = some composition.parentProfile ∧
+    object.read .profile = some composition.selectedProfile ∧
+    composition.parentProfile.requirement requested actual ∧
     (framework proposal).required requested actual ∧ original.Refines prepared.profile := by
-  have projected := CedarPooSpec.ZeroTrust.ProfileObject.selected_child_preserves_original
-    session profile read accepted
-  exact ⟨projected.1, projected.2,
+  have projected := CedarPooSpec.ZeroTrust.ProfileObject.composed_preserves_actual_parent_and_original
+    composition accepted
+  exact ⟨projected.1, projected.2.1, projected.2.2.1, projected.2.2.2.2,
     Gateway.published_profile_refines_authoritative_original proposal.receipt⟩
 
 /-- Explicit recovery refinement evidence: the current authoritative operation
@@ -180,6 +185,26 @@ theorem continuing_use_preserves_original_consumption
   obtain ⟨evidence⟩ := accepted.2.2.2.1.2
   exact ⟨accepted.2.1.1, accepted.2.1.2.1, accepted.2.2.2.2.1,
     committed_prefix_rejects_reconsumption proposal evidence renewed renewedId⟩
+
+/-- Ongoing objects are indexed by the continuing framework, not the initial
+same-view admission framework. Compose the same retained POO Sessions and reuse
+the existing consumption law; no new root consumption or object engine. -/
+theorem continuing_objects_preserve_parent_and_consumption
+    {parentObject selectedObject : CedarPooSpec.ZeroTrust.ProfileObject.Object (continuing proposal assessment).required}
+    (requiredParent : CedarPooSpec.ZeroTrust.ProfileObject.Session (continuing proposal assessment).required parentObject)
+    (selected : CedarPooSpec.ZeroTrust.ProfileObject.Session (continuing proposal assessment).required selectedObject)
+    (composition : CedarPooSpec.ZeroTrust.ProfileObject.Composed requiredParent selected)
+    (accepted : composition.requirement requested actual)
+    (renewed : Admission.AuthorityLedger E) (renewedId : String) :
+    composition.parentProfile.requirement requested actual ∧ host.currentAtUse actual ∧
+    Nonempty (CommittedPrefix proposal actual) ∧ host.unknownRetained actual proposal.after ∧
+    Gateway.consumeAdmission publication proposal.receipt (host.operations actual) renewed renewedId =
+      .error .operationAlreadyAdmitted := by
+  have projected := CedarPooSpec.ZeroTrust.ProfileObject.composed_preserves_actual_parent_and_original
+    composition accepted
+  have live := projected.2.2.2.2
+  have consumed := continuing_use_preserves_original_consumption proposal live renewed renewedId
+  exact ⟨projected.2.2.1, live.2.2.1, live.2.2.2.1.2, consumed.2.2.1, consumed.2.2.2⟩
 
 theorem final_use_preserves_current_context (use : FinalUse proposal) :
     prepared.context = host.context use.actual := by
