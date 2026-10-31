@@ -110,7 +110,7 @@ jobs:
       - run: just check-mission-comparison
       - run: just check-personnel-governance
       - run: just check-agentic-ai-commerce-admission
-      - run: just probe-native-launch
+      - run: just probe-native-launch "$RUNNER_TEMP/launch-probe"
       - name: Observe real catalog startup and transport phases
         run: |
           just --no-deps bench-catalog-launch "$RUNNER_TEMP/catalog-launch"

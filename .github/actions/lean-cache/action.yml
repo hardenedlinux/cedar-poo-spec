@@ -33,7 +33,12 @@ runs:
       id: project
       uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
       with:
-        path: .lake/build
+        # Only Lake compiler products are reusable. Fixture JSON, process
+        # receipts and fresh-path cohorts are generated evidence, never cache.
+        path: |
+          .lake/build/lib
+          .lake/build/ir
+          .lake/build/bin
         key: lean-project-${{ steps.identity.outputs.compatibility }}-${{ github.job }}-${{ steps.identity.outputs.sources }}
         # Source changes may reuse compatible outputs. Lake's own traces decide
         # what to rebuild. Never restore across a compiler/configuration boundary.

@@ -267,3 +267,22 @@ validation, fresh Requests, both authorizers and full-source binding. A kernel o
 service attribution needs direct duration evidence; the current PID correlation
 is not substituted for that evidence. Exact-head Ubuntu CI remains a separate
 receipt recorded with the PR.
+
+* Integrated framework and CI output ownership
+
+Three parallel framework/proof commits through =439b6e5= are preserved, including
+required-parent POO composition, usage obligations and authority-bound publication
+review. The complete integrated =just check= passes. Rebuilding all four ordinary
+production executables gives exactly the measured hashes; the additional proofs
+and tighter cache/output ownership therefore do not invalidate the recorded
+production measurements. [[file:native-source-table-integration.json][The integration receipt]] records the gate and identities.
+
+The prior parallel head's conformance job fails because a restored compiler cache
+contains =.lake/build/launch-probe=, while the diagnostic correctly requires a new
+output directory. The repair caches only Lake's =lib/ir/bin= compiler products and
+puts CI diagnostic observations in a fresh =RUNNER_TEMP= directory. It preserves
+fresh-directory refusal and old observations. A local occupied-default-path
+negative control leaves its sentinel intact while all six expected-error main
+protocol observations complete in the explicit new output path. Actual full
+catalog launch controls remain the separate 24-record workload. No arbitrary
+cache version aliases, deletion or relaxed directory checks are added.
