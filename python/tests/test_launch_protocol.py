@@ -6,10 +6,20 @@ import sys
 import tempfile
 import time
 import unittest
-from cedar_poo_py_test.launch import events, StderrObservation
+from unittest import mock
+from cedar_poo_py_test.launch import events, StderrObservation, file_metadata
 
 
 class LaunchProtocolTests(unittest.TestCase):
+    def test_unavailable_xattrs_are_explicit_not_an_empty_success(self):
+        with tempfile.NamedTemporaryFile() as source:
+            with mock.patch("cedar_poo_py_test.launch.os.listxattr", create=True,
+                            side_effect=AttributeError("unavailable platform API")):
+                observed = file_metadata(Path(source.name))
+            self.assertIn("xattrs_error", observed)
+            self.assertNotIn("xattrs_sha256", observed)
+            self.assertGreater(observed["inode"], 0)
+
     def test_stderr_arrival_before_exit_and_raw_final_fragment(self):
         with tempfile.TemporaryDirectory() as directory:
             report = Path(directory) / "stderr.txt"

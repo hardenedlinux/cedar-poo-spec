@@ -21,7 +21,7 @@ def file_metadata(path: Path):
     try:
         result["xattrs_sha256"] = {name: hashlib.sha256(os.getxattr(path, name)).hexdigest()
                                    for name in os.listxattr(path)}
-    except OSError as error:
+    except (OSError, AttributeError) as error:
         result["xattrs_error"] = str(error)
     return result
 
