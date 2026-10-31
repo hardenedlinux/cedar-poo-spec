@@ -32,6 +32,72 @@ domain-specific reference candidate; its README claim of a formal CapBAC model
 is not admitted as a checked dependency or a proof of this API. No repository
 above supplies a universal, drop-in Zero Trust theorem covering Gateway recovery.
 
+* Architecture completeness review
+
+The predicate conjunction is an effect-boundary kernel. It is insufficient as a
+complete Zero Trust architecture without identity, resource inventory, protected
+communications, dynamic Policy administration, posture monitoring, authenticated
+fact sources and feedback. A consumer cannot discharge these responsibilities
+by providing predicates that always return True.
+
+The seven-tenet alignment to NIST SP 800-207 is an architectural checklist:
+all services/data are resources; communications are protected independently of
+location; grants are scoped to sessions/resources; decisions use dynamic facts;
+resource posture is measured; authentication/authorization precede access and
+are reevaluated; security observations inform governed improvements. These
+tenets are not seven properties established by the current Lean code.
+
+| Logical role | Framework interpretation | Application evidence required |
+|--------------+--------------------------+-------------------------------|
+| Policy engine | Authorization decision over authenticated subject, resource, right and current context | Concrete Cedar projection and validated source facts |
+| Policy administrator | Establish/revoke the admitted path using the engine decision | Bound publication/activation, credential custody and revocation ordering |
+| Policy enforcement point | Admit, monitor and terminate effects at the real use boundary | Complete mediation, current-state join and exclusive execution capability |
+| Identity / posture / resource sources | Provenance-bound, versioned evidence interpreted by requirements | Attestation, expiry, trust-domain binding, redaction and source availability semantics |
+| Monitoring and audit | Observations and outcomes inform later governed decisions | Durable records, privacy and a controlled path back to Policy publication |
+
+Roles are independent of programming languages and may be colocated. Protected
+networking alone does not imply application authorization. Resource ownership,
+cluster membership and shared workload identity do not establish an actor's
+incarnation or delegation rights. The core remains independent of Gateway.
+
+Public reference interfaces clarify concrete missing obligations:
+[[https://github.com/spiffe/spiffe/blob/main/standards/SPIFFE_Workload_API.md][SPIFFE's Workload API]]
+requires caller identification and complete update/redaction handling; a
+reconnected stream does not preserve removed identity material. The
+[[https://github.com/spiffe/spire/blob/main/doc/plugin_agent_workloadattestor_k8s.md][SPIRE Kubernetes attestor]]
+documents that its selectors do not resist a compromised node. The
+[[https://github.com/openziti/ziti][OpenZiti architecture]] illustrates service-level
+connectivity authorization and encrypted networking. None is a checked dependency
+or a proof of application consumption, budgets or recovery. They motivate
+consumer identity/channel requirements; this library does not implement them.
+
+=ZeroTrust.UsageControl= now distinguishes initial/ongoing authorization,
+environmental conditions, obligation actions across actual before/after states,
+and allowed mutations. It retains =Framework.required= at every new effect.
+The application's existing transition relation is reused. =resume= means only
+that its recovery relation holds; it cannot authorize a new effect. =close=
+requires terminal and accounted evidence, and cannot release unknown exposure
+from a terminal label alone. Post-use accounting is an application extension;
+the library does not claim UCON's full temporal rule system, fairness or eventual
+obligation fulfillment. This addition uses no Gateway types or new scheduler.
+
+The application must materialize a current context containing authoritative
+subject/delegation, resource/right, Policy/profile, posture, budget/history and
+execution-owner evidence. Evidence needs producer authority, meaning/schema,
+source cut and validity. The deciding transition must order relevant changes
+against use. A lease only bounds staleness unless the source protocol provides
+stronger ordering; unavailable sources do not imply healthy/current.
+
+Authorization Delta review must identify the exact authoritative parent and
+candidate in that context. Existing LeanPoo EvidenceBinding preserves the
+original invocation rule while binding subject/descriptor/context references.
+Reference equality does not authenticate the producer or implement final CAS.
+The required parent must be selected independently of the child. In particular,
+public review records with independently replaceable analysis/snapshot fields
+require a provenance/admission audit before being trusted as publication rights.
+Pending results and lost replies must reconcile the original intent, not replace
+the evidence, rebase the parent or clear unresolved consumption.
+
 * Modular frameworks and dependency direction
 
 =ZeroTrust.lean= and =Authorization.lean= are aggregate entrypoints, not monolithic
@@ -44,6 +110,7 @@ CedarPooSpec/
     Model.lean          -- typed predicates, Framework, Observation
     Composition.lean    -- adapt, strengthen, refinement
     Continuous.lean     -- freshness, revocation, mediated trace projection
+    UsageControl.lean   -- phases, conditions, witnessed obligations and mutation
     ProfileObject.lean  -- generic LeanPoo objects and strengthening Sessions
   Authorization.lean
   Authorization/
@@ -190,6 +257,12 @@ isolation, cryptography, compiler/OS correctness or deployed NIST compliance is
 claimed. Queue insertion is the local response release boundary, not peer receipt.
 
 * Tests and acceptance
+
+The [[file:../../Tests/ZeroTrust/UsageControl.lean][UsageControl fixture]] adds a
+non-Gateway usage example: an authenticated Allow can still fail posture or
+obligation checks; mutable updates cannot reset consumed state; recovery does
+not refresh authorization; terminal alone cannot close unknown accounting.
+These checked safety examples are not implementation or liveness evidence.
 
 The generic artifact fixture imports no Gateway and checks initial use,
 revocation despite currentness, attribute ABA, fresh observation without
