@@ -46,3 +46,23 @@ fn exact_snapshot_changes_and_failed_parse_do_not_poison_a_later_hit() {
         (4, 2, 2, 1)
     );
 }
+
+#[test]
+fn digest_identity_does_not_alias_signed_zero_or_changed_source() {
+    let first = serde_json::json!({"x":0.0});
+    let second = serde_json::json!({"x":-0.0});
+    assert_eq!(
+        first, second,
+        "Value equality alone loses signed-zero source identity"
+    );
+    let mut slot = super::EntitySlot::new(None);
+    let mut metrics = crate::ReplayMetrics::default();
+    let a = slot.receipt_digest(&first, Some(&mut metrics)).unwrap();
+    let b = slot.receipt_digest(&second, Some(&mut metrics)).unwrap();
+    assert_ne!(a, b);
+    assert_eq!(slot.receipt_digest(&second, Some(&mut metrics)).unwrap(), b);
+    assert_eq!(
+        (metrics.entity_hash_calls, metrics.entity_hash_reuses),
+        (2, 1)
+    );
+}

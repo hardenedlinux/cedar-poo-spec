@@ -6,12 +6,14 @@ static CALLS: AtomicUsize = AtomicUsize::new(0);
 static REQUESTED: AtomicUsize = AtomicUsize::new(0);
 static LIVE: AtomicUsize = AtomicUsize::new(0);
 static PEAK: AtomicUsize = AtomicUsize::new(0);
+static WINDOW_PEAK: AtomicUsize = AtomicUsize::new(0);
 struct Observed;
 fn add(size: usize) {
     CALLS.fetch_add(1, Ordering::Relaxed);
     REQUESTED.fetch_add(size, Ordering::Relaxed);
     let live = LIVE.fetch_add(size, Ordering::Relaxed) + size;
     PEAK.fetch_max(live, Ordering::Relaxed);
+    WINDOW_PEAK.fetch_max(live, Ordering::Relaxed);
 }
 // SAFETY: all allocation/layout/pointer contracts are forwarded unchanged to
 // System. Observation uses only nonallocating atomics, including on failure.
@@ -56,4 +58,14 @@ pub(super) fn snapshot() -> [usize; 4] {
         LIVE.load(Ordering::Relaxed),
         PEAK.load(Ordering::Relaxed),
     ]
+}
+
+// Sequential diagnostic phase windows; concurrent allocations remain process-wide.
+pub(super) fn begin_window() -> [usize; 4] {
+    let current = snapshot();
+    WINDOW_PEAK.store(current[2], Ordering::Relaxed);
+    current
+}
+pub(super) fn window_peak() -> usize {
+    WINDOW_PEAK.load(Ordering::Relaxed)
 }

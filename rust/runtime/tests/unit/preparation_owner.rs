@@ -1,7 +1,7 @@
 #[test]
 fn policy_body_preparation_keys_complete_parsed_text_including_formatting() {
     use super::{ParsedTextPolicies, PreparedReplay};
-    use crate::bridge::policy_bodies_by_id;
+    use crate::policy_codec::policy_bodies_by_id;
     let mut prepared = PreparedReplay::default();
     let mut metrics = crate::ReplayMetrics::default();
     for text in [

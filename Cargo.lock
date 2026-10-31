@@ -347,6 +347,7 @@ dependencies = [
  "cedar-policy",
  "cedar-poo-core",
  "cedar-poo-runtime",
+ "libc",
  "serde",
  "serde_json",
 ]

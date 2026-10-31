@@ -71,3 +71,12 @@ fn write_canonical_json(value: &Value, output: &mut Vec<u8>) -> Result<(), Strin
     }
     Ok(())
 }
+
+#[test]
+fn streaming_hash_preserves_block_boundaries_and_large_escaped_payloads() {
+    for length in [0, 1, 1023, 1024, 1025, 2048, 4097] {
+        let value =
+            json!({"z": ["\\\"\nλ".repeat(length),i64::MIN,u64::MAX],"a":{"zero":-0.0,"one":1.0}});
+        assert_eq!(value_sha256(&value), legacy_hash(&value), "length {length}");
+    }
+}

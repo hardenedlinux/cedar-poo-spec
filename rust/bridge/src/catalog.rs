@@ -1,10 +1,12 @@
 //! Strict replay of the complete Lean manifest catalog through the existing Cedar runtime.
-use crate::catalog_observation::{CatalogObservation, record};
+use crate::catalog_observation::{
+    CatalogObservation, memory_end, memory_end_entry, memory_start, record,
+};
 use cedar_poo_core::CompiledPolicyJson;
 use cedar_poo_runtime::{
     Manifest, ReplayMetrics, SchemaEvolutionBundle, ValidatedManifest,
     render_identified_policy_sources, replay_manifest, replay_manifest_measured,
-    replay_schema_only_revision, replay_validated_manifest, replay_validated_manifest_measured,
+    replay_schema_only_revision,
 };
 use serde_json::{Value, json};
 use std::collections::{BTreeMap, BTreeSet};
@@ -20,31 +22,39 @@ pub(crate) fn replay_observed(
     mut metrics: Option<&mut ReplayMetrics>,
     mut observation: Option<&mut CatalogObservation>,
 ) -> Result<Value, String> {
+    let memory = memory_start(&observation);
     let decode = observation.as_ref().map(|_| Instant::now());
-    let catalog: BTreeMap<String, Value> =
-        serde_json::from_str(input).map_err(|e| e.to_string())?;
+    let catalog = crate::catalog_input::decode(input)?;
+    memory_end(&mut observation, "decode", memory);
     if catalog.is_empty() {
         return Err("empty manifest catalog".into());
     }
     if let (Some(observation), Some(started)) = (observation.as_deref_mut(), decode) {
         observation.decode_ns = started.elapsed().as_nanos();
     }
+    let memory = memory_start(&observation);
+    let planned = observation.as_ref().map(|_| Instant::now());
+    let mut schemas = cedar_poo_runtime::SchemaPreparation::from_sources(
+        crate::catalog_input::schema_sources(&catalog),
+    )?;
+    if let (Some(observation), Some(started)) = (observation.as_deref_mut(), planned) {
+        observation.shared_preparation_ns = started.elapsed().as_nanos();
+    }
+    memory_end(&mut observation, "schema-plan", memory);
     let entries_started = observation.as_ref().map(|_| Instant::now());
     let mut output = BTreeMap::new();
     let mut verified = BTreeMap::new();
     let mut handoff = None;
     let mut deployment = None;
-    for (name, value) in catalog {
+    for (name, raw) in catalog {
+        let memory = memory_start(&observation);
         let started = observation.as_ref().map(|_| Instant::now());
+        let value = crate::catalog_input::value(raw)?;
         let result = if value.get("cases").is_some() {
             if value.get("schema").is_some() {
                 let manifest: ValidatedManifest =
                     serde_json::from_value(value).map_err(|e| format!("{name}: {e}"))?;
-                let receipts = if let Some(stats) = metrics.as_deref_mut() {
-                    replay_validated_manifest_measured(&manifest, stats)?
-                } else {
-                    replay_validated_manifest(&manifest)?
-                };
+                let receipts = schemas.replay(&manifest, metrics.as_deref_mut())?;
                 let result = json!({"kind":"schema-bound","receipts":receipts});
                 // Only these existing cross-artifact consumers borrow a manifest later.
                 // Other manifests finish their lifecycle at this entry, after replay.
@@ -75,6 +85,7 @@ pub(crate) fn replay_observed(
             json!({"kind":"schema-evolution","receipt":replay_schema_only_revision(&bundle)?})
         } else if name == "pseudonymization-deployable" {
             deployment = Some(value);
+            memory_end_entry(&mut observation, &name, memory);
             record(&mut observation, &name, started, "deferred-deployment", 0);
             continue;
         } else if name == "pseudonymization-tabular" {
@@ -103,11 +114,13 @@ pub(crate) fn replay_observed(
             json!({"kind":"data-fixture-only"})
         } else if name == "claim-settlement-handoff" {
             handoff = Some(value);
+            memory_end_entry(&mut observation, &name, memory);
             record(&mut observation, &name, started, "deferred-handoff", 0);
             continue;
         } else {
             return Err(format!("unclassified manifest catalog entry: {name}"));
         };
+        memory_end_entry(&mut observation, &name, memory);
         record(
             &mut observation,
             &name,
@@ -121,6 +134,7 @@ pub(crate) fn replay_observed(
         observation.entries_ns = started.elapsed().as_nanos();
         observation.retained_manifests = verified.len();
     }
+    let memory = memory_start(&observation);
     let finalization = observation.as_ref().map(|_| Instant::now());
     if let Some(value) = deployment {
         let roots = value
@@ -189,8 +203,11 @@ pub(crate) fn replay_observed(
     if let (Some(observation), Some(started)) = (observation.as_deref_mut(), finalization) {
         observation.finalization_ns = started.elapsed().as_nanos();
     }
+    memory_end(&mut observation, "finalization", memory);
+    let memory = memory_start(&observation);
     let cleanup = observation.as_ref().map(|_| Instant::now());
     drop(verified);
+    memory_end(&mut observation, "cleanup", memory);
     if let (Some(observation), Some(started)) = (observation, cleanup) {
         observation.cleanup_ns = started.elapsed().as_nanos();
     }

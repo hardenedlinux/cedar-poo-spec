@@ -1,12 +1,14 @@
 //! One invocation/schema-bound immutable entity preparation slot.
 use crate::observation::ReplayMetrics;
 use cedar_policy::{Entities, Schema};
+use cedar_poo_core::JsonSourceIdentity;
 use serde_json::Value;
 use std::time::Instant;
 
 pub(crate) struct EntitySlot<'schema, 'input> {
     schema: Option<&'schema Schema>,
     prepared: Option<(&'input Value, Entities)>,
+    digest: Option<(&'input Value, String)>,
     #[cfg(test)]
     force_fresh: bool,
 }
@@ -15,6 +17,7 @@ impl<'schema, 'input> EntitySlot<'schema, 'input> {
         Self {
             schema,
             prepared: None,
+            digest: None,
             #[cfg(test)]
             force_fresh: false,
         }
@@ -28,6 +31,30 @@ impl<'schema, 'input> EntitySlot<'schema, 'input> {
             force_fresh: true,
             ..Self::new(schema)
         }
+    }
+    pub(crate) fn receipt_digest(
+        &mut self,
+        source: &'input Value,
+        metrics: Option<&mut ReplayMetrics>,
+    ) -> Result<String, String> {
+        let reusable = self
+            .digest
+            .as_ref()
+            .is_some_and(|(previous, _)| previous.same_source(source));
+        #[cfg(test)]
+        let reusable = reusable && !self.force_fresh;
+        if reusable {
+            if let Some(stats) = metrics {
+                stats.entity_hash_reuses += 1;
+            }
+            return Ok(self.digest.as_ref().expect("checked digest").1.clone());
+        }
+        let digest = crate::canonical::value_sha256(source)?;
+        if let Some(stats) = metrics {
+            stats.entity_hash_calls += 1;
+        }
+        self.digest = Some((source, digest.clone()));
+        Ok(digest)
     }
     pub(crate) fn get(
         &mut self,

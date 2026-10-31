@@ -1,0 +1,247 @@
+diff --git a/Cargo.lock b/Cargo.lock
+index dd48814..927145e 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -349,0 +350 @@ dependencies = [
++ "libc",
+diff --git a/rust/bridge/Cargo.toml b/rust/bridge/Cargo.toml
+index 0679139..a386522 100644
+--- a/rust/bridge/Cargo.toml
++++ b/rust/bridge/Cargo.toml
+@@ -14,0 +15 @@ serde_json.workspace = true
++libc = { version = "=0.2.189", optional = true }
+@@ -21 +22 @@ asp-rust.workspace = true
+-allocation-observation = []
++allocation-observation = ["dep:libc"]
+diff --git a/rust/bridge/src/allocation/enabled.rs b/rust/bridge/src/allocation/enabled.rs
+index 861485e..bc29238 100644
+--- a/rust/bridge/src/allocation/enabled.rs
++++ b/rust/bridge/src/allocation/enabled.rs
+@@ -8,0 +9 @@ static PEAK: AtomicUsize = AtomicUsize::new(0);
++static WINDOW_PEAK: AtomicUsize = AtomicUsize::new(0);
+@@ -14,0 +16 @@ fn add(size: usize) {
++    WINDOW_PEAK.fetch_max(live, Ordering::Relaxed);
+@@ -59,0 +62,10 @@ pub(super) fn snapshot() -> [usize; 4] {
++
++// Sequential diagnostic phase windows; concurrent allocations remain process-wide.
++pub(super) fn begin_window() -> [usize; 4] {
++    let current = snapshot();
++    WINDOW_PEAK.store(current[2], Ordering::Relaxed);
++    current
++}
++pub(super) fn window_peak() -> usize {
++    WINDOW_PEAK.load(Ordering::Relaxed)
++}
+diff --git a/rust/bridge/src/allocation/mod.rs b/rust/bridge/src/allocation/mod.rs
+index 5255361..68b8e74 100644
+--- a/rust/bridge/src/allocation/mod.rs
++++ b/rust/bridge/src/allocation/mod.rs
+@@ -5,0 +6,4 @@ pub(crate) use snapshot::snapshot;
++
++mod window;
++pub(crate) use window::{MemoryPhase, begin_phase, end_phase};
++mod system;
+diff --git a/rust/bridge/src/allocation/system.rs b/rust/bridge/src/allocation/system.rs
+new file mode 100644
+index 0000000..8c01ed7
+--- /dev/null
++++ b/rust/bridge/src/allocation/system.rs
+@@ -0,0 +1,72 @@
++//! Read-only platform diagnostics; not application allocation or admission bounds.
++use serde::Serialize;
++#[derive(Default, Serialize)]
++pub(crate) struct SystemMemory {
++    pub resident_bytes: Option<u64>,
++    pub heap_in_use_bytes: Option<u64>,
++    pub heap_reserved_bytes: Option<u64>,
++}
++
++#[cfg(all(feature = "allocation-observation", target_os = "macos"))]
++pub(super) fn snapshot() -> SystemMemory {
++    let mut task = std::mem::MaybeUninit::<libc::proc_taskinfo>::zeroed();
++    let length = std::mem::size_of::<libc::proc_taskinfo>() as libc::c_int;
++    // SAFETY: own PID, documented PROC_PIDTASKINFO buffer type/size; initialized
++    // data is read only after a complete write. No target process is modified.
++    let written = unsafe {
++        libc::proc_pidinfo(
++            libc::getpid(),
++            libc::PROC_PIDTASKINFO,
++            0,
++            task.as_mut_ptr().cast(),
++            length,
++        )
++    };
++    let resident = if written == length {
++        // SAFETY: proc_pidinfo wrote the complete integer-only proc_taskinfo.
++        Some(unsafe { task.assume_init() }.pti_resident_size)
++    } else {
++        None
++    };
++    let mut heap = std::mem::MaybeUninit::<libc::malloc_statistics_t>::zeroed();
++    // SAFETY: malloc_zone_statistics fills the documented integer-only output;
++    // a null zone requests the sum over all allocator zones (SDK malloc.h).
++    let heap = unsafe {
++        libc::malloc_zone_statistics(std::ptr::null_mut(), heap.as_mut_ptr());
++        heap.assume_init()
++    };
++    SystemMemory {
++        resident_bytes: resident,
++        heap_in_use_bytes: Some(heap.size_in_use as u64),
++        heap_reserved_bytes: Some(heap.size_allocated as u64),
++    }
++}
++
++#[cfg(all(
++    feature = "allocation-observation",
++    target_os = "linux",
++    target_env = "gnu"
++))]
++pub(super) fn snapshot() -> SystemMemory {
++    // SAFETY: GNU mallinfo2 takes no pointers and returns allocator statistics.
++    let heap = unsafe { libc::mallinfo2() };
++    // SAFETY: sysconf's documented page-size query takes no pointers.
++    let page = unsafe { libc::sysconf(libc::_SC_PAGESIZE) };
++    let resident = std::fs::read_to_string("/proc/self/statm")
++        .ok()
++        .and_then(|s| s.split_whitespace().nth(1)?.parse::<u64>().ok())
++        .and_then(|n| u64::try_from(page).ok().and_then(|p| n.checked_mul(p)));
++    SystemMemory {
++        resident_bytes: resident,
++        heap_in_use_bytes: Some((heap.uordblks + heap.hblkhd) as u64),
++        heap_reserved_bytes: Some((heap.arena + heap.hblkhd) as u64),
++    }
++}
++
++#[cfg(all(
++    feature = "allocation-observation",
++    not(any(target_os = "macos", all(target_os = "linux", target_env = "gnu")))
++))]
++pub(super) fn snapshot() -> SystemMemory {
++    SystemMemory::default()
++}
+diff --git a/rust/bridge/src/allocation/window.rs b/rust/bridge/src/allocation/window.rs
+new file mode 100644
+index 0000000..97561df
+--- /dev/null
++++ b/rust/bridge/src/allocation/window.rs
+@@ -0,0 +1,43 @@
++//! Phase-owned diagnostic counters; unavailable observations stay absent.
++use serde::Serialize;
++
++#[derive(Serialize)]
++pub(crate) struct MemoryPhase {
++    live_before_bytes: usize,
++    live_after_bytes: usize,
++    phase_peak_requested_bytes: usize,
++    allocation_requests: usize,
++    requested_bytes: usize,
++    system: super::system::SystemMemory,
++}
++
++pub(crate) fn begin_phase() -> Option<[usize; 4]> {
++    #[cfg(feature = "allocation-observation")]
++    {
++        Some(super::enabled::begin_window())
++    }
++    #[cfg(not(feature = "allocation-observation"))]
++    {
++        None
++    }
++}
++pub(crate) fn end_phase(before: Option<[usize; 4]>) -> Option<MemoryPhase> {
++    #[cfg(feature = "allocation-observation")]
++    {
++        let before = before?;
++        let after = super::enabled::snapshot();
++        Some(MemoryPhase {
++            live_before_bytes: before[2],
++            live_after_bytes: after[2],
++            phase_peak_requested_bytes: super::enabled::window_peak(),
++            allocation_requests: after[0] - before[0],
++            requested_bytes: after[1] - before[1],
++            system: super::system::snapshot(),
++        })
++    }
++    #[cfg(not(feature = "allocation-observation"))]
++    {
++        let _ = before;
++        None
++    }
++}
+diff --git a/rust/bridge/src/benchmark.rs b/rust/bridge/src/benchmark.rs
+index 70822f4..7210339 100644
+--- a/rust/bridge/src/benchmark.rs
++++ b/rust/bridge/src/benchmark.rs
+@@ -2 +2 @@
+-use crate::catalog::{replay, replay_observed};
++use crate::catalog::replay_observed;
+@@ -13 +13,2 @@ pub(crate) fn run(input: &str, cli_input_read_ns: u128) -> Result<(), String> {
+-    let reference = replay(input)?;
++    let mut reference_catalog=CatalogObservation::default();
++    let reference=replay_observed(input,None,Some(&mut reference_catalog))?;
+@@ -135 +136 @@ pub(crate) fn run(input: &str, cli_input_read_ns: u128) -> Result<(), String> {
+-        json!({"kind":"native-catalog-benchmark", "build_profile":if cfg!(debug_assertions) { "debug" } else { "release" }, "warmup":1, "cli":{"input_read_ns":cli_input_read_ns}, "lifecycle":{"warmup_ns":warmup_ns,"revision_inventory_ns":revision_inventory_ns,"samples_ns":samples_ns,"reference_cleanup_ns":reference_cleanup_ns,"bookkeeping_ns":bookkeeping_ns,"measured_body_ns":measured_body_ns}, "samples":results})
++        json!({"kind":"native-catalog-benchmark", "build_profile":if cfg!(debug_assertions) { "debug" } else { "release" }, "warmup":1, "reference_catalog":reference_catalog, "cli":{"input_read_ns":cli_input_read_ns}, "lifecycle":{"warmup_ns":warmup_ns,"revision_inventory_ns":revision_inventory_ns,"samples_ns":samples_ns,"reference_cleanup_ns":reference_cleanup_ns,"bookkeeping_ns":bookkeeping_ns,"measured_body_ns":measured_body_ns}, "samples":results})
+diff --git a/rust/bridge/src/catalog.rs b/rust/bridge/src/catalog.rs
+index 7627dd9..d0041cb 100644
+--- a/rust/bridge/src/catalog.rs
++++ b/rust/bridge/src/catalog.rs
+@@ -2 +2 @@
+-use crate::catalog_observation::{CatalogObservation, record};
++use crate::catalog_observation::{CatalogObservation, memory_start, memory_end, memory_end_entry, record};
+@@ -22,0 +23 @@ pub(crate) fn replay_observed(
++    let memory=memory_start(&observation);
+@@ -25,0 +27 @@ pub(crate) fn replay_observed(
++    memory_end(&mut observation,"decode",memory);
+@@ -37,0 +40 @@ pub(crate) fn replay_observed(
++        let memory=memory_start(&observation);
+@@ -77,0 +81 @@ pub(crate) fn replay_observed(
++            memory_end_entry(&mut observation,&name,memory);
+@@ -105,0 +110 @@ pub(crate) fn replay_observed(
++            memory_end_entry(&mut observation,&name,memory);
+@@ -110,0 +116 @@ pub(crate) fn replay_observed(
++        memory_end_entry(&mut observation,&name,memory);
+@@ -123,0 +130 @@ pub(crate) fn replay_observed(
++    let memory=memory_start(&observation);
+@@ -191,0 +199,2 @@ pub(crate) fn replay_observed(
++    memory_end(&mut observation,"finalization",memory);
++    let memory=memory_start(&observation);
+@@ -193,0 +203 @@ pub(crate) fn replay_observed(
++    memory_end(&mut observation,"cleanup",memory);
+diff --git a/rust/bridge/src/catalog_observation.rs b/rust/bridge/src/catalog_observation.rs
+index 9b9b29d..c6cd904 100644
+--- a/rust/bridge/src/catalog_observation.rs
++++ b/rust/bridge/src/catalog_observation.rs
+@@ -8,0 +9 @@ pub(crate) struct CatalogObservation {
++    pub shared_preparation_ns: u128,
+@@ -12,0 +14 @@ pub(crate) struct CatalogObservation {
++    pub memory: BTreeMap<String, crate::allocation::MemoryPhase>,
+@@ -37,0 +40,28 @@ pub(crate) fn record(
++
++pub(crate) fn memory_start(observation: &Option<&mut CatalogObservation>) -> Option<[usize; 4]> {
++    observation
++        .as_ref()
++        .and_then(|_| crate::allocation::begin_phase())
++}
++pub(crate) fn memory_end(
++    observation: &mut Option<&mut CatalogObservation>,
++    label: &str,
++    before: Option<[usize; 4]>,
++) {
++    if let (Some(observation), Some(phase)) = (
++        observation.as_deref_mut(),
++        crate::allocation::end_phase(before),
++    ) {
++        observation.memory.insert(label.to_owned(), phase);
++    }
++}
++
++pub(crate) fn memory_end_entry(
++    observation: &mut Option<&mut CatalogObservation>,
++    name: &str,
++    before: Option<[usize; 4]>,
++) {
++    if before.is_some() {
++        memory_end(observation, &format!("entry:{name}"), before);
++    }
++}

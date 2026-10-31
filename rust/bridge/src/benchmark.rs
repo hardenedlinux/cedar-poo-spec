@@ -1,46 +1,34 @@
 //! Fixed native catalog benchmark with explicit lifecycle and cleanup costs.
-use crate::catalog::{replay, replay_observed};
+use crate::catalog::replay_observed;
 use crate::catalog_observation::CatalogObservation;
 use cedar_poo_runtime::ReplayMetrics;
 use serde_json::{Value, json};
-use std::collections::{BTreeMap, BTreeSet};
 use std::time::Instant;
 
 /// Fixed complete-catalog samples. Equality/counters gate acceptance; time does not.
 pub(crate) fn run(input: &str, cli_input_read_ns: u128) -> Result<(), String> {
     let body_started = Instant::now();
     let started = Instant::now();
-    let reference = replay(input)?;
+    let mut reference_catalog = CatalogObservation::default();
+    let reference = replay_observed(input, None, Some(&mut reference_catalog))?;
     let warmup_ns = started.elapsed().as_nanos();
     let started = Instant::now();
-    let source: BTreeMap<String, Value> = serde_json::from_str(input).map_err(|e| e.to_string())?;
-    let expected_entries = source.len();
-    let expected_revisions: usize = source
-        .values()
-        .filter_map(|entry| entry.get("cases").and_then(Value::as_array))
-        .map(|cases| {
-            cases
-                .iter()
-                .filter_map(|case| case.get("revision").and_then(Value::as_str))
-                .collect::<BTreeSet<_>>()
-                .len()
-        })
-        .sum();
-
-    let expected_entity_parses: usize = source
-        .values()
-        .filter_map(|entry| entry.get("cases").and_then(Value::as_array))
-        .map(|cases| {
-            cases
-                .iter()
-                .enumerate()
-                .filter(|(index, case)| {
-                    *index == 0 || case.get("entities") != cases[*index - 1].get("entities")
-                })
-                .count()
-        })
-        .sum();
-    drop(source);
+    let inventory = crate::benchmark_inventory::read(input)?;
+    let (
+        expected_entries,
+        expected_revisions,
+        expected_source_parses,
+        expected_entity_parses,
+        expected_schema_bindings,
+        expected_validations,
+    ) = (
+        inventory.entries,
+        inventory.revisions,
+        inventory.sources,
+        inventory.entities,
+        inventory.schemas,
+        inventory.validations,
+    );
     let revision_inventory_ns = started.elapsed().as_nanos();
     let samples_started = Instant::now();
     let mut results = Vec::with_capacity(3);
@@ -70,14 +58,23 @@ pub(crate) fn run(input: &str, cli_input_read_ns: u128) -> Result<(), String> {
         if catalog.entries.len() != expected_entries {
             return Err("incomplete catalog stage observations".into());
         }
-        let catalog_accounted =
-            catalog.decode_ns + catalog.entries_ns + catalog.finalization_ns + catalog.cleanup_ns;
+        let catalog_accounted = catalog.decode_ns
+            + catalog.shared_preparation_ns
+            + catalog.entries_ns
+            + catalog.finalization_ns
+            + catalog.cleanup_ns;
         if catalog_accounted > replay_ns {
             return Err("overlapping catalog stage observations".into());
         }
         if rows == 0
             || metrics.authorization_calls != rows * 2
             || metrics.prepared_revisions != expected_revisions
+            || metrics.source_policy_loads != expected_source_parses
+            || metrics.source_policy_loads + metrics.source_policy_reuses != expected_revisions
+            || metrics.revision_syntax_reuses != metrics.source_policy_reuses
+            || metrics.schema_parse_calls + metrics.schema_reuses != expected_schema_bindings
+            || metrics.policy_validation_calls != expected_validations
+            || metrics.entity_hash_calls + metrics.entity_hash_reuses != rows
             || metrics.entity_parse_calls != expected_entity_parses
             || metrics.entity_parse_calls + metrics.entity_reuses != rows
             || metrics.uid_parse_calls + metrics.uid_reuses != rows * 3
@@ -132,7 +129,7 @@ pub(crate) fn run(input: &str, cli_input_read_ns: u128) -> Result<(), String> {
         .ok_or("overlapping benchmark lifecycle stages")?;
     println!(
         "{}",
-        json!({"kind":"native-catalog-benchmark", "build_profile":if cfg!(debug_assertions) { "debug" } else { "release" }, "warmup":1, "cli":{"input_read_ns":cli_input_read_ns}, "lifecycle":{"warmup_ns":warmup_ns,"revision_inventory_ns":revision_inventory_ns,"samples_ns":samples_ns,"reference_cleanup_ns":reference_cleanup_ns,"bookkeeping_ns":bookkeeping_ns,"measured_body_ns":measured_body_ns}, "samples":results})
+        json!({"kind":"native-catalog-benchmark", "build_profile":if cfg!(debug_assertions) { "debug" } else { "release" }, "warmup":1, "reference_catalog":reference_catalog, "cli":{"input_read_ns":cli_input_read_ns}, "lifecycle":{"warmup_ns":warmup_ns,"revision_inventory_ns":revision_inventory_ns,"samples_ns":samples_ns,"reference_cleanup_ns":reference_cleanup_ns,"bookkeeping_ns":bookkeeping_ns,"measured_body_ns":measured_body_ns}, "samples":results})
     );
     Ok(())
 }

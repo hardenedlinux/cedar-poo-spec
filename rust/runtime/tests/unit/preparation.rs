@@ -1,5 +1,5 @@
 use super::{receipt, validated};
-use crate::bridge::json_sha256;
+use crate::canonical::json_sha256;
 use crate::{
     Case, Manifest, ValidatedManifest, load_policy_set, replay_manifest, replay_validated_manifest,
 };
@@ -160,7 +160,10 @@ fn prepared_catalog_matches_original_workflows() {
         let actual = crate::replay_validated_manifest_measured(&manifest, &mut metrics)
             .expect("prepared workflow");
         assert_eq!(actual, expected, "complete receipts: {name}");
-        assert_eq!(metrics.source_policy_loads, metrics.prepared_revisions);
+        assert_eq!(
+            metrics.source_policy_loads + metrics.source_policy_reuses,
+            metrics.prepared_revisions
+        );
         let original_cases = manifest.cases.clone();
         manifest.cases[0].expected = if manifest.cases[0].expected == "allow" {
             "deny"
@@ -224,7 +227,7 @@ fn prepared_source_cannot_be_rebound_to_same_named_different_policy_body() {
     let mut wire = other.policies.deref().clone();
     wire["staticPolicies"]["base"]["effect"] = json!("forbid");
     other.policies = serde_json::from_value(wire).expect("changed source");
-    let prepared = crate::bridge::SourcePolicies::new(&other).expect("parse changed body");
+    let prepared = crate::revision::SourcePolicies::new(&other).expect("parse changed body");
     let mut loaded = std::collections::BTreeMap::new();
     loaded.insert(case.revision.clone(), prepared);
     let error = crate::replay::check_manifest_prepared(&[case], true, None, None, loaded)
@@ -351,14 +354,62 @@ fn policy_body_preparation_shares_only_complete_source_within_one_invocation() {
             original().expect("independent uncached normalization")
         );
         assert_eq!(metrics.policy_body_normalizations, 2);
-        assert_eq!(metrics.policy_body_reuses, 1);
+        assert_eq!(metrics.policy_body_reuses, 0);
+        assert_eq!(metrics.revision_syntax_reuses, 1);
         assert_eq!(metrics.policy_body_slot_peak, 2);
         assert_eq!(metrics.prepared_revisions, 3);
-        assert_eq!(metrics.source_policy_loads, 3);
+        assert_eq!(metrics.source_policy_loads, 2);
+        assert_eq!(metrics.source_policy_reuses, 1);
         assert_eq!(metrics.authorization_calls, 6);
     }
     let mut conflict = manifest;
     conflict.cases[2].revision = conflict.cases[0].revision.clone();
     let error = replay_manifest(&conflict).expect_err("same revision cannot hide changed body");
     assert!(error.contains("conflicting revision output"), "{error}");
+}
+
+#[test]
+fn shared_schema_retires_and_never_reuses_validation_or_requests() {
+    let manifest = validated(receipt());
+    let source = || {
+        serde_json::from_value::<cedar_poo_core::SchemaSourceJson>(manifest.schema.clone()).unwrap()
+    };
+    let mut owner = crate::SchemaPreparation::from_sources([source(), source()]).unwrap();
+    let mut metrics = crate::ReplayMetrics::default();
+    assert_eq!(
+        owner.replay(&manifest, Some(&mut metrics)),
+        original_validated_replay(&manifest)
+    );
+    let mut changed = validated(receipt());
+    changed.schema[""]["entityTypes"]["Extra"] = json!({"shape":{"type":"Record","attributes":{}}});
+    assert_eq!(
+        owner.replay(&changed, Some(&mut metrics)),
+        original_validated_replay(&changed)
+    );
+    assert_eq!((metrics.schema_parse_calls, metrics.schema_reuses), (2, 0));
+    let mut invalid = validated(receipt());
+    invalid.cases[0].request.context = json!({"unlisted":true});
+    assert_eq!(
+        owner.replay(&invalid, Some(&mut metrics)),
+        original_validated_replay(&invalid)
+    );
+    assert_eq!((metrics.schema_parse_calls, metrics.schema_reuses), (2, 1));
+    owner.replay(&manifest, Some(&mut metrics)).unwrap();
+    assert_eq!(
+        metrics.schema_parse_calls, 3,
+        "last planned use retires SDK state"
+    );
+    assert_eq!(
+        metrics.policy_validation_calls, 4,
+        "every replay validates policies afresh"
+    );
+    let mut policy = validated(receipt());
+    let mut value = policy.cases[0].policies.deref().clone();
+    value["staticPolicies"]["base"]["conditions"] =
+        json!([{"kind":"when","body":{".":{"left":{"Var":"principal"},"attr":"missing"}}}]);
+    policy.cases[0].policies = serde_json::from_value(value).unwrap();
+    assert_eq!(
+        owner.replay(&policy, None),
+        original_validated_replay(&policy)
+    );
 }

@@ -1,14 +1,14 @@
 //! Canonical revision preparation, ordered replay and optional observations.
 use std::ops::Deref;
 
-use crate::bridge::{
-    Case, CheckedRevision, Manifest, ReplayReceipt, SourcePolicies, check_case, json_sha256,
-    valid_revision_name,
-};
-use crate::canonical::value_sha256;
+use crate::bridge::check_case;
+use crate::canonical::json_sha256;
 use crate::entities::EntitySlot;
+use crate::input::{Case, Manifest, ReplayReceipt, valid_revision_name};
 use crate::observation::ReplayMetrics;
 use crate::preparation::PreparedReplay;
+use crate::revision::SourcePolicies;
+use crate::syntax::CheckedRevision;
 use cedar_policy::Schema;
 use std::collections::{BTreeMap, BTreeSet};
 use std::time::Instant;
@@ -67,6 +67,23 @@ pub(crate) fn check_manifest_prepared(
     )
 }
 
+pub(crate) fn check_manifest_prepared_using(
+    cases: &[Case],
+    schema: Option<&Schema>,
+    metrics: Option<&mut ReplayMetrics>,
+    loaded: BTreeMap<String, SourcePolicies>,
+    preparation: &mut PreparedReplay,
+) -> Result<Vec<ReplayReceipt>, String> {
+    check_manifest_with_entities(
+        cases,
+        true,
+        metrics,
+        loaded,
+        EntitySlot::new(schema),
+        Some(preparation),
+    )
+}
+
 pub(crate) fn check_manifest_with_entities<'input>(
     cases: &'input [Case],
     collect_receipts: bool,
@@ -101,17 +118,12 @@ pub(crate) fn check_manifest_with_entities<'input>(
                     metrics.as_deref_mut(),
                     preparation.as_deref_mut(),
                 ),
-                None => {
-                    if let Some(stats) = metrics.as_deref_mut() {
-                        stats.source_policy_loads += 1;
-                    }
-                    CheckedRevision::new(
-                        case,
-                        collect_receipts,
-                        metrics.as_deref_mut(),
-                        preparation.as_deref_mut(),
-                    )
-                }
+                None => CheckedRevision::new(
+                    case,
+                    collect_receipts,
+                    metrics.as_deref_mut(),
+                    preparation.as_deref_mut(),
+                ),
             }
             .map_err(|error| format!("{}: {error}", case.name))?;
             if let (Some(stats), Some(started)) = (metrics.as_deref_mut(), started) {
@@ -123,7 +135,9 @@ pub(crate) fn check_manifest_with_entities<'input>(
             revisions.insert(case.revision.clone(), checked);
         }
         let revision = &revisions[&case.revision];
-        if revision.source != *case.policies.deref() {
+        if !revision.source.same_source(&case.policies)
+            && *revision.source != *case.policies.deref()
+        {
             return Err(format!("{}: conflicting revision output", case.revision));
         }
         let observed = check_case(
@@ -149,7 +163,7 @@ pub(crate) fn check_manifest_with_entities<'input>(
                     .as_ref()
                     .ok_or("missing policy digest for replay receipt")?
                     .clone(),
-                entities_sha256: value_sha256(&case.entities)?,
+                entities_sha256: entities.receipt_digest(&case.entities, metrics.as_deref_mut())?,
                 request_sha256: json_sha256(&case.request)?,
                 decision: observed.decision,
                 reasons: observed.reasons,

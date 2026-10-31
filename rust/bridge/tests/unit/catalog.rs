@@ -52,7 +52,27 @@ fn emitted_catalog_rejects_cross_artifact_tampering() {
     assert!(metrics.uid_reuses > 0);
     assert!(metrics.uid_slot_peak <= metrics.uid_parse_calls);
     assert_eq!(metrics.policy_body_normalizations, 335);
-    assert_eq!(metrics.policy_body_reuses, 665);
+    assert_eq!(metrics.policy_body_reuses, 494);
+    assert_eq!(
+        (
+            metrics.source_policy_loads,
+            metrics.source_policy_reuses,
+            metrics.revision_syntax_reuses
+        ),
+        (194, 27, 27)
+    );
+    assert_eq!(
+        (
+            metrics.schema_parse_calls,
+            metrics.schema_reuses,
+            metrics.policy_validation_calls
+        ),
+        (21, 2, 112)
+    );
+    assert_eq!(
+        (metrics.entity_hash_calls, metrics.entity_hash_reuses),
+        (53, 1227)
+    );
     assert_eq!(metrics.policy_body_slot_peak, 21);
 
     assert_eq!(
@@ -134,5 +154,23 @@ fn catalog_normalization_preserves_duplicate_wire_field_behavior() {
             &duplicated
         )
         .is_err()
+    );
+}
+
+#[test]
+fn complete_parse_errors_and_late_schema_inputs_keep_original_precedence() {
+    let input = r#"{"a":{"cases":[]},"z":{"cases":[],"schema":null},"zz":1e400}"#;
+    let error =
+        serde_json::from_str::<std::collections::BTreeMap<String, serde_json::Value>>(input)
+            .unwrap_err()
+            .to_string();
+    assert_eq!(
+        replay(input).unwrap_err(),
+        error,
+        "full input syntax before any domain error"
+    );
+    assert_eq!(
+        replay(r#"{"a":{"cases":[]},"z":{"cases":[],"schema":null}}"#).unwrap_err(),
+        "manifest has no cases"
     );
 }

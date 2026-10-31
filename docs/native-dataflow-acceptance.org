@@ -1,7 +1,21 @@
 #+TITLE: Complete Cedar typed dataflow migration and native lifecycle evidence
 #+OPTIONS: toc:2
 
-* Result and acceptance boundary
+* Current Schema/revision and representation closure
+
+The latest integrated audit is [[file:native-schema-representation.org][shared Schema, revision and borrowed catalog representation]].
+All-domain =just check= passes. Ordinary Rust peak RSS falls from 119.56 to
+36.08 MiB; complete pipeline peak RSS falls to about 66 MiB. Fixed pipeline
+CPU medians are 430 / 420 ms and wall medians 461.19 / 453.37 ms, but the first
+pair regresses and complete benchmark replay medians are 284.48 / 282.01 ms.
+Stable complete-process acceleration remains unestablished. Qualified phase
+memory, first-file controls, true cold Rust build and the next common wire/SDK
+boundary are recorded together in that audit. PR #8 remains unmerged.
+
+The following sections preserve the earlier POO/UID audit and its cohorts;
+"current" within those historical sections refers to that earlier 7a snapshot.
+
+* Earlier POO/UID result and acceptance boundary
 
 All nine applicable dependent-field object families now use the POO dataflow
 algorithm in one migration. Type/Contract/proof and complete Case/Rust replay

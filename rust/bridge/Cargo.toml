@@ -12,10 +12,11 @@ serde.workspace = true
 cedar-poo-core.workspace = true
 cedar-poo-runtime.workspace = true
 serde_json.workspace = true
+libc = { version = "=0.2.189", optional = true }
 
 [dev-dependencies]
 asp-rust.workspace = true
 
 
 [features]
-allocation-observation = []
+allocation-observation = ["dep:libc"]

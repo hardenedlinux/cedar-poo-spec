@@ -235,3 +235,16 @@ have different meanings and are never authority or admission inputs.
 The [[file:../docs/native-preparation-acceptance.org][integrated acceptance report]] records invocation/schema-bound Entities
 reuse, proved fused Contract reports, canonical hashing, full lifecycle/CPU/RSS
 evidence and all-domain closure. Requests/decisions are never cached.
+
+* Shared native preparation ownership
+
+The runtime separates wire contracts/interning (=input=), SDK policy codecs
+(=policy_codec=), immutable syntax contracts, source preparation and revision
+binding, and Case/replay/schema execution. Dependencies follow that order;
+preparation never imports the Case executor. Public crate APIs retain their owners.
+
+Compiled policy sources are immutable shared snapshots. Schema reuse is explicitly
+source-bound and retires with its declared input uses. Strict policy validation,
+Contexts, Requests and authorizers execute independently. See the
+[[file:../docs/native-schema-representation.org][complete schema/representation audit]] for source identity, parser error ordering,
+allocator observations and the required full-domain proof/replay gates.

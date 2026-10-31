@@ -9,7 +9,12 @@ pub struct ReplayMetrics {
     pub prepared_revisions: usize,
     pub authorization_calls: usize,
     pub source_policy_loads: usize,
+    pub source_policy_reuses: usize,
+    pub revision_syntax_reuses: usize,
     pub schema_preparation_ns: u128,
+    pub schema_parse_calls: usize,
+    pub schema_reuses: usize,
+    pub policy_validation_calls: usize,
     pub revision_preparation_ns: u128,
     /// Disjoint subphases of revision preparation, never additional top-level cost.
     pub revision_source_load_ns: u128,
@@ -32,6 +37,8 @@ pub struct ReplayMetrics {
     pub receipt_ns: u128,
     /// Subphase of request preparation, not an additional top-level duration.
     pub entity_preparation_ns: u128,
+    pub entity_hash_calls: usize,
+    pub entity_hash_reuses: usize,
     pub entity_parse_calls: usize,
     pub entity_reuses: usize,
     pub entity_replacements: usize,

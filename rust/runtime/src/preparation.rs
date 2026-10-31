@@ -1,5 +1,6 @@
 //! Invocation-owned immutable syntax preparation; never caches requests or decisions.
 use crate::observation::ReplayMetrics;
+use crate::policy_codec::canonical_policy_body;
 use cedar_policy::{EntityUid, PolicySet};
 use std::collections::BTreeMap;
 use std::str::FromStr;
@@ -35,9 +36,48 @@ impl ParsedTextPolicies {
 pub(crate) struct PreparedReplay {
     bodies: BTreeMap<String, String>,
     uids: BTreeMap<String, EntityUid>,
+    compiled: BTreeMap<String, std::sync::Arc<PolicySet>>,
+    checked: [BTreeMap<String, crate::syntax::CheckedRevision>; 2],
 }
 
 impl PreparedReplay {
+    pub(crate) fn compiled(
+        &mut self,
+        source: &crate::CompiledPolicyJson,
+        metrics: Option<&mut ReplayMetrics>,
+    ) -> Result<std::sync::Arc<PolicySet>, String> {
+        let key = source.source_identity()?;
+        if let Some(parsed) = self.compiled.get(key) {
+            if let Some(stats) = metrics {
+                stats.source_policy_reuses += 1;
+            }
+            return Ok(parsed.clone());
+        }
+        let parsed = std::sync::Arc::new(crate::policy_codec::load_policy_set(source)?);
+        if let Some(stats) = metrics {
+            stats.source_policy_loads += 1;
+        }
+        self.compiled.insert(key.to_owned(), parsed.clone());
+        Ok(parsed)
+    }
+    pub(crate) fn checked(
+        &self,
+        source: &crate::CompiledPolicyJson,
+        hash: bool,
+    ) -> Result<Option<crate::syntax::CheckedRevision>, String> {
+        Ok(self.checked[usize::from(hash)]
+            .get(source.source_identity()?)
+            .cloned())
+    }
+    pub(crate) fn remember_checked(
+        &mut self,
+        checked: crate::syntax::CheckedRevision,
+        hash: bool,
+    ) -> Result<(), String> {
+        self.checked[usize::from(hash)]
+            .insert(checked.source.source_identity()?.to_owned(), checked);
+        Ok(())
+    }
     fn uid(
         &mut self,
         source: &str,
@@ -105,17 +145,6 @@ pub(crate) fn request_uid(
         }
         Ok(uid)
     }
-}
-
-pub(crate) fn canonical_policy_body(policy: &cedar_policy::Policy) -> Result<String, String> {
-    let json = policy
-        .to_json()
-        .map_err(|error| format!("Cedar policy JSON: {error}"))?;
-    let normalized = cedar_policy::Policy::from_json(None, json)
-        .map_err(|error| format!("Cedar policy normalization: {error}"))?;
-    normalized
-        .to_cedar()
-        .ok_or_else(|| "normalized Cedar policy has no source".into())
 }
 
 #[cfg(test)]

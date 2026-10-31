@@ -1,4 +1,4 @@
-use crate::bridge::json_sha256;
+use crate::canonical::json_sha256;
 use crate::schema::{
     SchemaEvolutionBundle, ValidatedManifest, render_validated_policy_sources,
     replay_schema_only_revision, replay_validated_manifest, verify_schema_only_revision,
@@ -628,7 +628,7 @@ fn direct_cedar_check_identifies_erroring_policy_with_new_source_ids() {
     std::fs::remove_dir_all(directory).expect("remove temporary directory");
 }
 
-fn template_source_fixture() -> (serde_json::Value, super::CompiledPolicyJson) {
+fn template_source_fixture() -> (serde_json::Value, crate::CompiledPolicyJson) {
     let source = json!({
         "staticPolicies": {},
         "templates": {
@@ -823,13 +823,13 @@ mod preparation;
 // Retain the exact pre-optimization normalizer as an independent test oracle.
 fn assert_legacy_revision_bodies(case: &Case) {
     let policies = load_policy_set(&case.policies).expect("compiled JSON policy set");
-    let (text, bodies) = super::rendered_policy_bodies(&policies).expect("render");
+    let (text, bodies) = crate::policy_codec::rendered_policy_bodies(&policies).expect("render");
     let legacy: std::collections::BTreeMap<_, _> = policies
         .policies()
         .map(|p| {
             (
                 p.id().to_string(),
-                super::canonical_policy_body(p).expect("legacy normalization"),
+                crate::policy_codec::canonical_policy_body(p).expect("legacy normalization"),
             )
         })
         .collect();
@@ -876,7 +876,9 @@ fn json_ast_render_preserves_legacy_normalization_and_source_bytes() {
     assert_legacy_revision_bodies(&case);
     let empty = cedar_policy::PolicySet::new();
     assert_eq!(
-        super::rendered_policy_bodies(&empty).unwrap().0,
+        crate::policy_codec::rendered_policy_bodies(&empty)
+            .unwrap()
+            .0,
         "// Generated from Lean-POO. Cedar assigns new IDs when parsing this text.\n\n"
     );
 }
