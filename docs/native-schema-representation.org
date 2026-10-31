@@ -167,7 +167,8 @@ strict Rust workspace/feature/layer checks, independent 23 schema/24 raw workflo
 Cedar/solver/Delta checks, and complete manifest ownership/tamper checks. The
 unchanged Python observation/protocol suite passes all 19 tests.
 
-The final ordinary cohort verifies 686 source inputs against the current tree.
+The final ordinary cohort verifies 686 source inputs at measured commit =04d00e5=.
+The later CI-only test spelling change is explicitly distinguished below.
 It retains 48 native children, 15 byte comparisons, 486 object-profile observations
 and all 1836 per-entry timing rows. The workload, three pairs, three benchmark
 samples, 128 reads and 120-second process supervision remain unchanged.
@@ -292,3 +293,17 @@ Reproduce ordinary comparison with the existing
 =just bench-dataflow-lifecycle <frozen-artifacts> <new-output-directory> 7a99181b5be1bbeca10a54b8a879bdb330d7a3a5=.
 Both variants must be built/frozen from their declared sources before that command;
 the driver verifies their identities, and the output directory must be new.
+
+* Compiler provenance and post-measurement test spelling
+
+The measurements use macOS 26.6.1 (25G76), Rust/Cargo 1.95.0, LLVM 22.1.2,
+Lean 4.34.1 and the recorded exact POO dependency. Ubuntu CI stable is Rust 1.99;
+its newer =byte_char_slices= lint requires the equivalent byte-string spelling
+of one parser mutation alphabet. The three parser tests and strict workspace
+Clippy pass after that test-only change; all mutation bytes are unchanged.
+
+The original 686-input measurement manifest is preserved. Its only subsequent
+source difference is that test file, explicitly recorded with before/after hashes
+in [[file:native-schema-provenance.json][measurement provenance]]. The rebuilt ordinary release executable is byte-identical
+to the measured candidate, so no performance sample is regenerated or relabeled.
+Exact-head remote CI validates the final test spelling separately.

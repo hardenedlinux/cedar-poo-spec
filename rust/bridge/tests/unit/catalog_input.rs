@@ -40,7 +40,7 @@ fn every_truncated_prefix_and_byte_corruption_matches_original_parser() {
         assert_eq!(borrowed(input), original(input), "prefix {end}");
     }
     for index in 0..fixture.len() {
-        for byte in [b' ', b'"', b']', b'{', b'0', b'\\', b'x'] {
+        for byte in *b" \"]{0\\x" {
             let mut input = fixture.as_bytes().to_vec();
             input[index] = byte;
             let input = String::from_utf8(input).unwrap();
