@@ -16,7 +16,7 @@ import sys
 import time
 import tomllib
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(subprocess.check_output(["git", "rev-parse", "--show-toplevel"], text=True).strip())
 BASE_COMMIT = "5ce4bd2c92cc79609221a9cad3a4c3af3893ce7f"
 ROLES = {"bridge": "bridge", "profiles": "object-profiles", "functional": "functional-reuse", "producer": "case-manifests"}
 

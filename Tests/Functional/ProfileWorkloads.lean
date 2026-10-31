@@ -52,4 +52,6 @@ def run (probe : Probe) : IO Unit := do
         sharedAlloc := sharedAlloc + ((← IO.getNumHeartbeats) - alloc)
         checksum := checksum + shared
       IO.println s!"PROFILE-PREP name={probe.name} mode={mode} sample={sample} iterations=128 fields={probe.fields} cold_ns={coldNs} shared_ns={sharedNs} cold_small_allocation_heartbeats={coldAlloc} shared_small_allocation_heartbeats={sharedAlloc} checksum={checksum}"
+      IO.println s!"measurement: profile.{probe.name}.{mode}.cold.sample{sample} {coldNs} ns"
+      IO.println s!"measurement: profile.{probe.name}.{mode}.shared.sample{sample} {sharedNs} ns"
 end CedarPooSpec.FunctionalProfileWorkloads

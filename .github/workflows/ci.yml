@@ -14,6 +14,10 @@ concurrency:
 permissions:
   contents: read
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   lean:
     runs-on: ubuntu-latest
@@ -36,14 +40,29 @@ jobs:
       - run: just check-lean
       - run: |
           mkdir -p .lake/build/resources
+          just bench-policy-reuse | tee .lake/build/resources/policy-reuse.log
+      - run: |
           just bench-functional-reuse | tee .lake/build/resources/functional-reuse.log
       - run: just bench-functional-native | tee .lake/build/resources/functional-native.log
+      - name: Check benchmark source tree is clean
+        run: |
+          git diff --exit-code
+          test -z "$(git ls-files --others --exclude-standard)"
+      - name: Record observation provenance
+        if: ${{ always() }}
+        run: |
+          mkdir -p .lake/build/resources
+          {
+            echo "commit=$GITHUB_SHA run=$GITHUB_RUN_ID attempt=$GITHUB_RUN_ATTEMPT job=$GITHUB_JOB"
+            sha256sum lean-toolchain lakefile.toml lake-manifest.json
+          } > .lake/build/resources/provenance.txt
       - name: Upload native observations
         if: ${{ always() }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: native-evidence-${{ github.job }}
           include-hidden-files: true
+          if-no-files-found: error
           path: .lake/build/resources/
 
   rust:
@@ -124,12 +143,25 @@ jobs:
         run: |
           just --no-deps bench-catalog-launch "$RUNNER_TEMP/catalog-launch"
           just bench-catalog-inode "$RUNNER_TEMP/catalog-inode"
+      - name: Check benchmark source tree is clean
+        run: |
+          git diff --exit-code
+          test -z "$(git ls-files --others --exclude-standard)"
+      - name: Record observation provenance
+        if: ${{ always() }}
+        run: |
+          mkdir -p .lake/build/resources
+          {
+            echo "commit=$GITHUB_SHA run=$GITHUB_RUN_ID attempt=$GITHUB_RUN_ATTEMPT job=$GITHUB_JOB"
+            sha256sum lean-toolchain lakefile.toml lake-manifest.json
+          } > .lake/build/resources/provenance.txt
       - name: Upload native observations
         if: ${{ always() }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: native-evidence-${{ github.job }}
           include-hidden-files: true
+          if-no-files-found: error
           path: |
             .lake/build/resources/
             .lake/build/*.json

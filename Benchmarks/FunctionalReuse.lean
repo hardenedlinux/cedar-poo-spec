@@ -62,6 +62,8 @@ def measureRootScale : IO Unit := do
     let lookupNs := (← IO.monoNanosNow) - start
     unless checksum == 128 do throw (IO.userError "root lookup changed policies")
     IO.println s!"ROOT-SCALE roots={size} retained={retained.entries.length} lookups=128 preparation_ns={preparationNs} lookup_ns={lookupNs} checksum={checksum}"
+    IO.println s!"measurement: functional.roots{size}.prepare {preparationNs} ns"
+    IO.println s!"measurement: functional.roots{size}.lookup128 {lookupNs} ns"
 
 def main (args : List String) : IO Unit := do
   if args == ["--root-scale"] then
@@ -82,6 +84,9 @@ def main (args : List String) : IO Unit := do
       unless slotted.2.2 == (if label == "hot" then 127 else 0) do
         throw (IO.userError "Functional reuse hit/miss mismatch")
       IO.println s!"scenario={label} sample={sample} reads=128 cold_ns={baseline.1} all_roots_ns={retained.1} slot_ns={slotted.1} hits={slotted.2.2} retained_bound=1 checksum={baseline.2}"
+      IO.println s!"measurement: functional.{label}.cold.sample{sample} {baseline.1} ns"
+      IO.println s!"measurement: functional.{label}.retained.sample{sample} {retained.1} ns"
+      IO.println s!"measurement: functional.{label}.slot.sample{sample} {slotted.1} ns"
 end CedarPooSpec.FunctionalReuseBenchmark
 
 def main (args : List String) : IO Unit := CedarPooSpec.FunctionalReuseBenchmark.main args

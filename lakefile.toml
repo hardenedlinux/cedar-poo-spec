@@ -31,6 +31,10 @@ roots = ["Tests"]
 globs = ["Tests.+"]
 
 [[lean_exe]]
+name = "policyReuseNative"
+root = "Benchmarks.PolicyReuse"
+
+[[lean_exe]]
 name = "functionalReuseNative"
 root = "Benchmarks.FunctionalReuse"
 

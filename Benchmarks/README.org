@@ -1,6 +1,70 @@
 #+TITLE: Benchmarks
 #+OPTIONS: toc:nil
 
+* Official Lean benchmark boundary
+
+Follow the [[https://github.com/leanprover/lean4/blob/master/tests/README.md][official Lean benchmark suite]] distinction between =compile_bench=
+(compiled execution), =elab_bench= (elaboration), and =lake_bench= (Lake).
+That suite belongs to Lean's compiler source tree; consumer libraries do not
+need to import its CMake/test infrastructure. Here the existing Lake native
+targets and Justfile recipes own execution. Both policy and Functional reuse
+probes emit the official =measurement: <name> <value> <unit>= lines from Lean,
+alongside their existing coverage/checksum observations. Samples have distinct
+names; their fixed workloads and sample counts are unchanged.
+
+Lean owns algorithms, generated benchmark workloads, checksums, types, Contracts
+and proofs. Rust owns SDK replay, complete-output equality and allocation
+counters. Internal Lean timers use the standard =IO.monoNanosNow=. No benchmark
+recipe uses =lean --run= to qualify native execution time. Elaboration checks
+and proofs retain their existing memory/tick limits separately.
+
+=just bench-policy-reuse= and =just bench-functional-reuse= build and directly
+run Lean executables without Python. =just bench-functional-native= additionally
+observes the native workloads with the external Python testing package.
+Python in =cedar_poo_py_test=, including its =dataflow_lifecycle= process coordinator, only launches fixed
+processes, records identities, compares complete wire bytes and observes OS
+clocks/RSS. It implements no Cedar policy or POO benchmark algorithm. Building
+or consuming the Lean library requires no Python. An in-process timer cannot
+observe its own pre-main interval; that observation stays external. Diagnostic
+and allocation-instrumented samples remain separate from ordinary latency.
+
+* Generated measurements and CI artifacts
+
+Write measurement logs, raw stdout/stderr, CSV and resource receipts under ignored
+=.lake/build/= or =$RUNNER_TEMP=. Keep workloads, expected test fixtures and short
+audit conclusions in Git. Do not commit generated result tables in =docs/=.
+CI uploads native receipts and logs even after a failed check. Download from the
+run's Artifacts section or use:
+
+#+begin_src sh
+gh run download RUN_ID --repo hardenedlinux/cedar-poo-spec --name native-evidence-lean
+gh run download RUN_ID --repo hardenedlinux/cedar-poo-spec --name native-evidence-cedar-conformance
+#+end_src
+
+Availability follows the repository's configured retention. Download evidence
+needed for longer term comparisons before expiry. Source/executable hashes,
+failed controls and ordinary/instrumented scope must stay attached to receipts.
+An absent artifact is unavailable evidence.
+
+The existing =just bench-dataflow-lifecycle ARTIFACTS OUTPUT BASELINE= entrypoint
+now invokes =python -m cedar_poo_py_test.dataflow_lifecycle= in the testing
+package. =Benchmarks/= contains Lean workloads and their documentation/recipes;
+external observation belongs to the existing Python testing package. There is
+no compatibility runner at the old =Benchmarks/DataflowLifecycle.py= path.
+
+The 62 generated CSV/JSON files formerly in =docs/= were removed from the current
+source tree. Historical audit links are pinned to their final snapshot,
+=d182c73f1aefc39811a4694b06a5a69cb45ef388=; history was not rewritten. Retrieve an
+old receipt into an ignored directory, for example:
+
+#+begin_src sh
+mkdir -p .lake/build/historical-evidence
+git show d182c73f1aefc39811a4694b06a5a69cb45ef388:docs/native-c4-preparation-lifecycle.json > .lake/build/historical-evidence/native-c4-preparation-lifecycle.json
+#+end_src
+
+Those historical macOS observations are not artifacts from a newer Ubuntu run.
+Packaging or output-format changes are not new performance measurements.
+
 * Scope
 
 Benchmarks measure cost without defining the public scenario or a correctness
@@ -28,11 +92,11 @@ threshold, increased execution ceiling or build-job override is used.
 * Native Functional preparation and reuse
 
 =just bench-functional-native= builds the =functionalReuseNative= Lake executable
-from the same =Benchmarks.FunctionalReuse= source as the Lean-run probe. No
+from the same =Benchmarks.FunctionalReuse= source as =bench-functional-reuse=. No
 parallel implementation or substitute fixture is used. Warmup/sample/read counts,
 changing facts, checksums, same-root hits and alternating-root misses remain
 identical. Execution has the same 120-second ceiling; elaboration's memory/tick
-settings remain separate. CI runs both probes. A macOS observation measured
+settings remain separate. CI runs direct and externally observed probes. A historical macOS observation measured
 22-49 ms cold versus 1.0-6.4 ms with one slot for 128 same-root reads; alternating
 roots had zero hits and were slower with one slot in that run. This qualifies
 native execution and documents the churn cost, rather than asserting a general

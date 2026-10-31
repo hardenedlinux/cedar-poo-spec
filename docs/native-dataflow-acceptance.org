@@ -4,7 +4,7 @@
 * Measurement storage and benchmark ownership
 
 Generated CSV/JSON observations are build/CI artifacts rather than source files.
-See [[file:../Benchmarks/README.md][native benchmark ownership, artifact download and historical receipt retrieval]].
+See [[file:../Benchmarks/README.org][native benchmark ownership, artifact download and historical receipt retrieval]].
 Historical observations linked below remain pinned to their recorded commit;
 packaging cleanup is not a new performance measurement.
 
@@ -429,8 +429,8 @@ counted in any fixed complete-pipeline performance acceptance.
 
 * Reproduction and next complete optimization boundary
 
-=Benchmarks/DataflowLifecycle.py= is process/artifact glue using the existing
-Python package resource recorder. Lean/Rust and existing conformance gates own
+=cedar_poo_py_test.dataflow_lifecycle= is process/artifact glue inside the existing
+Python testing package, using its resource recorder. Lean/Rust and existing conformance gates own
 policy, Contract, replay and semantic/resource invariants. It adds no domain
 assertion framework or tools directory.
 

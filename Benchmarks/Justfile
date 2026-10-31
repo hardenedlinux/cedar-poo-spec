@@ -4,7 +4,8 @@ check-policy-reuse: build
     timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 Benchmarks/PolicyReuse.lean
 
 bench-policy-reuse: check-policy-reuse
-    timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 --run Benchmarks/PolicyReuse.lean
+    lake build policyReuseNative
+    timeout --signal=TERM --kill-after=3s 120s .lake/build/bin/policyReuseNative
 
 bench-rust-export: prepare-cedar-manifest prepare-mission-successor-manifest
     cargo build --release --locked -p cedar-poo-bridge --manifest-path Cargo.toml --example export_latency
@@ -17,8 +18,8 @@ bench-rust-export: prepare-cedar-manifest prepare-mission-successor-manifest
 
 # Fixed 128-read, three-sample local probe; timings have no pass/fail threshold.
 bench-functional-reuse: build
-    lake build Examples.Enterprise.Agent.Fanout.CrossAgentEgress
-    timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 --run Benchmarks/FunctionalReuse.lean CrossAgentGoverned
+    lake build functionalReuseNative
+    timeout --signal=TERM --kill-after=3s 120s .lake/build/bin/functionalReuseNative CrossAgentGoverned
 
 # Native Rust, fixed full catalog. Time observations never change admission.
 bench-functional-catalog: check-functional-catalog
@@ -31,7 +32,7 @@ bench-functional-catalog: check-functional-catalog
     cohort=$(mktemp -d .lake/build/native-process/cohort.XXXXXX); cp rust/target/release/cedar-poo-bridge "$cohort/bridge"; for stage in fresh repeated-1 repeated-2; do timeout --signal=TERM --kill-after=3s 120s uv run --project python --package cedar-poo-py-test --locked python -m cedar_poo_py_test.resources --output ".lake/build/resources/rust-launch-$stage.json" "$cohort/bridge" benchmark-catalog < .lake/build/functional-catalog.json > ".lake/build/functional-launch-$stage.json" || exit $?; jq -e -f Tests/Conformance/native-catalog-benchmark.jq ".lake/build/functional-launch-$stage.json" > /dev/null || exit $?; jq -c --arg stage "$stage" '{observation:"native-launch-cohort",stage:$stage,build_profile,warmup,cli,lifecycle,samples}' ".lake/build/functional-launch-$stage.json"; done
 
 
-# Same source/workload as the Lean-run probe, compiled to a native executable.
+# Native workloads; Python observes only their outer process/OS resources.
 bench-functional-native: build
     lake build functionalReuseNative objectProfilesNative
     timeout --signal=TERM --kill-after=3s 120s uv run --project python --package cedar-poo-py-test --locked python -m cedar_poo_py_test.resources --output .lake/build/resources/lean-profiles.json .lake/build/bin/objectProfilesNative
@@ -62,7 +63,7 @@ bench-dataflow-lifecycle artifacts output baseline="5ce4bd2c92cc79609221a9cad3a4
     cp .lake/build/bin/objectProfilesNative {{quote(artifacts)}}/after-object-profiles
     cp .lake/build/bin/functionalReuseNative {{quote(artifacts)}}/after-functional-reuse
     cp rust/target/release/cedar-poo-bridge {{quote(artifacts)}}/after-bridge
-    uv run --project python --package cedar-poo-py-test --locked python -u Benchmarks/DataflowLifecycle.py --baseline-commit {{quote(baseline)}} --artifacts {{quote(artifacts)}} --output {{quote(output)}}
+    uv run --project python --package cedar-poo-py-test --locked python -u -m cedar_poo_py_test.dataflow_lifecycle --baseline-commit {{quote(baseline)}} --artifacts {{quote(artifacts)}} --output {{quote(output)}}
 
 # Two fresh files x three real full-catalog launches. Diagnostic phases are
 # separate from the ordinary 48-child process cohort and semantic admission.
