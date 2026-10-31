@@ -8,6 +8,9 @@ See [[file:../Benchmarks/README.org][native benchmark ownership, artifact downlo
 Historical observations linked below remain pinned to their recorded commit;
 packaging cleanup is not a new performance measurement.
 
+The current native algorithm and startup findings are in
+[[file:native-shared-plan-rendering.org][shared Plan and renderer audit]], including complete-process limitations.
+
 * Current C4 preparation and output ownership
 
 The current shared owner, complete all-domain qualification and resource evidence

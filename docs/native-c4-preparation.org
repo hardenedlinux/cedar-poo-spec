@@ -1,6 +1,12 @@
 #+title: Graph-bound C4 preparation, output ownership and complete native qualification
 #+options: toc:2 num:nil
 
+* Current shared-Plan and native startup audit
+
+The subsequent whole-domain implementation and resource findings are in
+[[file:native-shared-plan-rendering.org][shared C4 Plans, rendering ownership and native startup]]. The measurements
+below retain their original revision and are not replaced by that audit.
+
 * Common owner and all-domain scope
 
 This stage follows [[file:native-program-wire.org][Program schema preparation and certified fragments]].

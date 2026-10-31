@@ -1,0 +1,167 @@
+#+TITLE: Shared C4 Plans, rendering ownership and native startup
+#+OPTIONS: toc:2
+
+* Scope and source identities
+
+Measured code: =f3fb989e3a59e8ca64def806459c882db8c06704=; fixed POO:
+=c684858fdbf3df2557b96868d02b451676ea9784=. Lean is 4.34.1 and Cedar SDK
+remains 4.12.0. The reference is =4db76ef900e7d0520aae75b78cd73840cf4d0e69=
+with POO =6ee9a41=. Independently reviewed upstream Property changes are retained;
+they are not assigned a Cedar performance gain.
+
+All applicable domains retain actual typed objects, Contracts, proofs and Rust
+consumers. The bulk workload remains 51 entries, 1280 rows and 2560
+compiled/rendered authorization calls. Nine object families retain accepted,
+forged and missing controls. The three differently shaped Cloud workflows pass
+their own original checks; bulk performance is not extrapolated to them.
+
+* Common-owner implementation
+
+=Object.compilePrepared= uses the same graph-owned C4 preparation for the root
+Plan. Universal =compilePrepared_eq= equates its complete original Plan/error
+result. Cedar =Model.compilePlanPrepared_eq= and =Model.compilePrepared_eq=
+bind that actual table to the same declarations and unchanged edit/provenance
+fold. An active object at its own root still keeps its original Plan. Original
+error order and reachable-only validation remain observable. Distinct roots can
+still repeat internal ancestor resolution; this is not an ancestor-once algorithm.
+
+=EncodedJson= carries an ordinary rendering thunk and a separate erased
+certificate. Array/object closures capture child rendering thunks and keys,
+rather than complete semantic containers. Snapshot closures capture their
+encoding field; =detach= returns the existing rendering. Generated C confirms
+these captures. Actual =JsonEncoding= value/fragment certificates and public
+JSON projections remain, with no new trusted axiom.
+
+Pure JSON owners now import the JSON data API. The complete 18-law profile axiom
+audit moved to the existing WholeMigration proof owner, with the same namespace,
+whitelist and marker. This dependency cleanup does not bypass stock Lean runtime
+initialization.
+
+* Four fixed ordinary process cohorts
+
+C4-only, rendering-only, runtime-boundary and overall cohorts each execute 48
+native children and 15 complete wire comparisons. All 192 children and 60
+comparisons pass. Each snapshot records 705 source hashes; ordinary Rust bytes
+are identical in both variants of every cohort. Warmup/sample counts and
+new-file/repeated-file controls are unchanged. No task-owned build overlaps
+these cohorts; host scheduling, thermal state and OS caches are uncontrolled.
+
+| Overall observation | Reference | Final |
+|---------------------+-----------+-------|
+| Producer CPU median | 90 ms | 80 ms |
+| Pipeline CPU median | 250 ms | 250 ms |
+| Peak sequential child RSS median | 50.234 MiB | 49.953 MiB |
+| First paired pipeline wall | 2716.932 ms | 2075.069 ms |
+| Second paired pipeline wall | 287.935 ms | 290.036 ms |
+| Third paired pipeline wall | 279.122 ms | 292.806 ms |
+
+The 128-root preparation median is 2.101/1.288 ms in the overall cohort. This
+focused improvement does not establish complete-process acceleration. Repeated
+wall times do not consistently improve; CPU accounting is rounded at OS
+precision. The small RSS difference is not a demonstrated heap-byte reduction.
+The isolated rendering cohort has identical 50.016 MiB median peak RSS, and one
+repeated wall pair regresses. The C4-only cohort's identical Rust control also
+changes CPU medians; its entire pipeline difference cannot be attributed to C4.
+
+Raw receipts stay in ignored =.lake/build/= directories:
+=native-algorithms-c4-only-processes=, =native-rendering-processes-qualified=,
+=native-runtime-processes= and =native-algorithms-final-processes=.
+=native-algorithms-summary.json= is derived; complete child outputs remain owners.
+Generated observations are not committed source tables.
+
+* Initialization and RSS findings
+
+The actual [[https://github.com/leanprover/lean4/blob/v4.34.1/src/initialize/init.cpp][Lean 4.34.1 runtime]] unconditionally calls =initialize_Init=,
+=initialize_Std= and =initialize_Lean= from =lean_initialize=. Import narrowing
+cannot remove this baseline. The first application-module diagnostic clock starts
+after core initialization; it is not a complete runtime timer.
+
+Two native controls have identical main bodies and fixed 50-ms diagnostic
+residency, differing only by a =Lean.Data.Json= import. Generated C selects
+=lean_initialize_runtime_module= versus =lean_initialize=. Both six-launch
+groups return identical bytes and valid PID/exit/clock evidence:
+
+| Control | Image bytes | Median resident MiB during main | Repeated before-main median |
+|---------+-------------+---------------------------------+-----------------------------|
+| Std clock only | 2599520 | 3.531 | 4.037 ms |
+| Same body + JSON import | 103901776 | 35.953 | 23.134 ms |
+
+These are sampled resident observations including code/data, not allocated bytes,
+OS high-water RSS or universal bounds. The hold is a diagnostic control only;
+business workloads and limits are unchanged.
+
+Twelve separate loader/allocator runs preserve full catalog bytes. Installed
+mimalloc 3.4.4 reports 1 GiB reserved virtual arena space, about 35.3 MiB
+peak/current committed space and zero purge operations in these short runs,
+with process high-water RSS around 50 MiB. Page counts retire while committed
+space remains. Reserved, committed, resident and live-object bytes differ.
+Generated exports also mark manifest values persistent: a local renderer cannot
+retire independently retained global values. Thus ownership improvement need not
+reduce RSS. This is not an exclusive byte decomposition or proof against every
+possible leak.
+
+All 42 phase/inode diagnostics preserve clocks, exits, full output and observer
+shutdown. Reference/final application initialization medians are 45.187/44.565 ms;
+main spans are 27.649/27.336 ms and source-ready medians 22.669/22.433 ms. These
+small differences do not establish stable end-to-end acceleration.
+
+* Before-main long tail
+
+Fresh Std-only paths observe 716.890/295.160 ms before main; JSON-only paths
+observe 2085.574/1237.538 ms. The tail exists without Cedar/C4. Final full-catalog
+copies observe 1383.389/1291.387 ms on first paths versus a 66.695-ms repeated
+median. Same-inode/new-path controls remain separate; this is not proof of a
+pure pathname cause.
+
+The owned stderr reader retains raw offsets and line-arrival clocks. In the
+first final loader/allocator run it is ready at 9.610 ms; the first loader line
+arrives at 1186.561 ms and the first initializer line at 1188.710 ms. Main-entry
+observer lag is 0.035 ms. These are arrival upper bounds, not syscall durations.
+
+One fixed owned-PID sample per Lean/Rust role obtains 86/68 frames at
+=_dyld_start + 0=. Tool duration is separate from its one-second request; sampler
+completion is not native child-exit time. PID, protocol, output and clock evidence
+bind the owned invocation. Paths are privacy-redacted and binary image lists are
+unavailable, so sampled image UUID verification is unavailable. These observations
+locate the wait around the OS/initial loader-entry boundary described by
+[[https://github.com/apple-oss-distributions/dyld/blob/main/dyld/dyldStartup.s][Apple's entry assembly]], rather than a C4/serializer stack. They do not identify
+an exclusive kernel, security-service or page-in callback. Python xattr APIs are
+also unavailable on this Darwin build; that field is not an empty successful read.
+
+* Cold and semantic qualification
+
+- Current POO: empty project, public library plus native C4, 404 jobs,
+  86.342 s and reported maximum child RSS 1419.625 MiB. Cold native controls pass
+  and hot/cold C4 executable hashes match. Installed toolchain/stdlib remain.
+- Current Cedar: empty project, all five native targets, 937 jobs, 38.657 s and
+  reported maximum child RSS 1067.781 MiB. All five cold/hot executable hashes
+  match. SDK/package caches remain: this is project-cold, not SDK-cold.
+- Rust: runtime/bridge project release packages cleaned, then rebuilt in 4.09 s;
+  external dependencies remain cached. The ordinary bridge is byte-identical to
+  the frozen reference. Cold catalog and full Rust output bytes also match.
+- Existing native/build watchdogs retain 120 seconds and default concurrency.
+  Earlier =317bbc1= public-library cold build timed out at 120 seconds; it stays
+  recorded as failure, not relabelled. These cold observations are different
+  revisions and epochs, not an isolated compiler-speedup experiment.
+- Both algorithm stages and final owners pass complete local =just check=.
+  All 27 external-observer tests pass. A mistyped full reference and unsupported
+  xattr observation failed before any native child. One Rust cold link selected
+  Nix cc and lacked iconv; the same packages were cleaned and rebuilt using the
+  ordinary Apple toolchain with unchanged budget. Failed logs stay distinct.
+
+Measured-code CI: Cedar's four Ubuntu jobs pass; the fixed POO revision's 17 jobs
+pass. Publication-head CI and actual downloaded Linux artifacts are recorded
+separately in PR #8, which remains open and unmerged.
+
+* Next complete common-owner work
+
+1. Reuse original Plan validity witnesses for remaining seed-root work, then
+   prove internal-ancestor reuse with original reachable validation/error order.
+2. Profile persistent Program/Case and metadata preparation. Typed descriptor
+   inputs and a proof-bound native wire representation are candidates; an ignored
+   Unit wrapper does not establish lifecycle improvement. Keep all applicable
+   domains, public projections and independent Rust replay aligned.
+3. Treat Lean core initialization as a distinct boundary. A supported minimal
+   runtime needs upstream initializer/extern reachability qualification, not an
+   application replacement for =lean_initialize=. Keep OS waiting, Lean core,
+   application initialization and main serialization separate.
