@@ -99,7 +99,7 @@ our own child processes, preserving system security settings and binary identity
 * Complete process and resource evidence
 
 The fixed cohort completed 48 child processes, 15 full-wire comparisons,
-486 object observations and 918 entry observations. All children exited zero.
+486 object observations and 1836 entry observations. All children exited zero.
 Both variants consume exactly the same complete v2 catalog and return identical
 complete receipts. The [[file:native-sdk-source-lifecycle.json][process receipt]],
 [[file:native-sdk-source-evidence.json][source, startup, allocation and validation evidence]],
@@ -108,7 +108,7 @@ complete receipts. The [[file:native-sdk-source-lifecycle.json][process receipt]
 
 | Ordinary observation | Baseline | Candidate |
 |----------------------+----------+-----------|
-| Nine-sample full Rust replay median | 175.033 ms | 170.335 ms |
+| 18-sample full Rust replay median | 175.033 ms | 170.335 ms |
 | Runtime preparation median | 119.647 ms | 113.027 ms |
 | Independent text parse median | 21.441 ms | 19.019 ms |
 | Text normalization median | 26.072 ms | 23.139 ms |
@@ -116,6 +116,10 @@ complete receipts. The [[file:native-sdk-source-lifecycle.json][process receipt]
 | Pipeline wall, pair 1/2/3 | 2190.100/338.584/334.400 ms | 2407.193/328.778/344.025 ms |
 | Pipeline RSS median | 58.891 MiB | 59.078 MiB |
 | Full replay process RSS median | 25.516 MiB | 25.609 MiB |
+
+Each variant has nine samples from the three ordinary process pairs and nine
+from the additional first-file/repeated-file lifecycle. The table reports the
+combined 18-sample medians; all rows are retained in the machine receipt.
 
 Whole Rust replay improved approximately 2.7% in this fixed cohort. Whole-pipeline
 wall and CPU do not show stable acceleration; the repeated pair directions differ,

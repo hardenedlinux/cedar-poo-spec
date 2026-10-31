@@ -21475,5 +21475,7 @@
   },
   "validation_scope": "Complete just check passed during development. Final runtime error-path/borrowed-plan changes then qualified with complete workspace tests, all-features Clippy, independent uncached raw/schema workflows, full catalog mutation tests, 52 exact goldens, generic proofs and fixed complete-process cohort. Exact publication-head Ubuntu CI is a separate receipt recorded in PR #8 after push.",
   "entry_rows": 1836,
-  "ordinary_samples_per_variant": 9
+  "ordinary_samples_per_variant": 18,
+  "paired_samples_per_variant": 9,
+  "additional_file_lifecycle_samples_per_variant": 9
 }
