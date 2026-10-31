@@ -8,9 +8,51 @@ import shutil
 import resource
 import subprocess
 import tempfile
+import threading
 import time
 from .clock_anchor import clock_anchor
 from .process_memory import ProcessMemory
+
+
+class StderrObservation:
+    """Drain only the owned child's stderr and timestamp complete line arrivals.
+
+    Arrival is an observer upper bound, not the child's write or syscall time.
+    Preserve raw bytes independently, including non-UTF8 and a partial final line.
+    """
+    def __init__(self, pipe, report: Path):
+        self.pipe, self.report = pipe, report
+        self.arrivals, self.error = [], None
+        self.started_ns = time.time_ns()
+        self.ready_ns = None
+        self.thread = threading.Thread(target=self._drain, daemon=True)
+        self.thread.start()
+
+    def _drain(self):
+        try:
+            with self.pipe, self.report.open("wb") as output:
+                self.ready_ns = time.time_ns()
+                offset = 0
+                for line in iter(self.pipe.readline, b""):
+                    self.arrivals.append({"offset": offset, "bytes": len(line),
+                                          "unix_ns": time.time_ns(), "monotonic_ns": time.monotonic_ns()})
+                    output.write(line)
+                    output.flush()
+                    offset += len(line)
+        except Exception as error:
+            self.error = str(error)
+
+    def finish(self):
+        self.thread.join(timeout=1)
+        path = self.report.with_suffix(".arrivals.json")
+        stopped = not self.thread.is_alive()
+        path.write_text(json.dumps({"scope": "Owned stderr line arrival upper bounds; not child write timestamps",
+                                    "started_unix_ns": self.started_ns, "stopped": stopped,
+                                    "reader_ready_unix_ns": self.ready_ns,
+                                    "error": self.error, "arrivals": self.arrivals}, indent=2) + "\n")
+        if not stopped or self.error:
+            raise RuntimeError("incomplete stderr observation; raw report retained")
+        return {"report": str(path.resolve()), "lines": len(self.arrivals), "stopped": stopped}
 
 
 def observations(stderr: bytes):
@@ -71,28 +113,36 @@ def main() -> None:
                                              stdout=output, stderr=subprocess.PIPE)
                     created = time.monotonic_ns()
                     memory = ProcessMemory(child)
+                    stderr_observer = StderrObservation(child.stderr, report_path)
                     try:
                         try:
-                            _, stderr = child.communicate(timeout=120)
+                            deadline = time.monotonic() + 120
+                            # EOF wakes promptly at native exit, avoiding wait(timeout)'s
+                            # polling granularity in the ordinary diagnostic lifetime.
+                            stderr_observer.thread.join(timeout=120)
+                            child.wait(timeout=max(0, deadline - time.monotonic()))
                         except subprocess.TimeoutExpired:
                             child.kill()
-                            _, stderr = child.communicate()
-                            report_path.write_bytes(stderr)
+                            child.wait()
                             raise
                         mono_end = time.monotonic_ns()
                         wall_end = time.time_ns()
                     finally:
-                        memory_receipt = memory.finish(stdout_path.with_suffix(".memory.json"))
+                        try:
+                            memory_receipt = memory.finish(stdout_path.with_suffix(".memory.json"))
+                        finally:
+                            stderr_receipt = stderr_observer.finish()
                 usage_after = resource.getrusage(resource.RUSAGE_CHILDREN)
                 usage = {name: getattr(usage_after, name) - getattr(usage_before, name)
                          for name in ("ru_utime", "ru_stime", "ru_minflt", "ru_majflt", "ru_nvcsw", "ru_nivcsw", "ru_inblock", "ru_oublock")}
-                report_path.write_bytes(stderr)
+                stderr = report_path.read_bytes()
                 entry, returned = events(stderr, child.pid, child.returncode, args.expected_exit)
                 record = {"observation": "native-launch-diagnostic", "cohort": cohort, "trial": trial,
                           "materialization": args.materialization,
                           "source_file_identity": [source.stat().st_dev, source.stat().st_ino],
                           "execution_file_identity": [executable.stat().st_dev, executable.stat().st_ino],
                           "stderr_report": str(report_path.resolve()), "stdout": str(stdout_path.resolve()),
+                          "stderr_observation": stderr_receipt,
                           "stdout_sha256": hashlib.sha256(stdout_path.read_bytes()).hexdigest(),
                           "phases": [value for value in observations(stderr) if value.get("observation") == "native-phase"],
                           "child_rusage_delta": usage, "input_sha256": hashlib.sha256(payload).hexdigest(),

@@ -46,6 +46,13 @@ needed for longer term comparisons before expiry. Source/executable hashes,
 failed controls and ordinary/instrumented scope must stay attached to receipts.
 An absent artifact is unavailable evidence.
 
+The existing launch observer also retains raw stderr byte offsets and per-line
+arrival clocks. Its reader must drain while the owned child is alive, preserve
+partial/non-UTF8 final lines, and stop before qualification. These clocks are
+parent observation upper bounds, not the child's write or syscall timestamps.
+They can bracket loader diagnostics without changing the native workloads.
+The 120-second child deadline and separate sampler cleanup budget remain fixed.
+
 The existing =just bench-dataflow-lifecycle ARTIFACTS OUTPUT BASELINE= entrypoint
 now invokes =python -m cedar_poo_py_test.dataflow_lifecycle= in the testing
 package. =Benchmarks/= contains Lean workloads and their documentation/recipes;
