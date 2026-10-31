@@ -34,20 +34,19 @@ theorem JsonFragments.length_eq (fragments : JsonFragments values wires) :
 /-- A value and a lazy encoding with a complete compositional JSON certificate. -/
 structure EncodedJson where
   value : Lean.Json
-  rendering : Thunk { chunks : List String // JsonEncoding value chunks }
+  rendering : Thunk (List String)
+  valid : JsonEncoding value rendering.get
 
-def EncodedJson.chunks (encoded : EncodedJson) : List String := encoded.rendering.get.val
+def EncodedJson.chunks (encoded : EncodedJson) : List String := encoded.rendering.get
 def EncodedJson.wire (encoded : EncodedJson) : String := String.join encoded.chunks
 theorem EncodedJson.certified (encoded : EncodedJson) :
-    JsonEncoding encoded.value encoded.chunks := encoded.rendering.get.property
+    JsonEncoding encoded.value encoded.chunks := encoded.valid
 theorem EncodedJson.wire_eq (encoded : EncodedJson) :
     encoded.wire = String.join encoded.chunks := rfl
 
 /-- Transfer only the certified rendering to an output consumer. Its closure
 captures the rendering field, not the enclosing semantic JSON container. -/
-def EncodedJson.detach (encoded : EncodedJson) : Thunk (List String) :=
-  let rendering := encoded.rendering
-  Thunk.mk fun _ => rendering.get.val
+def EncodedJson.detach (encoded : EncodedJson) : Thunk (List String) := encoded.rendering
 
 theorem EncodedJson.detach_eq (encoded : EncodedJson) :
     encoded.detach.get = encoded.chunks := rfl
@@ -56,11 +55,15 @@ theorem EncodedJson.detach_certified (encoded : EncodedJson) :
     JsonEncoding encoded.value encoded.detach.get := encoded.certified
 
 def EncodedJson.native (value : Lean.Json) : EncodedJson :=
-  ⟨value, Thunk.mk fun _ => ⟨[value.compress], JsonEncoding.native value⟩⟩
+  ⟨value, Thunk.mk fun _ => [value.compress], JsonEncoding.native value⟩
 
 def EncodedJson.snapshot (source : SourceSnapshot kind) : EncodedJson :=
-  ⟨source.value, Thunk.mk fun _ => ⟨[source.wire],
-    by simpa only [source.encoded] using JsonEncoding.native source.value⟩⟩
+  let rendering := source.encoding
+  ⟨source.value, Thunk.mk fun _ => [rendering.get.val],
+    by
+      change JsonEncoding source.value [source.wire]
+      rw [source.encoded]
+      exact JsonEncoding.native source.value⟩
 
 private theorem fragments (items : List EncodedJson) :
     JsonFragments (items.map (·.value)) (items.map (·.chunks)) := by
@@ -69,17 +72,21 @@ private theorem fragments (items : List EncodedJson) :
   | cons head tail ih => exact .cons head.certified ih
 
 def EncodedJson.array (items : List EncodedJson) : EncodedJson :=
+  let renderings := items.map (·.rendering)
   ⟨.arr (items.map (·.value)).toArray, Thunk.mk fun _ =>
-    ⟨["["] ++ ((items.map (·.chunks)).intersperse [","]).flatten ++ ["]"],
-      JsonEncoding.array _ _ (fragments items)⟩⟩
+    ["["] ++ ((renderings.map Thunk.get).intersperse [","]).flatten ++ ["]"],
+      by simpa only [Thunk.get, renderings, List.map_map, Function.comp_def, EncodedJson.chunks] using
+        JsonEncoding.array _ _ (fragments items)⟩
 
 def EncodedJson.object (fields : List (String × EncodedJson))
     (unique : (fields.map Prod.fst).Nodup) : EncodedJson :=
   let keys := fields.map Prod.fst
   let children := fields.map Prod.snd
+  let renderings := children.map (·.rendering)
   ⟨Lean.Json.mkObj (keys.zip (children.map (·.value))), Thunk.mk fun _ =>
-    ⟨["{"] ++ (((keys.zip (children.map (·.chunks))).map fun (key, wire) =>
+    ["{"] ++ (((keys.zip (renderings.map Thunk.get)).map fun (key, wire) =>
        [(Lean.Json.str key).compress, ":"] ++ wire).intersperse [","]).flatten ++ ["}"],
-      JsonEncoding.object _ _ _ (by simp [keys, children]) unique (fragments children)⟩⟩
+      by simpa only [Thunk.get, renderings, List.map_map, Function.comp_def, EncodedJson.chunks] using
+        JsonEncoding.object _ _ _ (by simp [children]) unique (fragments children)⟩
 
 end CedarPooSpec.Transport
