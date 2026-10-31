@@ -1,4 +1,4 @@
-import CedarPooSpec.AuthorizationDeltaReasons
+import CedarPooSpec.Authorization.Delta.Reasons
 import CedarPooSpec.PolicyJson
 import Tests.Governance.AuthorizationDeltaReasonModels
 
@@ -11,7 +11,7 @@ mask the reason change, which must remain unresolved rather than certified.
 namespace CedarPooSpec.AuthorizationDeltaReasonTest
 
 open Cedar.Spec CedarPooSpec.PolicyModules CedarPooSpec.TicketSharingExample
-open CedarPooSpec.AuthorizationDelta
+open CedarPooSpec.Authorization.Delta
 open CedarPooSpec.AuthorizationDeltaReasonModels
 
 def run : IO Lean.Json := do

@@ -4,3 +4,4 @@ import CedarPooSpec.Gateway.ProfileObject
 import CedarPooSpec.Gateway.ProfileAdmission
 import CedarPooSpec.Gateway.Consumption
 import CedarPooSpec.Gateway.AuthorizationDelta
+import CedarPooSpec.Gateway.ZeroTrust

@@ -216,7 +216,7 @@ def authorizeFlow (readRoot publishRoot : String) (source repo origin approver :
   match program.authorizeLayers
       (checks readRoot publishRoot source repo origin approver approved) dataEntities with
   | .error _ => false
-  | .ok receipts => CedarPooSpec.CompoundAuthorization.layersAllowed receipts
+  | .ok receipts => CedarPooSpec.Authorization.Compound.layersAllowed receipts
 
 def cases : List (String × String × String × EntityUID × EntityUID × EntityUID × EntityUID × Bool × Bool) := [
   ("legacy-internal-to-public", "ReadBase", "PublishBase", internalDoc, publicRepo, admin, support, false, true),
@@ -308,7 +308,7 @@ def malformedReviewRejected : Bool :=
   | .ok [readLayer, publishLayer] =>
       publishLayer.response.decision == .allow &&
       !publishLayer.response.erroringPolicies.isEmpty &&
-      !CedarPooSpec.CompoundAuthorization.layersAllowed [readLayer, publishLayer]
+      !CedarPooSpec.Authorization.Compound.layersAllowed [readLayer, publishLayer]
   | _ => false
 theorem malformedReviewRejectedFully : malformedReviewRejected = true := by
   native_decide

@@ -1,8 +1,8 @@
 import CedarPooSpec.Gateway.Context
 import CedarPooSpec.Gateway.Admission
 import CedarPooSpec.Gateway.ProfileAdmission
-import CedarPooSpec.AuthorizationDeltaOperationalExactProof
-import CedarPooSpec.AuthorizationDeltaEvidence
+import CedarPooSpec.Authorization.Delta.OperationalExactProof
+import CedarPooSpec.Authorization.Delta.Evidence
 
 /-! Gateway-scoped composition of the existing authorization/execution Delta.
 No alternate solver, Cedar evaluator, Host transaction or delivery ledger. -/
@@ -35,16 +35,16 @@ def prepareDelta (model : Model) (beforeRoot afterRoot : String)
 
 /-- Solver-backed report, not a kernel UNSAT certificate or publication permit. -/
 def DeltaPlan.analyze (plan : DeltaPlan) :
-    IO (Except CedarPooSpec.AuthorizationDelta.ExactOperationalError
-      CedarPooSpec.AuthorizationDelta.ExactOperationalImpactReport) :=
-  CedarPooSpec.AuthorizationDelta.analyzeExactOperationalImpact plan.revision plan.schema
+    IO (Except CedarPooSpec.Authorization.Delta.ExactOperationalError
+      CedarPooSpec.Authorization.Delta.ExactOperationalImpactReport) :=
+  CedarPooSpec.Authorization.Delta.analyzeExactOperationalImpact plan.revision plan.schema
 
 def DeltaPlan.policyChanges (plan : DeltaPlan) :=
-  CedarPooSpec.AuthorizationDelta.Revision.policyChanges plan.revision
+  CedarPooSpec.Authorization.Delta.Revision.policyChanges plan.revision
 def DeltaPlan.provenanceChanges (plan : DeltaPlan) :=
-  CedarPooSpec.AuthorizationDelta.Revision.provenanceChanges plan.revision
+  CedarPooSpec.Authorization.Delta.Revision.provenanceChanges plan.revision
 def DeltaPlan.proofFootprint (plan : DeltaPlan) :=
-  CedarPooSpec.AuthorizationDelta.Revision.proofFootprint plan.revision
+  CedarPooSpec.Authorization.Delta.Revision.proofFootprint plan.revision
 
 /-- Content and scope binding at use. Provenance/module authentication remains
 separate; equal behavior does not erase changes to source/producer ownership. -/
@@ -64,7 +64,7 @@ structure ExactCoverage (schema : Cedar.Validation.Schema) (before after : Polic
     ∃ typedBefore typedAfter asserts,
       Cedar.SymCC.wellTypedPolicies before Γ = .ok typedBefore ∧
       Cedar.SymCC.wellTypedPolicies after Γ = .ok typedAfter ∧
-      CedarPooSpec.AuthorizationDelta.verifyErrorFreeAllowExpansion typedBefore typedAfter
+      CedarPooSpec.Authorization.Delta.verifyErrorFreeAllowExpansion typedBefore typedAfter
         (Cedar.SymCC.SymEnv.ofTypeEnv Γ) = .ok asserts ∧
       Cedar.SymCC.SymEnv.ofTypeEnv Γ ⊭ asserts
 
@@ -78,9 +78,9 @@ theorem no_execution_gain_for_validated_input (plan : DeltaPlan)
     (envWellFormed : env.StronglyWellFormed)
     (beforeWellFormed : env.StronglyWellFormedForPolicies plan.revision.beforePolicies)
     (afterWellFormed : env.StronglyWellFormedForPolicies plan.revision.afterPolicies)
-    (allowed : CedarPooSpec.AuthorizationDelta.errorFreeAllow plan.revision.afterPolicies env = true) :
-    CedarPooSpec.AuthorizationDelta.errorFreeAllow plan.revision.beforePolicies env = true :=
-  CedarPooSpec.AuthorizationDelta.noErrorFreeAllowExpansionForValidatedSchema
+    (allowed : CedarPooSpec.Authorization.Delta.errorFreeAllow plan.revision.afterPolicies env = true) :
+    CedarPooSpec.Authorization.Delta.errorFreeAllow plan.revision.beforePolicies env = true :=
+  CedarPooSpec.Authorization.Delta.noErrorFreeAllowExpansionForValidatedSchema
     plan.schema plan.revision.beforePolicies plan.revision.afterPolicies
     coverage.schemaValid coverage.queries env requestValid entitiesValid envWellFormed
     beforeWellFormed afterWellFormed allowed
@@ -108,12 +108,12 @@ theorem admitted_execution_preserves_delta
       plan.revision.beforePolicies)
     (afterWellFormed : (Env.mk (projection effect state) entities).StronglyWellFormedForPolicies
       plan.revision.afterPolicies) :
-    CedarPooSpec.AuthorizationDelta.errorFreeAllow plan.revision.beforePolicies
+    CedarPooSpec.Authorization.Delta.errorFreeAllow plan.revision.beforePolicies
       (Env.mk (projection effect state) entities) = true := by
   apply no_execution_gain_for_validated_input plan coverage _ requestValid entitiesValid
     envWellFormed beforeWellFormed afterWellFormed
   have allowed := admitted_actual_request_is_error_free receipt
-  simpa [CedarPooSpec.AuthorizationDelta.errorFreeAllow, policyBinding] using allowed
+  simpa [CedarPooSpec.Authorization.Delta.errorFreeAllow, policyBinding] using allowed
 
 /-- Strong composition interface. Equality authenticates no external source;
 the Host still supplies canonical identities, true assessments and current state.
@@ -160,7 +160,7 @@ theorem bound_admitted_execution_preserves_delta
       plan.revision.beforePolicies)
     (afterWellFormed : (Env.mk (projection effect state) entities).StronglyWellFormedForPolicies
       plan.revision.afterPolicies) :
-    CedarPooSpec.AuthorizationDelta.errorFreeAllow plan.revision.beforePolicies
+    CedarPooSpec.Authorization.Delta.errorFreeAllow plan.revision.beforePolicies
       (Env.mk (projection effect state) entities) = true :=
   admitted_execution_preserves_delta receipt plan coverage binding.policiesMatch
     (by simpa only [binding.schemaMatches] using receipt.requestValid)
@@ -187,7 +187,7 @@ theorem published_execution_preserves_original_and_delta
       plan.revision.afterPolicies) :
     original.Refines prepared.profile ∧
     prepared.context.scope = publication.context.scope ∧
-    CedarPooSpec.AuthorizationDelta.errorFreeAllow plan.revision.beforePolicies
+    CedarPooSpec.Authorization.Delta.errorFreeAllow plan.revision.beforePolicies
       (Env.mk (projection effect state) entities) = true :=
   ⟨published_profile_refines_authoritative_original receipt, published_scope_cannot_reset receipt,
     bound_admitted_execution_preserves_delta receipt.semantic plan binding coverage envWellFormed

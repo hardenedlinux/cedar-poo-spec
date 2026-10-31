@@ -1,4 +1,4 @@
-import CedarPooSpec.AuthorizationDeltaEffectiveReasons
+import CedarPooSpec.Authorization.Delta.EffectiveReasons
 import CedarPooSpec.PolicyJson
 import Tests.Governance.AuthorizationDeltaReasonModels
 
@@ -10,7 +10,7 @@ owner-only overlay without treating POO provenance as Cedar semantics.
 
 namespace CedarPooSpec.AuthorizationDeltaEffectiveReasonTest
 
-open Cedar.Spec CedarPooSpec.PolicyModules CedarPooSpec.AuthorizationDelta
+open Cedar.Spec CedarPooSpec.PolicyModules CedarPooSpec.Authorization.Delta
 open CedarPooSpec.AuthorizationDeltaReasonModels CedarPooSpec.TicketSharingExample
 
 def effectModel : Model :=

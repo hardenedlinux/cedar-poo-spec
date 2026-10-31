@@ -7,7 +7,7 @@ Authorization changes are analyzed using Cedar's symbolic compiler. C4 owns
 the revision; Cedar owns the meaning of Allow and the symbolic query.
 -/
 
-namespace CedarPooSpec.AuthorizationDelta
+namespace CedarPooSpec.Authorization.Delta
 
 open Cedar.Spec Cedar.Validation CedarPooSpec.PolicyModules
 
@@ -199,4 +199,4 @@ def analyzeModelImpact (model : Model) (beforeRoot afterRoot : String)
   | .error error => return .error (.compilation error)
   | .ok revision => analyzeImpact revision schema
 
-end CedarPooSpec.AuthorizationDelta
+end CedarPooSpec.Authorization.Delta

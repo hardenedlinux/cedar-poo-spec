@@ -115,7 +115,7 @@ example : wire AgentDataFlowValidatedExport.manifest = wire Reference.ValidatedF
   native_decide
 
 private def project {model : PolicyModules.Model} {entities : Entities}
-    (layers : List (CompoundAuthorization.LayerReceipt model entities)) :=
+    (layers : List (Authorization.Compound.LayerReceipt model entities)) :=
   layers.map fun layer => (layer.root, layer.request, layer.policies, layer.response)
 
 namespace Flow
@@ -123,7 +123,7 @@ open AgentDataFlowExample AgentDelegationExample
 
 def parity (inputs : List (String × Request)) : Bool := decide (
     (program.authorizeLayers inputs dataEntities).toOption.map project =
-    (CompoundAuthorization.authorizeLayers dataModel inputs dataEntities).toOption.map project)
+    (Authorization.Compound.authorizeLayers dataModel inputs dataEntities).toOption.map project)
 
 example : cases.all (fun (_, readRoot, publishRoot, source, repo, origin, approver, approved, _) =>
     parity (checks readRoot publishRoot source repo origin approver approved)) = true := by
@@ -133,7 +133,7 @@ example : parity AgentDataFlowExample.malformedChecks = true := by native_decide
 example : parity (AgentDataFlowExample.malformedChecks.reverse ++ AgentDataFlowExample.malformedChecks ++ AgentDataFlowExample.malformedChecks) = true := by
   native_decide
 example : parity [] = true ∧
-    (program.authorizeLayers [] dataEntities).toOption.map CompoundAuthorization.layersAllowed =
+    (program.authorizeLayers [] dataEntities).toOption.map Authorization.Compound.layersAllowed =
       some false := by native_decide
 
 example : (match program.authorizeLayers
@@ -150,7 +150,7 @@ example : dataModel.modules.all (fun item => decide (
 -- Removing all entities must not retain a decision from the earlier snapshot.
 example : (program.authorizeLayers
     (checks "ReadTenant" "PublishGoverned" publicDoc publicRepo admin reviewer true)
-    Cedar.Data.Map.empty).toOption.map CompoundAuthorization.layersAllowed = some false := by
+    Cedar.Data.Map.empty).toOption.map Authorization.Compound.layersAllowed = some false := by
   native_decide
 end Flow
 

@@ -1,6 +1,6 @@
 import CedarPooSpec.Functional.Capabilities
 import Examples.Enterprise.AWS.FinancialServices.MultiAccountBanking.MultiAccountBanking
-import CedarPooSpec.CompoundAuthorization
+import CedarPooSpec.Authorization.Compound
 import LeanPoo.C4.Linearize
 import LeanPoo.Object.Multimethod
 

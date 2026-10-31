@@ -1,0 +1,34 @@
+#+TITLE: Authorization Framework and Delta Family
+#+LANGUAGE: en
+
+* Ownership
+
+=CedarPooSpec.Authorization= aggregates the reusable authorization capabilities.
+=Compound= retains the existing POO policy compilation and combined decisions.
+=Delta= aggregates the modules under =Authorization/Delta/=.
+
+| Delta module group | Responsibility |
+|--------------------+----------------|
+| Model / Proof | Revision analysis and conditional Cedar symbolic-query soundness |
+| Operational / OperationalExact / OperationalExactProof / BooleanCore | Error-free execution differences and exact-query proofs |
+| Reasons / EffectiveReasons / EffectiveReasonsProof | Decision reasons and their checked interpretation |
+| Compound / Evidence | Existing functional C4 policy composition, source/proof provenance |
+| Interaction / Release / Trace | Combined revisions, release qualification and finite sequential comparisons |
+| Json | Existing report/export boundary |
+
+The namespace is =CedarPooSpec.Authorization.Delta=; Compound lives under
+=CedarPooSpec.Authorization.Compound=. This is a direct source/import/namespace
+migration. There are no forwarding modules at the former flat source paths.
+Dependency pins and historical raw evidence remain unchanged.
+
+* Relations to other frameworks
+
+Zero Trust supplies generic effect-boundary requirements; Authorization supplies
+Cedar-backed decisions and Delta analysis. Gateway consumes both using its
+existing POO profile publication and explicit Host execution contracts. Neither
+framework imports a Gateway implementation. Existing C4 owners, Contracts and
+proof dependencies remain the authorization composition mechanism.
+
+The mathematical meaning and solver trust boundary remain those in
+[[file:../../docs/rfc/0004-authorization-delta.org][RFC 0004]]. File organization
+does not extend a same-world policy theorem to mutable execution trajectories.

@@ -143,7 +143,7 @@ example : branchCases.all (fun (_, root, principal, action, resource, _) =>
 
 example : operationCases.all (fun (_, root, preparer, releaser, resource, _) =>
     releaseOperation root preparer releaser resource ==
-      (match CompoundAuthorization.authorizeAll model root
+      (match Authorization.Compound.authorizeAll model root
         [request preparer prepare resource, request releaser release resource] entities with
       | .error _ => false
       | .ok receipt => receipt.allowed)) = true := by native_decide

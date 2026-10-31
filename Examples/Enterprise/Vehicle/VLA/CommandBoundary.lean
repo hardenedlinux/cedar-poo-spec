@@ -1,7 +1,7 @@
 import CedarPooSpec.Functional.Capabilities
 import CedarPooSpec.Revision
 import CedarPooSpec.PolicyJson
-import CedarPooSpec.CompoundAuthorization
+import CedarPooSpec.Authorization.Compound
 import Cedar.Validation.RequestEntityValidator
 
 /-!
@@ -119,7 +119,7 @@ def request (action segment : EntityUID) (facts : Facts) : Request :=
 def authorized (root : String) (action segment : EntityUID) (facts : Facts) : Bool :=
   match CedarPooSpec.VlaCommandBoundaryExample.program.authorizeLayers [(root, request action segment facts)] entities with
   | .error _ => false
-  | .ok receipts => CedarPooSpec.CompoundAuthorization.layersAllowed receipts
+  | .ok receipts => CedarPooSpec.Authorization.Compound.layersAllowed receipts
 
 def cases : List (String × String × EntityUID × EntityUID × Facts × Bool) := [
   ("base-accelerates-at-occupied-crosswalk", "Base", accelerate, crosswalk, {}, true),

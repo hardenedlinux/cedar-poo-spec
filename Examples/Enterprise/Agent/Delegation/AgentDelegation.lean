@@ -1,6 +1,6 @@
 import CedarPooSpec.Functional.Capabilities
 import CedarPooSpec.PolicyJson
-import CedarPooSpec.CompoundAuthorization
+import CedarPooSpec.Authorization.Compound
 
 /-!
 Three-layer agent authorization inspired by the AWS Cedar delegation sample.
@@ -185,7 +185,7 @@ def authorizeFlow (roots : Roots) (agent tool origin : EntityUID) (depth : Int64
   match CedarPooSpec.AgentDelegationExample.program.authorizeLayers
       (checks roots agent tool origin depth capability) entities with
   | .error _ => false
-  | .ok receipts => CedarPooSpec.CompoundAuthorization.layersAllowed receipts
+  | .ok receipts => CedarPooSpec.Authorization.Compound.layersAllowed receipts
 
 def flowCases : List (String × Roots × EntityUID × EntityUID × EntityUID × Int64 × String × Bool) := [
   ("legacy-support-delete", legacy, dataBot, deleteRecords, support, 2, "delete_records", true),
@@ -225,7 +225,7 @@ theorem malformedRawAllowsWithError : malformedRawResponse = true := by native_d
 def malformedFlowRejected : Bool :=
   match CedarPooSpec.AgentDelegationExample.program.authorizeLayers malformedChecks entities with
   | .error _ => false
-  | .ok receipts => !CedarPooSpec.CompoundAuthorization.layersAllowed receipts
+  | .ok receipts => !CedarPooSpec.Authorization.Compound.layersAllowed receipts
 
 theorem malformedFlowRejectedFully : malformedFlowRejected = true := by native_decide
 

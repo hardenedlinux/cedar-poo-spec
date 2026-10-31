@@ -34,7 +34,7 @@ def changedAllows (root : String) (candidate : Candidate) : Bool :=
   match CedarPooSpec.MaintenanceComparisonExample.changedProgram.authorizeLayers
       [(root, request fallback candidate)] entities with
   | .error _ => false
-  | .ok receipts => CedarPooSpec.CompoundAuthorization.layersAllowed receipts
+  | .ok receipts => CedarPooSpec.Authorization.Compound.layersAllowed receipts
 
 theorem oneOwnerEditChangesEveryRevision :
     roots.length = 6 ∧

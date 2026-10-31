@@ -3,7 +3,7 @@
 
 * Contract
 
-[[file:../../CedarPooSpec/AuthorizationDelta.lean][AuthorizationDelta]] asks whether
+[[file:../../CedarPooSpec/Authorization/Delta/Model.lean][AuthorizationDelta]] asks whether
 a C4-composed Cedar policy revision grants any request that its predecessor
 denied. It uses =Cedar.SymCC.implies? after before=; Cedar owns the symbolic
 compiler, verification condition, and authorization semantics. This adapter
@@ -57,7 +57,7 @@ the concrete counterexample is replayed by Cedar Lean and by the official
 Rust =cedar-policy= authorizer. The result is a checked analysis report, not
 a kernel proof of the solver's answer.
 
-[[file:../../CedarPooSpec/AuthorizationDeltaProof.lean][AuthorizationDeltaProof]]
+[[file:../../CedarPooSpec/Authorization/Delta/Proof.lean][AuthorizationDeltaProof]]
 connects one POO revision to Cedar's =verifyImplies_is_ok_and_sound= theorem.
 Its conclusion applies to the original before and after policy sets, under
 the theorem's well-formedness premises, if Lean receives a proof that the
@@ -88,7 +88,7 @@ requires a schema and validation, which rejects that issue's type mismatch.
 Schema validation still permits runtime arithmetic, extension, or missing
 entity errors, as the [[https://github.com/cedar-policy/cedar-spec/blob/main/cedar-lean/README.md][Cedar Lean documentation]] states.
 
-[[file:../../CedarPooSpec/AuthorizationDeltaOperational.lean][AuthorizationDeltaOperational]] is a separate, conservative qualification for
+[[file:../../CedarPooSpec/Authorization/Delta/Operational.lean][AuthorizationDeltaOperational]] is a separate, conservative qualification for
 Hosts with the error-free rule. It invokes Cedar's public =neverErrors?= query
 for every baseline policy and every changed or newly introduced policy, in
 every schema environment. An error witness is replayed against the original
@@ -114,7 +114,7 @@ This qualification is intentionally stricter than the exact proposition
 that might error anywhere in a covered schema environment, including requests
 both revisions deny.
 
-[[file:../../CedarPooSpec/AuthorizationDeltaOperationalExact.lean][AuthorizationDeltaOperationalExact]]
+[[file:../../CedarPooSpec/Authorization/Delta/OperationalExact.lean][AuthorizationDeltaOperationalExact]]
 adds that exact operational query. It forms the execution predicate from
 Cedar's symbolic =isAuthorized= result and =isSome= of the symbolic evaluation
 of every policy body, then asks Cedar's solver for an after-only execution
@@ -123,7 +123,7 @@ model is validated and replayed against the original =Cedar.Spec.isAuthorized=
 responses, including =erroringPolicies=. Unknown solver results, compilation
 errors, and invalid models fail the analysis.
 
-[[file:../../CedarPooSpec/AuthorizationDeltaOperationalExactProof.lean][AuthorizationDeltaOperationalExactProof]]
+[[file:../../CedarPooSpec/Authorization/Delta/OperationalExactProof.lean][AuthorizationDeltaOperationalExactProof]]
 proves the composition against Cedar's concrete response using upstream
 =compile_bisimulation= and =isAuthorized_bisimulation=. Under Cedar's strong
 well-formedness assumptions, mathematical unsatisfiability of the query
@@ -148,7 +148,7 @@ ensure that actual Host inputs pass the validators.
 
 ** Reproducible solver-proof probe
 
-=CedarPooSpec/AuthorizationDeltaBooleanCore.lean= proves that a six-atom
+=CedarPooSpec/Authorization/Delta/BooleanCore.lean= proves that a six-atom
 Boolean formula has no satisfying interpretation when each atom is a well
 formed Boolean Cedar term and the query has the stated two-assertion shape.
 This reusable implication uses Cedar's interpretation theorems and has only
@@ -259,7 +259,7 @@ Cedar Lean checks both concrete responses in the same gate.
 
 * Revision explanation and proof reuse
 
-[[file:../../CedarPooSpec/AuthorizationDeltaEvidence.lean][AuthorizationDeltaEvidence]]
+[[file:../../CedarPooSpec/Authorization/Delta/Evidence.lean][AuthorizationDeltaEvidence]]
 attaches the POO compilation to the symbolic result. For each changed policy
 body it records the before and after owner, the ordered =extend=, =overlay=,
 and =remove= history, and the roots that may need recompilation through C4's
@@ -288,7 +288,7 @@ not answer which requests changed.
 Cedar returns the IDs of the policies determining its decision. An =Allow=
 may remain =Allow= after a POO removal while a different owner now supplies
 the remaining grant. That changes audit explanation and responsibility even
-when the decision sets are equivalent. [[file:../../CedarPooSpec/AuthorizationDeltaReasons.lean][AuthorizationDeltaReasons]] uses the upstream
+when the decision sets are equivalent. [[file:../../CedarPooSpec/Authorization/Delta/Reasons.lean][AuthorizationDeltaReasons]] uses the upstream
 [[https://github.com/cedar-policy/cedar-spec/blob/main/cedar-lean/Cedar/SymCC.lean][=matchesEquivalent?= and =neverMatches?= queries]] to inspect each changed policy
 ID over every schema environment. It first qualifies both policy sets with
 the error-free operational check. A matching difference becomes a reason
@@ -314,7 +314,7 @@ covered schema and every changed ID retains its effect and matching behavior,
 can also be discharged when every version of a changed permit is covered by
 one identical forbid in both revisions. The adapter checks this with Cedar's
 verified =matchesImplies?= query in every schema environment. The
-[[file:../../CedarPooSpec/AuthorizationDeltaEffectiveReasonsProof.lean][dominated-permit theorem]] proves the concrete rule: a permit covered by a
+[[file:../../CedarPooSpec/Authorization/Delta/EffectiveReasonsProof.lean][dominated-permit theorem]] proves the concrete rule: a permit covered by a
 matching forbid cannot occur in the final determining set. The report lists
 these discharged IDs and counts the added implication queries. A mask without
 such a certificate, or an effect change, remains unresolved; one masked
@@ -341,7 +341,7 @@ governance metadata, not a new Cedar authorization rule.
 
 The upstream-query route above resolves a common forbid-dominated permit,
 but can still leave other masks unresolved. The
-[[file:../../CedarPooSpec/AuthorizationDeltaEffectiveReasons.lean][effective-reason analyzer]] asks a more precise question for every policy ID
+[[file:../../CedarPooSpec/Authorization/Delta/EffectiveReasons.lean][effective-reason analyzer]] asks a more precise question for every policy ID
 in the union of the two revisions. Cedar's
 [[https://github.com/cedar-policy/cedar-spec/blob/main/cedar-lean/Cedar/Thm/Authorization.lean][=determiningPolicies_of= theorem]] says that final reasons are the satisfied
 permits on =Allow= or the satisfied forbids on =Deny=. For each ID, the
@@ -355,7 +355,7 @@ forbid ID  -> that forbid's condition as a permit
 #+end_example
 
 It then calls Cedar's upstream =equivalent?= query on the two analysis policy
-sets. The [[file:../../CedarPooSpec/AuthorizationDeltaEffectiveReasonsProof.lean][Lean reduction theorem]] proves for every concrete request and entity
+sets. The [[file:../../CedarPooSpec/Authorization/Delta/EffectiveReasonsProof.lean][Lean reduction theorem]] proves for every concrete request and entity
 set that the analysis =Allow= decision equals final reason membership, under
 unique policy IDs. The query applies the same entity-hierarchy constraints
 as upstream equivalence checks and replays every counterexample
@@ -420,7 +420,7 @@ example uses it to observe an approval withdrawal while the policy root stays
 the same, and to compare scope, token-key, and transformation revisions of a
 target dataset. Neither analysis authenticates a Host fact or commits an effect.
 
-[[file:../../CedarPooSpec/AuthorizationDeltaCompound.lean][AuthorizationDeltaCompound]]
+[[file:../../CedarPooSpec/Authorization/Delta/Compound.lean][AuthorizationDeltaCompound]]
 extends the finite comparison to an ordered set of required Cedar checks.
 The two sides must contain the same requests in the same order, although
 their POO roots and authenticated entity snapshots may differ. It reports
@@ -430,7 +430,7 @@ This does not replace symbolic analysis of individual policies, and does
 not establish delegated authority or temporal budget safety for arbitrary
 agent histories.
 
-[[file:../../CedarPooSpec/AuthorizationDeltaTrace.lean][AuthorizationDeltaTrace]] compares one fixed proposal sequence under two C4
+[[file:../../CedarPooSpec/Authorization/Delta/Trace.lean][AuthorizationDeltaTrace]] compares one fixed proposal sequence under two C4
 roots. A Host-supplied projection constructs each request and entity store
 from the state reached on that side; a shared transition advances only after
 an error-free Cedar Allow. Requests and entities are schema checked at every
@@ -470,7 +470,7 @@ bounded result applies only to the declared alphabet, initial state,
 projection, transition, and horizon. It does not
 establish the paper's every-state sequential safety condition.
 
-[[file:../../CedarPooSpec/AuthorizationDeltaInteraction.lean][AuthorizationDeltaInteraction]] compares a base, two independent POO
+[[file:../../CedarPooSpec/Authorization/Delta/Interaction.lean][AuthorizationDeltaInteraction]] compares a base, two independent POO
 branches, and their combined root under one Cedar schema. If neither branch
 adds an Allow but the combined root does, it reports a joint-only gain and
 replays the same witness on both branches. It rejects a proposed interaction
@@ -482,7 +482,7 @@ returns =branchExpanded= rather than claiming to have exhaustively classified
 joint effects. It checks Cedar decisions; Host execution still needs the
 error-free and transaction gates.
 
-[[file:../../CedarPooSpec/AuthorizationDeltaRelease.lean][AuthorizationDeltaRelease]] captures a four-root analysis with the exact
+[[file:../../CedarPooSpec/Authorization/Delta/Release.lean][AuthorizationDeltaRelease]] captures a four-root analysis with the exact
 compiled policies, schema representation, C4 ancestor modules, and a
 Host-supplied epoch. Its freshness check rejects changes to any reviewed
 dimension while allowing unrelated owner additions. The no-gain candidate

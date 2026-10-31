@@ -1,12 +1,12 @@
 import CedarPooSpec.Functional.CompilationJson
-import CedarPooSpec.AuthorizationDeltaEvidence
+import CedarPooSpec.Authorization.Delta.Evidence
 import CedarPooSpec.PolicyJson
 
 /-! JSON projection for authorization-delta reports and Cedar replay cases. -/
 
-namespace CedarPooSpec.AuthorizationDeltaJson
+namespace CedarPooSpec.Authorization.Delta.Json
 
-open CedarPooSpec.AuthorizationDelta CedarPooSpec.PolicyModules
+open CedarPooSpec.Authorization.Delta CedarPooSpec.PolicyModules
 
 private def change (witness : Cedar.Spec.Env)
     (beforeResponse afterResponse : Cedar.Spec.Response) : Except String Lean.Json := do
@@ -141,4 +141,4 @@ def snapshotCases (name : String) (model : Model) (beforeRoot afterRoot : String
       s!"{name}-after" afterRoot afterRoot after.request after.entities
   return Lean.Json.mkObj [("cases", Lean.toJson [beforeCase, afterCase])]
 
-end CedarPooSpec.AuthorizationDeltaJson
+end CedarPooSpec.Authorization.Delta.Json

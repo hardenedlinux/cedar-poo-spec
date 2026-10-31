@@ -1,4 +1,4 @@
-import CedarPooSpec.AuthorizationDelta
+import CedarPooSpec.Authorization.Delta.Model
 import LeanPoo.Proof.Invalidation
 
 /-!
@@ -8,7 +8,7 @@ identifies candidate changes; it does not claim that one edit alone caused a
 symbolic witness when multiple policy bodies changed.
 -/
 
-namespace CedarPooSpec.AuthorizationDelta
+namespace CedarPooSpec.Authorization.Delta
 
 open Cedar.Spec CedarPooSpec.PolicyModules LeanPoo.Proof
 
@@ -208,4 +208,4 @@ def analyzeModelImpactExplained (model : Model) (beforeRoot afterRoot : String)
       proof := Revision.proofFootprint revision
       potentiallyInvalidatedRoots := affectedRoots model changes }
 
-end CedarPooSpec.AuthorizationDelta
+end CedarPooSpec.Authorization.Delta

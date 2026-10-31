@@ -1,7 +1,7 @@
 import CedarPooSpec.Functional.Capabilities
 import CedarPooSpec.Revision
 import CedarPooSpec.PolicyJson
-import CedarPooSpec.CompoundAuthorization
+import CedarPooSpec.Authorization.Compound
 import Cedar.Validation.RequestEntityValidator
 
 /-!
@@ -132,7 +132,7 @@ def manifestRequest (target : EntityUID) (facts : Facts) : Request :=
 def allowed (checks : List (String × Request)) : Bool :=
   match CedarPooSpec.SupplierTransitionExample.program.authorizeLayers checks entities with
   | .error _ => false
-  | .ok receipts => CedarPooSpec.CompoundAuthorization.layersAllowed receipts
+  | .ok receipts => CedarPooSpec.Authorization.Compound.layersAllowed receipts
 def authorizeUpdate (root : String) (supplier target : EntityUID) (facts : Facts) : Bool :=
   allowed (updateChecks root supplier target facts)
 

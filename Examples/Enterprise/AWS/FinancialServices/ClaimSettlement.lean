@@ -1,7 +1,7 @@
 import CedarPooSpec.Functional.Capabilities
 import Examples.Enterprise.AWS.FinancialServices.LakehouseGateway.LakehouseGateway
 import Examples.Enterprise.AWS.FinancialServices.MultiAccountBanking.Lineage
-import CedarPooSpec.CompoundAuthorization
+import CedarPooSpec.Authorization.Compound
 
 /-! Proposed cross-organization claim-settlement plan. The lakehouse and
 banking modules model separate published AWS examples; this composition is an

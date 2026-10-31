@@ -33,7 +33,7 @@ check-google-table-batch-v1:
 check-delta: check-gateway-delta check-authorization-delta check-authorization-delta-operational check-authorization-delta-reasons check-authorization-delta-effective-reasons check-payment-delta check-payment-interaction check-agent-trace-delta check-health-authorization-impact
 
 check-gateway:
-    lake build CedarPooSpec.Gateway Tests.Gateway.Contracts Tests.Gateway.Counterexamples Tests.Gateway.Objects Tests.Gateway.Publication Tests.Gateway.Delta
+    lake build CedarPooSpec.Gateway Tests.Gateway.Contracts Tests.Gateway.Counterexamples Tests.Gateway.Objects Tests.Gateway.Publication Tests.Gateway.Delta Tests.Gateway.ZeroTrust
 
 check-gateway-delta: check-gateway
     lake env lean --run Tests/Gateway/Delta.lean
@@ -67,13 +67,13 @@ check-authorization-delta: build-examples
     uv run --project python --package cedar-poo-py-test --locked cedar-poo-py-test check authorization-delta
 
 check-authorization-delta-operational:
-    lake build CedarPooSpec.AuthorizationDeltaOperationalExactProof Tests.Governance.AuthorizationDeltaOperational Tests.Governance.AuthorizationDeltaFormula
+    lake build CedarPooSpec.Authorization.Delta.OperationalExactProof Tests.Governance.AuthorizationDeltaOperational Tests.Governance.AuthorizationDeltaFormula
     uv run --project python --package cedar-poo-py-test --locked cedar-poo-py-test check authorization-delta-operational
 
 # Research artifact only: emits the exact query and cvc5's CPC output.
 # The fixture's UNSAT theorem is separate and uses native computation certificates.
 probe-authorization-delta-proof:
-    lake build CedarPooSpec.AuthorizationDeltaOperationalExactProof Examples.Governance.TicketSharing
+    lake build CedarPooSpec.Authorization.Delta.OperationalExactProof Examples.Governance.TicketSharing
     timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 --run Tests/Governance/AuthorizationDeltaProofProbe.lean > .lake/build/authorization-delta-exact.smt2
     timeout --signal=TERM --kill-after=3s 120s "$CVC5" --lang=smt --produce-proofs --proof-check=lazy --dump-proofs --proof-format-mode=cpc .lake/build/authorization-delta-exact.smt2 > .lake/build/authorization-delta-exact.cpc
     rg -q '^\(check-sat\)$' .lake/build/authorization-delta-exact.smt2
@@ -90,7 +90,7 @@ check-authorization-delta-reasons:
     uv run --project python --package cedar-poo-py-test --locked cedar-poo-py-test check authorization-delta-reasons
 
 check-authorization-delta-effective-reasons:
-    lake build CedarPooSpec.AuthorizationDeltaEffectiveReasonsProof Tests.Governance.AuthorizationDeltaEffectiveReasons
+    lake build CedarPooSpec.Authorization.Delta.EffectiveReasonsProof Tests.Governance.AuthorizationDeltaEffectiveReasons
     uv run --project python --package cedar-poo-py-test --locked cedar-poo-py-test check authorization-delta-effective-reasons
 
 check-payment-interaction:
@@ -115,7 +115,7 @@ check-health-authorization-impact:
 
 check-authorization-delta-proof:
     just check-gateway
-    lake build CedarPooSpec.AuthorizationDeltaProof CedarPooSpec.AuthorizationDeltaBooleanCore Tests.Governance.AuthorizationDeltaFormula Tests.Governance.AuthorizationDeltaDirect Tests.Governance.AuthorizationDeltaAxiomAudit
+    lake build CedarPooSpec.Authorization.Delta.Proof CedarPooSpec.Authorization.Delta.BooleanCore Tests.Governance.AuthorizationDeltaFormula Tests.Governance.AuthorizationDeltaDirect Tests.Governance.AuthorizationDeltaAxiomAudit
 
 check-payment-delta: build-examples
     uv run --project python --package cedar-poo-py-test --locked cedar-poo-py-test check payment-delta

@@ -1,6 +1,6 @@
 import CedarPooSpec.Functional.CompilationJson
 import CedarPooSpec.PolicyJson
-import CedarPooSpec.CompoundAuthorization
+import CedarPooSpec.Authorization.Compound
 import LeanPoo.Functional.CertifiedConsumer
 import LeanPoo.Functional.Validation
 
@@ -29,7 +29,7 @@ abbrev Value (context : Context) : Capability → Type
       Except PolicyJson.PublicationError (PolicyJson.Publication context.model context.root context.schema)
   | .authorize => Validated context.model context.root context.schema →
       (requests : List Request) → (entities : Entities) →
-      CompoundAuthorization.Receipt context.model context.root requests entities
+      Authorization.Compound.Receipt context.model context.root requests entities
 
 abbrev Operations := Provider Context Capability Value
 abbrev required : List Capability := [.compile, .validate, .publish, .authorize]
@@ -43,7 +43,7 @@ def cedar : Operations
         PolicyJson.PublicationError.schema PolicyJson.PublicationError.policy
   | .publish => some fun _ checked => PolicyJson.publishValidated checked
   | .authorize => some fun _ checked requests entities =>
-      CompoundAuthorization.ofCompiled checked.toCompiled requests entities
+      Authorization.Compound.ofCompiled checked.toCompiled requests entities
 
 /-- A joint contract over the actual selected authorization function, not a
 Boolean assertion about an owner name. Result types also carry Cedar witnesses. -/
@@ -67,7 +67,7 @@ structure Ready (context : Context) where
   publish : Thunk (Except PolicyJson.PublicationError
     (PolicyJson.Publication context.model context.root context.schema))
   authorize : (requests : List Request) → (entities : Entities) →
-    CompoundAuthorization.Receipt context.model context.root requests entities
+    Authorization.Compound.Receipt context.model context.root requests entities
   aligned : ∀ requests entities,
     (authorize requests entities).responses = requests.map (fun request =>
       isAuthorized request entities checked.policies)
@@ -77,7 +77,7 @@ theorem Ready.allowed_eq (ready : Ready context) (requests : List Request) (enti
       (!requests.isEmpty && (requests.map (fun request =>
         isAuthorized request entities ready.checked.policies)).all (fun response =>
           response.decision == .allow && response.erroringPolicies.isEmpty)) := by
-  simp only [CompoundAuthorization.Receipt.allowed, ready.aligned]
+  simp only [Authorization.Compound.Receipt.allowed, ready.aligned]
 
 /-- Both independent stages must allow without evaluation errors. The shared
 checked policy data does not turn one stage's permission into the other's. -/
@@ -203,7 +203,7 @@ def Program.publish (program : Program model schema) (root : String) :
 
 def Program.authorize (program : Program model schema) (root : String)
     (requests : List Request) (entities : Entities) :
-    Except Error (CompoundAuthorization.Receipt model root requests entities) := do
+    Except Error (Authorization.Compound.Receipt model root requests entities) := do
   let ready ← program.at root
   return ready.authorize requests entities
 
@@ -213,7 +213,7 @@ def Program.response (program : Program model schema) (root : String)
 
 /-- Preserve the selected single-request response in the existing layer receipt. -/
 def Ready.authorizeLayer (ready : Ready ⟨model, root, schema⟩)
-    (request : Request) (entities : Entities) : CompoundAuthorization.LayerReceipt model entities :=
+    (request : Request) (entities : Entities) : Authorization.Compound.LayerReceipt model entities :=
   let receipt := ready.authorize [request] entities
   { root, request, policies := receipt.policies, compiled := receipt.compiled
     response := receipt.singleResponse
@@ -223,13 +223,13 @@ theorem Ready.authorizeLayer_response (ready : Ready ⟨model, root, schema⟩)
     (request : Request) (entities : Entities) :
     (ready.authorizeLayer request entities).response =
       isAuthorized request entities ready.checked.policies := by
-  simp [Ready.authorizeLayer, CompoundAuthorization.Receipt.singleResponse, ready.aligned]
+  simp [Ready.authorizeLayer, Authorization.Compound.Receipt.singleResponse, ready.aligned]
 
 /-- Checked multi-root authorization retains input order and the first failed
 root. The legacy compile-only API keeps its weaker admission boundary. -/
 def Program.authorizeLayers (program : Program model schema)
     (checks : List (String × Request)) (entities : Entities) :
-    Except Error (List (CompoundAuthorization.LayerReceipt model entities)) :=
+    Except Error (List (Authorization.Compound.LayerReceipt model entities)) :=
   Validation.traverse (fun (root, request) => do
     let ready ← program.at root
     return ready.authorizeLayer request entities) checks

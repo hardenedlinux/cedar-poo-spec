@@ -1,4 +1,4 @@
-import CedarPooSpec.AuthorizationDeltaEffectiveReasons
+import CedarPooSpec.Authorization.Delta.EffectiveReasons
 import Cedar.Thm.Authorization
 
 /-!
@@ -6,7 +6,7 @@ Concrete meaning of final-reason membership and its reduction to an ordinary
 Cedar authorization decision. These proofs are independent of the SMT solver.
 -/
 
-namespace CedarPooSpec.AuthorizationDelta
+namespace CedarPooSpec.Authorization.Delta
 
 open Cedar.Spec Cedar.Data Cedar.Thm
 
@@ -209,4 +209,4 @@ theorem reasonPolicyset_allows_iff_determining (policies : Policies)
         simpa using (forbid_surrogate policy env.request env.entities).mpr
           matchedAndDenied.1
 
-end CedarPooSpec.AuthorizationDelta
+end CedarPooSpec.Authorization.Delta

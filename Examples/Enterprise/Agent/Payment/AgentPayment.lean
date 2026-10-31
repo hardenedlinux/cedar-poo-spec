@@ -127,7 +127,7 @@ def authorizePayment (root : String) (account origin : EntityUID)
   match CedarPooSpec.AgentPaymentExample.paymentProgram.authorizeLayers
       (checks root account origin requested) paymentEntities with
   | .error _ => false
-  | .ok receipts => CedarPooSpec.CompoundAuthorization.layersAllowed receipts
+  | .ok receipts => CedarPooSpec.Authorization.Compound.layersAllowed receipts
 
 def cases : List (String × String × EntityUID × EntityUID × String × Bool) := [
   ("base-external-high-support", "PaymentBase", externalAccount, support, "500.0000", true),
@@ -202,7 +202,7 @@ def malformedOriginRejected : Bool :=
   | .ok [toolLayer, paymentLayer] =>
       paymentLayer.response.decision == .allow &&
       !paymentLayer.response.erroringPolicies.isEmpty &&
-      !CedarPooSpec.CompoundAuthorization.layersAllowed [toolLayer, paymentLayer]
+      !CedarPooSpec.Authorization.Compound.layersAllowed [toolLayer, paymentLayer]
   | _ => false
 theorem malformedOriginRejectedFully : malformedOriginRejected = true := by
   native_decide

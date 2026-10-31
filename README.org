@@ -74,6 +74,8 @@ open, scenario-driven control-object library above Cedar's upstream semantics.
 [[file:docs/zero-trust-contract.org][Zero Trust effect-boundary contract]] with
 NIST, UCON and executable Cedar foundations, separating checked conditional laws
 from native currentness, durability and mediation obligations.
+[[file:CedarPooSpec/ZeroTrust/README.org][ZeroTrust]] and
+[[file:CedarPooSpec/Authorization/README.org][Authorization]] are reusable functional/POO frameworks.
 Pseudonymization, Admission, [[file:CedarPooSpec/Gateway/README.org][Gateway admission and execution Delta]], Governance, Data,
 [[file:CedarPooSpec/AgenticAI/README.org][AgenticAI]], and
 [[file:CedarPooSpec/Cloud/README.org][Cloud]] are cross-industry

@@ -1,6 +1,6 @@
 import CedarPooSpec.Functional.Capabilities
 import CedarPooSpec.PolicyJson
-import CedarPooSpec.CompoundAuthorization
+import CedarPooSpec.Authorization.Compound
 import CedarPooSpec.Governance.Veto
 import Cedar.Validation.RequestEntityValidator
 
@@ -153,7 +153,7 @@ def authorizeFlow (root : String) (observation : EntityUID) (facts : Facts)
     (world : Entities := entities) : Bool :=
   match CedarPooSpec.WearableTriageExample.program.authorizeLayers (checks root observation facts) world with
   | .error _ => false
-  | .ok receipts => CedarPooSpec.CompoundAuthorization.layersAllowed receipts
+  | .ok receipts => CedarPooSpec.Authorization.Compound.layersAllowed receipts
 
 def cases : List (String × String × EntityUID × Facts × Bool) := [
   ("legacy-withdrawn-consent", "Base", vitalWithdrawn, {}, true),

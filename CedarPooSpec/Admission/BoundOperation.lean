@@ -1,5 +1,5 @@
 import CedarPooSpec.Functional.Compilation
-import CedarPooSpec.CompoundAuthorization
+import CedarPooSpec.Authorization.Compound
 
 /-!
 A typed operation projects the effect and observed state into Cedar's request
@@ -47,7 +47,7 @@ def BoundOperation.authorize {Effect State : Type}
     (effect : Effect) (state : State)
     (model : Model) (root : String) (entities : Entities) :
     Except Error
-      (CompoundAuthorization.Receipt model root [operation.request] entities) :=
+      (Authorization.Compound.Receipt model root [operation.request] entities) :=
   if !decide (operation.effect = effect) then
     .error .effectMismatch
   else if !decide (operation.state = state) then

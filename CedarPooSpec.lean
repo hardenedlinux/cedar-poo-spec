@@ -59,7 +59,7 @@ import CedarPooSpec.AgenticAI.Boundary
 import CedarPooSpec.Data.Lakehouse.LocationBoundary
 import CedarPooSpec.Data.Lakehouse.LocationProfile
 import CedarPooSpec.Pseudonymization
-import CedarPooSpec.CompoundAuthorization
+import CedarPooSpec.Authorization
 import CedarPooSpec.Vertical.FinancialServices.PaymentOperation
 import CedarPooSpec.AgenticAI.Commerce.Budget
 import CedarPooSpec.AgenticAI.Commerce.Projection
@@ -76,23 +76,9 @@ import CedarPooSpec.TemplateValidation
 import CedarPooSpec.SchemaAdmission
 import CedarPooSpec.PolicyJson
 import CedarPooSpec.SchemaJson
-import CedarPooSpec.AuthorizationDelta
-import CedarPooSpec.AuthorizationDeltaOperational
-import CedarPooSpec.AuthorizationDeltaOperationalExact
-import CedarPooSpec.AuthorizationDeltaOperationalExactProof
-import CedarPooSpec.AuthorizationDeltaBooleanCore
-import CedarPooSpec.AuthorizationDeltaReasons
-import CedarPooSpec.AuthorizationDeltaEffectiveReasons
-import CedarPooSpec.AuthorizationDeltaEffectiveReasonsProof
-import CedarPooSpec.AuthorizationDeltaCompound
 import CedarPooSpec.Admission.PolicySnapshot
 import CedarPooSpec.Admission.AuthorityConsumption
 import CedarPooSpec.Admission.OperationIdentity
-import CedarPooSpec.AuthorizationDeltaEvidence
-import CedarPooSpec.AuthorizationDeltaInteraction
-import CedarPooSpec.AuthorizationDeltaRelease
-import CedarPooSpec.AuthorizationDeltaTrace
-import CedarPooSpec.AuthorizationDeltaJson
 
 import CedarPooSpec.AgenticAI.Commerce.Acceptance
 

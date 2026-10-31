@@ -1,4 +1,4 @@
-import CedarPooSpec.AuthorizationDelta
+import CedarPooSpec.Authorization.Delta.Model
 
 /-!
 Qualify Cedar's decision delta for Hosts that execute only error-free Allows.
@@ -8,7 +8,7 @@ be error-free throughout each schema environment before admitting that
 decision delta as an error-free execution delta.
 -/
 
-namespace CedarPooSpec.AuthorizationDelta
+namespace CedarPooSpec.Authorization.Delta
 
 open Cedar.Spec Cedar.Validation CedarPooSpec.PolicyModules
 
@@ -87,4 +87,4 @@ def analyzeOperationalModelImpact (model : Model) (beforeRoot afterRoot : String
   | .error error => return .error (.delta (.compilation error))
   | .ok revision => analyzeOperationalImpact revision schema
 
-end CedarPooSpec.AuthorizationDelta
+end CedarPooSpec.Authorization.Delta

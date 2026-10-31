@@ -1,4 +1,4 @@
-import CedarPooSpec.AuthorizationDeltaOperational
+import CedarPooSpec.Authorization.Delta.Operational
 
 /-!
 An exact symbolic query for a Host that executes only error-free Allows. The
@@ -6,7 +6,7 @@ query combines Cedar's symbolic authorizer with Cedar's symbolic evaluation of
 each policy body. The concrete witness is checked against Cedar.Spec.Response.
 -/
 
-namespace CedarPooSpec.AuthorizationDelta
+namespace CedarPooSpec.Authorization.Delta
 
 open Cedar.Spec Cedar.Validation CedarPooSpec.PolicyModules
 open Cedar.SymCC.Factory
@@ -139,4 +139,4 @@ def analyzeExactOperationalModelImpact (model : Model)
   | .error error => return .error (.delta (.compilation error))
   | .ok revision => analyzeExactOperationalImpact revision schema
 
-end CedarPooSpec.AuthorizationDelta
+end CedarPooSpec.Authorization.Delta

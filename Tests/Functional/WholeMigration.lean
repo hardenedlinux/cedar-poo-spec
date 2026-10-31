@@ -10,7 +10,7 @@ open Cedar.Spec CedarPooSpec.PolicyPreparation
 /-- Independent original compile-only receipt algorithm, including failures. -/
 def referenceAll (model : PolicyModules.Model) (root : String) (requests : List Request)
     (entities : Entities) : Except PolicyModules.Error
-      (CompoundAuthorization.Receipt model root requests entities) :=
+      (Authorization.Compound.Receipt model root requests entities) :=
   match h : model.compile root with
   | .error error => .error error
   | .ok policies => .ok ⟨policies, h,
@@ -20,7 +20,7 @@ theorem compiled_all_exact (model : PolicyModules.Model) (root : String)
     (requests : List Request) (entities : Entities) :
     (Functional.compilation model).authorize root requests entities =
       referenceAll model root requests entities := by
-  unfold Functional.Compilation.authorize Functional.compilation CompoundAuthorization.authorizeAllWith
+  unfold Functional.Compilation.authorize Functional.compilation Authorization.Compound.authorizeAllWith
   unfold PolicyPreparation.compile referenceAll
   split <;> rename_i first
   all_goals split <;> rename_i second
@@ -56,7 +56,7 @@ run_cmd do
   for declaration in [``CedarPooSpec.WholeMigrationTest.compiled_all_exact,
       ``CedarPooSpec.Functional.compilation_layers,
       ``CedarPooSpec.Functional.compilation_export,
-      ``CedarPooSpec.CompoundAuthorization.Receipt.singleResponse_evaluated,
+      ``CedarPooSpec.Authorization.Compound.Receipt.singleResponse_evaluated,
       ``CedarPooSpec.PolicyProfile.policy_requires_contract,
       ``CedarPooSpec.Admission.Handoff.scope_requires_contract] do
     let axioms ← collectAxioms declaration

@@ -1,0 +1,42 @@
+#+TITLE: Zero Trust Functional and POO Framework
+#+LANGUAGE: en
+
+* Module ownership
+
+#+NAME: fig:zero-trust-framework
+#+CAPTION: Functional security frameworks and application-owned POO specialization.
+#+ATTR_ORG: :width 1200
+#+ATTR_HTML: :width 100% :alt Generic Zero Trust framework and application specializations
+[[file:architecture.svg]]
+
+Import =CedarPooSpec.ZeroTrust= as the aggregate entrypoint. Domain consumers may
+import specific modules. No module in this family imports Gateway.
+
+| Module | Responsibility |
+|--------+----------------|
+| Model | Typed requirement functions, Framework meanings and immutable observations |
+| Composition | Higher-order adaptation, strengthening and refinement laws |
+| Continuous | Actual-use checks, mutable observations/generations, revocation and trace projection |
+| ProfileObject | Optional generic POO interpretation through actual LeanPoo Dataflow inheritance, Contract and Session |
+
+* Composition direction
+
+Functional requirements are reusable values. A POO profile carries its original
+requirement as a type index and a proof of strengthening. Inherited extension
+conjoins new requirements rather than replacing the original. Source-bound
+Sessions retain the actual object's projection. No new object system is added.
+
+Gateway combines these functions with its own published profile and consumption
+types in =CedarPooSpec.Gateway.ZeroTrust=. Other applications can supply their own
+effects, views and persistence contracts without importing Gateway.
+Authorization's Cedar/Delta family is an independent framework under
+[[file:../Authorization/README.org][Authorization]]. Cross-framework interpretation
+belongs to the application, not a reverse dependency from this core.
+
+* Evidence boundary
+
+Read [[file:../../docs/rfc/0010-zero-trust.org][RFC 0010]] for research alignment,
+typed API laws and remaining Host premises. Pure proof data cannot authenticate
+a state reader, persist a ledger or enforce complete mediation on a socket.
+The transitive import-boundary test, generic functional/POO tests and Gateway
+adapter tests are separate checks in the existing Tests aggregate.

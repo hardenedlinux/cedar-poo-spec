@@ -1,5 +1,5 @@
 import CedarPooSpec.Functional.Compilation
-import CedarPooSpec.AuthorizationDeltaEvidence
+import CedarPooSpec.Authorization.Delta.Evidence
 
 /-!
 Analyze a four-root POO composition. Cedar checks each complete policy set;
@@ -7,7 +7,7 @@ the POO graph supplies branch and composition provenance. A joint-only gain is
 reported only after both independent branches have no gain over the base.
 -/
 
-namespace CedarPooSpec.AuthorizationDelta
+namespace CedarPooSpec.Authorization.Delta
 
 open Cedar.Spec CedarPooSpec.PolicyModules
 
@@ -88,4 +88,4 @@ def analyzeModelInteraction (model : Model) (baseRoot leftRoot rightRoot
       pure (.jointOnlyGain witnesses)
   return .ok { baseRoot, left, right, combined, outcome }
 
-end CedarPooSpec.AuthorizationDelta
+end CedarPooSpec.Authorization.Delta

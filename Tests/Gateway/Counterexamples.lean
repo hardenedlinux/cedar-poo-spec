@@ -41,9 +41,9 @@ def weakenedProfile : Gateway.Profile := { profile with requiredChecks := ["sour
 #guard !(authorize (currentContext := { context with policyRevision := 2 })).isOk
 
 -- Equal policy bodies/zero pointwise Delta cannot compare distinct fact worlds.
-#guard !(CedarPooSpec.AuthorizationDelta.errorFreeAllow [permitPolicy]
+#guard !(CedarPooSpec.Authorization.Delta.errorFreeAllow [permitPolicy]
     ⟨request "invoke" false, entities⟩)
-#guard CedarPooSpec.AuthorizationDelta.errorFreeAllow [permitPolicy]
+#guard CedarPooSpec.Authorization.Delta.errorFreeAllow [permitPolicy]
     ⟨request "invoke" true, entities⟩
 
 -- Fresh context at admission says nothing about a later epoch at dispatch.

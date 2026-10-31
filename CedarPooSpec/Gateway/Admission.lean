@@ -81,7 +81,7 @@ structure Receipt (prepared : Prepared Effect State project) (model : Model)
   policyCurrent : ∃ policies, prepared.policy.currentPolicies model = .ok policies
   requestValid : Cedar.Validation.validateRequest prepared.schema (project effect state) = .ok ()
   entitiesValid : Cedar.Validation.validateEntities prepared.schema entities = .ok ()
-  cedar : CedarPooSpec.CompoundAuthorization.Receipt model prepared.policy.root
+  cedar : CedarPooSpec.Authorization.Compound.Receipt model prepared.policy.root
     [prepared.operation.request] entities
   allowed : cedar.allowed = true
 
@@ -130,7 +130,7 @@ theorem admitted_actual_request_is_error_free
     let response := isAuthorized (projection actualEffect actualState) entities receipt.cedar.policies
     (response.decision == .allow && response.erroringPolicies.isEmpty) = true := by
   have h := receipt.allowed
-  simp only [CedarPooSpec.CompoundAuthorization.Receipt.allowed,
+  simp only [CedarPooSpec.Authorization.Compound.Receipt.allowed,
     receipt.cedar.evaluated, List.isEmpty_cons, Bool.not_false, Bool.true_and,
     List.map_cons, List.map_nil, List.all_cons, List.all_nil, Bool.and_true] at h
   simpa [CedarPooSpec.Admission.BoundOperation.request, receipt.effectMatches,

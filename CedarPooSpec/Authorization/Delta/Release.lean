@@ -1,4 +1,4 @@
-import CedarPooSpec.AuthorizationDeltaInteraction
+import CedarPooSpec.Authorization.Delta.Interaction
 import CedarPooSpec.Admission.PolicySnapshot
 
 /-!
@@ -7,7 +7,7 @@ compiled policies, and Host policy epoch. The Host must compare and reserve
 these under its own transaction before publishing or executing a revision.
 -/
 
-namespace CedarPooSpec.AuthorizationDelta
+namespace CedarPooSpec.Authorization.Delta
 
 open Cedar.Spec Cedar.Validation CedarPooSpec.PolicyModules
 
@@ -147,4 +147,4 @@ def ReviewedInteraction.advanceNoGain (reviewed : ReviewedInteraction)
       epoch := state.epoch + 1 }
   return (next, policies)
 
-end CedarPooSpec.AuthorizationDelta
+end CedarPooSpec.Authorization.Delta

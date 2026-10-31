@@ -1,5 +1,5 @@
-import CedarPooSpec.AuthorizationDeltaOperational
-import CedarPooSpec.AuthorizationDeltaEvidence
+import CedarPooSpec.Authorization.Delta.Operational
+import CedarPooSpec.Authorization.Delta.Evidence
 
 /-!
 Conservative determining-policy delta over one validated schema. Cedar owns
@@ -8,7 +8,7 @@ A matching difference is only a candidate until original Cedar responses
 confirm a changed determining-policy set.
 -/
 
-namespace CedarPooSpec.AuthorizationDelta
+namespace CedarPooSpec.Authorization.Delta
 
 open Cedar.Spec Cedar.Validation CedarPooSpec.PolicyModules
 
@@ -205,4 +205,4 @@ def analyzeModelReasons (model : Model) (beforeRoot afterRoot : String)
       potentiallyInvalidatedRoots :=
         affectedRoots model (report.changes ++ report.provenanceChanges) }
 
-end CedarPooSpec.AuthorizationDelta
+end CedarPooSpec.Authorization.Delta

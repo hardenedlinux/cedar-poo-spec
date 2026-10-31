@@ -1,6 +1,6 @@
 import CedarPooSpec.Functional.Compilation
-import CedarPooSpec.AuthorizationDelta
-import CedarPooSpec.CompoundAuthorization
+import CedarPooSpec.Authorization.Delta.Model
+import CedarPooSpec.Authorization.Compound
 
 /-!
 A finite authorization delta for an operation that requires several Cedar
@@ -9,7 +9,7 @@ authenticates both entity snapshots. Different POO roots may implement the
 two revisions, but changing the operation topology is a separate review.
 -/
 
-namespace CedarPooSpec.AuthorizationDelta
+namespace CedarPooSpec.Authorization.Delta
 
 open Cedar.Spec Cedar.Validation CedarPooSpec.PolicyModules
 
@@ -50,7 +50,7 @@ def compareCompoundSnapshots (schema : Schema) (model : Model)
     let impact ← compareOperationSnapshots schema beforeLayer.policies afterLayer.policies
       ⟨beforeLayer.request, beforeEntities⟩ ⟨afterLayer.request, afterEntities⟩
     return ⟨beforeLayer.root, afterLayer.root, beforeLayer.request, impact⟩
-  return ⟨layers, CompoundAuthorization.layersAllowed beforeLayers,
-    CompoundAuthorization.layersAllowed afterLayers⟩
+  return ⟨layers, Authorization.Compound.layersAllowed beforeLayers,
+    Authorization.Compound.layersAllowed afterLayers⟩
 
-end CedarPooSpec.AuthorizationDelta
+end CedarPooSpec.Authorization.Delta

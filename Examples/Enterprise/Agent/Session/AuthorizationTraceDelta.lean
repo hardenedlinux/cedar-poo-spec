@@ -1,5 +1,5 @@
 import CedarPooSpec.Functional.Capabilities
-import CedarPooSpec.AuthorizationDeltaTrace
+import CedarPooSpec.Authorization.Delta.Trace
 import CedarPooSpec.PolicyJson
 import Examples.Enterprise.Agent.Session.BoundedSession
 
@@ -11,7 +11,7 @@ so later requests may have different context even for the same proposal.
 
 namespace CedarPooSpec.BoundedSessionTraceDelta
 
-open CedarPooSpec.AuthorizationDelta
+open CedarPooSpec.Authorization.Delta
 open CedarPooSpec.BoundedSessionExample
 
 private def observe (state : Session) (attempt : Attempt) : Cedar.Spec.Env :=

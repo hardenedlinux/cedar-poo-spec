@@ -1,4 +1,4 @@
-import CedarPooSpec.AuthorizationDeltaOperationalExactProof
+import CedarPooSpec.Authorization.Delta.OperationalExactProof
 
 /-!
 A Boolean no-gain tautology for well-formed Cedar symbolic terms. This module
@@ -6,7 +6,7 @@ uses only the interpretation theorems; it does not compute a policy revision or
 trust a solver answer.
 -/
 
-namespace CedarPooSpec.AuthorizationDeltaBooleanCore
+namespace CedarPooSpec.Authorization.Delta.BooleanCore
 
 open Cedar.SymCC
 
@@ -117,4 +117,4 @@ theorem unsatOfShapeAndWellFormedAtoms
   · rw [formulaFalse I hI pb pa ra rb st td hpb hpa hra hrb hst htd]
     decide
 
-end CedarPooSpec.AuthorizationDeltaBooleanCore
+end CedarPooSpec.Authorization.Delta.BooleanCore

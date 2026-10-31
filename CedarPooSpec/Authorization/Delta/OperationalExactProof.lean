@@ -1,4 +1,4 @@
-import CedarPooSpec.AuthorizationDeltaOperationalExact
+import CedarPooSpec.Authorization.Delta.OperationalExact
 import Cedar.Thm.Data.Set
 import Cedar.Thm.SymCC.Compiler
 import Cedar.Thm.SymCC.Authorizer
@@ -14,7 +14,7 @@ Proof obligations for the composed error-free authorization query. Keep the
 concrete diagnostic bridge separate from the solver-backed analyzer.
 -/
 
-namespace CedarPooSpec.AuthorizationDelta
+namespace CedarPooSpec.Authorization.Delta
 
 open Cedar.Spec Cedar.Data
 open Cedar.SymCC
@@ -424,4 +424,4 @@ theorem noErrorFreeAllowExpansionForValidatedSchema
   rw [errorFreeAllow_preserved_by_typecheck hInstance hTypedBefore]
   exact hTypedBeforeAllowed
 
-end CedarPooSpec.AuthorizationDelta
+end CedarPooSpec.Authorization.Delta

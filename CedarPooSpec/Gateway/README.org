@@ -15,10 +15,12 @@ routing proposals. Neither a proposal nor a Lean receipt is a send permit.
 
 * Composable interface
 
-The public [[file:../../docs/zero-trust-contract.org][Zero Trust effect-boundary library]] composes these existing owners
-as =CedarPooSpec.ZeroTrust=. Applications consume/enrich that contract and retain
-native authentication, current-view, durability, unknown-exposure and final-use
-obligations rather than inventing another semantic engine.
+The generic [[file:../ZeroTrust/README.org][Zero Trust functional framework]]
+owns reusable model/composition/continuity functions and a generic POO
+interpretation. =Gateway.ZeroTrust= specializes it using this library's actual
+publication, Contract, Session and consumption. Gateway imports the framework;
+the framework's transitive import closure must not contain Gateway. See
+[[file:../Authorization/README.org][Authorization]] for the independent Delta family.
 
 | Module | Responsibility | Existing mechanism reused |
 |--------+----------------+---------------------------|

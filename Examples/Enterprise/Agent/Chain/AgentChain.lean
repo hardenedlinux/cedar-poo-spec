@@ -1,6 +1,6 @@
 import CedarPooSpec.Functional.Capabilities
 import Examples.Enterprise.Agent.Delegation.AgentDelegation
-import CedarPooSpec.AuthorizationDeltaCompound
+import CedarPooSpec.Authorization.Delta.Compound
 
 /-!
 The same POO delegation policy is evaluated once per hop. A path with one,
@@ -94,7 +94,7 @@ def authorizeChain (delegationRoot originRoot : String) (path : List EntityUID)
     match CedarPooSpec.AgentChainExample.chainProgram.authorizeLayers
         (checks delegationRoot originRoot path origin) chainEntities with
     | .error _ => false
-    | .ok receipts => CedarPooSpec.CompoundAuthorization.layersAllowed receipts
+    | .ok receipts => CedarPooSpec.Authorization.Compound.layersAllowed receipts
 
 def shortPath : List EntityUID := [orchestrator, dataBot]
 def routedPath : List EntityUID := [orchestrator, routingBot, dataBot]
@@ -200,11 +200,11 @@ def compoundDeltaCases : Bool :=
   let old := checks "ChainDelegation" "OriginBounded" reviewedPath admin
   let governed := checks "ChainGoverned" "ChainGoverned" reviewedPath admin
   let revoked := checks "ChainGovernedRevoked" "ChainGovernedRevoked" reviewedPath admin
-  let admitted := CedarPooSpec.AuthorizationDelta.compareCompoundSnapshots schema
+  let admitted := CedarPooSpec.Authorization.Delta.compareCompoundSnapshots schema
     chainModel old governed chainEntities chainEntities
-  let masked := CedarPooSpec.AuthorizationDelta.compareCompoundSnapshots schema
+  let masked := CedarPooSpec.Authorization.Delta.compareCompoundSnapshots schema
     chainModel old revoked chainEntities chainEntities
-  let frozen := CedarPooSpec.AuthorizationDelta.compareCompoundSnapshots schema
+  let frozen := CedarPooSpec.Authorization.Delta.compareCompoundSnapshots schema
     chainModel governed revoked chainEntities chainEntities
   match admitted, masked, frozen with
   | .ok a, .ok m, .ok f =>
@@ -218,7 +218,7 @@ theorem compoundDeltaCasesExact : compoundDeltaCases = true := by native_decide
 
 /-- A policy delta cannot silently add or remove a required hop. -/
 def changedCompoundRejected : Bool :=
-  match CedarPooSpec.AuthorizationDelta.compareCompoundSnapshots schema chainModel
+  match CedarPooSpec.Authorization.Delta.compareCompoundSnapshots schema chainModel
       (checks "ChainGoverned" "ChainGoverned" shortPath admin)
       (checks "ChainGoverned" "ChainGoverned" routedPath admin)
       chainEntities chainEntities with

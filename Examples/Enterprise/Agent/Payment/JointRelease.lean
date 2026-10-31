@@ -1,5 +1,5 @@
 import CedarPooSpec.Functional.Capabilities
-import CedarPooSpec.AuthorizationDeltaRelease
+import CedarPooSpec.Authorization.Delta.Release
 import CedarPooSpec.PolicyJson
 import Examples.Enterprise.Agent.Payment.AgentPayment
 
@@ -10,7 +10,7 @@ Each branch remains denied; their C4 mix creates an authorization gain.
 
 namespace CedarPooSpec.AgentPaymentJointRelease
 
-open Cedar.Spec CedarPooSpec.PolicyModules CedarPooSpec.AuthorizationDelta
+open Cedar.Spec CedarPooSpec.PolicyModules CedarPooSpec.Authorization.Delta
 open CedarPooSpec.AgentPaymentExample
 
 def riskHold : Policy := { frozenAccountVeto with id := "risk-payment-hold" }

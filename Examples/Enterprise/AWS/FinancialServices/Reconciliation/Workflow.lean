@@ -1,6 +1,6 @@
 import CedarPooSpec.Functional.Capabilities
 import Examples.Enterprise.AWS.FinancialServices.Reconciliation.Reconciliation
-import CedarPooSpec.CompoundAuthorization
+import CedarPooSpec.Authorization.Compound
 
 /-! A reviewable plan across the sample's ledger, notice, knowledge, Graph,
 and write targets. Host facts stand for values the published REQUEST interceptor

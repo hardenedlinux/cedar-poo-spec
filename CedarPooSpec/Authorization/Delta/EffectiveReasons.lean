@@ -1,4 +1,4 @@
-import CedarPooSpec.AuthorizationDeltaReasons
+import CedarPooSpec.Authorization.Delta.Reasons
 
 /-!
 Final-reason analysis reduced to Cedar's verified authorization-equivalence
@@ -6,7 +6,7 @@ query. A policy ID belongs to the final reason set iff its analysis policyset
 allows the same request. The concrete reduction is proved separately.
 -/
 
-namespace CedarPooSpec.AuthorizationDelta
+namespace CedarPooSpec.Authorization.Delta
 
 open Cedar.Spec Cedar.Validation CedarPooSpec.PolicyModules
 
@@ -120,4 +120,4 @@ def analyzeModelEffectiveReasons (model : Model) (beforeRoot afterRoot : String)
       potentiallyInvalidatedRoots :=
         affectedRoots model (report.changes ++ report.provenanceChanges) }
 
-end CedarPooSpec.AuthorizationDelta
+end CedarPooSpec.Authorization.Delta

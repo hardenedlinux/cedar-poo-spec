@@ -1,7 +1,7 @@
-import CedarPooSpec.ZeroTrust
+import CedarPooSpec.Gateway.ZeroTrust
 import Tests.Gateway.Fixture
 
-namespace CedarPooSpec.ZeroTrustTest
+namespace CedarPooSpec.Gateway.ZeroTrustTest
 open GatewayTest
 
 -- Complete Host view has a floor coordinate beyond the public Context. Keeping
@@ -27,6 +27,7 @@ def host : ZeroTrust.Host String View where
   committed := fun image after =>
     image.floor = 0 ∧ after.operations.admitted = [⟨scope.canonicalOperation⟩]
   unknownRetained := fun image _ => image.held = 4
+  revoked := fun _ => False
   mediated := fun effect image => effect = "invoke" ∧ image.floor = 0
 
 def firstUse : Option Bool := currentPublication.bind fun entry =>
@@ -70,6 +71,16 @@ theorem lost_unknown_hold_cannot_finalize :
   have retained := use.unknownRetained
   simpa [host, equality] using retained
 
+theorem rolled_back_input_has_no_consumption_prefix (actual : View)
+    (empty : (host.operations actual).admitted = []) :
+    ¬ Nonempty (ZeroTrust.CommittedPrefix proposal actual) := by
+  rintro ⟨evidence⟩
+  have installed := congrArg List.length evidence.installed
+  have originalPrefix := Gateway.consumption_preserves_operation_prefix publication proposal.receipt
+    (host.operations proposal.before) (host.authorities proposal.before) proposal.authorityId
+    proposal.after proposal.consumption
+  simp [empty, originalPrefix] at installed
+
 end Counterexamples
 
 #print axioms ZeroTrust.zero_trust_final_use
@@ -79,4 +90,9 @@ end Counterexamples
 #print axioms changed_floor_cannot_finalize
 #print axioms unknown_commit_cannot_finalize
 #print axioms lost_unknown_hold_cannot_finalize
-end CedarPooSpec.ZeroTrustTest
+#print axioms rolled_back_input_has_no_consumption_prefix
+#print axioms ZeroTrust.final_use_satisfies_framework
+#print axioms ZeroTrust.framework_object_preserves_gateway_contract
+#print axioms ZeroTrust.specialization_preserves_core_and_original
+#print axioms ZeroTrust.continuing_use_preserves_original_consumption
+end CedarPooSpec.Gateway.ZeroTrustTest

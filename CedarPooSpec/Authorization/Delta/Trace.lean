@@ -1,4 +1,4 @@
-import CedarPooSpec.AuthorizationDeltaEvidence
+import CedarPooSpec.Authorization.Delta.Evidence
 
 /-!
 Compare a fixed finite sequence of proposed actions under two C4 policy
@@ -7,7 +7,7 @@ Allow. This is a trace replay over the supplied proposals and transition
 function, not a proof about every future agent action or Host execution.
 -/
 
-namespace CedarPooSpec.AuthorizationDelta
+namespace CedarPooSpec.Authorization.Delta
 
 open Cedar.Spec Cedar.Validation CedarPooSpec.PolicyModules
 
@@ -161,10 +161,10 @@ def compareTrace (schema : Schema) (model : Model)
       beforeState := advance beforeState proposal
     if afterResponse.decision == .allow then
       afterState := advance afterState proposal
-  let changes := CedarPooSpec.AuthorizationDelta.Revision.policyChanges revision
+  let changes := CedarPooSpec.Authorization.Delta.Revision.policyChanges revision
   return ⟨beforeRoot, afterRoot, reversedSteps.reverse,
     beforeState, afterState, changes,
-    CedarPooSpec.AuthorizationDelta.Revision.proofFootprint revision,
+    CedarPooSpec.Authorization.Delta.Revision.proofFootprint revision,
     affectedRoots model changes⟩
 
 /-- All lists of one exact length over the supplied alphabet. Alphabet entries
@@ -210,4 +210,4 @@ def compareBoundedTraces (schema : Schema) (model : Model)
       proposals observe advance
     return (proposals, impact)
 
-end CedarPooSpec.AuthorizationDelta
+end CedarPooSpec.Authorization.Delta

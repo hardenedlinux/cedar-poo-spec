@@ -1,7 +1,7 @@
 import CedarPooSpec.Functional.Capabilities
 import CedarPooSpec.Revision
 import CedarPooSpec.PolicyJson
-import CedarPooSpec.CompoundAuthorization
+import CedarPooSpec.Authorization.Compound
 import Cedar.Validation.RequestEntityValidator
 
 /-!
@@ -158,7 +158,7 @@ protected def program : CedarPooSpec.Functional.Program model schema :=
 def authorizedRequest (root : String) (req : Request) : Bool :=
   match CedarPooSpec.SuccessorBoundaryExample.program.authorizeLayers [(root, req)] entities with
   | .error _ => false
-  | .ok receipts => CedarPooSpec.CompoundAuthorization.layersAllowed receipts
+  | .ok receipts => CedarPooSpec.Authorization.Compound.layersAllowed receipts
 def authorized (root : String) (action : EntityUID) (candidate : Candidate) : Bool :=
   authorizedRequest root (request action candidate)
 

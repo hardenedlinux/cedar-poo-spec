@@ -8,7 +8,7 @@ POO root and one caller-supplied entity snapshot. The caller remains
 responsible for atomic business execution and authentic input facts.
 -/
 
-namespace CedarPooSpec.CompoundAuthorization
+namespace CedarPooSpec.Authorization.Compound
 
 open Cedar.Spec CedarPooSpec.PolicyModules
 
@@ -116,4 +116,4 @@ def authorizeLayers (model : Model) (checks : List (String × Request))
     (entities : Entities) : Except PolicyModules.Error (List (LayerReceipt model entities)) :=
   authorizeLayersWith (PolicyPreparation.compile model) checks entities
 
-end CedarPooSpec.CompoundAuthorization
+end CedarPooSpec.Authorization.Compound
