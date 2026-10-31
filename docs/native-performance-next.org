@@ -179,7 +179,7 @@ Component medians need not add to the replay median. Approximately 125.3 ms is
 outside the six non-nested runtime phase medians. A separate, overlapping catalog
 view measures decode 41.171 ms, entries 329.593 ms, finalization 16.403 ms and
 cleanup 2.482 ms. Do not add these to the runtime phases or call the whole
-unattributed remainder JSON cost. The [[file:native-entry-timings.csv][all-51-entry timing inventory]] retains every
+unattributed remainder JSON cost. The [[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-entry-timings.csv][all-51-entry timing inventory]] retains every
 entry, row count and median; different workloads make its rank unsuitable as a
 reason to optimize only the highest-ranked industry.
 

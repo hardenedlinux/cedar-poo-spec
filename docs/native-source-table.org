@@ -253,11 +253,11 @@ listed extended attributes. Policy participation is not inferred from xattrs.
 
 * Published evidence and remaining boundary
 
-- [[file:native-source-table-lifecycle.json][Final 48-child cohort and complete source/executable identities]]
-- [[file:native-source-table-first-lifecycle.json][Preserved first 48-child cohort]]
-- [[file:native-source-table-evidence.json][All ordinary benchmark spans, allocation, cold build, startup states and raw-clock policy correlations]]
-- [[file:native-source-table-object-observations.csv][All final 486 object observations]]
-- [[file:native-source-table-entry-timings.csv][All final 1836 entry observations]]
+- [[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-source-table-lifecycle.json][Final 48-child cohort and complete source/executable identities]]
+- [[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-source-table-first-lifecycle.json][Preserved first 48-child cohort]]
+- [[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-source-table-evidence.json][All ordinary benchmark spans, allocation, cold build, startup states and raw-clock policy correlations]]
+- [[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-source-table-object-observations.csv][All final 486 object observations]]
+- [[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-source-table-entry-timings.csv][All final 1836 entry observations]]
 
 The common wire/type/Contract/reference/replay boundary is implemented across the
 complete applicable inventory. The next performance boundary is the weighted
@@ -275,7 +275,7 @@ required-parent POO composition, usage obligations and authority-bound publicati
 review. The complete integrated =just check= passes. Rebuilding all four ordinary
 production executables gives exactly the measured hashes; the additional proofs
 and tighter cache/output ownership therefore do not invalidate the recorded
-production measurements. [[file:native-source-table-integration.json][The integration receipt]] records the gate and identities.
+production measurements. [[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-source-table-integration.json][The integration receipt]] records the gate and identities.
 
 The prior parallel head's conformance job fails because a restored compiler cache
 contains =.lake/build/launch-probe=, while the diagnostic correctly requires a new

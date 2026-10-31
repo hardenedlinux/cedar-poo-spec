@@ -61,7 +61,7 @@ output buffer are still allocations included in whole-process RSS.
 
 The first measured implementation rendered an independent string at each
 array/object parent. Its complete 48-child cohort is preserved in
-[[file:native-program-wire-intermediate-lifecycle.json][the intermediate lifecycle receipt]]. Pipeline RSS rose from roughly
+[[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-program-wire-intermediate-lifecycle.json][the intermediate lifecycle receipt]]. Pipeline RSS rose from roughly
 50.7 to 55.1 MiB despite lower CPU. This is an observed regression, not an
 accepted memory improvement. The final representation replaces those parent
 strings with flat lists; its separate fixed cohort is not combined with the
@@ -71,7 +71,7 @@ evidence so the measured version can be reconstructed.
 * Complete validation, cold build and measurements
 
 Measurement receipts and the exact source/executable identities are recorded in
-[[file:native-program-wire-evidence.json][integrated evidence]] and [[file:native-program-wire-lifecycle.json][fixed process lifecycle]].
+[[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-program-wire-evidence.json][integrated evidence]] and [[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-program-wire-lifecycle.json][fixed process lifecycle]].
 The object and entry CSVs retain every observation, including negative controls.
 
 The final complete =just check= returns zero. All 52 frozen canonical exports,

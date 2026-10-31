@@ -129,8 +129,8 @@ without inferring a stale-cache bug or attributing performance to them.
 The unchanged official driver completes 48 native children, 15 full-output
 comparisons, 486 object observations and 1836 entry observations. Each variant
 has nine paired benchmark samples plus nine additional file-lifecycle samples.
-The [[file:native-typed-case-lifecycle.json][complete process receipt]], [[file:native-typed-case-evidence.json][machine evidence]],
-[[file:native-typed-case-object-observations.csv][object observations]] and [[file:native-typed-case-entry-observations.csv][entry observations]] preserve every result.
+The [[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-typed-case-lifecycle.json][complete process receipt]], [[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-typed-case-evidence.json][machine evidence]],
+[[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-typed-case-object-observations.csv][object observations]] and [[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-typed-case-entry-observations.csv][entry observations]] preserve every result.
 
 | Complete producer-to-Rust pipeline | Baseline | Candidate |
 |-----------------------------------+----------+-----------|

@@ -95,8 +95,8 @@ StdIO buffering and process-exit flushing remain included in complete process
 accounting; no durable-storage or unrestricted IO refinement theorem is claimed.
 
 The intermediate streaming cohort is preserved in
-[[file:native-c4-intermediate-lifecycle.json][its complete lifecycle receipt]], with source replacements and the independent
-RSS survey in [[file:native-c4-preparation-evidence.json][integrated evidence]]. Its median peak-child RSS was about
+[[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-c4-intermediate-lifecycle.json][its complete lifecycle receipt]], with source replacements and the independent
+RSS survey in [[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-c4-preparation-evidence.json][integrated evidence]]. Its median peak-child RSS was about
 49.97 MiB versus the final cohort's 50.19 MiB. These are separate cohorts, not a
 paired incremental experiment. Early semantic-container retirement is verified
 in generated ownership operations; an additional RSS reduction from that last
@@ -130,9 +130,9 @@ C4 deep/wide complete-result controls, cold catalog and full Rust receipts pass.
 
 * Fixed complete-process evidence
 
-[[file:native-c4-preparation-lifecycle.json][The final ordinary receipt]] owns all source/executable identities and all
-48 children/15 wire comparisons. [[file:native-c4-preparation-object-observations.csv][Object observations]] retain 486 rows;
-[[file:native-c4-preparation-entry-observations.csv][entry observations]] retain 1836. Eighteen internal samples per variant are
+[[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-c4-preparation-lifecycle.json][The final ordinary receipt]] owns all source/executable identities and all
+48 children/15 wire comparisons. [[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-c4-preparation-object-observations.csv][Object observations]] retain 486 rows;
+[[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-c4-preparation-entry-observations.csv][entry observations]] retain 1836. Eighteen internal samples per variant are
 nine paired samples plus nine additional file-lifecycle samples. No task-owned
 builds/tests overlap that ordinary cohort. Unrelated host scheduling is not
 controlled. RSS below is the median of the maximum sequential child, not a sum

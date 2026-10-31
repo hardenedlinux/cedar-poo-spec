@@ -1,6 +1,13 @@
 #+TITLE: Complete Cedar typed dataflow migration and native lifecycle evidence
 #+OPTIONS: toc:2
 
+* Measurement storage and benchmark ownership
+
+Generated CSV/JSON observations are build/CI artifacts rather than source files.
+See [[file:../Benchmarks/README.md][native benchmark ownership, artifact download and historical receipt retrieval]].
+Historical observations linked below remain pinned to their recorded commit;
+packaging cleanup is not a new performance measurement.
+
 * Current C4 preparation and output ownership
 
 The current shared owner, complete all-domain qualification and resource evidence
@@ -135,13 +142,13 @@ actor context, credential, admission decision or Host fact becomes cached.
 
 * Evidence and complete process measurements
 
-The [[file:native-dataflow-initial-evidence.json][initial complete cohort]] and
-[[file:native-dataflow-initial-object-observations.csv][initial object observations]] retain the first migration's increased preparation
-cost. The [[file:native-dataflow-pre-abi-evidence.json][pre-ABI-repair complete cohort]] and its
-[[file:native-dataflow-pre-abi-object-observations.csv][object]]/[[file:native-dataflow-pre-abi-entry-timings.csv][entry]] records remain preserved. The
-[[file:native-dataflow-evidence.json][final canonical-ABI complete cohort]],
-[[file:native-dataflow-object-observations.csv][final object observations]] and
-[[file:native-dataflow-entry-timings.csv][all native Rust entry timings]] retain the owner-reuse refinement.
+The [[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-dataflow-initial-evidence.json][initial complete cohort]] and
+[[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-dataflow-initial-object-observations.csv][initial object observations]] retain the first migration's increased preparation
+cost. The [[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-dataflow-pre-abi-evidence.json][pre-ABI-repair complete cohort]] and its
+[[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-dataflow-pre-abi-object-observations.csv][object]]/[[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-dataflow-pre-abi-entry-timings.csv][entry]] records remain preserved. The
+[[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-dataflow-evidence.json][final canonical-ABI complete cohort]],
+[[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-dataflow-object-observations.csv][final object observations]] and
+[[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-dataflow-entry-timings.csv][all native Rust entry timings]] retain the owner-reuse refinement.
 All three cohorts contain 48 native child processes each (144 total): three alternating complete
 before/after pairs plus separate fresh-file/repeated-file producer and Rust
 observations. All processes exit zero naturally under their unchanged 120-second
@@ -242,7 +249,7 @@ The workflow reports the requested identity and exact-hit state; a restored
 prefix is not an exact hit or proof of artifact acceptance. The existing native
 artifact mutation, cold-link and replay gates still determine acceptance.
 Cargo retains =. -> rust/target= and uses the action's built-in job/toolchain/
-manifest/configuration identity, without a repository-specific numbered prefix. The [[file:lean-cache-evidence.json][cache receipt]] records
+manifest/configuration identity, without a repository-specific numbered prefix. The [[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/lean-cache-evidence.json][cache receipt]] records
 one completed cold Lean job and one completed warm Lean job with the same
 compatibility identity. The warm job has both exact hits and explicitly disables
 the setup action's whole-Lake cache. Superseded integration jobs are not counted
@@ -278,12 +285,12 @@ loop and existing finish/complete-support check remain authoritative. Finish-sta
 and indexed-lookup proofs connect the actual published table to the exact
 source-bound closed state; type/Contract/refusal behavior remains unchanged.
 
-The [[file:native-revision-preparation-initial-evidence.json][first complete cohort]],
-[[file:native-revision-preparation-initial-object-observations.csv][first object records]] and
-[[file:native-revision-preparation-initial-entry-timings.csv][first entry records]] are preserved.
-The [[file:native-revision-preparation-evidence.json][final complete cohort]],
-[[file:native-revision-preparation-object-observations.csv][final object records]] and
-[[file:native-revision-preparation-entry-timings.csv][final entry records]] each contain 48 naturally
+The [[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-revision-preparation-initial-evidence.json][first complete cohort]],
+[[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-revision-preparation-initial-object-observations.csv][first object records]] and
+[[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-revision-preparation-initial-entry-timings.csv][first entry records]] are preserved.
+The [[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-revision-preparation-evidence.json][final complete cohort]],
+[[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-revision-preparation-object-observations.csv][final object records]] and
+[[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-revision-preparation-entry-timings.csv][final entry records]] each contain 48 naturally
 completed children, 15 full wire comparisons, 486 object observations and 1836
 ordinary Rust entry timings. The fixed three pairs, fresh-file observations,
 120-second/3-second supervision, workloads and guards are unchanged. Both exact
@@ -372,10 +379,10 @@ as a dependency. Real direct/transitive prohibited packages remain refused.
 
 * Complete pipeline result after sharing actual normalization work
 
-The [[file:native-shared-policy-preparation-evidence.json][third complete cohort]] retains all 48 naturally completed children,
-15 full wire comparisons, [[file:native-shared-policy-preparation-object-observations.csv][486 object observations]] and
-[[file:native-shared-policy-preparation-entry-timings.csv][1836 ordinary Rust entry timings]]. The independent
-[[file:native-shared-policy-preparation-allocation.json][three-sample instrumented allocation receipt]] is kept separate from ordinary
+The [[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-shared-policy-preparation-evidence.json][third complete cohort]] retains all 48 naturally completed children,
+15 full wire comparisons, [[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-shared-policy-preparation-object-observations.csv][486 object observations]] and
+[[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-shared-policy-preparation-entry-timings.csv][1836 ordinary Rust entry timings]]. The independent
+[[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-shared-policy-preparation-allocation.json][three-sample instrumented allocation receipt]] is kept separate from ordinary
 latency. Together, this revision-preparation work preserves three fixed cohorts:
 144 children, 45 complete wire comparisons and every first-file observation.
 Earlier no-speedup results remain unchanged.
@@ -516,11 +523,11 @@ fixtures exercise units, optional observations and real zero values.
 
 * First fixed UID process, allocation and startup results
 
-[[file:native-wall-first-lifecycle-evidence.json][First ordinary process receipt]] preserves the verified frozen f13 baseline,
+[[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-wall-first-lifecycle-evidence.json][First ordinary process receipt]] preserves the verified frozen f13 baseline,
 all current source hashes, executable hashes, 48 children and 15 complete wire
 comparisons. All children and comparisons passed. The related
-[[file:native-wall-first-lifecycle-object-observations.csv][486 object observations]], [[file:native-wall-first-lifecycle-entry-timings.csv][1836 complete catalog entry observations]] and
-[[file:native-wall-first-lifecycle-allocation.json][separate allocation observation]] cover the existing full workloads. No sample
+[[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-wall-first-lifecycle-object-observations.csv][486 object observations]], [[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-wall-first-lifecycle-entry-timings.csv][1836 complete catalog entry observations]] and
+[[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-wall-first-lifecycle-allocation.json][separate allocation observation]] cover the existing full workloads. No sample
 was dropped, substituted or repeated to obtain a favorable result.
 
 | Pair | Pipeline CPU before/after ms | Full child wall before/after ms | Peak child RSS before/after MiB |
@@ -555,7 +562,7 @@ comparison and complete String encoder; it does not measure the new stdout
 streaming writer. The ordinary process cohort includes that writer. The public
 [[https://docs.rs/serde_json/1.0.151/serde_json/fn.to_writer.html][serde JSON writer]] and [[https://doc.rust-lang.org/std/io/struct.BufWriter.html][buffered writer]] are used with explicit error-checked flush.
 
-[[file:native-wall-startup-evidence.json][Startup receipts]] contain three separate diagnostic cohorts, all complete stdout
+[[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-wall-startup-evidence.json][Startup receipts]] contain three separate diagnostic cohorts, all complete stdout
 comparisons, the generated C initializer order and one bounded intrusive stack
 sample per role. The first diagnostic import captures subsequent module
 initialization; generated C calls it before ManifestCatalog and Timestamp.
@@ -596,11 +603,11 @@ a later restore could collide with the fail-on-existing evidence directories.
 CI now uses =RUNNER_TEMP= for those observations. The cache index, resource limits,
 compiler identity and ordinary case workload remain unchanged.
 
-The [[file:native-wall-owner-lifecycle-evidence.json][second retained cohort]] binds that correction. It changes only the workflow
+The [[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-wall-owner-lifecycle-evidence.json][second retained cohort]] binds that correction. It changes only the workflow
 output destination and all eight native artifact hashes match the first cohort.
 Its CPU pairs are 530/470, 460/460 and 460/490 ms; wall pairs are
 570.35/1283.43, 509.10/499.20 and 493.99/539.58 ms. Request preparation medians
-are 57.40/36.74 ms. Its [[file:native-wall-owner-lifecycle-object-observations.csv][object]] and [[file:native-wall-owner-lifecycle-entry-timings.csv][entry]] observations are retained.
+are 57.40/36.74 ms. Its [[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-wall-owner-lifecycle-object-observations.csv][object]] and [[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-wall-owner-lifecycle-entry-timings.csv][entry]] observations are retained.
 
 That run exposed a second defect: the recipe recopied candidate artifacts while
 reusing previously executed baseline files. This can change per-file execution
@@ -611,9 +618,9 @@ child. It records original artifact provenance separately from actual execution
 files. Fixed pairs reuse those files equally; the independent fresh-file cohort
 still runs. It does not change the 48-child workload or its supervision limits.
 
-[[file:native-wall-lifecycle-evidence.json][The final ordinary receipt]] binds the complete corrected source snapshot, both
+[[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-wall-lifecycle-evidence.json][The final ordinary receipt]] binds the complete corrected source snapshot, both
 verified artifact sets and symmetric execution paths. All 48 children and 15
-complete wire comparisons pass, with [[file:native-wall-lifecycle-object-observations.csv][486 object]] and [[file:native-wall-lifecycle-entry-timings.csv][1836 entry]] observations.
+complete wire comparisons pass, with [[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-wall-lifecycle-object-observations.csv][486 object]] and [[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-wall-lifecycle-entry-timings.csv][1836 entry]] observations.
 Only the driver changes from the second cohort; all eight native executable
 hashes match. All three raw cohorts remain available, not just the final one.
 

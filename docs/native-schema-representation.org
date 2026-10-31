@@ -290,10 +290,10 @@ whole-process latency remains open.
 
 * Published receipts
 
-- [[file:native-schema-lifecycle-evidence.json][Complete ordinary process/source identities and all outcomes]]
-- [[file:native-schema-preparation-evidence.json][Qualified phase memory, all ordinary benchmark spans, startup and cold-build evidence]]
-- [[file:native-schema-object-observations.csv][All 486 object observations]]
-- [[file:native-schema-entry-timings.csv][All 1836 catalog-entry observations]]
+- [[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-schema-lifecycle-evidence.json][Complete ordinary process/source identities and all outcomes]]
+- [[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-schema-preparation-evidence.json][Qualified phase memory, all ordinary benchmark spans, startup and cold-build evidence]]
+- [[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-schema-object-observations.csv][All 486 object observations]]
+- [[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-schema-entry-timings.csv][All 1836 catalog-entry observations]]
 - [[file:native-schema-observer-baseline.patch][Reviewable observer-only baseline overlay]]
 
 Reproduce ordinary comparison with the existing
@@ -311,6 +311,6 @@ Clippy pass after that test-only change; all mutation bytes are unchanged.
 
 The original 686-input measurement manifest is preserved. Its only subsequent
 source difference is that test file, explicitly recorded with before/after hashes
-in [[file:native-schema-provenance.json][measurement provenance]]. The rebuilt ordinary release executable is byte-identical
+in [[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-schema-provenance.json][measurement provenance]]. The rebuilt ordinary release executable is byte-identical
 to the measured candidate, so no performance sample is regenerated or relabeled.
 Exact-head remote CI validates the final test spelling separately.

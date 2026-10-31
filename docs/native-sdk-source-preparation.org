@@ -101,10 +101,10 @@ our own child processes, preserving system security settings and binary identity
 The fixed cohort completed 48 child processes, 15 full-wire comparisons,
 486 object observations and 1836 entry observations. All children exited zero.
 Both variants consume exactly the same complete v2 catalog and return identical
-complete receipts. The [[file:native-sdk-source-lifecycle.json][process receipt]],
-[[file:native-sdk-source-evidence.json][source, startup, allocation and validation evidence]],
-[[file:native-sdk-source-object-observations.csv][object observations]] and
-[[file:native-sdk-source-entry-observations.csv][entry observations]] retain the results.
+complete receipts. The [[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-sdk-source-lifecycle.json][process receipt]],
+[[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-sdk-source-evidence.json][source, startup, allocation and validation evidence]],
+[[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-sdk-source-object-observations.csv][object observations]] and
+[[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-sdk-source-entry-observations.csv][entry observations]] retain the results.
 
 | Ordinary observation | Baseline | Candidate |
 |----------------------+----------+-----------|
