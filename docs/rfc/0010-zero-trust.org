@@ -105,6 +105,10 @@ worker cannot acquire a current final witness from a historical matching artifac
 The native Host must join the independent registration commitment, actor and
 epoch with final publication under one authority decision; local readiness is
 not anti-rollback evidence. Model laws do not revoke a real transport credential.
+The adapter's single =RegistrarAuthority.admitted= meaning binds the complete
+credential and exact command possession. Its command-indexed hook retains
+ZeroTrust and original Contract requirements. Concurrent/fault models consume
+qualified references; they do not define another identity policy evaluator.
 Pending results and lost replies must reconcile the original intent, not replace
 the evidence, rebase the parent or clear unresolved consumption.
 

@@ -25,6 +25,14 @@ alone is insufficient. =final_requires_durable_recovered_registration= extracts
 these requirements; negative fixtures cover missing anchor, unrecovered registry
 and a stale worker. These predicates still require actual authority materialization.
 
+=RegistrarAuthority.admitted= is the application adapter's single credential
+meaning: immutable subject/incarnation/key/scope/audience/epoch/serial binding,
+issuance, role eligibility, non-revocation and possession for the exact command.
+=Host.registrarCurrent= is command-indexed and consumes this meaning; a shared
+subject or old validation is insufficient. Protocol models use qualified references
+rather than copying the credential rules. Crypto and native issuance/revocation
+materialization are not implemented by these pure functions.
+
 * Ownership
 
 =CedarPooSpec.Authorization= aggregates the reusable authorization capabilities.

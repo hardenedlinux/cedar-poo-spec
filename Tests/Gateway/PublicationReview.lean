@@ -38,7 +38,7 @@ def host : Host Nat Result View Nat Nat Nat where
   approvedEvidenceAt := fun view _ => some view.artifact
   registrationCommitted := fun _ _ artifact => artifact = 7
   registryRecovered := fun _ => True
-  registrarCurrent := fun _ => True
+  registrarCurrent := fun _ _ => True
   cutAt := View.cut
   projection := id
   pendingAdmissible := fun _ view => view.pending = false
@@ -119,8 +119,52 @@ theorem matching_rolled_back_registry_cannot_commit :
   unrecovered_registry_cannot_commit id
 
 theorem matching_old_worker_cannot_commit :
-    ¬ Nonempty (Final {host with registrarCurrent := fun _ => False} template prepare 9 initial) :=
+    ¬ Nonempty (Final {host with registrarCurrent := fun _ _ => False} template prepare 9 initial) :=
   old_registrar_cannot_commit id
+
+abbrev Binding := RegistrarBinding Nat Nat Nat Nat Nat
+def credential : Binding := ⟨1, 2, 8, 7, 9, 3, 10⟩
+def identity : RegistrarAuthority Nat Bool Nat Nat Nat Nat Nat where
+  current := fun _ => credential
+  issued := fun _ _ => True
+  roleAllowed := fun subject _ => subject = 1
+  expectedScope := fun _ => 7
+  expectedAudience := fun _ => 9
+  revoked := fun _ revoked => revoked = true
+  possession := fun _ command _ => command = 9
+
+theorem exact_credential_can_authorize_command : identity.admitted credential 9 false := by
+  simp [RegistrarAuthority.admitted, identity, credential]
+
+theorem shared_subject_is_not_incarnation :
+    identity.roleAllowed credential.subject false ∧
+      ¬ identity.admitted {credential with incarnation := 4} 9 false := by
+  constructor
+  · rfl
+  · exact substituted_registrar_binding_is_refused (by decide)
+
+theorem matching_identity_with_wrong_key_is_refused :
+    ¬ identity.admitted {credential with publicKey := 11} 9 false :=
+  substituted_registrar_binding_is_refused (by decide)
+
+theorem matching_identity_with_wrong_epoch_is_refused :
+    ¬ identity.admitted {credential with epoch := 4} 9 false :=
+  substituted_registrar_binding_is_refused (by decide)
+
+theorem revoked_exact_identity_is_refused : ¬ identity.admitted credential 9 true :=
+  revoked_registrar_binding_is_refused rfl
+
+theorem possession_for_another_command_is_refused : ¬ identity.admitted credential 10 false :=
+  unbound_registrar_command_is_refused (by simp [identity])
+
+def registrarForView (command : Nat) (view : View) : Prop :=
+  identity.admitted credential command (!view.current)
+
+theorem identity_binding_reaches_final_publication
+    (final : Final {host with registrarCurrent := registrarForView} template prepare 9 initial) :
+    identity.possession credential 9 (!initial.current) := by
+  have bound := registrar_admission_retains_exact_binding final.fenced
+  exact bound.2.2
 
 theorem bound_review_cannot_reset_consumption :
     ¬ Nonempty (Final host template prepare 9 {initial with consumed := false}) := by
@@ -129,6 +173,9 @@ theorem bound_review_cannot_reset_consumption :
   simp [host, security] at retained
 
 #print axioms final_preserves_original_and_binding
+#print axioms registrar_admission_retains_exact_binding
+#print axioms shared_subject_is_not_incarnation
+#print axioms identity_binding_reaches_final_publication
 #print axioms exact_final_is_admitted
 #print axioms replaced_evidence_is_refused
 #print axioms cached_matching_review_is_not_current_use

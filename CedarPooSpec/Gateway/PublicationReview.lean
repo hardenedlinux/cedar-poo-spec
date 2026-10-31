@@ -9,13 +9,65 @@ meanings and serialize all guards with the actual commit. -/
 namespace CedarPooSpec.Gateway.PublicationReview
 open LeanPoo.Functional.DeclarativeMetadata
 
+/-- An authority-issued binding, not a source-role token or caller-supplied
+labels. Cryptographic verification and custody remain adapter obligations. -/
+structure RegistrarBinding (Subject Incarnation PublicKey Scope Audience : Type) where
+  subject : Subject
+  incarnation : Incarnation
+  publicKey : PublicKey
+  scope : Scope
+  audience : Audience
+  epoch : Nat
+  serial : Nat
+  deriving DecidableEq
+
+structure RegistrarAuthority (Command View Subject Incarnation PublicKey Scope Audience : Type) where
+  current : View → RegistrarBinding Subject Incarnation PublicKey Scope Audience
+  issued : RegistrarBinding Subject Incarnation PublicKey Scope Audience → View → Prop
+  roleAllowed : Subject → View → Prop
+  expectedScope : View → Scope
+  expectedAudience : View → Audience
+  revoked : RegistrarBinding Subject Incarnation PublicKey Scope Audience → View → Prop
+  possession : RegistrarBinding Subject Incarnation PublicKey Scope Audience → Command → View → Prop
+
+def RegistrarAuthority.admitted
+    (authority : RegistrarAuthority Command View Subject Incarnation PublicKey Scope Audience)
+    (binding : RegistrarBinding Subject Incarnation PublicKey Scope Audience)
+    (command : Command) (view : View) : Prop :=
+  authority.issued binding view ∧ authority.roleAllowed binding.subject view ∧
+    binding = authority.current view ∧ binding.scope = authority.expectedScope view ∧
+    binding.audience = authority.expectedAudience view ∧ ¬ authority.revoked binding view ∧
+    authority.possession binding command view
+
+theorem registrar_admission_retains_exact_binding
+    {authority : RegistrarAuthority Command View Subject Incarnation PublicKey Scope Audience}
+    {binding command view} (accepted : authority.admitted binding command view) :
+    binding = authority.current view ∧ ¬ authority.revoked binding view ∧
+      authority.possession binding command view :=
+  ⟨accepted.2.2.1, accepted.2.2.2.2.2.1, accepted.2.2.2.2.2.2⟩
+
+theorem substituted_registrar_binding_is_refused
+    {authority : RegistrarAuthority Command View Subject Incarnation PublicKey Scope Audience}
+    {binding command view} (different : binding ≠ authority.current view) :
+    ¬ authority.admitted binding command view := fun accepted => different accepted.2.2.1
+
+theorem revoked_registrar_binding_is_refused
+    {authority : RegistrarAuthority Command View Subject Incarnation PublicKey Scope Audience}
+    {binding command view} (revoked : authority.revoked binding view) :
+    ¬ authority.admitted binding command view := fun accepted => accepted.2.2.2.2.2.1 revoked
+
+theorem unbound_registrar_command_is_refused
+    {authority : RegistrarAuthority Command View Subject Incarnation PublicKey Scope Audience}
+    {binding command view} (missing : ¬ authority.possession binding command view) :
+    ¬ authority.admitted binding command view := fun accepted => missing accepted.2.2.2.2.2.2
+
 structure Host (Command Result View Parent Artifact Cut : Type) where
   security : ZeroTrust.Framework Command View
   parentAt : View → Parent
   approvedEvidenceAt : View → Command → Option Artifact
   registrationCommitted : View → Command → Artifact → Prop
   registryRecovered : View → Prop
-  registrarCurrent : View → Prop
+  registrarCurrent : Command → View → Prop
   cutAt : View → Cut
   projection : Result → Command × (Parent × Option Artifact) × Cut
   /-- Command-specific admission may resolve its own staged intent and leave
@@ -47,7 +99,7 @@ structure Final (host : Host Command Result View Parent Artifact Cut)
   durable : ∀ artifact, host.approvedEvidenceAt actual command = some artifact →
     host.registrationCommitted actual command artifact
   recovered : host.registryRecovered actual
-  fenced : host.registrarCurrent actual
+  fenced : host.registrarCurrent command actual
   current : host.security.required command actual
   pending : host.pendingAdmissible command actual
   committed : host.commit actual receipt.result receipt.state
@@ -108,7 +160,7 @@ theorem final_requires_durable_recovered_registration
     {host : Host Command Result View Parent Artifact Cut}
     {template : Contract Atom Command Result} {command actual}
     (publication : Final host template prepare command actual) :
-    host.registryRecovered actual ∧ host.registrarCurrent actual ∧
+    host.registryRecovered actual ∧ host.registrarCurrent command actual ∧
       ∃ artifact, host.approvedEvidenceAt actual command = some artifact ∧
         host.registrationCommitted actual command artifact := by
   obtain ⟨artifact, present⟩ := publication.approved
@@ -132,7 +184,7 @@ theorem unrecovered_registry_cannot_commit
 theorem old_registrar_cannot_commit
     {host : Host Command Result View Parent Artifact Cut}
     {template : Contract Atom Command Result} {command actual}
-    (stale : ¬ host.registrarCurrent actual) :
+    (stale : ¬ host.registrarCurrent command actual) :
     ¬ Nonempty (Final host template prepare command actual) := fun ⟨publication⟩ => stale publication.fenced
 
 theorem stale_use_cannot_commit
