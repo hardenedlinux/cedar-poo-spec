@@ -130,13 +130,26 @@ fn prepared_catalog_matches_original_workflows() {
                 original(&manifest.cases).expect_err("reference raw ids"),
                 "{name}"
             );
-            manifest.cases[index] = saved;
+            manifest.cases[index] = saved.clone();
             manifest.cases[index].request.action = "Action::\"__changed\"".into();
             assert_eq!(
                 replay_manifest(&manifest),
                 original(&manifest.cases),
                 "fresh raw request: {name}"
             );
+            for field in ["context", "principal", "resource"] {
+                manifest.cases[index] = saved.clone();
+                match field {
+                    "context" => manifest.cases[index].request.context = json!({"__changed":true}),
+                    "principal" => manifest.cases[index].request.principal = "invalid uid".into(),
+                    _ => manifest.cases[index].request.resource = "invalid uid".into(),
+                }
+                assert_eq!(
+                    replay_manifest(&manifest),
+                    original(&manifest.cases),
+                    "fresh raw {field}: {name}"
+                );
+            }
             raw_checked += 1;
             continue;
         }
@@ -178,13 +191,26 @@ fn prepared_catalog_matches_original_workflows() {
             original_validated_replay(&manifest).expect_err("reference ids"),
             "{name}"
         );
-        manifest.cases[index] = saved;
+        manifest.cases[index] = saved.clone();
         manifest.cases[index].request.action = "Action::\"__changed\"".into();
         assert_eq!(
             replay_validated_manifest(&manifest),
             original_validated_replay(&manifest),
             "fresh action: {name}"
         );
+        for field in ["context", "principal", "resource"] {
+            manifest.cases[index] = saved.clone();
+            match field {
+                "context" => manifest.cases[index].request.context = json!({"__changed":true}),
+                "principal" => manifest.cases[index].request.principal = "invalid uid".into(),
+                _ => manifest.cases[index].request.resource = "invalid uid".into(),
+            }
+            assert_eq!(
+                replay_validated_manifest(&manifest),
+                original_validated_replay(&manifest),
+                "fresh {field}: {name}"
+            );
+        }
         checked += 1;
     }
     assert_eq!(checked, 23, "schema-bearing catalog coverage changed");

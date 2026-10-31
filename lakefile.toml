@@ -41,3 +41,13 @@ root = "Tests.Functional.ProfilesMain"
 [[lean_exe]]
 name = "caseManifestsNative"
 root = "Examples.Manifests"
+
+# Only the diagnostic executable imports this initialization observer.
+[[lean_lib]]
+name = "Benchmarks"
+roots = ["Benchmarks.ManifestInitialization"]
+globs = ["Benchmarks.ManifestInitialization"]
+
+[[lean_exe]]
+name = "manifestLifecycleNative"
+root = "Benchmarks.ManifestLifecycle"

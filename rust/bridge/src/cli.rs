@@ -1,5 +1,6 @@
 //! Stream a Lean manifest through the Rust Cedar conformance checker.
 
+use crate::output::write_json;
 use cedar_poo_core::{CompiledPolicyJson, TemplateSourceJson};
 use cedar_poo_runtime::{
     Manifest, SchemaEvolutionBundle, ValidatedManifest, check_direct_sources, check_manifest,
@@ -19,6 +20,26 @@ struct TemplateSourceBundle {
 
 /// Read one JSON manifest from standard input and check all cases.
 pub fn run() -> Result<(), String> {
+    run_with_observation(false)
+}
+
+/// Diagnostic real-path phase markers; ordinary CLI runs incur no clock reads.
+pub fn run_observed() -> Result<(), String> {
+    run_with_observation(true)
+}
+
+fn phase(start: Option<std::time::Instant>, name: &str) {
+    if let Some(start) = start {
+        eprintln!(
+            "{}",
+            serde_json::json!({"observation":"native-phase", "phase":name,
+            "elapsed_ns":start.elapsed().as_nanos()})
+        );
+    }
+}
+
+fn run_with_observation(observe: bool) -> Result<(), String> {
+    let started = observe.then(std::time::Instant::now);
     let args: Vec<String> = std::env::args().skip(1).collect();
     let input_started = (args == ["benchmark-catalog"]).then(std::time::Instant::now);
     let mut input = String::new();
@@ -28,10 +49,15 @@ pub fn run() -> Result<(), String> {
     if let Some(started) = input_started {
         return crate::benchmark::run(&input, started.elapsed().as_nanos());
     }
-    dispatch(&input, &args)
+    phase(started, "input-read");
+    dispatch(&input, &args, started)
 }
 
-fn dispatch(input: &str, args: &[String]) -> Result<(), String> {
+fn dispatch(
+    input: &str,
+    args: &[String],
+    started: Option<std::time::Instant>,
+) -> Result<(), String> {
     if args.len() == 1 && args[0] == "render" {
         let policies: CompiledPolicyJson = input
             .parse()
@@ -47,21 +73,17 @@ fn dispatch(input: &str, args: &[String]) -> Result<(), String> {
         return Ok(());
     }
     if args == ["replay-catalog"] {
-        println!(
-            "{}",
-            serde_json::to_string(&crate::catalog::replay(input)?)
-                .map_err(|error| error.to_string())?
-        );
+        let receipts = crate::catalog::replay(input)?;
+        phase(started, "catalog-ready");
+        write_json(&receipts)?;
+        phase(started, "output-written");
         return Ok(());
     }
     if args == ["replay-validated-receipts"] {
         let manifest: ValidatedManifest = serde_json::from_str(input)
             .map_err(|error| format!("validated manifest JSON: {error}"))?;
         let receipts = replay_validated_manifest(&manifest)?;
-        println!(
-            "{}",
-            serde_json::to_string(&receipts).map_err(|error| error.to_string())?
-        );
+        write_json(&receipts)?;
         return Ok(());
     }
     if let [command, case_name] = args
@@ -70,20 +92,14 @@ fn dispatch(input: &str, args: &[String]) -> Result<(), String> {
         let manifest: ValidatedManifest = serde_json::from_str(input)
             .map_err(|error| format!("validated manifest JSON: {error}"))?;
         let sources = render_validated_policy_sources(&manifest, case_name)?;
-        println!(
-            "{}",
-            serde_json::to_string(&sources).map_err(|error| error.to_string())?
-        );
+        write_json(&sources)?;
         return Ok(());
     }
     if args == ["replay-schema-only-revision"] {
         let bundle: SchemaEvolutionBundle = serde_json::from_str(input)
             .map_err(|error| format!("schema evolution bundle JSON: {error}"))?;
         let receipt = replay_schema_only_revision(&bundle)?;
-        println!(
-            "{}",
-            serde_json::to_string(&receipt).map_err(|error| error.to_string())?
-        );
+        write_json(&receipt)?;
         return Ok(());
     }
     let manifest: Manifest =
@@ -94,10 +110,7 @@ fn dispatch(input: &str, args: &[String]) -> Result<(), String> {
 fn run_manifest_command(manifest: &Manifest, args: &[String]) -> Result<(), String> {
     if args == ["replay-receipts"] {
         let receipts = replay_manifest(manifest)?;
-        println!(
-            "{}",
-            serde_json::to_string(&receipts).map_err(|error| error.to_string())?
-        );
+        write_json(&receipts)?;
         return Ok(());
     }
     check_manifest(manifest)?;

@@ -52,6 +52,22 @@ def main():
     for role, identity in identities["before"].items():
         if identity["sha256"] != baseline["executables"]["before-" + ROLES[role]]:
             parser.error(f"Frozen baseline artifact changed: {role}")
+    # Both variants begin with newly materialized execution files. Reusing the
+    # baseline path while re-copying only the candidate confounds code changes
+    # with OS per-file/path startup state, even when the bytes are identical.
+    artifact_sources = identities
+    execution = output / "paired-executables"
+    for variant, roles in binaries.items():
+        directory = execution / variant
+        directory.mkdir(parents=True)
+        for role, source in list(roles.items()):
+            target = directory / role
+            shutil.copy2(source, target)
+            if digest(target) != artifact_sources[variant][role]["sha256"]:
+                parser.error(f"Execution file differs from frozen artifact: {variant}/{role}")
+            roles[role] = target
+    identities = {v: {k: {"path": str(p), "sha256": digest(p)} for k, p in d.items()}
+                  for v, d in binaries.items()}
     source_identity = {str(p.relative_to(ROOT)): digest(p) for p in source_files}
     snapshot = hashlib.sha256(json.dumps(source_identity, sort_keys=True).encode()).hexdigest()
 
@@ -59,7 +75,9 @@ def main():
         report = {"format": "cedar-poo-dataflow-lifecycle-v1", "baseline_commit": args.baseline_commit, "baseline_provenance": baseline,
                   "poo_revision": next(p["rev"] for p in json.loads((ROOT / "lake-manifest.json").read_text())["packages"] if p["name"] == "LeanPoo"),
                   "source_snapshot_sha256": snapshot, "source_inputs": source_identity,
-                  "binaries": identities, "process_limit_seconds": 120, "kill_after_seconds": 3,
+                  "binaries": identities, "artifact_sources": artifact_sources,
+                  "paired_file_lifecycle": "Both variants copied once into new execution paths before any measured child; byte identities verified. Each variant then reuses its own files across the fixed pairs.",
+                  "process_limit_seconds": 120, "kill_after_seconds": 3,
                   "scope": "Sequential native producer -> artifact -> Rust consumer; full child lifetime. No task-owned builds/tests overlap this cohort. Host scheduling and scan caches are not controlled.",
                   "measurement": "OS RSS is a process high-water mark. Pipeline CPU is the sum of sequential children; pipeline peak RSS is their maximum, not a sum or a proven memory bound. Lean heartbeat deltas count small allocations, not bytes.",
                   "records": records, "pipelines": pipelines, "wire_comparisons": comparisons}

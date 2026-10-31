@@ -3,6 +3,7 @@ mod bridge;
 mod canonical;
 mod entities;
 mod observation;
+mod preparation;
 mod replay;
 pub use observation::ReplayMetrics;
 mod schema;

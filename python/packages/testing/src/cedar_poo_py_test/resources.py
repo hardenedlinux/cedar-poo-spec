@@ -35,17 +35,19 @@ def main() -> None:
         elapsed = time.monotonic_ns() - started
         report.seek(0)
         statistics = report.read()
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    report_path = args.output.with_suffix(".stderr.txt")
+    report_path.write_text(statistics)
     try:
         observed = parse_stats(statistics, system)
     except ValueError as error:
         sys.stderr.write(statistics)
         raise SystemExit(child.returncode or str(error)) from error
-    args.output.parent.mkdir(parents=True, exist_ok=True)
     receipt = {
         "format": "cedar-poo-native-process-v1", "system": system,
         "architecture": platform.machine(), "executable": str(executable),
         "executable_sha256": digest.hexdigest(), "arguments": args.arguments,
-        "elapsed_ns": elapsed, **observed,
+        "elapsed_ns": elapsed, "stderr_report": str(report_path.resolve()), **observed,
         "returncode": child.returncode,
         "scope": "OS process high-water RSS including native startup; not retained heap or an RSS bound",
     }

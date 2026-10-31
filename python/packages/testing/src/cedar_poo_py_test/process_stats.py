@@ -35,7 +35,21 @@ def parse_stats(text: str, system: str) -> dict:
     else:
         raise ValueError(f"unsupported native observation platform: {system}")
     precision = 10 ** max(0, 9 - len(wall.partition(".")[2]))
-    return {"peak_rss_bytes": peak, "os_elapsed_ns": _number(wall),
+    labels = {
+        "minor_page_faults": ("page reclaims", "Minor (reclaiming a frame) page faults"),
+        "major_page_faults": ("page faults", "Major (requiring I/O) page faults"),
+        "voluntary_context_switches": ("voluntary context switches", "Voluntary context switches"),
+        "involuntary_context_switches": ("involuntary context switches", "Involuntary context switches"),
+        "block_inputs": ("block input operations", "File system inputs"),
+        "block_outputs": ("block output operations", "File system outputs"),
+    }
+    counters = {}
+    for name, (darwin, linux) in labels.items():
+        pattern = (rf"^\s*(\d+)\s+{re.escape(darwin)}\s*$" if system == "Darwin"
+                   else rf"^\s*{re.escape(linux)}:\s*(\d+)\s*$")
+        found = re.findall(pattern, text, re.MULTILINE)
+        counters[name] = int(found[-1]) if found else None
+    return {**counters, "peak_rss_bytes": peak, "os_elapsed_ns": _number(wall),
             "user_cpu_ns": _number(user), "system_cpu_ns": _number(kernel),
             "os_elapsed_resolution_ns": precision,
             "os_time_scope": "OS time command accounting including waited-for children; rounded at reported precision"}

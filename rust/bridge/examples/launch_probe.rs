@@ -13,7 +13,7 @@ fn main() {
         "{}",
         serde_json::json!({"observation":"native-main-entry","unix_ns":entry,"pid":std::process::id()})
     );
-    let result = cedar_poo_bridge::cli::run();
+    let result = cedar_poo_bridge::cli::run_observed();
     eprintln!(
         "{}",
         serde_json::json!({"observation":"native-main-return","unix_ns":unix_ns(),"elapsed_ns":started.elapsed().as_nanos(),"success":result.is_ok()})

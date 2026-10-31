@@ -22,3 +22,8 @@ class LaunchProtocolTests(unittest.TestCase):
         for packet, pid, code in ((self.packet(), 8, 1), (self.packet(), 7, 0), (self.packet(True), 7, 1)):
             with self.assertRaises(ValueError):
                 events(packet, pid, code)
+
+    def test_real_success_requires_explicit_success_protocol(self):
+        events(self.packet(True), 7, 0, expected_exit=0)
+        with self.assertRaises(ValueError):
+            events(self.packet(False), 7, 0, expected_exit=0)

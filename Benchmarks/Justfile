@@ -63,3 +63,21 @@ bench-dataflow-lifecycle artifacts output baseline="5ce4bd2c92cc79609221a9cad3a4
     cp .lake/build/bin/functionalReuseNative {{quote(artifacts)}}/after-functional-reuse
     cp rust/target/release/cedar-poo-bridge {{quote(artifacts)}}/after-bridge
     uv run --project python --package cedar-poo-py-test --locked python -u Benchmarks/DataflowLifecycle.py --baseline-commit {{quote(baseline)}} --artifacts {{quote(artifacts)}} --output {{quote(output)}}
+
+# Two fresh files x three real full-catalog launches. Diagnostic phases are
+# separate from the ordinary 48-child process cohort and semantic admission.
+bench-catalog-launch output: check-functional-catalog
+    lake build caseManifestsNative manifestLifecycleNative
+    cargo build --release --locked -p cedar-poo-bridge --manifest-path Cargo.toml --example launch_probe
+    timeout --signal=TERM --kill-after=3s 120s uv run --project python --package cedar-poo-py-test --locked python -m cedar_poo_py_test.launch .lake/build/bin/manifestLifecycleNative --output-directory {{quote(output)}}/lean --expected-exit 0 --child-arguments catalog
+    timeout --signal=TERM --kill-after=3s 120s uv run --project python --package cedar-poo-py-test --locked python -m cedar_poo_py_test.launch rust/target/release/examples/launch_probe --output-directory {{quote(output)}}/rust --input .lake/build/functional-catalog.json --expected-exit 0 --child-arguments replay-catalog
+    for stdout in {{quote(output)}}/lean/*.stdout; do cmp "$stdout" .lake/build/functional-catalog.json || exit $?; done
+    for stdout in {{quote(output)}}/rust/*.stdout; do cmp "$stdout" .lake/build/functional-catalog-receipts.json || exit $?; done
+
+# Same bytes/real workload, but new paths share a single source inode. Keep this
+# diagnostic distinct from the fresh-copy and ordinary complete-process cohorts.
+bench-catalog-inode output:
+    timeout --signal=TERM --kill-after=3s 120s uv run --project python --package cedar-poo-py-test --locked python -m cedar_poo_py_test.launch .lake/build/bin/manifestLifecycleNative --output-directory {{quote(output)}}/lean --materialization hardlink --expected-exit 0 --child-arguments catalog
+    timeout --signal=TERM --kill-after=3s 120s uv run --project python --package cedar-poo-py-test --locked python -m cedar_poo_py_test.launch rust/target/release/examples/launch_probe --output-directory {{quote(output)}}/rust --materialization hardlink --input .lake/build/functional-catalog.json --expected-exit 0 --child-arguments replay-catalog
+    for stdout in {{quote(output)}}/lean/*.stdout; do cmp "$stdout" .lake/build/functional-catalog.json || exit $?; done
+    for stdout in {{quote(output)}}/rust/*.stdout; do cmp "$stdout" .lake/build/functional-catalog-receipts.json || exit $?; done

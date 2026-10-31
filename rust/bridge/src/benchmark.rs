@@ -80,6 +80,8 @@ pub(crate) fn run(input: &str, cli_input_read_ns: u128) -> Result<(), String> {
             || metrics.prepared_revisions != expected_revisions
             || metrics.entity_parse_calls != expected_entity_parses
             || metrics.entity_parse_calls + metrics.entity_reuses != rows
+            || metrics.uid_parse_calls + metrics.uid_reuses != rows * 3
+            || metrics.uid_slot_peak > metrics.uid_parse_calls
             || metrics.entity_slot_peak != 1
         {
             return Err(

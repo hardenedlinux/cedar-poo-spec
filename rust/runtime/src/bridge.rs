@@ -1,6 +1,7 @@
 //! Policy parsing, source verification and individual Cedar case execution.
 use crate::entities::EntitySlot;
 use crate::observation::{ReplayMetrics, revision_phase};
+use crate::preparation::{ParsedTextPolicies, PreparedReplay, canonical_policy_body, request_uid};
 use std::fmt::Write;
 
 pub(crate) use crate::canonical::json_sha256;
@@ -82,63 +83,6 @@ pub(crate) struct CheckedRevision {
     pub(crate) rendered_bodies: BTreeMap<String, String>,
 }
 
-/// Only the text parser constructs this owner. Consequently every policy has
-/// its complete original text; no lossy JSON/PST display is used as identity.
-struct ParsedTextPolicies {
-    policies: PolicySet,
-}
-
-impl ParsedTextPolicies {
-    fn parse(text: &str) -> Result<Self, String> {
-        PolicySet::from_str(text)
-            .map(|policies| Self { policies })
-            .map_err(|error| format!("rendered Cedar text parse: {error}"))
-    }
-}
-
-/// One manifest invocation owns pure normalization results, keyed by complete
-/// parsed source. SDK 4.12's text-to-JSON conversion reparses that exact text.
-/// Hits avoid this repeated EST parse as well as JSON-to-AST normalization.
-/// Revision names, policy IDs and observed decisions authorize no hit.
-#[derive(Default)]
-pub(crate) struct PreparedPolicyBodies {
-    bodies: BTreeMap<String, String>,
-}
-
-impl PreparedPolicyBodies {
-    fn bodies_by_id(
-        &mut self,
-        parsed: &ParsedTextPolicies,
-        mut metrics: Option<&mut ReplayMetrics>,
-    ) -> Result<BTreeMap<String, String>, String> {
-        let mut result = BTreeMap::new();
-        for policy in parsed.policies.policies() {
-            let key = policy
-                .to_cedar()
-                .ok_or("parsed static policy has no original Cedar text")?;
-            let body = if let Some(body) = self.bodies.get(&key) {
-                if let Some(stats) = metrics.as_deref_mut() {
-                    stats.policy_body_reuses += 1;
-                }
-                body.clone()
-            } else {
-                // The original independent normalizer remains the miss path.
-                let body = canonical_policy_body(policy)?;
-                self.bodies.insert(key, body.clone());
-                if let Some(stats) = metrics.as_deref_mut() {
-                    stats.policy_body_normalizations += 1;
-                    stats.policy_body_slot_peak =
-                        stats.policy_body_slot_peak.max(self.bodies.len());
-                }
-                body
-            };
-            // Keep each actual parsed ID and all body multiplicities.
-            result.insert(policy.id().to_string(), body);
-        }
-        Ok(result)
-    }
-}
-
 /// A sealed source/parse pair. Validation can borrow it but cannot replace its body.
 pub(crate) struct SourcePolicies {
     revision: String,
@@ -161,7 +105,7 @@ impl SourcePolicies {
         case: &Case,
         hash_for_receipt: bool,
         metrics: Option<&mut ReplayMetrics>,
-        bodies: Option<&mut PreparedPolicyBodies>,
+        bodies: Option<&mut PreparedReplay>,
     ) -> Result<CheckedRevision, String> {
         if self.revision != case.revision || self.source != *case.policies.deref() {
             return Err("prepared policy source mismatch".into());
@@ -174,7 +118,7 @@ impl CheckedRevision {
         case: &Case,
         hash_for_receipt: bool,
         mut metrics: Option<&mut ReplayMetrics>,
-        bodies: Option<&mut PreparedPolicyBodies>,
+        bodies: Option<&mut PreparedReplay>,
     ) -> Result<Self, String> {
         let source = revision_phase(
             metrics.as_deref_mut(),
@@ -187,7 +131,7 @@ impl CheckedRevision {
         source: SourcePolicies,
         hash_for_receipt: bool,
         mut metrics: Option<&mut ReplayMetrics>,
-        mut bodies: Option<&mut PreparedPolicyBodies>,
+        mut bodies: Option<&mut PreparedReplay>,
     ) -> Result<Self, String> {
         let SourcePolicies {
             source, policies, ..
@@ -211,7 +155,7 @@ impl CheckedRevision {
         let rendered_bodies = if let Some(prepared) = bodies.as_mut() {
             prepared.bodies_by_id(&rendered, metrics.as_deref_mut())
         } else {
-            policy_bodies_by_id(&rendered.policies)
+            policy_bodies_by_id(rendered.policies())
         };
         if let (Some(stats), Some(started)) = (metrics.as_deref_mut(), normalize_started) {
             stats.revision_normalize_ns += started.elapsed().as_nanos();
@@ -240,7 +184,7 @@ impl CheckedRevision {
             source,
             policy_sha256,
             policies,
-            rendered: rendered.policies,
+            rendered: rendered.into_policies(),
             compiled_bodies,
             rendered_bodies,
         })
@@ -347,7 +291,9 @@ fn check_direct_case<'input>(
     Ok(())
 }
 
-fn policy_bodies_by_id(policies: &PolicySet) -> Result<BTreeMap<String, String>, String> {
+pub(crate) fn policy_bodies_by_id(
+    policies: &PolicySet,
+) -> Result<BTreeMap<String, String>, String> {
     policies
         .policies()
         .map(|policy| Ok((policy.id().to_string(), canonical_policy_body(policy)?)))
@@ -378,17 +324,6 @@ fn diagnostic_body_counts(
         *counts.entry(body.as_str()).or_insert(0) += 1;
     }
     Ok(counts)
-}
-
-fn canonical_policy_body(policy: &cedar_policy::Policy) -> Result<String, String> {
-    let json = policy
-        .to_json()
-        .map_err(|error| format!("Cedar policy JSON: {error}"))?;
-    let normalized = cedar_policy::Policy::from_json(None, json)
-        .map_err(|error| format!("Cedar policy normalization: {error}"))?;
-    normalized
-        .to_cedar()
-        .ok_or_else(|| "normalized Cedar policy has no source".into())
 }
 
 /// Load a Lean-POO compiled policy set through Cedar's public JSON parser.
@@ -589,6 +524,7 @@ pub(crate) fn check_case<'input>(
     revision: &CheckedRevision,
     entity_slot: &mut EntitySlot<'_, 'input>,
     mut metrics: Option<&mut ReplayMetrics>,
+    mut preparation: Option<&mut PreparedReplay>,
 ) -> Result<ObservedDecision, String> {
     let CheckedRevision {
         policies,
@@ -614,17 +550,28 @@ pub(crate) fn check_case<'input>(
     let entities = entity_slot
         .get(&case.entities, metrics.as_deref_mut())
         .map_err(|error| format!("Cedar schema entities: {error}"))?;
-    let uid = |text: &str| EntityUid::from_str(text).map_err(|error| error.to_string());
-    let action = uid(&case.request.action)?;
+    let action = request_uid(
+        &case.request.action,
+        &mut preparation,
+        metrics.as_deref_mut(),
+    )?;
     let context = Context::from_json_value(
         case.request.context.clone(),
         schema.map(|checked| (checked, &action)),
     )
     .map_err(|error| format!("Cedar schema context: {error}"))?;
     let request = Request::new(
-        uid(&case.request.principal)?,
+        request_uid(
+            &case.request.principal,
+            &mut preparation,
+            metrics.as_deref_mut(),
+        )?,
         action,
-        uid(&case.request.resource)?,
+        request_uid(
+            &case.request.resource,
+            &mut preparation,
+            metrics.as_deref_mut(),
+        )?,
         context,
         schema,
     )

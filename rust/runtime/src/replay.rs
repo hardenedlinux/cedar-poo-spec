@@ -2,12 +2,13 @@
 use std::ops::Deref;
 
 use crate::bridge::{
-    Case, CheckedRevision, Manifest, PreparedPolicyBodies, ReplayReceipt, SourcePolicies,
-    check_case, json_sha256, valid_revision_name,
+    Case, CheckedRevision, Manifest, ReplayReceipt, SourcePolicies, check_case, json_sha256,
+    valid_revision_name,
 };
 use crate::canonical::value_sha256;
 use crate::entities::EntitySlot;
 use crate::observation::ReplayMetrics;
+use crate::preparation::PreparedReplay;
 use cedar_policy::Schema;
 use std::collections::{BTreeMap, BTreeSet};
 use std::time::Instant;
@@ -55,14 +56,14 @@ pub(crate) fn check_manifest_prepared(
     metrics: Option<&mut ReplayMetrics>,
     loaded: BTreeMap<String, SourcePolicies>,
 ) -> Result<Vec<ReplayReceipt>, String> {
-    let mut bodies = PreparedPolicyBodies::default();
+    let mut preparation = PreparedReplay::default();
     check_manifest_with_entities(
         cases,
         collect_receipts,
         metrics,
         loaded,
         EntitySlot::new(schema),
-        Some(&mut bodies),
+        Some(&mut preparation),
     )
 }
 
@@ -72,7 +73,7 @@ pub(crate) fn check_manifest_with_entities<'input>(
     mut metrics: Option<&mut ReplayMetrics>,
     mut loaded: BTreeMap<String, SourcePolicies>,
     mut entities: EntitySlot<'_, 'input>,
-    mut bodies: Option<&mut PreparedPolicyBodies>,
+    mut preparation: Option<&mut PreparedReplay>,
 ) -> Result<Vec<ReplayReceipt>, String> {
     if cases.is_empty() {
         return Err("manifest has no cases".into());
@@ -98,7 +99,7 @@ pub(crate) fn check_manifest_with_entities<'input>(
                     case,
                     collect_receipts,
                     metrics.as_deref_mut(),
-                    bodies.as_deref_mut(),
+                    preparation.as_deref_mut(),
                 ),
                 None => {
                     if let Some(stats) = metrics.as_deref_mut() {
@@ -108,7 +109,7 @@ pub(crate) fn check_manifest_with_entities<'input>(
                         case,
                         collect_receipts,
                         metrics.as_deref_mut(),
-                        bodies.as_deref_mut(),
+                        preparation.as_deref_mut(),
                     )
                 }
             }
@@ -125,8 +126,14 @@ pub(crate) fn check_manifest_with_entities<'input>(
         if revision.source != *case.policies.deref() {
             return Err(format!("{}: conflicting revision output", case.revision));
         }
-        let observed = check_case(case, revision, &mut entities, metrics.as_deref_mut())
-            .map_err(|error| format!("{}: {error}", case.name))?;
+        let observed = check_case(
+            case,
+            revision,
+            &mut entities,
+            metrics.as_deref_mut(),
+            preparation.as_deref_mut(),
+        )
+        .map_err(|error| format!("{}: {error}", case.name))?;
         if collect_receipts {
             let started = metrics.as_ref().map(|_| Instant::now());
             let error_free_allow =

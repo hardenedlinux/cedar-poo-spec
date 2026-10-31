@@ -880,28 +880,3 @@ fn json_ast_render_preserves_legacy_normalization_and_source_bytes() {
         "// Generated from Lean-POO. Cedar assigns new IDs when parsing this text.\n\n"
     );
 }
-
-#[test]
-fn policy_body_preparation_keys_complete_parsed_text_including_formatting() {
-    use super::{ParsedTextPolicies, PreparedPolicyBodies, policy_bodies_by_id};
-    let mut prepared = PreparedPolicyBodies::default();
-    let mut metrics = crate::ReplayMetrics::default();
-    for text in [
-        "permit(principal, action, resource);",
-        "permit(principal, action, resource);",
-        "permit( principal, action, resource );",
-        "forbid(principal, action, resource);",
-    ] {
-        let parsed = ParsedTextPolicies::parse(text).expect("static parsed source");
-        let actual = prepared
-            .bodies_by_id(&parsed, Some(&mut metrics))
-            .expect("prepared bodies");
-        assert_eq!(
-            actual,
-            policy_bodies_by_id(&parsed.policies).expect("uncached original normalizer")
-        );
-    }
-    assert_eq!(metrics.policy_body_normalizations, 3);
-    assert_eq!(metrics.policy_body_reuses, 1);
-    assert_eq!(metrics.policy_body_slot_peak, 3);
-}

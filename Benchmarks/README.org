@@ -142,3 +142,20 @@ resource recording. The baseline must supply the documented immutable binaries
 and =baseline-identities.json=. Semantic ownership stays in Lean/Rust; the Python
 driver only coordinates processes, artifact hashes, wire-byte comparisons and
 OS resource receipts. No timed result changes an admission threshold.
+
+* Real catalog startup and transport phases
+
+=just bench-catalog-launch NEW_DIRECTORY= runs two fresh files and three invocations
+per file for each actual Lean/Rust full-catalog diagnostic. =ManifestLifecycle.lean=
+imports the same =Examples.ManifestCatalog= implementation as the ordinary manifest
+entrypoint, with timing dependencies isolated to the diagnostic executable. The
+existing Rust launch example invokes the real CLI. Complete output bytes must match
+the already accepted ordinary catalog and receipts. PID/exit, before-main time,
+phase stderr and child OS usage remain separate from ordinary latency acceptance.
+See [[file:../docs/native-dataflow-acceptance.org][complete lifecycle evidence]] for the fixed ordinary process cohort.
+
+=just bench-catalog-inode ANOTHER_NEW_DIRECTORY= follows that recipe with two
+new hardlink paths sharing the source inode. It tests file identity separately
+from pathname and content; it changes no OS policy. Lean's first diagnostic import
+records the span of subsequent module initialization before main. Generated native
+initializer order must be checked before attributing that span to imported modules.

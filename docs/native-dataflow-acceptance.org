@@ -8,10 +8,14 @@ algorithm in one migration. Type/Contract/proof and complete Case/Rust replay
 acceptance pass. Complete process/resource evidence is recorded, including the
 initial regressions and both revision-preparation cohorts. The latest empty
 revision allocations decrease across all nine families; literal revisions also
-improve against the preceding dataflow revision. The later shared-normalization
-cohort improves complete producer/Rust CPU in all three observed pairs, with a
-10% median reduction. Wall-clock latency remains unstable, so no latency SLO is
-closed by these measurements. PR #8 remains unmerged and auto-merge stays disabled.
+improve against the preceding dataflow revision. The earlier shared-normalization
+cohort reduced median complete producer/Rust CPU by 10%. Current UID preparation
+reduces repeated syntax work and requested allocation bytes by 15.15%. The final
+symmetric-file cohort observes request preparation at 56.19 / 33.34 ms, but complete
+pipeline CPU medians are 460 / 470 ms and wall medians 491.56 / 498.13 ms.
+Peak consumer RSS also increases by about 1.2 MiB. A stable whole-process speedup
+is not established. PR #8 remains unmerged and auto-merge stays disabled. The
+current receipt, earlier diagnostic defects and complete next boundary are below.
 
 The pre-migration Cedar baseline is
 =5ce4bd2c92cc79609221a9cad3a4c3af3893ce7f= with POO
@@ -388,7 +392,7 @@ source files, JSON/Cedar fixtures, configuration files and nested Justfiles. Out
 receipt/output remains preserved. The existing raw catalog benchmark jq gate
 continues to check every Rust sample.
 
-The next performance unit is the complete catalog lifecycle across all 51
+The preceding cohort selected the complete catalog lifecycle across all 51
 entries, rather than another family-specific revision benchmark:
 
 1. Attribute native module initialization, manifest production and serialization
@@ -407,3 +411,210 @@ entries, rather than another family-specific revision benchmark:
    allocation improvements from whole-process CPU, wall time and RSS outcomes.
 
 No timeout, case-count, workload, admission, axiom or resource guard may be relaxed.
+
+* Whole-process initialization, syntax preparation and output
+
+The next comparison uses =f13e53f3ad2b9efddcf1b19eb858a9c9c133817d=
+as its frozen baseline and keeps the same POO revision. All nine POO object
+families, 51 catalog entries, schema validation, Contracts, proofs, mutation
+controls and both Cedar authorizers remain in the acceptance path.
+
+The invocation-owned =PreparedReplay= retains only immutable policy bodies and
+successfully parsed UID syntax, keyed by their full original strings. Every
+Context and Request is rebuilt and schema checked. Failed UID parses never seed
+reuse, and a new manifest invocation starts empty. The uncached reference disables
+both policy normalization and UID preparation. Its catalog controls now also
+change Context, principal and resource after an earlier request; equality includes
+complete receipts and error ordering, across every applicable raw/schema domain.
+The measured path accounts for all three UID observations per replay row.
+
+All ordinary JSON receipt commands now encode directly into a bounded buffered
+stdout writer. This removes the complete response String allocation; it does not
+skip constructing or checking receipts. Tests compare escaped/nested JSON bytes
+with the previous encoder and preserve output failures. Actual process comparisons
+retain the complete catalog and receipt bytes.
+
+=just bench-catalog-launch NEW_DIRECTORY= runs the existing real catalog entrypoints
+with diagnostic markers, two freshly copied files and three invocations each.
+The ordinary =Examples.Manifests= entrypoint and diagnostic
+=Benchmarks.ManifestLifecycle= share =Examples.ManifestCatalog=; only the latter
+imports the wall-clock library. The input, arguments, executable hash, output hash, PID, exit, raw stderr and
+child rusage deltas are recorded. Six Lean outputs and six Rust outputs must match
+the already accepted ordinary output. Default rejected-empty-input launch checks
+remain available separately. Diagnostic markers never qualify ordinary latency.
+
+A fresh file here is not a cold machine: hashing reads its bytes before execution;
+OS code-admission, loader and filesystem caches are not controlled. The interval
+before the actual main marker includes native loader and module initialization.
+It cannot by itself distinguish signature scanning, paging, scheduling and eager
+Lean initialization. CPU, fault and context-switch observations narrow that scope;
+none alone identifies a particular operating-system service.
+
+Lean pure =let= expressions can move across observational clock calls. An initial
+diagnostic incorrectly placed compression inside the output phase; its raw logs
+remain under =wall-lean-launch= and are excluded from phase attribution. The actual
+compression now crosses a noinline IO call before the serialized marker; generated
+C was inspected for that order. The intermediate fenced cohort is retained under
+=wall-lean-phase-launch=. Final phase and resource evidence is collected only after
+builds and tests stop. The canonical compressor already uses an iterative work
+queue; this change does not introduce a replacement codec or a second semantics.
+
+The ordinary resource observer now retains its complete stderr/OS report and
+records minor/major faults, voluntary/involuntary context switches and block I/O.
+Unavailable counters stay null rather than becoming zero. Darwin and Linux parsing
+fixtures exercise units, optional observations and real zero values.
+
+* First fixed UID process, allocation and startup results
+
+[[file:native-wall-first-lifecycle-evidence.json][First ordinary process receipt]] preserves the verified frozen f13 baseline,
+all current source hashes, executable hashes, 48 children and 15 complete wire
+comparisons. All children and comparisons passed. The related
+[[file:native-wall-first-lifecycle-object-observations.csv][486 object observations]], [[file:native-wall-first-lifecycle-entry-timings.csv][1836 complete catalog entry observations]] and
+[[file:native-wall-first-lifecycle-allocation.json][separate allocation observation]] cover the existing full workloads. No sample
+was dropped, substituted or repeated to obtain a favorable result.
+
+| Pair | Pipeline CPU before/after ms | Full child wall before/after ms | Peak child RSS before/after MiB |
+|------+------------------------------+---------------------------------+---------------------------------|
+|    1 | 500 / 540                    | 2936.37 / 3065.21                | 118.72 / 119.69                  |
+|    2 | 500 / 450                    | 971.51 / 477.33                  | 117.88 / 119.83                  |
+|    3 | 490 / 470                    | 524.69 / 642.26                  | 118.94 / 119.67                  |
+
+CPU medians are 500 / 470 ms; the first pair regresses. Wall medians are
+971.51 / 642.26 ms, but two paired wall observations regress and fresh-path waits
+dominate the first pair. These medians do not establish stable latency improvement.
+The Rust consumer determines pipeline peak RSS; producer RSS is approximately
+66 MiB in both variants. The roughly 1 MiB consumer RSS increase is retained as a
+regression, not explained away by lower temporary allocation totals.
+
+Across the nine ordinary benchmark samples per variant, median request preparation
+is 57.61 / 33.52 ms and replay is 326.94 / 303.24 ms. Revision preparation remains
+73.82 / 72.09 ms and text normalization 28.54 / 28.43 ms. Schema preparation is
+39.83 / 40.98 ms; full catalog decode is 44.86 / 42.94 ms. The request-stage change
+accounts for the main observed replay reduction; the other stages still matter.
+All 3840 UID uses are accounted for: 343 successful parses and 3497 reuses, with
+at most 20 UID entries retained by one invocation. The existing 335 body
+normalizations, 665 body reuses, 221 source loads, 2560 authorizations, 53 entity
+parses and 1227 entity reuses remain unchanged.
+
+The separate allocation benchmark requests a median 3542406 allocations and
+644925916 bytes per full sample, compared with the preserved f13 values 3703100
+and 760103037 bytes. Allocation count falls 4.34%, requested bytes 15.15%.
+Process-wide requested peak remains approximately 102 MB. These are allocator
+requests, not retained heap or RSS. The benchmark deliberately keeps its reference
+comparison and complete String encoder; it does not measure the new stdout
+streaming writer. The ordinary process cohort includes that writer. The public
+[[https://docs.rs/serde_json/1.0.151/serde_json/fn.to_writer.html][serde JSON writer]] and [[https://doc.rust-lang.org/std/io/struct.BufWriter.html][buffered writer]] are used with explicit error-checked flush.
+
+[[file:native-wall-startup-evidence.json][Startup receipts]] contain three separate diagnostic cohorts, all complete stdout
+comparisons, the generated C initializer order and one bounded intrusive stack
+sample per role. The first diagnostic import captures subsequent module
+initialization; generated C calls it before ManifestCatalog and Timestamp.
+This span excludes loader/runtime work before that marker.
+
+- Fresh copied Lean files wait 1398.84 and 1253.06 ms before Lean main; observed
+  imported-module initialization is 93.37 and 93.28 ms. Four repeated invocations
+  include one 198.09 ms initialization span, so initialization also has a tail.
+- Fresh copied Rust files wait 586.47 and 364.91 ms before main; four repeated
+  launches wait 3.71–4.04 ms. Process creation itself is about 1.6–3.7 ms in this
+  cohort and does not account for the long gap.
+- New hardlink paths share the recorded source inode, yet the second new path
+  still waits 832.31 ms for Lean and 99.90 ms for Rust. An inode-only explanation
+  is therefore insufficient. Creating a hardlink also changes link metadata; this
+  control does not isolate pathname from all other file metadata. This is a diagnostic control, not a deployment fix.
+- Lean catalog compression is about 40–43 ms for 5695478 output bytes; actual
+  write/flush is normally below 2 ms. Manifest JSON production is mostly eager
+  imported-module initialization, not work performed by the catalog-ready span.
+- [[file:native-wall-startup-lean.sample.txt][Lean]] and [[file:native-wall-startup-rust.sample.txt][Rust]] stack reports contain 529 and 363 samples at =_dyld_start=.
+  Other samples reach real module/C4/serializer and Cedar parser/allocation code.
+  Sampling itself synchronizes debugger notifications and can perturb dyld;
+  these frames identify observed locations, not the responsible OS service.
+
+The [[https://developer.apple.com/library/archive/documentation/DeveloperTools/Conceptual/DynamicLibraries/100-Articles/LoggingDynamicLoaderEvents.html][Apple-documented loader-statistics flag]] was tried only in its own diagnostic
+cohort. This macOS version emitted no loader statistics. Those observations remain
+unavailable; no zero loader time or named security-service cause is inferred.
+The [[https://github.com/apple-oss-distributions/dyld/blob/main/doc/dyld4.md][dyld startup design]] explains why a pre-application entry span must be kept
+separate from Lean module and Rust request preparation. No OS security or tracing
+policy was changed. Ubuntu CI now runs the same real copy/hardlink protocols and
+wire comparisons; platform-relative evidence must be evaluated within each host,
+not as an ARM-versus-x86 performance score.
+
+* Final symmetric-file cohort and CI artifact ownership
+
+Review found two observation-lifecycle problems before publication. CI initially
+put fixed diagnostic output directories under the restored =.lake/build= cache;
+a later restore could collide with the fail-on-existing evidence directories.
+CI now uses =RUNNER_TEMP= for those observations. The cache index, resource limits,
+compiler identity and ordinary case workload remain unchanged.
+
+The [[file:native-wall-owner-lifecycle-evidence.json][second retained cohort]] binds that correction. It changes only the workflow
+output destination and all eight native artifact hashes match the first cohort.
+Its CPU pairs are 530/470, 460/460 and 460/490 ms; wall pairs are
+570.35/1283.43, 509.10/499.20 and 493.99/539.58 ms. Request preparation medians
+are 57.40/36.74 ms. Its [[file:native-wall-owner-lifecycle-object-observations.csv][object]] and [[file:native-wall-owner-lifecycle-entry-timings.csv][entry]] observations are retained.
+
+That run exposed a second defect: the recipe recopied candidate artifacts while
+reusing previously executed baseline files. This can change per-file execution
+state even for identical bytes. Neither earlier cohort is used to attribute a
+stable end-to-end speedup. The driver now verifies frozen source identities, then
+materializes both variants once into new execution paths before any measured
+child. It records original artifact provenance separately from actual execution
+files. Fixed pairs reuse those files equally; the independent fresh-file cohort
+still runs. It does not change the 48-child workload or its supervision limits.
+
+[[file:native-wall-lifecycle-evidence.json][The final ordinary receipt]] binds the complete corrected source snapshot, both
+verified artifact sets and symmetric execution paths. All 48 children and 15
+complete wire comparisons pass, with [[file:native-wall-lifecycle-object-observations.csv][486 object]] and [[file:native-wall-lifecycle-entry-timings.csv][1836 entry]] observations.
+Only the driver changes from the second cohort; all eight native executable
+hashes match. All three raw cohorts remain available, not just the final one.
+
+| Pair | Pipeline CPU before/after ms | Full child wall before/after ms | Peak child RSS before/after MiB |
+|------+------------------------------+---------------------------------+---------------------------------|
+|    1 | 590 / 580                    | 3273.58 / 3993.88                | 118.61 / 119.95                  |
+|    2 | 460 / 470                    | 491.32 / 498.13                  | 117.38 / 119.61                  |
+|    3 | 460 / 430                    | 491.56 / 459.58                  | 118.38 / 119.28                  |
+
+Final CPU medians are 460/470 ms, wall 491.56/498.13 ms and peak RSS
+118.38/119.61 MiB. Whole-process acceleration is not established. Request
+preparation medians are 56.19/33.34 ms and replay 317.69/303.10 ms. Structural
+UID/authorization counts and the allocation observation remain applicable to the
+same unchanged native implementation; allocator observations still do not imply
+lower peak RSS. Identical-byte profile/functional controls also vary: profile
+CPU pairs include 250/230, 170/200 and 170/170 ms. This bounds interpretation of
+small full-process CPU changes on this host.
+
+The startup receipts precede the workflow/driver corrections; their actual native
+artifacts remain identical. Intrusive stack sampling and the unavailable dyld
+statistics are diagnostic boundaries, not substitutes for these ordinary results.
+
+* Next complete optimization boundary
+
+The remaining work is a single full-catalog lifecycle program, with all nine object
+families and every applicable raw/schema domain behind the same gates:
+
+1. P0: retain before-main, first-import initialization, main phases and OS counters
+   together on macOS and Ubuntu. Add allocator live/peak observations at actual
+   Rust catalog decode, entry preparation and cleanup boundaries before changing
+   a representation. The current evidence locates peak RSS in Rust but does not
+   identify its dominating phase. Name an OS startup service only with direct,
+   untreated-run evidence; copy/hardlink and intrusive stacks alone are insufficient.
+2. P1: use that phase evidence to design shared immutable schema/revision inputs
+   and incremental nonempty POO graph/index updates. Keep complete source/schema
+   identity, dependency ranks, Contract witnesses and exact per-key frame laws.
+   No request decision is reusable. Compare every applicable domain against the
+   uncached workflow, including changed sources, Contexts, principal/resource and
+   error ordering, before admitting any new preparation owner.
+3. P2: optimize catalog representation and canonical transport as one boundary.
+   Preserve nested duplicate-field last-wins behavior, full-input parse-error
+   precedence and complete receipt bytes. A naive raw-JSON/typed fast path changes
+   those contracts and is not admitted. Require complete-case byte/proof/replay
+   closure, lower measured phase cost and a justified peak-memory result before
+   replacing the current representation. Keep ordinary, instrumented, fresh-path,
+   same-inode and remote-CI evidence distinct, with every prior cohort preserved.
+
+The integrated ordinary-source =just check= passed after the shared catalog split;
+all 51 frozen manifests, 23 schema-bearing and 24 raw reference workflows, Gateway
+Contracts/Delta, workspace/feature checks and process parity remain closed. The
+19 Python process/OS/protocol tests pass. The diagnostic-only initialization module
+was subsequently built and its initializer order and full outputs checked through
+the real launch recipes. PR #8 remains open; remote exact-head results are a
+separate receipt from these local checks.

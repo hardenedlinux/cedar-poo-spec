@@ -24,6 +24,10 @@ pub struct ReplayMetrics {
     pub revision_compare_ns: u128,
     pub revision_hash_ns: u128,
     pub request_preparation_ns: u128,
+    /// Successful UID syntax preparation; requests, contexts and schema checks stay fresh.
+    pub uid_parse_calls: usize,
+    pub uid_reuses: usize,
+    pub uid_slot_peak: usize,
     pub diagnostics_ns: u128,
     pub receipt_ns: u128,
     /// Subphase of request preparation, not an additional top-level duration.
