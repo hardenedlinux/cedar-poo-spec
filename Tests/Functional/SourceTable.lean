@@ -56,7 +56,8 @@ end CedarPooSpec.Transport.SourceTableTest
   let store : Cedar.Spec.Entities := Cedar.Data.Map.make [
     (uid, ⟨Cedar.Data.Map.empty, Cedar.Data.Set.make [uid], Cedar.Data.Map.empty⟩)]
   let req : Cedar.Spec.Request := ⟨uid, uid, uid, Cedar.Data.Map.empty⟩
-  let source := CedarPooSpec.Transport.SourceSnapshot.ofJson
+  let source : CedarPooSpec.Transport.SourceSnapshot .policy :=
+    CedarPooSpec.Transport.SourceSnapshot.ofJson
     (Lean.Json.mkObj [("staticPolicies", Lean.Json.mkObj []),
       ("templates", Lean.Json.mkObj []), ("templateLinks", Lean.toJson ([] : List Lean.Json))])
   let input : CedarPooSpec.Transport.Case := {
@@ -79,3 +80,26 @@ end CedarPooSpec.Transport.SourceTableTest
 #print axioms CedarPooSpec.Transport.Case.inline_projection
 #print axioms CedarPooSpec.Transport.EntitySlot.read_value
 #print axioms CedarPooSpec.Transport.EntitySlot.bound
+
+-- The real composed encoder must escape keys/values and retain every fragment.
+#eval show IO Unit from do
+  let source : CedarPooSpec.Transport.SourceSnapshot .policy :=
+    CedarPooSpec.Transport.SourceSnapshot.ofJson
+    (Lean.Json.mkObj [("unicode", Lean.toJson "μ\nquoted\"")])
+  let encoded := CedarPooSpec.Transport.EncodedJson.object [
+    ("array", .array [.snapshot source, .native (.bool true), .native .null]),
+    ("number", .native (Lean.toJson (17 : Nat))),
+    ("text", .native (Lean.toJson "comma,colon:bracket]"))] (by simp)
+  unless encoded.wire == encoded.value.compress do
+    throw (IO.userError "certified canonical fragment wire differs")
+  let unsorted := CedarPooSpec.Transport.EncodedJson.object [
+    ("z", .snapshot source), ("a", .native (Lean.toJson "escaped"))] (by simp)
+  unless (Lean.Json.parse unsorted.wire).toOption.map (·.compress) ==
+      some unsorted.value.compress do
+    throw (IO.userError "fragment value binding or key escaping failed")
+  IO.println "CERTIFIED-JSON-FRAGMENTS-OK escaping/order/full-values"
+
+#print axioms CedarPooSpec.PolicyPreparation.checkUsing_eq
+#print axioms CedarPooSpec.PolicyModules.Model.compilePlan_graph
+#print axioms CedarPooSpec.Transport.JsonFragments.length_eq
+#print axioms CedarPooSpec.Transport.EncodedJson.certified

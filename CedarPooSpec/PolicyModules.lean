@@ -182,6 +182,55 @@ def Model.compilePlan (model : Model) (root : String) :
   let plan ← model.planAt root
   return plan.compileMemo
 
+private theorem Model.schema_graph (model : Model) : model.schema.graph = model.graph := by
+  cases h : model.activeSchema? <;> simp [Model.schema, Model.graph, h]
+
+private theorem Model.currentObject_graph (model : Model) (object)
+    (found : model.currentObject? = some object) : object.plan.schema.graph = model.graph := by
+  cases active : model.activeBuilt? with
+  | none => simp [Model.currentObject?, active] at found
+  | some built =>
+    cases built with
+    | schema source schema => simp [Model.currentObject?, active] at found
+    | object source value =>
+      simp [Model.currentObject?, active] at found
+      subst object
+      simp [Model.graph, Model.activeSchema?, active, Built.toSchema]
+
+private theorem Model.planAt_graph (model : Model) (root : String) (plan)
+    (compiled : model.planAt root = .ok plan) : plan.schema.graph = model.graph := by
+  have fromSchema (h : LeanPoo.Object.compile model.schema root = .ok plan) :
+      plan.schema.graph = model.graph := by
+    unfold LeanPoo.Object.compile at h
+    split at h
+    · simp_all
+    · simp only [Except.ok.injEq] at h
+      subst plan
+      exact model.schema_graph
+  cases ho : model.currentObject? with
+  | none => exact fromSchema (by simpa [Model.planAt, ho] using compiled)
+  | some object =>
+    by_cases same : object.plan.root = root
+    · have result : (pure object.plan : Except LeanPoo.C4.Error _) = .ok plan := by
+        simpa [Model.planAt, ho, same] using compiled
+      change Except.ok object.plan = Except.ok plan at result
+      have equal := Except.ok.inj result
+      subst plan
+      exact model.currentObject_graph object ho
+    · exact fromSchema (by simpa [Model.planAt, ho, same] using compiled)
+
+/-- The compiled plan owns exactly the graph selected by this immutable model. -/
+theorem Model.compilePlan_graph (model : Model) (root : String) (plan)
+    (compiled : model.compilePlan root = .ok plan) :
+    plan.plan.schema.graph = model.graph := by
+  unfold Model.compilePlan at compiled
+  cases hp : model.planAt root with
+  | error error => simp [hp] at compiled
+  | ok selected =>
+    simp [hp] at compiled
+    subst plan
+    exact model.planAt_graph root selected hp
+
 inductive Error where
   | c4 (error : LeanPoo.C4.Error)
   | missingModule (name : String)
@@ -249,10 +298,11 @@ private def Model.compileWithPlan (model : Model) (root : String) :
     Except Error
       (LeanPoo.Object.CompiledPlan PolicyID (fun _ => Option Policy) × Compilation) := do
   let compiled ← (model.compilePlan root).mapError .c4
+  let graph := compiled.plan.schema.graph
   let reversed ← compiled.plan.precedence.reverse.foldlM (fun current name => do
     let some module := model.modules.find? (fun item => item.name == name)
       | throw (.missingModule name)
-    let ancestors ← (LeanPoo.C4.linearize model.graph name).mapError .c4
+    let ancestors ← (LeanPoo.C4.linearize graph name).mapError .c4
     module.edits.foldlM (fun state edit => do
       let origins ← applyEdit name ancestors state.1 edit
       return (origins, { moduleName := name, edit } :: state.2))

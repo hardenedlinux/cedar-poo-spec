@@ -1,4 +1,5 @@
 import CedarPooSpec.Transport.Case
+import CedarPooSpec.Transport.Wire
 
 /-! Both public authoring JSON and the canonical bulk wire project typed entries.
 No inline case JSON is constructed and then decoded by the bulk publisher. -/
@@ -59,18 +60,24 @@ private def payload : Entry → Encode Lean.Json
   | .data value => pure value
 
 /-- References locate complete sources only; SDK admission remains fresh. -/
-def sourceCatalogFrom (entries : List (String × (Unit → Except String Entry))) :
-    Except String Lean.Json := do
+def prepareCatalogFrom (entries : List (String × (Unit → Except String Entry))) :
+    Except String EncodedJson := do
   let encode : Encode (List (String × Lean.Json)) := entries.mapM fun (name, produce) => do
     return (name, ← payload (← produce ()))
   let (entries, pools) ← encode.run {}
-  return Lean.Json.mkObj [
-    ("format_version", Lean.toJson (2 : Nat)),
-    ("sources", Lean.Json.mkObj [
-      ("policies", .arr (pools.policies.entries.map (·.value))),
-      ("entities", .arr (pools.entities.entries.map (·.value))),
-      ("schemas", .arr (pools.schemas.entries.map (·.value)))]),
-    ("entries", Lean.Json.mkObj entries)]
+  let sources := EncodedJson.object [
+    ("entities", EncodedJson.array (pools.entities.entries.toList.map EncodedJson.snapshot)),
+    ("policies", EncodedJson.array (pools.policies.entries.toList.map EncodedJson.snapshot)),
+    ("schemas", EncodedJson.array (pools.schemas.entries.toList.map EncodedJson.snapshot))] (by simp)
+  return EncodedJson.object [
+    ("entries", EncodedJson.native (Lean.Json.mkObj entries)),
+    ("format_version", EncodedJson.native (Lean.toJson (2 : Nat))),
+    ("sources", sources)] (by simp)
+
+/-- Public JSON projection of the same certified envelope. -/
+def sourceCatalogFrom (entries : List (String × (Unit → Except String Entry))) :
+    Except String Lean.Json :=
+  (prepareCatalogFrom entries).map (·.value)
 
 def sourceCatalog (entries : List (String × Entry)) : Except String Lean.Json :=
   sourceCatalogFrom (entries.map fun (name, value) => (name, fun _ => .ok value))

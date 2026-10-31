@@ -111,10 +111,11 @@ def evaluate {α : Type} (produce : Unit → Except String α) : IO α :=
   | .error message => throw (IO.userError message)
 
 /-- Keep compression inside the IO span: pure let bindings may be sunk past clocks. -/
-@[noinline] private def serialize (json : Lean.Json) : IO String := pure json.compress
+@[noinline] private def serialize (json : Transport.EncodedJson) : IO String := pure json.wire
 
-@[noinline] private def prepareSources (outputs : List (String × (Unit → Except String Transport.Entry))) : IO Lean.Json :=
-  evaluate (fun _ => Transport.sourceCatalogFrom outputs)
+@[noinline] private def prepareSources (outputs : List (String × (Unit → Except String Transport.Entry))) :
+    IO Transport.EncodedJson :=
+  evaluate (fun _ => Transport.prepareCatalogFrom outputs)
 
 private def phase (started : Option Nat) (name : String) : IO Unit := do
   if let some start := started then

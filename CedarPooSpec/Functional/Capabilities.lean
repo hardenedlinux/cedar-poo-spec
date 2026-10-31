@@ -23,7 +23,7 @@ inductive Capability where
 
 abbrev Value (context : Context) : Capability → Type
   | .compile => Except PolicyJson.PublicationError (Compiled context.model context.root)
-  | .validate => Compiled context.model context.root →
+  | .validate => SchemaFacts context.schema → Compiled context.model context.root →
       Except PolicyJson.PublicationError (Validated context.model context.root context.schema)
   | .publish => Validated context.model context.root context.schema →
       Except PolicyJson.PublicationError (PolicyJson.Publication context.model context.root context.schema)
@@ -38,8 +38,8 @@ abbrev Data (context : Context) := Requirements.Results Value context required
 def cedar : Operations
   | .compile => some fun context =>
       (PolicyPreparation.compile context.model context.root).mapError .composition
-  | .validate => some fun context compiled =>
-      PolicyPreparation.check compiled context.schema
+  | .validate => some fun _ facts compiled =>
+      PolicyPreparation.checkUsing compiled facts
         PolicyJson.PublicationError.schema PolicyJson.PublicationError.policy
   | .publish => some fun _ checked => PolicyJson.publishValidated checked
   | .authorize => some fun _ checked requests entities =>
@@ -87,15 +87,25 @@ theorem Ready.allowed_pair (ready : Ready context) (first second : Request) (ent
         (ready.authorize [second] entities).allowed) := by
   simp [Ready.allowed_eq]
 
-def construct (context : Context) (data : Data context) (contract : Coherent context data) :
+def constructUsing (context : Context) (data : Data context) (contract : Coherent context data)
+    (facts : SchemaFacts context.schema) :
     Except PolicyJson.PublicationError (Ready context) := do
   let compiled ← data.1
-  let checked ← data.2.1 compiled
+  let checked ← data.2.1 facts compiled
   return {
     checked
     publish := Thunk.mk fun _ => data.2.2.1 checked
     authorize := data.2.2.2.1 checked
     aligned := fun requests entities => (contract checked requests entities).2 }
+
+def construct (context : Context) (data : Data context) (contract : Coherent context data) :=
+  constructUsing context data contract (SchemaFacts.prepare context.schema)
+
+private def prepareWithFacts (provider : Operations) : Except Capability
+    (Factory Context (fun context => SchemaFacts context.schema →
+      Except PolicyJson.PublicationError (Ready context))) :=
+  Requirements.prepareConsumer provider required Coherent
+    (fun factories _ context => coherent context (Requirements.build factories context)) constructUsing
 
 /-- Preparation selects factories and certifies their shared evidence contract
 before any context is built. Missing capabilities keep the first requested key. -/
@@ -139,13 +149,15 @@ def Error.message : Error → String
 schema. Request/entity data is supplied at each call, never cached as a decision. -/
 structure Program (model : PolicyModules.Model) (schema : Schema) where
   entries : List ((root : String) × Ready ⟨model, root, schema⟩)
-  factory : Factory Context (fun context => Except PolicyJson.PublicationError (Ready context))
+  factory : (root : String) → Except PolicyJson.PublicationError (Ready ⟨model, root, schema⟩)
 
 def prepareProgram (provider : Operations) (model : PolicyModules.Model) (schema : Schema)
     (roots : List String) : Except Error (Program model schema) := do
-  let factory ← (prepare provider).mapError .missingCapability
+  let selected ← (prepareWithFacts provider).mapError .missingCapability
+  let facts := SchemaFacts.prepare schema
+  let factory := fun root => selected ⟨model, root, schema⟩ facts
   let entries ← Validation.traverse (fun root =>
-    ((factory ⟨model, root, schema⟩).mapError (Error.context root)).map
+    ((factory root).mapError (Error.context root)).map
       (fun ready => (⟨root, ready⟩ : (root : String) × Ready ⟨model, root, schema⟩))) roots.eraseDups
   return ⟨entries, factory⟩
 
@@ -172,7 +184,7 @@ theorem prepareProgram_retained (provider : Operations) (model : PolicyModules.M
     (success : prepareProgram provider model schema roots = .ok program) :
     program.entries.length = roots.eraseDups.length := by
   unfold prepareProgram at success
-  cases prepared : prepare provider with
+  cases prepared : prepareWithFacts provider with
   | error error => simp [prepared, Except.mapError, bind, Except.bind] at success
   | ok selected =>
     simp only [prepared, Except.mapError, bind, Except.bind, pure, Except.pure] at success
@@ -194,7 +206,7 @@ def Program.at (program : Program model schema) (root : String) :
     Except Error (Ready ⟨model, root, schema⟩) :=
   match program.find? root with
   | some ready => .ok ready
-  | none => (program.factory ⟨model, root, schema⟩).mapError (.context root)
+  | none => (program.factory root).mapError (.context root)
 
 def Program.publish (program : Program model schema) (root : String) :
     Except Error (PolicyJson.Publication model root schema) := do

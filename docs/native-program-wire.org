@@ -1,0 +1,187 @@
+#+title: Shared Program schema preparation and compositional source-table encoding
+#+options: toc:2 num:nil
+
+* Shared algorithm and all-domain scope
+
+This stage follows [[file:native-typed-case.org][typed Case and SourceSnapshot publication]]. Its frozen
+baseline is =9f104dad20823acde01e95f23d81ffe2867097ff=. LeanPOO
+=1b1d41eafe6c979387c4fa69e194fb921bd4befe=, Cedar specification
+=017c35c3d1f856a0f8b62a66660ee6628870bbcf= and Lean 4.34.1 remain fixed.
+PR #8 remains open and must not be merged by this work.
+
+The shared Functional Program owns two lazy schema facts: definition admission
+and schema well-formedness. Both carry equations to the original checks on the
+actual immutable schema. Retained roots and open-root fallback use the same
+facts through a factory indexed by that Program's actual model/schema. Each
+root still compiles first and validates its own policies. Requests, entities,
+authorization decisions and errors are not admitted through a name/hash hit.
+The universal =PolicyPreparation.checkUsing_eq= proves complete equality with
+the original independent preparation algorithm, including error order.
+
+Policy compilation now captures the compiled plan's schema graph once before
+the edit fold. =Model.compilePlan_graph= universally proves that this graph is
+the immutable model's actual graph, for retained and ordinary plans. Every
+owner's original C4 ancestry linearization and edit checks still execute. This
+removes repeated graph reconstruction/source identity checks; it does not
+introduce an ancestry forest cache or eliminate the C4 merge algorithm.
+
+Both changes apply through the common production capabilities and publication
+path. All nine POO object families, the 51-entry catalog, schema evolution's
+two manifests, deployment artifacts/data classifications, and the three Cloud
+workflows outside the main catalog retain their existing type/Contract/proof
+and independent Rust replay boundaries. Public template-source bundles retain
+their separate source codec.
+
+* Final serialization and proof boundary
+
+=EncodedJson= carries an actual JSON value and lazy flat chunks with a
+compositional =JsonEncoding= certificate. =wire_eq= binds the actual output to
+=String.join= of those certified chunks. Snapshot leaves reuse their complete
+memoized encoding/equality witness. Metadata leaves use Lean's native encoder.
+Array/object framing composes lists of those full fragments without walking
+every source JSON tree again or materializing a string per parent. Objects
+require unique keys and exact field/value lengths;
+keys themselves use the native string encoder. The canonical catalog uses
+sorted fixed envelope keys. The existing JSON API projects the value from the
+same prepared representation; the native executable consumes its wire.
+
+The certificate is a project-owned JSON grammar/value relation with native
+leaves. It is not a universal theorem about Lean's private compressor or parser.
+Complete native-compressor equality for the actual catalog is checked against
+the frozen baseline bytes. Escaping, Unicode, nested arrays, null/Boolean/number
+values and unsorted unique object fields have executable roundtrip controls.
+The universal framing/value certificate and source publisher Contracts have
+no new axioms beyond propext, Classical.choice and Quot.sound.
+
+Rendering remains lazy until the existing serialization phase. This prevents
+reporting an improvement obtained merely by shifting serialization into source
+preparation. This representation still builds the final string and writes it;
+it is not a zero-copy or streaming-output claim. Flat list nodes and the final
+output buffer are still allocations included in whole-process RSS.
+
+The first measured implementation rendered an independent string at each
+array/object parent. Its complete 48-child cohort is preserved in
+[[file:native-program-wire-intermediate-lifecycle.json][the intermediate lifecycle receipt]]. Pipeline RSS rose from roughly
+50.7 to 55.1 MiB despite lower CPU. This is an observed regression, not an
+accepted memory improvement. The final representation replaces those parent
+strings with flat lists; its separate fixed cohort is not combined with the
+intermediate samples. The intermediate Wire source is retained in integrated
+evidence so the measured version can be reconstructed.
+
+* Complete validation, cold build and measurements
+
+Measurement receipts and the exact source/executable identities are recorded in
+[[file:native-program-wire-evidence.json][integrated evidence]] and [[file:native-program-wire-lifecycle.json][fixed process lifecycle]].
+The object and entry CSVs retain every observation, including negative controls.
+
+The final complete =just check= returns zero. All 52 frozen canonical exports,
+all applicable domain workflows, independent Rust oracle/tamper controls, types,
+Contracts and proofs pass. The Python framework's 21 tests and all-targets,
+all-features workspace Clippy pass. A post-gate checksum initially inspected
+15 paths that later domain recipes had overwritten using standalone formatting.
+Their original bytes are preserved; all 15 parsed JSON values equal the canonical
+exports. Regenerating the standard =all= export restores all 52 golden hashes.
+This artifact-order check does not rerun or replace performance observations.
+
+The final empty-project native build completes 932 jobs in 78.496 seconds,
+under the unchanged 120-second supervision and default parallelism. Reported
+compiler maximum process/child RSS is 1475.781 MiB, not an aggregate concurrent
+compiler memory bound. External SDK/toolchain artifacts remain cached. All four
+hot/cold native executable hashes match exactly; cold catalog and full Rust
+receipt bytes equal the frozen references.
+
+The fixed ordinary cohort retains 48 child processes, 15 full wire comparisons,
+486 object observations and 1836 entry observations. There are 18 internal
+samples per variant: nine paired and nine additional file-lifecycle samples.
+
+| Ordinary full-process measurement | Baseline | Final |
+|----------------------------------+----------+-------|
+| Median sequential pipeline CPU | 280 ms | 270 ms |
+| Median producer CPU | 110 ms | 100 ms |
+| Median pipeline peak-child RSS | 50.672 MiB | 51.922 MiB |
+| First paired pipeline wall | 3032.763 ms | 2842.185 ms |
+| Second paired pipeline wall | 326.591 ms | 573.620 ms |
+| Third paired pipeline wall | 379.865 ms | 285.145 ms |
+
+CPU falls 3.6%, but RSS remains 2.5% above baseline after removing most of the
+intermediate parent-string regression. Stable end-to-end wall acceleration and
+memory improvement are therefore not admitted. In the regressing second pair,
+producer wall is 226.784 versus 143.869 ms and replay wall is 346.836 versus
+182.722 ms, while replay CPU is 170 ms on both sides. Replay involuntary context
+switches are 127 versus 42. These observations support investigating off-CPU
+delay; they do not identify its exclusive cause. Rust before/after executables
+and input/output bytes are identical. Its internal medians also differ strongly
+between paired and additional file-lifecycle groups, so pooling their timing
+into a claimed Rust speedup would be invalid.
+
+Ordinary Rust allocation instrumentation is disabled (=allocation = null=).
+All nine object families retain their recorded Lean heartbeat/allocation-proxy
+observations; those are not allocated-byte counts. Process RSS is a high-water
+measurement, not retained heap or a bound. No Rust allocation improvement is
+claimed from this Lean-only change.
+
+* Pre-main diagnosis and remaining boundaries
+
+The frozen baseline includes the previous diagnostic executable as well as the
+four ordinary benchmark executables. Baseline/candidate diagnostics use the
+same two fresh copies and three complete catalog launches per copy. Import
+initialization, main phases and full child lifetime are accounted separately.
+Sampling diagnostics are separate from ordinary latency admission.
+
+The final six-launch diagnostic has median import initialization 65.636 versus
+54.192 ms, main span 31.039 versus 28.343 ms, and combined initialization/main
+96.774 versus 82.729 ms. Source preparation medians remain 23.189 versus
+23.467 ms; final serialization falls from 7.435 to 4.754 ms. These phase
+observations include rendering in its actual span. They do not replace full
+process accounting. Fresh-copy pre-main waits still range into seconds; one
+candidate fresh copy regresses to 2051.594 ms versus baseline 1454.881 ms.
+
+The fixed one-second/10-ms samples obtain eligible loader-entry stacks on both
+roles: 75 Lean and 15 Rust entry samples. All 12 sampled real catalog/replay
+launches have matching stdout hashes, valid clock intervals and exit zero.
+The actual PID-matched Mach events, both absolute/continuous anchor projections
+and acquisition receipts are retained. Sampling can perturb scheduling; these
+launches do not qualify ordinary latency. No failed/empty acquisition is
+reclassified by exit status alone.
+
+No operating-system signing, provenance, xattr or security configuration is
+changed. A loader-entry stack can locate a wait before user initialization;
+it cannot by itself divide that wait into kernel, service queue and scanning
+durations. PID-matched provenance events are evidence of that path, not an
+exclusive causal attribution of all elapsed time.
+
+Apple's [[https://raw.githubusercontent.com/apple-oss-distributions/dyld/main/dyld/dyldStartup.s][dyld entry assembly]] describes the kernel's initial entry PC.
+The public [[https://raw.githubusercontent.com/apple-oss-distributions/xnu/main/bsd/kern/kern_exec.c][XNU exec path]] contains executable MAC authorization and sets
+the thread entry point. These are source-level possible boundaries, not proof
+that a particular callback consumed the measured wait on this host's kernel.
+
+The remaining algorithmic boundary is per-owner C4 ancestry computation and
+the model/Program construction that still executes at import initialization.
+A future shared ancestry representation should extend the pinned POO owner's
+=C4.LinearizeState.linearizeWith/resolveNode= path, which already computes a
+table within one invocation and discards it at its public list result. Reuse
+must preserve complete source identity,
+cycles/inconsistency errors, edit origin checks and order before replacement.
+Rust SDK source and executable identity remain an explicit negative control in
+this stage. Timing variation of an unchanged Rust binary is not a Rust algorithm
+improvement or proof of an SDK regression.
+
+* Next complete shared boundary
+
+1. Extend the existing POO C4 owner to expose/reuse its prepared reachable table
+   for all selected owners. Prove complete ordinary result/error equivalence,
+   reachable-only validation, cycle/unknown/inconsistency behavior and edit
+   origin order before replacing the repeated ancestry calls across all domains.
+2. Account for final output-buffer capacity and retained chunk/source lifetimes
+   before selecting the next representation. Preserve this 2.5% RSS regression;
+   require unchanged complete wire/Contract proofs and the same fixed ordinary
+   resource cohort for any replacement. Do not add another global cache.
+3. Correlate task-owned kernel/loader wait boundaries where the host exposes
+   them, without altering security configuration. Keep ordinary, instrumented,
+   cold-project, macOS and Ubuntu receipts separate. The current user-stack and
+   provenance events do not close the kernel/service queue split.
+
+These are common owner/representation changes with the same full domain matrix,
+not individual-case migrations. Remote CI acceptance belongs to the exact final
+publication head; its four job links and real launch checks are recorded in
+PR #8 after publication. This source snapshot does not pre-claim a future run.

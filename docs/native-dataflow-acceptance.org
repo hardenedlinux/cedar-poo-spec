@@ -1,9 +1,16 @@
 #+TITLE: Complete Cedar typed dataflow migration and native lifecycle evidence
 #+OPTIONS: toc:2
 
-* Current typed Case and SourceSnapshot representation
+* Current Program preparation and final source encoding
 
-The current whole-domain implementation and acceptance evidence are recorded in
+The current all-domain implementation and complete lifecycle evidence are in
+[[file:native-program-wire.org][shared Program schema facts, compiled graph reuse and compositional encoding]].
+Typed Cases, actual source Contracts, proofs and independent Rust replay remain
+the common admission boundary. PR #8 remains open and unmerged.
+
+* Previous typed Case and SourceSnapshot representation
+
+The preceding whole-domain implementation and acceptance evidence are recorded in
 [[file:native-typed-case.org][typed Case and SourceSnapshot publication]]. It preserves all existing wire
 artifacts and records the complete cold-project and paired process results.
 
