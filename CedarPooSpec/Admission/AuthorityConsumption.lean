@@ -1,4 +1,4 @@
-import Lean
+import Lean.Data.Json
 
 /-!
 A pure, typed model of consumption for a Host-owned authorization instance.

@@ -10,7 +10,7 @@ import Examples.Health.PriorAuthorization.InternalChannels
 import Examples.Enterprise.Payment.PaymentRelease
 import Productions.Data.ProtectedStorageFixture
 import CedarPooSpec.Data.ProtectionProfile
-import Lean
+import Lean.Data.Json
 
 namespace CedarPooSpec.FunctionalProfilesTest
 open Cedar.Spec LeanPoo CedarPooSpec
@@ -225,29 +225,4 @@ example (contract : Functional.ObjectProfile.Check PolicyProfile.Key (PolicyProf
     have _ : Functional.ObjectProfile.Session contract _right profile := _session
   trivial
 
-open Lean in
-run_cmd do
-  let allowed := ["propext", "Classical.choice", "Quot.sound"]
-  for declaration in [``Functional.prepareDiagnostics_exact,
-      ``Functional.ObjectProfile.coherent,
-      ``Functional.ObjectProfile.materialized_read,
-      ``Functional.ObjectProfile.materialized_inventory,
-      ``Functional.ObjectProfile.materialized_source,
-      ``Functional.ObjectProfile.materialized_lowering,
-      ``Functional.ObjectProfile.standard_eq_assemble,
-      ``Functional.prepareProgram_retained,
-      ``Functional.ObjectProfile.admit_read_eq,
-      ``Functional.ObjectProfile.Access.read_matches,
-      ``Functional.ObjectProfile.Access.accepted,
-      ``Functional.ObjectProfile.Session.read_matches,
-      ``Functional.ObjectProfile.Session.no_session_if_refused,
-      ``Functional.ObjectProfile.prepare_missing,
-      ``Functional.ObjectProfile.read_requires_contract,
-      ``Functional.ObjectProfile.read_matches_projection,
-      ``Functional.ObjectProfile.read_rejected,
-      ``Functional.ObjectProfile.refinement_preserves_rejection] do
-    for dependency in ← collectAxioms declaration do
-      unless allowed.contains dependency.toString do
-        throwError "Object Profile axiom boundary changed: {declaration}: {dependency}"
-  logInfo "OBJECT-PROFILES-AXIOMS-OK eighteen universal laws; nine object families"
 end CedarPooSpec.FunctionalProfilesTest

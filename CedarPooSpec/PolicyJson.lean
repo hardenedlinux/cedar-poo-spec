@@ -7,7 +7,7 @@ import Cedar.Spec.Template
 import Cedar.Validation.Validator
 import Cedar.Validation.EnvironmentValidator
 import Cedar.Thm.Authorization
-import Lean
+import Lean.Data.Json
 
 /-!
 Export the concrete subset of Cedar's Lean policy AST to Cedar's documented

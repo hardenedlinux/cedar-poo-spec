@@ -14,6 +14,18 @@ from .clock_anchor import clock_anchor
 from .process_memory import ProcessMemory
 
 
+def file_metadata(path: Path):
+    stat = path.stat()
+    result = {"device": stat.st_dev, "inode": stat.st_ino, "size": stat.st_size,
+              "mtime_ns": stat.st_mtime_ns, "ctime_ns": stat.st_ctime_ns, "links": stat.st_nlink}
+    try:
+        result["xattrs_sha256"] = {name: hashlib.sha256(os.getxattr(path, name)).hexdigest()
+                                   for name in os.listxattr(path)}
+    except OSError as error:
+        result["xattrs_error"] = str(error)
+    return result
+
+
 class StderrObservation:
     """Drain only the owned child's stderr and timestamp complete line arrivals.
 
@@ -103,6 +115,7 @@ def main() -> None:
                 stdout_path = args.output_directory / f"cohort-{cohort}-trial-{trial}.stdout"
                 report_path = args.output_directory / f"cohort-{cohort}-trial-{trial}.stderr.txt"
                 usage_before = resource.getrusage(resource.RUSAGE_CHILDREN)
+                metadata_before = file_metadata(executable)
                 with tempfile.TemporaryFile() as input_file, stdout_path.open("wb") as output:
                     input_file.write(payload)
                     input_file.seek(0)
@@ -141,6 +154,7 @@ def main() -> None:
                           "materialization": args.materialization,
                           "source_file_identity": [source.stat().st_dev, source.stat().st_ino],
                           "execution_file_identity": [executable.stat().st_dev, executable.stat().st_ino],
+                          "file_before": metadata_before, "file_after": file_metadata(executable),
                           "stderr_report": str(report_path.resolve()), "stdout": str(stdout_path.resolve()),
                           "stderr_observation": stderr_receipt,
                           "stdout_sha256": hashlib.sha256(stdout_path.read_bytes()).hexdigest(),

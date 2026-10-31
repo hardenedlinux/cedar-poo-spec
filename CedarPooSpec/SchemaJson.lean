@@ -1,6 +1,6 @@
 import CedarPooSpec.SchemaAdmission
 import CedarPooSpec.Transport.Case
-import Lean
+import Lean.Data.Json
 
 /-! A bounded projection of Cedar Lean schemas into Cedar's public JSON schema. -/
 

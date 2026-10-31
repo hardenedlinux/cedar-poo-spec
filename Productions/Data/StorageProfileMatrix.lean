@@ -1,7 +1,7 @@
 import Productions.Data.StorageEffectFixture
 import Productions.Data.ProtectedStorageFixture
 import CedarPooSpec.Data.ProtectionProfile
-import Lean
+import Lean.Data.Json
 
 /-!
 Cross-profile production matrix. Each case is one exact physical effect
