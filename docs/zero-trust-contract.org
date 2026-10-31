@@ -1,0 +1,93 @@
+#+TITLE: Zero Trust Effect Boundary Library
+#+LANGUAGE: en
+
+* Ownership and existing foundations
+
+Read [[file:rfc/0010-zero-trust.org][RFC 0010]] first for the primary research,
+selected model, source-to-property alignment and unproved refinement obligations.
+This is a per-effect contract informed by NIST/UCON and built on executable Cedar
+definitions, not a claim to mechanize the complete reference architectures.
+
+=CedarPooSpec.ZeroTrust= owns the reusable Zero Trust semantic boundary. An
+application consumes this API and enriches the Host view and runtime contract;
+it must not duplicate semantic admission in its Gateway repository. The existing
+=Gateway= Lean package is platform-neutral semantic infrastructure, not Weaver's
+Rust server. Reuse its actual LeanPoo publication, factory-indexed Session,
+strengthening Contract, schema-valid Cedar admission, original-operation/grant
+consumption and exact Authorization Delta composition.
+
+The module introduces no Policy DSL, solver, Rust service, transport, account
+arithmetic or storage implementation. Records hold immutable values/proofs;
+inheritance remains with the actual =Gateway.ProfileObject= / LeanPoo owner.
+The API has no IO or send handle.
+
+* Public API
+
+| API | Meaning |
+|-----+---------|
+| =Host Effect View= | Trusted application's interpretation of a complete immutable deciding image, ledgers and authenticated/current/final-use obligations |
+| =Proposal= | Publication-indexed receipt plus exact pure consumption result for the captured complete view |
+| =propose= | Compose existing =consumeAdmission= under the original publication; retain the actual result/equality instead of another checker |
+| =FinalUse proposal= | Actual final view equals the captured complete view, is authenticated/current, binds the authoritative original/selected profile, and durably commits consumption while retaining unknown exposure and mediating the effect |
+| =zero_trust_final_use= | Original Contract/scope preservation combined with explicit Host obligations |
+| =returned_ledger_rejects_new_authority= | Renewed authority cannot readmit the consumed original operation against the returned ledger |
+| =final_use_preserves_authorization_delta= | Current committed final use combined with existing scope/schema/source/policy-bound exact Delta implication |
+
+The trusted Host defines predicates. A request cannot replace them with its own
+Boolean. =authoritativeProfile= binds the independently admitted original and
+selected object projection; a self-selected weaker original is not authority.
+=View= must contain all deciding coordinates, including floor/budget/history/
+custody state beyond =Gateway.Context=. A Policy revision alone is insufficient.
+
+Preparation/proposal are inert. =FinalUse= does not authenticate external facts
+by itself; establish its obligations together at actual serialized effect use.
+A historical receipt or consistent old snapshot cannot establish =currentAtUse=.
+An unknown commit cannot establish =committed=. Queue credit establishes neither.
+
+=FinalUse= is immutable and duplicable, not an affine send capability. The Host
+must freshly enforce final use and install the returned ledgers for each actual
+effect. Copying proof data or recovering an old input ledger does not authorize
+another send. The actual deciding pre-state and resulting durable commit need
+one explicitly defined linearization; these predicates do not prove that native
+protocol. Complete mediation and authenticity remain premises.
+
+* Proof and counterexample coverage
+
+| Property | Checked library consequence | External obligation |
+|----------+-----------------------------+---------------------|
+| Freshness | =final_use_preserves_current_context= | Complete authentic current-view projection at actual use |
+| Original higher-order profile | =final_use_preserves_original_contract= | Independent authoritative publication and authentic object/factory provenance |
+| Original claim/budget/history identities | =final_use_preserves_original_scope= | Actual canonical domains; not a balance-conservation theorem |
+| Least privilege / fail closed | =final_use_has_error_free_cedar_allow= and inherited unknown-assessment refusal | Native facts refine the validated Cedar inputs |
+| Once-only operation | =returned_ledger_rejects_new_authority= | Atomically persist/recover returned ledgers, not an old input image |
+| Unknown exposure | =unknownRetained= is mandatory; unknown commit/lost-hold tests reject finalization | Supply actual reservation/account/history laws; timeout or queue delivery cannot authorize refund |
+| Full view binding | =changed_complete_view_cannot_finalize= | Compare actual view; a serialized equality label is not evidence |
+| Policy evolution | Reuse exact-query/schema/validated-world Delta theorem | Solver reports are not UNSAT certificates; no implication across changed fact worlds |
+
+=Tests.ZeroTrust.Contracts= uses the real Gateway/LeanPoo publication fixture,
+checks first consumption/new-authority replay refusal, and rejects raw semantic
+Receipt input to =propose=. Laws reject a changed private floor with unchanged
+public Context, unknown commit and lost original hold. Existing Gateway
+publication/Delta checks remain part of validation.
+
+No new axioms, =sorry= or alternate Cedar semantics are introduced. Printed
+axioms remain in temporary verification output. Scope/Host laws use standard
+Lean logical axioms. Cedar/Delta implications inherit upstream dependencies,
+including native-decision assumptions where =#print axioms= reports them. This
+is not an assumption-free proof of crypto, compiler, OS, storage or network IO.
+
+* Application enrichment
+
+Weaver supplies actual Policy/schema/profile, independent commit floor,
+canonical claim, shared-budget/history, owner custody, immutable batches and
+final queue/socket admission. Its Lean consumer specializes this API; existing
+Quint models explore runtime orderings. Native refinement requires Go/Rust tests.
+
+The operation ledger does not restart for each row. Streaming adapters preserve
+the parent claim and constrain each original range through the execution
+contract. New range/nonce/Authority labels cannot mint a new family or budget to
+evade pending exposure. This API neither schedules ranges nor settles usage.
+
+An application on an older dependency revision must not claim that its fixed-pin
+build already exposes this API. Isolated candidate consumption leaves its pin
+unchanged and provides a separate receipt, not production release admission.

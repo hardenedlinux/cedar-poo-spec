@@ -70,6 +70,10 @@ construction-time boundary for Lean-POO multiple dispatch across independently
 extensible policy profiles.
 [[file:docs/rfc/0008-composable-control-objects.org][RFC 0008]] defines an
 open, scenario-driven control-object library above Cedar's upstream semantics.
+[[file:docs/rfc/0010-zero-trust.org][RFC 0010]] aligns the reusable
+[[file:docs/zero-trust-contract.org][Zero Trust effect-boundary contract]] with
+NIST, UCON and executable Cedar foundations, separating checked conditional laws
+from native currentness, durability and mediation obligations.
 Pseudonymization, Admission, [[file:CedarPooSpec/Gateway/README.org][Gateway admission and execution Delta]], Governance, Data,
 [[file:CedarPooSpec/AgenticAI/README.org][AgenticAI]], and
 [[file:CedarPooSpec/Cloud/README.org][Cloud]] are cross-industry

@@ -1,0 +1,133 @@
+#+TITLE: RFC 0010: Research-Aligned Zero Trust Effect Boundary
+#+LANGUAGE: en
+#+OPTIONS: toc:2
+
+* Status and decision
+
+The Lean API is a candidate reusable contract in SPEC, not a certification of a
+deployed Gateway. Applications enrich it with concrete identity, persistence,
+budget/history and effect-boundary implementations. Review the research basis
+before treating an interface name or a passing example as a security claim.
+The engineering sequence follows [[file:0004-authorization-delta.org][Authorization Delta]]:
+research question, precise model, explicit premises, proof/counterexample,
+public API, then implementation refinement. Preserve the distinction between
+a theorem, a solver report, a finite test and an unimplemented Host obligation.
+
+* Primary sources and what is actually reused
+
+| Source | Inspected contribution | Use here | Evidence boundary |
+|--------+------------------------+----------+-------------------|
+| [[https://doi.org/10.6028/NIST.SP.800-207][NIST SP 800-207]], Sections 2.1 and 3 | Resource-oriented access, dynamic assessment, logical Policy engine / administrator / enforcement point | Architectural requirements and role vocabulary | Architecture guidance; not a Lean proof or an implementation specification |
+| [[https://csrc.nist.gov/pubs/sp/800/207/a/final][NIST SP 800-207A]] | Application/service identity in cloud-native access control | Workload identity is an input to admission, not ambient trust from a cluster/network | Does not specify our one-use ledger, anti-rollback floor or shared budget |
+| Park and Sandhu, [[https://doi.org/10.1145/984334.984339][The UCONABC Usage Control Model]] (2004), [[https://profsandhu.com/journals/tissec/p128-park.pdf][author copy]] | Authorizations, obligations and conditions; continuity and mutable attributes | Separate pre-admission, ongoing use and post-use evidence | Conceptual foundation, not a theorem imported into Lean |
+| Zhang, Parisi-Presicce, Sandhu and Park, [[https://doi.org/10.1145/1108906.1108908][Formal Model and Policy Specification of Usage Control]] (2005), [[https://profsandhu.com/journals/tissec/p351-zhang.pdf][published author copy]] | State sequences, usage actions and temporal policy rules | Review revocation and state changes over usage, rather than only one initial decision | Paper formalization; no machine-checked translation of its whole rule system is supplied here |
+| Cutler et al., [[https://arxiv.org/abs/2403.04651][Cedar language paper]]; [[https://github.com/cedar-policy/cedar-spec/tree/main/cedar-lean][official executable Lean specification]] | Defined authorization, validation and symbolic reasoning | Direct imports through existing SPEC Gateway and Delta APIs | Cedar does not authenticate Host facts or atomically perform external IO |
+| Disselkoen et al., [[https://arxiv.org/abs/2407.01688][How We Built Cedar: A Verification-Guided Approach]] | Executable models, proofs, differential testing and PBT | Separate model reasoning from implementation conformance | Passing examples do not establish full implementation refinement |
+| Collina et al., [[https://arxiv.org/abs/2609.15803][Delegating Authorization to Misaligned Agents]] | Sequential safety under its utility/MDP and reviewer-alignment assumptions | Retain RFC 0004's distinction between same-world Delta and trajectory safety | We do not implement its reviewer model or inherit its safety theorem |
+
+The official Cedar repository provides executable definitions and theorem
+artifacts. A GitHub repository mentioning Zero Trust is not equivalent evidence.
+The inspected [[https://github.com/sarmishra/ZT-MCP-Project][ZT-MCP repository]] is a
+domain-specific reference candidate; its README claim of a formal CapBAC model
+is not admitted as a checked dependency or a proof of this API. No repository
+above supplies a universal, drop-in Zero Trust theorem covering Gateway recovery.
+
+* Selected model and explicit non-goals
+
+This API selects a per-effect enforcement contract inspired by the sources; it
+does not claim to encode every NIST tenet or the complete UCON model. The
+application supplies an immutable complete view V, an effect E, authenticated
+original publication P and the actual current use boundary. V includes every
+deciding coordinate: original profile/claim, Policy/schema/source identities,
+operation and authority ledgers, shared budget/history, owner and recovery floor.
+Application-specific coordinates remain typed application enrichment.
+
+The existing pure transition is:
+
+#+begin_example
+propose(P, receipt, V, authority)
+  = consumeAdmission(P, receipt, operations(V), authorities(V), authority)
+  = error | proposed(updatedOperationLedger, updatedAuthorityLedger)
+
+FinalUse(proposal, actualV) requires jointly at actual effect use:
+  actualV = proposal.before
+  authenticated(actualV) and currentAtUse(actualV)
+  authoritativeProfile(original, selected, publicationContext, actualV)
+  committed(actualV, proposal.after)
+  unknownRetained(actualV, proposal.after) and mediated(effect, actualV)
+#+end_example
+
+Here =currentAtUse= concerns the deciding pre-state at the serialized final
+operation, not a later state in which a prior commit has already changed its
+ledgers. =committed= is evidence of the corresponding durable outcome, not
+permission to validate an old pre-state again. The Host must specify this
+linearization and its before/after interpretation. A disconnected cache cannot
+establish it by matching revision labels.
+
+The intended trace obligation is that every external effect has a corresponding
+current guarded use event under this contract. Lean currently establishes the
+local implications for a supplied =FinalUse= and the returned-ledger replay law.
+It does not prove that all native IO has such an event. Complete mediation,
+atomic recovery and view authenticity are explicit refinement premises, not
+consequences of fields named =mediated= or =committed=.
+
+UCON motivates continuing checks as attributes change. This API chooses each
+request/range release as an enforcement boundary; it does not assert continuous
+physical interruption of a byte already admitted. Revocation prevents later
+admissions after its authoritative ordering point. Previously admitted network
+buffers may drain. Unknown delivery and accounting remain unresolved until
+authentic evidence arrives; revocation, EOF and timeout are not refunds. These
+uncertainty/recovery rules are application extensions, not borrowed UCON theorems.
+
+* Requirement-to-proof and counterexample alignment
+
+| Requirement | Existing definition / theorem | Counterexample or check | Remaining premise |
+|-------------+-------------------------------+-------------------------+-------------------|
+| No implicit trust from location or shared credentials | =Host.authenticated= / =FinalUse.authenticated= | A forged revision label is insufficient evidence | Real identity and credential ownership; no cryptographic theorem here |
+| Enforce the original published profile | =Proposal.receipt= is =PublishedReceipt=; =final_use_preserves_original_contract= | Raw Receipt fails the API type check | Independently authentic original publication; actual LeanPoo provenance |
+| Bind original claim/budget/history domains | =final_use_preserves_original_scope= | Changed complete private floor rejects finalization even with identical public Context | Correct canonical identities and balance/history projection |
+| Recheck mutable facts at effect use | =sameView=, =current=; =changed_complete_view_cannot_finalize= | Old proposal after changed floor/context cannot finalize | Serialized current-state check with actual send; no TOCTOU window |
+| Consume the original operation once | Existing =consumeAdmission=; =returned_ledger_rejects_new_authority= | Renewed authority cannot consume against the returned operation ledger | Atomically install both ledgers and retain them through rollback/restart |
+| Retain uncertain exposure | =FinalUse.unknownRetained= | Unknown commit and lost hold fail the supplied fixture contract | Concrete account conservation and reconciliation laws |
+| Enforce actual Cedar authorization | =final_use_has_error_free_cedar_allow= | Unknown assessment fails; Cedar diagnostics remain relevant | Authentic immutable request/entity facts at use |
+| Keep Policy evolution evidence bound | =final_use_preserves_authorization_delta= | Changed schema/source/world cannot silently reuse exact-query premises | Actual schema, source and policy binding; explicit UNSAT premises |
+| Every effect is mediated | =Host.mediated= is required | Copying a proof or bypassing a broker is outside the proved implication | Native sender/custody audit and implementation conformance |
+
+=FinalUse= is a duplicable immutable proof record, not an affine send capability.
+Using it twice cannot itself prove two legal IO operations. Each actual use must
+join the live Host state and consume an actual one-use runtime capability.
+The returned-ledger law does not hold against a rolled-back input ledger. No
+amount of pure receipt composition establishes an independent commit floor.
+
+* Composition with Authorization Delta
+
+Delta constrains two policy roots for the same validated Cedar world under the
+existing exact-coverage premises. The Zero Trust contract binds the receipt and
+pure consumption to the original publication and requires actual current use.
+Together they retain that pointwise non-expansion conclusion; they do not turn
+Policy implication into safety for changing entities, arbitrary agent choices,
+shared mutable budgets or future histories. Those need the application's
+transition invariants and conformance evidence. A solver's UNSAT report is still
+not a Lean UNSAT proof, as RFC 0004 explains.
+
+* Review gates and ownership
+
+SPEC owns the reusable contract and conditional semantic composition. Weaver
+consumes it and specializes its full view; existing Quint models explore
+concurrent publication, final release and failure schedules. Existing Lean
+owners prove their invariants. Do not add a second Weaver Zero Trust engine or
+relabel the same proof as an independent result.
+
+Before production acceptance, require authenticated complete-view projection,
+an actual final linearization/refinement argument, durable returned-ledger
+recovery, conservation under unknown outcomes and an audit excluding alternative
+senders/retry paths. Native tests must exercise real queue waits, revocation,
+lost commit responses and restart; finite tests remain finite evidence. Liveness
+also needs explicit availability/fairness assumptions and is not implied by
+fail-closed safety. No NIST compliance or end-to-end certification is claimed.
+
+The candidate build checks =CedarPooSpec=, =Tests.ZeroTrust.Contracts= and existing
+Gateway publication/Delta tests. Inspect =#print axioms=: no new =sorry= or axioms
+are introduced, but existing Cedar native-decision dependencies remain visible.
+Applications on an older fixed pin qualify this API separately in isolation;
+they must not claim it is already part of their production build.

@@ -22,6 +22,7 @@ import CedarPooSpec.Governance.Personnel.KnowledgeScope
 import CedarPooSpec.Governance.Personnel.Admission
 import CedarPooSpec.Platform.AWS.AgentCore.Gateway
 import CedarPooSpec.Gateway
+import CedarPooSpec.ZeroTrust
 import CedarPooSpec.Platform.Google.SensitiveDataProtection
 import CedarPooSpec.Vertical.Health.DisclosureProfile
 import CedarPooSpec.Vertical.Health.EmergencyAccess
