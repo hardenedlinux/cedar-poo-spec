@@ -18,6 +18,13 @@ the provider effect's global pending barrier remains separate. No IO or second
 ledger is implemented. Trusted reference interpretation, durable registration,
 atomic current-state join and native transition refinement remain Host premises.
 
+The final adapter now also requires durable registration of the selected artifact,
+a recovered registry and a current registrar incarnation at the same deciding
+view. A local entry, lost-reply retry, historical registration or role credential
+alone is insufficient. =final_requires_durable_recovered_registration= extracts
+these requirements; negative fixtures cover missing anchor, unrecovered registry
+and a stale worker. These predicates still require actual authority materialization.
+
 * Ownership
 
 =CedarPooSpec.Authorization= aggregates the reusable authorization capabilities.

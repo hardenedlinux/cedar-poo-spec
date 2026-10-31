@@ -36,6 +36,9 @@ def host : Host Nat Result View Nat Nat Nat where
   security := security
   parentAt := View.parent
   approvedEvidenceAt := fun view _ => some view.artifact
+  registrationCommitted := fun _ _ artifact => artifact = 7
+  registryRecovered := fun _ => True
+  registrarCurrent := fun _ => True
   cutAt := View.cut
   projection := id
   pendingAdmissible := fun _ view => view.pending = false
@@ -61,9 +64,10 @@ theorem exact_binding_is_admitted :
 
 theorem exact_final_is_admitted : Nonempty (Final host template prepare 9 initial) := by
   obtain ⟨receipt, _, _, sameState⟩ := exact_binding_is_admitted
-  refine ⟨⟨receipt, ⟨7, rfl⟩, ?_, rfl, ?_⟩⟩
+  refine ⟨⟨receipt, ⟨7, rfl⟩, ?_, True.intro, True.intro, ?_, rfl, sameState⟩⟩
+  · intro artifact present
+    simpa [host, initial] using present.symm
   · simp [ZeroTrust.Framework.required, host, security, initial]
-  · exact sameState
 
 -- Matching reference bindings do not replace the original invocation rule.
 def refusing : Contract Unit Nat Result := {template with rule := .deny .truth}
@@ -105,6 +109,18 @@ theorem cached_matching_review_is_not_current_use :
 theorem missing_registry_entry_cannot_commit :
     ¬ Nonempty (Final {host with approvedEvidenceAt := fun _ _ => none} template prepare 9 initial) :=
   missing_review_cannot_commit rfl
+
+theorem local_entry_without_anchor_cannot_commit :
+    ¬ Nonempty (Final {host with registrationCommitted := fun _ _ _ => False} template prepare 9 initial) :=
+  unanchored_registration_cannot_commit (fun _ => id)
+
+theorem matching_rolled_back_registry_cannot_commit :
+    ¬ Nonempty (Final {host with registryRecovered := fun _ => False} template prepare 9 initial) :=
+  unrecovered_registry_cannot_commit id
+
+theorem matching_old_worker_cannot_commit :
+    ¬ Nonempty (Final {host with registrarCurrent := fun _ => False} template prepare 9 initial) :=
+  old_registrar_cannot_commit id
 
 theorem bound_review_cannot_reset_consumption :
     ¬ Nonempty (Final host template prepare 9 {initial with consumed := false}) := by

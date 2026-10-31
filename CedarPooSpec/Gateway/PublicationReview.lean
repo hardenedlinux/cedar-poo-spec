@@ -13,6 +13,9 @@ structure Host (Command Result View Parent Artifact Cut : Type) where
   security : ZeroTrust.Framework Command View
   parentAt : View → Parent
   approvedEvidenceAt : View → Command → Option Artifact
+  registrationCommitted : View → Command → Artifact → Prop
+  registryRecovered : View → Prop
+  registrarCurrent : View → Prop
   cutAt : View → Cut
   projection : Result → Command × (Parent × Option Artifact) × Cut
   /-- Command-specific admission may resolve its own staged intent and leave
@@ -41,6 +44,10 @@ structure Final (host : Host Command Result View Parent Artifact Cut)
     (command : Command) (actual : View) where
   receipt : Invocation (host.contract template command actual) (prepare actual) command
   approved : ∃ artifact, host.approvedEvidenceAt actual command = some artifact
+  durable : ∀ artifact, host.approvedEvidenceAt actual command = some artifact →
+    host.registrationCommitted actual command artifact
+  recovered : host.registryRecovered actual
+  fenced : host.registrarCurrent actual
   current : host.security.required command actual
   pending : host.pendingAdmissible command actual
   committed : host.commit actual receipt.result receipt.state
@@ -96,6 +103,37 @@ theorem missing_review_cannot_commit
   obtain ⟨artifact, present⟩ := publication.approved
   rw [missing] at present
   contradiction
+
+theorem final_requires_durable_recovered_registration
+    {host : Host Command Result View Parent Artifact Cut}
+    {template : Contract Atom Command Result} {command actual}
+    (publication : Final host template prepare command actual) :
+    host.registryRecovered actual ∧ host.registrarCurrent actual ∧
+      ∃ artifact, host.approvedEvidenceAt actual command = some artifact ∧
+        host.registrationCommitted actual command artifact := by
+  obtain ⟨artifact, present⟩ := publication.approved
+  exact ⟨publication.recovered, publication.fenced, artifact, present, publication.durable artifact present⟩
+
+theorem unanchored_registration_cannot_commit
+    {host : Host Command Result View Parent Artifact Cut}
+    {template : Contract Atom Command Result} {command actual}
+    (missing : ∀ artifact, ¬ host.registrationCommitted actual command artifact) :
+    ¬ Nonempty (Final host template prepare command actual) := by
+  rintro ⟨publication⟩
+  obtain ⟨artifact, _, durable⟩ := (final_requires_durable_recovered_registration publication).2.2
+  exact missing artifact durable
+
+theorem unrecovered_registry_cannot_commit
+    {host : Host Command Result View Parent Artifact Cut}
+    {template : Contract Atom Command Result} {command actual}
+    (missing : ¬ host.registryRecovered actual) :
+    ¬ Nonempty (Final host template prepare command actual) := fun ⟨publication⟩ => missing publication.recovered
+
+theorem old_registrar_cannot_commit
+    {host : Host Command Result View Parent Artifact Cut}
+    {template : Contract Atom Command Result} {command actual}
+    (stale : ¬ host.registrarCurrent actual) :
+    ¬ Nonempty (Final host template prepare command actual) := fun ⟨publication⟩ => stale publication.fenced
 
 theorem stale_use_cannot_commit
     {host : Host Command Result View Parent Artifact Cut}
