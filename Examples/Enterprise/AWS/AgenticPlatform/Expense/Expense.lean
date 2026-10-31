@@ -1,3 +1,4 @@
+import CedarPooSpec.Functional.Capabilities
 import CedarPooSpec.PolicyJson
 import CedarPooSpec.PolicyProfile
 
@@ -154,8 +155,14 @@ def modelResult : Except LeanPoo.C4.Error Model := do
 /-- The same validated LeanPOO model drives Lean decisions and Cedar export. -/
 def model : Model := modelResult.toOption.get (by native_decide)
 
+/-- Checked immutable policy context; current request inputs are supplied at consumption. -/
+protected def program : CedarPooSpec.Functional.Program model schema :=
+  (CedarPooSpec.Functional.prepareProgram CedarPooSpec.Functional.standard
+    model schema (model.modules.map (·.name))).toOption.get (by native_decide)
+
 /-- The composition is the LeanPOO C4 order, not a handwritten conjunction
     of the five Cedar conditions. Each policy below comes from its own owner. -/
+
 theorem governedComposition :
     LeanPoo.C4.linearize model.graph "Governed" =
       .ok ["Governed", "Team", "ApprovalScope", "Role", "Duties", "State",
@@ -172,8 +179,7 @@ theorem governedComposition :
   native_decide
 
 def decideAt (root : String) (req : Request) : Option Decision := do
-  let policies ← (model.compile root).toOption
-  let response := isAuthorized req entities policies
+  let response ← (CedarPooSpec.AWS.Expense.program.response root req entities).toOption
   if response.erroringPolicies.isEmpty then some response.decision else none
 
 /-- Named operation checks are shared by the Lean proof and official Cedar
@@ -241,7 +247,7 @@ theorem incidentLocality :
 theorem everyRootValid :
     ["SourceProjection", "Team", "ApprovalScope", "Role", "Duties", "State", "Governed",
       "Incident", "Recovered"].all (fun root =>
-        (CedarPooSpec.PolicyJson.publish model root schema).isOk) = true := by
+        (CedarPooSpec.AWS.Expense.program.publish root).isOk) = true := by
   native_decide
 
 end CedarPooSpec.AWS.Expense

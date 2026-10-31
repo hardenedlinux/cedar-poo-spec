@@ -1,0 +1,61 @@
+vars: { d2-config: { layout-engine: tala; theme-id: 3; pad: 70 } }
+classes: { card: { label.near: center-center; style.font-size: 21; style.border-radius: 12; style.stroke-width: 1 } }
+title: REUSABLE SECURITY FRAMEWORKS {
+  shape: text
+  near: top-center
+  style.font-size: 30
+  style.bold: true
+}
+core: Zero Trust functional core\nPre / ongoing authorization\nConditions and witnessed obligations\nMutable observations and refinement {
+  class: card
+  left: 0
+  top: 0
+  width: 480
+  height: 230
+  style.fill: "#e7edf4"
+}
+authorization: Authorization framework\nCedar Policy composition\nSchema-bound Delta analysis\nRevision and evidence contracts {
+  class: card
+  left: 750
+  top: 0
+  width: 480
+  height: 230
+  style.fill: "#e7edf4"
+}
+poo: Generic POO interpretation\nOriginal root as type index\nRequired parent + selected Sessions\nConjoin retained requirements {
+  class: card
+  left: 0
+  top: 430
+  width: 480
+  height: 230
+  style.fill: "#eef3ef"
+}
+gateway: Gateway specialization\nIdentity / facts / original profile\nPE / PA / PEP application roles\nCurrent use and retained consumption {
+  class: card
+  left: 750
+  top: 860
+  width: 480
+  height: 230
+  style.fill: "#f4f2ec"
+}
+other: Other application specializations\nArtifact access / workflow effects\nIdentity / protected channels / facts\nRecovery and final mediation {
+  class: card
+  left: 0
+  top: 860
+  width: 480
+  height: 230
+  style.fill: "#f4f2ec"
+}
+core -> poo: Functional requirements { style.font-size: 18 }
+poo -> other: Typed specialization { style.font-size: 18 }
+poo -> gateway: Actual inherited profile { style.font-size: 18 }
+authorization -> gateway: Bound Policy assessment { style.font-size: 18 }
+footer: "Applications consume the frameworks\nThe Zero Trust core imports no Gateway" {
+  shape: text
+  left: 150
+  top: 1250
+  width: 950
+  height: 90
+  style.font-size: 24
+  style.font-color: "#5c8b77"
+}

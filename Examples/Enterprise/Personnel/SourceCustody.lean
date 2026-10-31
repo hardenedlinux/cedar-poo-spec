@@ -1,3 +1,4 @@
+import CedarPooSpec.Functional.Capabilities
 import CedarPooSpec.Governance.Personnel.AssetAccess
 import CedarPooSpec.Governance.Personnel.Status
 import CedarPooSpec.Governance.Personnel.Assignment
@@ -192,6 +193,11 @@ def modelResult : Except LeanPoo.C4.Error Model := do
 
 def model : Model := modelResult.toOption.get (by native_decide)
 
+/-- Retain checked policies for this exact model/schema, never request decisions. -/
+def program : CedarPooSpec.Functional.Program model schema :=
+  (CedarPooSpec.Functional.prepareProgram CedarPooSpec.Functional.standard model schema
+    (model.modules.map (·.name))).toOption.get (by native_decide)
+
 def state (origin : EntityUID) : Snapshot :=
   { origin, device := managedLaptop, deviceTrusted := true,
     delegationValid := false, approvalValid := false,
@@ -224,11 +230,10 @@ def releaseDelegation : Personnel.Delegation :=
     purpose := "release", revision := 1, expiresAt := 20 }
 
 def decisionIn (root : String) (store : Entities) (operation : Operation) : Bool :=
-  match model.compile root with
+  match program.authorize root [operation.request] store with
   | .error _ => false
-  | .ok policies =>
-      let response := isAuthorized operation.request store policies
-      response.decision == .allow && response.erroringPolicies.isEmpty
+  | .ok receipt => receipt.allowed
+
 def decision (root : String) (operation : Operation) : Bool :=
   decisionIn root entities operation
 

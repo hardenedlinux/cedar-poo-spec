@@ -1,12 +1,13 @@
-use super::{
-    Case, Manifest, check_direct_sources, check_manifest, check_template_source, json_sha256,
-    load_policy_set, load_template_source, render_artifacts, render_identified_policy_sources,
-    replay_manifest, verify_replay_receipts,
-};
+use crate::canonical::json_sha256;
 use crate::schema::{
     SchemaEvolutionBundle, ValidatedManifest, render_validated_policy_sources,
     replay_schema_only_revision, replay_validated_manifest, verify_schema_only_revision,
     verify_validated_replay_receipts,
+};
+use crate::{
+    Case, Manifest, check_direct_sources, check_manifest, check_template_source, load_policy_set,
+    load_template_source, render_artifacts, render_identified_policy_sources, replay_manifest,
+    verify_replay_receipts,
 };
 use serde_json::json;
 use std::ops::Deref;
@@ -91,6 +92,24 @@ fn validated_sources_bind_one_schema_and_entity_snapshot_for_permit_and_forbid()
     manifest.schema[""]["actions"]["view"]["appliesTo"]["context"]["attributes"]["blocked"] =
         json!({"type": "Boolean"});
     manifest.cases.push(deny);
+    let mut entity_metrics = crate::ReplayMetrics::default();
+    let rows = crate::replay_validated_manifest_measured(&manifest, &mut entity_metrics)
+        .expect("fresh context with shared entities");
+    assert_eq!(
+        (
+            rows[0].replay.decision.as_str(),
+            rows[1].replay.decision.as_str()
+        ),
+        ("allow", "deny")
+    );
+    assert_eq!(
+        (
+            entity_metrics.entity_parse_calls,
+            entity_metrics.entity_reuses,
+            entity_metrics.authorization_calls
+        ),
+        (1, 1, 4)
+    );
 
     let sources = render_validated_policy_sources(&manifest, "allow-all")
         .expect("strictly validated sources");
@@ -117,7 +136,7 @@ fn validated_sources_bind_one_schema_and_entity_snapshot_for_permit_and_forbid()
     );
     let mut invalid_entities = validated(allow.clone());
     invalid_entities.schema = manifest.schema.clone();
-    invalid_entities.cases[0].entities = json!({});
+    invalid_entities.cases[0].entities = serde_json::from_value(json!({})).expect("entity source");
     assert!(
         render_validated_policy_sources(&invalid_entities, "allow-all")
             .unwrap_err()
@@ -609,7 +628,7 @@ fn direct_cedar_check_identifies_erroring_policy_with_new_source_ids() {
     std::fs::remove_dir_all(directory).expect("remove temporary directory");
 }
 
-fn template_source_fixture() -> (serde_json::Value, super::CompiledPolicyJson) {
+fn template_source_fixture() -> (serde_json::Value, crate::CompiledPolicyJson) {
     let source = json!({
         "staticPolicies": {},
         "templates": {
@@ -705,5 +724,161 @@ fn mixed_template_source_checks_static_bodies_and_id_collisions() {
         check_template_source(&collision, &expected)
             .unwrap_err()
             .contains("template source parse")
+    );
+}
+
+#[test]
+fn measured_replay_retains_receipts_failures_and_actual_reuse_counts() {
+    let first = receipt();
+    let mut second = receipt();
+    second.name = "second".into();
+    let mut manifest = Manifest {
+        cases: vec![first, second],
+    };
+    let reference = replay_manifest(&manifest).expect("reference");
+    let mut metrics = crate::ReplayMetrics::default();
+    let observed = crate::replay_manifest_measured(&manifest, &mut metrics).expect("observed");
+    assert_eq!(reference, observed);
+    assert_eq!(metrics.prepared_revisions, 1);
+    assert_eq!(metrics.authorization_calls, 4);
+    manifest.cases[1].revision = "changed".into();
+    let mut metrics = crate::ReplayMetrics::default();
+    crate::replay_manifest_measured(&manifest, &mut metrics).expect("changed root");
+    assert_eq!(metrics.prepared_revisions, 2);
+    assert_eq!(metrics.authorization_calls, 4);
+    manifest.cases[1].expected = "deny".into();
+    assert_eq!(
+        replay_manifest(&manifest).expect_err("original failure"),
+        crate::replay_manifest_measured(&manifest, &mut metrics)
+            .expect_err("same observed failure")
+    );
+}
+
+#[test]
+fn measured_schema_replay_preserves_strict_errors_and_receipt_bindings() {
+    let mut manifest = validated(receipt());
+    let mut metrics = crate::ReplayMetrics::default();
+    let measured =
+        crate::replay_validated_manifest_measured(&manifest, &mut metrics).expect("schema replay");
+    assert_eq!(
+        measured,
+        replay_validated_manifest(&manifest).expect("original")
+    );
+    assert_eq!(metrics.prepared_revisions, 1);
+    assert_eq!(metrics.authorization_calls, 2);
+    manifest.cases[0].request.context = json!({"unlisted":true});
+    assert_eq!(
+        crate::replay_validated_manifest_measured(&manifest, &mut metrics)
+            .expect_err("strict measured context"),
+        replay_validated_manifest(&manifest).expect_err("strict original context")
+    );
+}
+
+#[test]
+fn replay_distinguishes_explicit_empty_geography_from_missing_and_other_values() {
+    let mut policies = load_policy_set(&receipt().policies).expect("baseline policy");
+    let forbid = cedar_policy::Policy::parse(
+        Some("empty-geography".parse().expect("policy ID")),
+        r#"forbid(principal, action, resource) when {
+            context.input has geography && context.input.geography == ""
+        };"#,
+    )
+    .expect("independent Cedar text");
+    policies.add(forbid).expect("distinct policy ID");
+    let artifact = policies.to_json().expect("official Cedar JSON");
+    let mut cases = Vec::new();
+    for (name, input, decision, reasons) in [
+        (
+            "empty",
+            json!({"geography":""}),
+            "deny",
+            vec!["empty-geography".to_string()],
+        ),
+        (
+            "other",
+            json!({"geography":"EU"}),
+            "allow",
+            vec!["base".to_string()],
+        ),
+        ("missing", json!({}), "allow", vec!["base".to_string()]),
+    ] {
+        let mut case = receipt();
+        case.name = name.into();
+        case.policies = serde_json::from_value(artifact.clone()).expect("artifact");
+        case.policy_ids = vec!["base".into(), "empty-geography".into()];
+        case.request.context = json!({"input":input});
+        case.expected = decision.into();
+        case.expected_reasons = reasons;
+        cases.push(case);
+    }
+    let receipts = replay_manifest(&Manifest { cases }).expect("empty and absent are distinct");
+    assert_eq!(receipts.len(), 3);
+    assert_eq!(receipts[0].decision, "deny");
+    assert!(receipts[1].error_free_allow && receipts[2].error_free_allow);
+}
+
+#[path = "preparation.rs"]
+mod preparation;
+
+// Retain the exact pre-optimization normalizer as an independent test oracle.
+fn assert_legacy_revision_bodies(case: &Case) {
+    let policies = load_policy_set(&case.policies).expect("compiled JSON policy set");
+    let (text, bodies) = crate::policy_codec::rendered_policy_bodies(&policies).expect("render");
+    let legacy: std::collections::BTreeMap<_, _> = policies
+        .policies()
+        .map(|p| {
+            (
+                p.id().to_string(),
+                crate::policy_codec::canonical_policy_body(p).expect("legacy normalization"),
+            )
+        })
+        .collect();
+    assert_eq!(bodies, legacy, "compiled AST normalization: {}", case.name);
+    let sections = bodies
+        .iter()
+        .map(|(id, body)| format!("// POO policy ID: {id}\n{body}"))
+        .collect::<Vec<_>>();
+    assert_eq!(
+        text,
+        format!(
+            "// Generated from Lean-POO. Cedar assigns new IDs when parsing this text.\n{}\n",
+            sections.join("\n\n")
+        )
+    );
+}
+
+#[test]
+fn json_ast_render_preserves_legacy_normalization_and_source_bytes() {
+    // Formatting, annotations, IDs, scopes, literals and condition structure.
+    for (index, text) in [
+        "permit(principal,action,resource);",
+        " // spacing\n permit ( principal, action, resource ) when { true };",
+        "@z(\"last\") @a(\"first\") forbid(principal,action,resource) unless { false };",
+        "permit(principal == User::\"alice\",action in [Action::\"a\",Action::\"b\"],resource) when { context has x && context.x == 1 };",
+        "permit(principal is User,action,resource is Document) when { true } when { false } unless { false };",
+        "permit(principal,action,resource) when { [1,2].contains(1) && { x: \"line\\nquote\\\"\", y: -9223372036854775808 }.y < 0 };",
+        "permit(principal,action,resource) when { context.ip.isInRange(ip(\"10.0.0.0/8\")) };",
+        "permit(principal,action,resource) when { context.name like \"a*\" };",
+    ].into_iter().enumerate() {
+        let policy = cedar_policy::Policy::parse(None, text).expect("metamorphic source");
+        let mut case = receipt();
+        let id = format!("revision-{index}");
+        let mut source = json!({"staticPolicies":{},"templates":{},"templateLinks":[]});
+        source["staticPolicies"][&id] = policy.to_json().expect("source JSON");
+        case.policies = serde_json::from_value(source).expect("compiled wire");
+        assert_legacy_revision_bodies(&case);
+    }
+    // Duplicate bodies retain distinct IDs, sorted source order and multiplicity.
+    let mut case = receipt();
+    let mut source = case.policies.deref().clone();
+    source["staticPolicies"]["second"] = source["staticPolicies"]["base"].clone();
+    case.policies = serde_json::from_value(source).unwrap();
+    assert_legacy_revision_bodies(&case);
+    let empty = cedar_policy::PolicySet::new();
+    assert_eq!(
+        crate::policy_codec::rendered_policy_bodies(&empty)
+            .unwrap()
+            .0,
+        "// Generated from Lean-POO. Cedar assigns new IDs when parsing this text.\n\n"
     );
 }

@@ -1,0 +1,263 @@
+#+TITLE: Whole-repository Functional Cedar migration
+#+OPTIONS: toc:2
+
+* Scope and ownership
+
+The migration covers consumer orchestration throughout =Examples/= and
+=CedarPooSpec/=, with =Productions/= included in the import and artifact gates.
+It is not a financial-only slice. The immutable LeanPOO revision remains
+=c03da1ab399ac8ea57fdefd4b460e725541d88e6=; Cedar and Lean pins are unchanged.
+The library and Productions remain independent of Examples and Tests.
+
+| Surface | Actual shared path | Retained domain boundary |
+|---------+--------------------+--------------------------|
+| Cloud pipeline, deployment and Google SDP | checked Program, typed publication and paired receipts | verified release, actual transformation/key recipe and current source |
+| Health prior authorization, regional/FHIR/record access, model stewardship and pseudonymization | checked Program where schemas exist; compile-stage Factory for schema-free diagnostics | patient/channel/region, lineage, keys, incident/recovery and disclosure effects |
+| Agent delegation, chain, payment, session, fanout and department | Program authorization/export and shared compound receipts | current request/history, consumption, budgets, independent authorities and final refresh |
+| Governance, procurement and tenant/device scenarios | typed preparation, publication and current-request evaluation | owner/veto separation, scoped schema changes, construction conflicts and malformed publication refusal |
+| Vehicle mission, Uptane and VLA | checked Programs and ordered exports | attestation, epoch, maintenance and command-effect identity |
+| Financial lakehouse, banking, reconciliation and settlement | checked Programs and ordered compound/layer receipts | independent claims/source, ordered workflow, credential requirements and handoff scope |
+| BoundOperation, PolicySnapshot and authorization-delta library consumers | compile-stage Functional Factory and existing receipt/cache ownership | original errors, actual policy identity, topology refusal and refresh ordering |
+| Productions | existing shared library composition; no legacy consumer dispatcher was present | independent import closure and unchanged Production fixture JSON |
+
+The source gate =just check-functional-consumers= rejects the replaced direct
+export and compound-authorization dispatchers in Examples/Productions and library
+consumers. Canonical low-level API definitions remain available. Construction,
+provenance and negative C4 proofs retain =Model.compile*=; independent Cedar
+=isAuthorized= proof oracles remain independent. Removing these would erase the
+reference against which the shared orchestration is checked.
+
+* Types and Contracts on actual paths
+
+=Compiled model root= and =Validated model root schema= carry actual policies
+and their equations. Schema-bearing consumers use checked =Program= operations.
+Schema-free ModelStewardship, MultiHospitalAI and ExtensionCoverage diagnostics
+use =Functional.compilation=: a LeanPOO =Factory= producing the existing indexed
+compiled witness. This preserves compile-only error behavior without inventing
+a schema. The raw ExpandedPolicy exporter also uses this compile-stage path.
+
+=PolicyProfile= now checks setting, inherited render method and computed policy
+through a strict ObjectContract before =policy?= returns a value. Refined children
+compute from final-self settings; overriding the policy projection inconsistently
+is refused. =Admission.Handoff.scope?= similarly checks the complete typed scope
+against case/digest projections, nonempty fields and distinct actors.
+These Contracts execute in the consumers; they are not documentation-only tags.
+
+=Tests/Functional/WholeMigration.lean= compares shared compound authorization
+with an independent original algorithm for arbitrary models, requests and
+entities, including complete failures. Six generic compilation/receipt/Contract
+laws are restricted to =propext=, =Classical.choice= and =Quot.sound=.
+Earlier capability, root-family, effect, reuse and lifecycle proofs remain gates.
+
+* Complete artifact and Rust replay gate
+
+=just check-functional-catalog= emits all 51 official entries under the existing
+120-second, 2048-MiB and 10000000-tick limits. The 48 pre-migration files captured from =1336b086ad960574eec1e3366967e2bd10e41a37=
+retain their original SHA-256 bytes; three settlement exports extend the catalog.
+=Tests/Conformance/functional-manifests.sha256= freezes this boundary.
+
+The existing Rust bridge =replay-catalog= runs official Cedar evaluation for raw
+fixtures and strict schema-bound replay where schemas exist. Schema evolution
+uses its existing replay. The catalog produces 1280 Cedar replay rows, alongside
+the schema-evolution result. Six deployment artifacts must match their schema-bound
+source policies and exact deployable-root set. The tabular input is explicitly a
+data fixture; it is not reported as a Cedar decision or cryptographic execution.
+Unknown shapes, empty Cases and missing cross-artifact bindings fail. The gate
+explicitly runs Rust mutation tests on these actual emitted artifacts: substituted
+digest/actor, cross-Case links, changed phase/credential order and unsafe deployment
+root must fail with their specific diagnostic.
+
+Settlement adds 28 claims and 56 banking request receipts across 14 scenarios,
+plus typed cross-domain handoff simulation. Rust parses actors as Cedar
+=EntityUid=, compares the complete scope and grant, checks exclusive expiry and
+current epoch, binds every linked Case exactly once, and preserves ordered bank
+phases/credential requirements. Only =ready= admits; wrong actor/digest/case,
+stale/expired grants, unknown/other modes, source/region/context gaps, paused
+banking and invalid Contract projections remain independent refusal controls.
+The existing financial entrypoint invokes the same selected-catalog replay.
+
+* Qualification boundary
+
+=just check-lean= includes the source guard, all Lean tests, proof audits and
+Production fixtures. =just check-rust= retains workspace tests, ASP checks,
+clippy and dependency-direction checks. CI also executes the complete catalog
+alongside the existing artifact, schema, Host and authorization-delta gates.
+Local results and exact-head remote CI are separate receipts.
+
+TableBatch still owns ordered selection, duplicate ordinals and cumulative UTF-8
+byte ceilings. Provider adapters own wire/physical-input checks. Host simulations
+establish neither authentic external facts, executed settlement/encryption,
+durable atomic execution, crash recovery nor process-RSS bounds. PolicyJson
+remains a partial exporter. Scoped reuse timings do not establish native or
+end-to-end throughput.
+
+* P0-P2: industry objects, contracts and native execution
+
+The P0-P2 implementation covers every memoized domain-object family, rather
+than one industry. =Functional.ObjectProfile= owns strict shape observation,
+C4-selected contract/projection providers and their proof-indexed consumer.
+=Requirements.prepareConsumer= resolves both methods before observing an object.
+The admitted witness is indexed by the actual contract and actual object;
+every returned projection includes equality to that object's inherited read.
+No dynamic cast, function equality, cached authorization or new type checker
+is introduced.
+
+| Object family | Static configuration and derived value | Actual Contract and lifecycle owner |
+|---------------+----------------------------------------+-------------------------------------|
+| PolicyProfile (all policy-owner industries) | setting, selected render callback, policy | exact callback output for final-self setting; policy/schema admission stays in Cedar |
+| ControllerReleaseProfile | template, threshold, groups, control and policy | positive Cedar decimal, full template projection including hidden field names, exact bounded policy |
+| DisclosureProfile | template, policy/action/destination/purpose/payload, channel and policy | nonempty industry labels, full channel projection including context keys, exact minimum policy |
+| BankingToolProfile | template, ordered action list, owner | full owner projection; empty actions remain a valid paused owner |
+| LocationProfile | template, policy/scope/location/missing mode, boundary | exact full boundary projection; explicit empty location remains distinct from a missing field |
+| SourceProfile | template, branch, control | nonempty branch and full source-control projection |
+| ProtectionProfile (including Productions) | storage, profile/key/version/residency, intent | nonempty protection configuration and exact complete intent; physical/grant admission remains ProtectedStorage's responsibility |
+| Handoff | template, case/digest, complete scope | complete inherited scope projection, well-formed scope, distinct actors; current grant/expiry remains Grant.admits |
+| LineageProfile | ordered sources, digest, artifact | nonempty digest/source list and exact full artifact; source authentication and disclosure admission remain separate |
+
+LineageProfile moves the reusable type/Contract out of the medical Example;
+the Example retains its strict C4 prototype/amendment construction and fixture
+identities. PolicyModules' internal compiled objects remain the canonical edit
+engine with its own construction proofs. AgenticAI.Boundary is a multimethod
+check composition, not an additional memoized profile. Plain domain records
+continue to use their typed functions and existing admission protocols. Dynamic
+PrototypeTypes metadata is therefore not imposed on these statically indexed
+objects. Empty optional data, action withdrawal, runtime freshness and physical
+storage admission are not conflated with malformed object projection.
+
+=Tests/Functional/Profiles.lean= exercises public getters for all nine families:
+valid objects, present-but-forged derived values and missing fields. It also
+checks hidden-field substitution together with a matching forged policy,
+inherited final-self recomputation and parent preservation, wrong callback/slot
+types and cross-object/Contract witness rebinding at elaboration, empty configuration
+refusals, and the valid all-actions-withdrawn case. Six universal coherence,
+missing-capability, actual-read, Contract and refusal/refinement laws retain the
+standard-axiom audit. The shared three-node C4 graph has a kernel-checked graph
+certificate, including its accepted checked-resolver result; no native axiom
+is used in these generic laws. The source gate rejects raw public profile reads.
+
+=just bench-functional-catalog= extends the existing complete catalog gate. It
+builds the native release Rust bridge and runs one warmup plus three full-catalog
+samples under the unchanged 120-second execution ceiling. Every measured output
+must equal the complete ordinary replay, and all 1280 rows must execute both
+compiled-policy and rendered-policy authorization (2560 observed calls/sample).
+The runtime counts actual distinct-revision preparation within each manifest,
+strict schema/request/entity preparation, and actual authorization durations.
+Transport serialization is measured separately. Replay totals also include
+JSON decoding, hashes, diagnostics, schema-evolution and cross-artifact checks;
+these are not misreported as authorization time. Schema-evolution's separate
+replay and data-only fixtures are outside the 1280-row counters.
+
+Observed and ordinary runtime entrypoints share the same implementation. With
+observations disabled, no clocks are read. Rust tests compare complete receipts,
+strict refusal errors and actual reuse counts for repeated/changed revisions.
+Existing stale-source/schema, operation/effect, expiry and consumption tests and
+all frozen manifests remain required. The benchmark does not replace functional
+replay, change workload sizes, set new build-job limits or gate on elapsed time.
+It measures native Cedar conformance and transport; it does not measure native
+Lean object preparation, cryptographic/provider execution or establish RSS bounds.
+
+The separate =just bench-functional-native= target compiles the existing
+=Benchmarks.FunctionalReuse= source as a Lean executable. It retains the same
+16-read warmup, three 128-read samples, changing input facts, exact checksums,
+127 same-root hits and zero alternating-root hits. Thus native Functional
+preparation/reuse and native Rust Cedar replay have separate receipts. A local
+macOS run observed roughly 22-49 ms cold versus 1.0-6.4 ms with one slot for the
+same-root workload. Alternating roots remained a zero-hit control and were
+slower with the slot in this run (74-156 ms versus 18-62 ms cold). Local timing
+variance and the churn tradeoff are reported, not converted into speed claims
+or relaxed acceptance thresholds. Native executables retain the fixed workload
+and 120-second execution ceiling; elaboration's memory/tick gates remain
+separate and unchanged. Neither executable establishes a process-RSS bound.
+
+The native gate also compiles =objectProfilesNative= from
+=Tests.Functional.ProfilesMain=. It executes the same nine-family check inventory
+as the Lean tests: valid input, a present forged projection, missing fields and
+actual raw-read presence. All nine checks must pass before natural process exit.
+No second set of industry fixtures or Contract implementation is introduced.
+The final combined run measured 15.6-15.9 ms cold versus 1.03-1.06 ms with a slot
+for same-root reads; alternating reads were roughly 17.3-17.6 ms on both paths.
+The earlier run's slower slot-churn observations remain recorded above where
+applicable; the workload/source and acceptance checks were unchanged. These
+runs document timing variation and root locality, not a guaranteed churn gain.
+
+* A-D: prepared reuse and resource qualification
+
+This acceptance unit retains the nine-family coverage above and the complete
+51-entry catalog. It does not introduce a second profile engine or new provider
+registry. Actual paired projections in payment and medical channels now retain
+one admitted session. Single-projection consumers keep the same public getter.
+
+=ObjectProfile.factory= retains the selected operations. =Access.read= projects
+without repeating diagnosis. =Session contract family profile= additionally
+retains the exact producing factory equation. Changing an object, Contract or
+operation family therefore requires a new appropriately indexed session; no
+function equality decision or nominal provider-name cache is introduced.
+Universal exact old-read equality, actual projection, Contract acceptance and
+refused-family impossibility join the existing standard-axiom audit. Preparing
+a Program also proves exact retained-entry cardinality against the distinct
+requested roots. This is a logical retention statement, not a heap/RSS bound.
+
+The existing native profile executable measures all nine families, each with
+valid, forged and missing input, three samples and 128 fresh constructions per
+sample. Ordinary per-field diagnosis and one-admission batch projection must
+produce identical cardinalities, including zero on refusal. Both paths construct
+the same input inside a non-inlined measured operation and force its result
+before reading the ending clock. This avoids measuring a precomputed closure.
+Reported heartbeat deltas use Lean's current-thread small-allocation counter;
+they are not allocated bytes, all allocations, or retained memory.
+
+=--root-scale= on the existing Functional executable prepares 8, 32 and 128
+actual distinct roots and performs 128 lookups of the last root. It verifies
+retained cardinality and complete policy-count checksums. The observed local
+lookup totals were approximately 10/15/39 microseconds. Linear lookup remains
+explicitly documented at this bounded scale; no unordered replacement or new
+index changes first-error/policy ordering without a measured need.
+
+Rust strict schema validation still finishes for all revisions before replay
+observes any request. Its loaded policy sets are now reused in revision
+preparation. A sealed source/parse pair retains the full source body and revision;
+same-name/different-body rebinding refuses. Scope remains one invocation with
+one checked schema. Rendered-text reparsing and both authorizers remain independent
+conformance controls. The counter =source_policy_loads= counts JSON source loads,
+not rendered-text parses; it must equal actual prepared revision count. An
+independent pre-optimization schema workflow compares every complete result in
+all 23 schema-bearing catalog entries and exact refusal strings. Changed-source,
+strict-policy-before-request, changed-schema, expiry, revocation and consumption
+controls remain required in the existing shared lifecycle/Case gates.
+
+Runtime observations separately expose schema, revision and request preparation,
+authorization, diagnostic checking and receipt/hash work. The remaining replay
+cost is reported explicitly as unattributed; JSON transport/catalog conversion,
+schema-evolution and cross-artifact work are not relabeled as authorization.
+Ordinary replay does not read clocks. Allocation observations are opt-in on the
+bridge application and run in a separate process, never used to qualify normal
+latency or authorize a request. They count successful Rust allocator requests,
+requested bytes, and process-wide requested-live high-water marks; foreign
+allocations, allocator overhead and temporary realloc internals are outside
+those counters.
+
+The existing Python testing package owns only process/artifact collection via
+=cedar_poo_py_test.resources=. It invokes the native binary with the OS time
+utility, records its SHA-256, architecture, exit status and process peak RSS in
+bytes, and preserves child failure. RSS includes startup/shared mappings and is
+an observation, not a steady-state heap bound or cold-filesystem measurement.
+The unchanged 120-second outer timeout applies. Nine selected-family processes,
+the all-family process, root scaling, hot/churn execution, ordinary Rust release
+and allocation-instrumented Rust produce separate resource receipts. A
+resource-collector regression requires a failed child to remain failed.
+
+=just check= and CI use the existing native and catalog owners for this unit.
+The original 48 artifact byte hashes, all 51 entries, 1280 Cedar rows, both
+compiled/rendered authorization paths, current-head CI and all negative controls
+remain acceptance requirements. Neither favorable timings nor peak RSS alone
+admit provider I/O, cryptographic execution or a real Host deployment.
+
+* P0-P2 shared preparation closure
+
+See the [[file:native-preparation-acceptance.org][integrated acceptance report]]. All 51 catalog entries and nine
+object families retain the same semantic scope. The independent original-flow
+check now covers all 23 schema-bearing and 24 raw manifests. Object/report laws
+number thirteen after adding full-report equality for fused POO diagnostics.
+Rust reuses parsed Entities within one actual schema/invocation and immutable
+full snapshot; Case requests, contexts, receipt inputs and authorizations remain
+fresh. No library or Production import gains an Example/Test dependency.

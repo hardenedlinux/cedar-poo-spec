@@ -14,6 +14,10 @@ concurrency:
 permissions:
   contents: read
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   lean:
     runs-on: ubuntu-latest
@@ -25,21 +29,41 @@ jobs:
       - uses: leanprover/lean-action@50fcf42d2e460296f1a34b402e990d1b24f8b596 # v1
         with:
           auto-config: false
+          use-github-cache: false
           build: false
           test: false
           lint: false
       - uses: taiki-e/install-action@b6a061addd82b81aaeca51bdf2c53cd707996e5a # just
-      - name: Restore Lean and Lake cache
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-        with:
-          path: |
-            .lake/packages
-            .lake/build
-          key: lean-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain', 'lakefile.toml', 'lake-manifest.json') }}-${{ hashFiles('CedarPooSpec.lean', 'CedarPooSpec/**/*.lean', 'Examples/**/*.lean', 'Tests/**/*.lean', 'Benchmarks/**/*.lean') }}
-          restore-keys: |
-            lean-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain', 'lakefile.toml', 'lake-manifest.json') }}-
+      - name: Restore compatible Lean artifacts
+        uses: ./.github/actions/lean-cache
       - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
       - run: just check-lean
+      - run: |
+          mkdir -p .lake/build/resources
+          just bench-policy-reuse | tee .lake/build/resources/policy-reuse.log
+      - run: |
+          just bench-functional-reuse | tee .lake/build/resources/functional-reuse.log
+      - run: just bench-functional-native | tee .lake/build/resources/functional-native.log
+      - name: Check benchmark source tree is clean
+        run: |
+          git diff --exit-code
+          test -z "$(git ls-files --others --exclude-standard)"
+      - name: Record observation provenance
+        if: ${{ always() }}
+        run: |
+          mkdir -p .lake/build/resources
+          {
+            echo "commit=$GITHUB_SHA run=$GITHUB_RUN_ID attempt=$GITHUB_RUN_ATTEMPT job=$GITHUB_JOB"
+            sha256sum lean-toolchain lakefile.toml lake-manifest.json
+          } > .lake/build/resources/provenance.txt
+      - name: Upload native observations
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: native-evidence-${{ github.job }}
+          include-hidden-files: true
+          if-no-files-found: error
+          path: .lake/build/resources/
 
   rust:
     runs-on: ubuntu-latest
@@ -55,9 +79,7 @@ jobs:
       - name: Restore Cargo cache
         uses: Swatinem/rust-cache@49a0bdc70d2e1b713ca9e2869b211fcce03d3c1c # v2
         with:
-          shared-key: cedar-poo-workspace
-          add-job-id-key: "false"
-          workspaces: ". -> target"
+          workspaces: ". -> rust/target"
       - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
       - run: just check-lean-layers
       - run: just check-rust
@@ -73,6 +95,7 @@ jobs:
       - uses: leanprover/lean-action@50fcf42d2e460296f1a34b402e990d1b24f8b596 # v1
         with:
           auto-config: false
+          use-github-cache: false
           build: false
           test: false
           lint: false
@@ -81,26 +104,18 @@ jobs:
       - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
         with:
           version: "0.11.3"
-      - name: Restore Lean and Lake cache
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-        with:
-          path: |
-            .lake/packages
-            .lake/build
-          key: lean-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain', 'lakefile.toml', 'lake-manifest.json') }}-${{ hashFiles('CedarPooSpec.lean', 'CedarPooSpec/**/*.lean', 'Examples/**/*.lean', 'Tests/**/*.lean', 'Benchmarks/**/*.lean') }}
-          restore-keys: |
-            lean-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain', 'lakefile.toml', 'lake-manifest.json') }}-
+      - name: Restore compatible Lean artifacts
+        uses: ./.github/actions/lean-cache
       - name: Restore Cargo cache
         uses: Swatinem/rust-cache@49a0bdc70d2e1b713ca9e2869b211fcce03d3c1c # v2
         with:
-          shared-key: cedar-poo-workspace
-          add-job-id-key: "false"
-          workspaces: ". -> target"
+          workspaces: ". -> rust/target"
       - run: just check-cedar-artifacts
       - run: uv run --project python --package cedar-poo-py-test --locked python -m unittest discover -s python/tests
       - run: just check-replay-receipts
       - run: just check-schema-bound-receipts
       - run: just check-schema-bound-scenarios
+      - run: just bench-functional-allocation
       - run: just example aws financial-services lakehouse
       - run: just example aws financial-services multi-account-banking
       - run: just example aws financial-services claim-settlement
@@ -123,6 +138,36 @@ jobs:
       - run: just check-mission-comparison
       - run: just check-personnel-governance
       - run: just check-agentic-ai-commerce-admission
+      - run: just probe-native-launch "$RUNNER_TEMP/launch-probe"
+      - name: Observe real catalog startup and transport phases
+        run: |
+          just --no-deps bench-catalog-launch "$RUNNER_TEMP/catalog-launch"
+          just bench-catalog-inode "$RUNNER_TEMP/catalog-inode"
+      - name: Check benchmark source tree is clean
+        run: |
+          git diff --exit-code
+          test -z "$(git ls-files --others --exclude-standard)"
+      - name: Record observation provenance
+        if: ${{ always() }}
+        run: |
+          mkdir -p .lake/build/resources
+          {
+            echo "commit=$GITHUB_SHA run=$GITHUB_RUN_ID attempt=$GITHUB_RUN_ATTEMPT job=$GITHUB_JOB"
+            sha256sum lean-toolchain lakefile.toml lake-manifest.json
+          } > .lake/build/resources/provenance.txt
+      - name: Upload native observations
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: native-evidence-${{ github.job }}
+          include-hidden-files: true
+          if-no-files-found: error
+          path: |
+            .lake/build/resources/
+            .lake/build/*.json
+            ${{ runner.temp }}/launch-probe/
+            ${{ runner.temp }}/catalog-launch/
+            ${{ runner.temp }}/catalog-inode/
 
   authorization-delta:
     needs: [lean, rust]
@@ -135,6 +180,7 @@ jobs:
       - uses: leanprover/lean-action@50fcf42d2e460296f1a34b402e990d1b24f8b596 # v1
         with:
           auto-config: false
+          use-github-cache: false
           build: false
           test: false
           lint: false
@@ -143,21 +189,12 @@ jobs:
       - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
         with:
           version: "0.11.3"
-      - name: Restore Lean and Lake cache
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-        with:
-          path: |
-            .lake/packages
-            .lake/build
-          key: lean-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain', 'lakefile.toml', 'lake-manifest.json') }}-${{ hashFiles('CedarPooSpec.lean', 'CedarPooSpec/**/*.lean', 'Examples/**/*.lean') }}
-          restore-keys: |
-            lean-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain', 'lakefile.toml', 'lake-manifest.json') }}-
+      - name: Restore compatible Lean artifacts
+        uses: ./.github/actions/lean-cache
       - name: Restore Cargo cache
         uses: Swatinem/rust-cache@49a0bdc70d2e1b713ca9e2869b211fcce03d3c1c # v2
         with:
-          shared-key: cedar-poo-workspace
-          add-job-id-key: "false"
-          workspaces: ". -> target"
+          workspaces: ". -> rust/target"
       - name: Install pinned CVC5
         run: |
           curl --fail --location --retry 3 --silent --show-error \

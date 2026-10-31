@@ -1,0 +1,285 @@
+#+title: First-file launch attribution and the next integrated performance unit
+#+options: toc:2
+
+The [[file:native-revision-acceptance.org][shared revision/object implementation and acceptance]] records bounded preparation
+improvements. It does not close P0-P2: the POO evaluator itself requires the
+algorithm redesign below. The original launch audit remains a separate boundary.
+
+The [[file:native-dataflow-acceptance.org][complete nine-family migration and native lifecycle acceptance]] now records
+the executed algorithm migration, final source-owner refinement, full correctness
+gates and retained performance regressions. Its bounded observations supersede
+interpreting the earlier preparation improvements as complete performance closure.
+
+* Algorithm redesign: integrated execution order
+
+The legacy POO Memoized recursive local thunk table is compiled as a recursive
+function. Dependency self lookup can rebuild every field thunk. Precomputing
+methods or names does not provide sharing of field results. The root repair
+belongs to POO's object execution algorithm, before Cedar-specific tuning.
+
+** P0: POO source-bound field execution
+
+Use explicit dependent Computation programs for finite field dependencies. Compile
+actual C4-selected inherited fragments through GeneralizedFragments, then reuse
+GeneralizedGraph scheduling and the existing ConstructionCache materializer.
+Prepare resolver/read-set tables once. Materialized instance state and membership
+use dependent hash tables/sets with exact source equations. Preserve defaults,
+delayed super, missing-field semantics, strict duplicate refusal and disjoint
+family declaration ownership. ObjectContract must admit the actual typed instance.
+Schedule reuse checks complete dependency equality; instance values remain fresh.
+
+The POO implementation is published in existing PR #13 at
+=c03da1ab399ac8ea57fdefd4b460e725541d88e6=, with actual closed-state/read/inventory
+proofs and 13 native semantic controls. Its integrated 355-file local gate passed.
+The exact pinned POO Lean CI run41054581098 passed all 17 jobs.
+Cedar now consumes this revision and its full local gate passes; see the final
+acceptance report for exact source identities, observations and remaining costs.
+Pin the reviewed public POO commit with the complete downstream migration.
+Arbitrary opaque recursion and conservative conditional cycles remain outside
+this finite static-DAG path. No unsafe heap knot or unproved self equation is used.
+
+** P1: one complete Cedar migration
+
+Migrate Policy, banking tools, controller release, pipeline source, lakehouse
+location, protection, disclosure, admission handoff and lineage together. Replace
+opaque self callbacks with typed dependencies, preserving each captured template
+and actual final-self access. Migrate complex independent-family/default/super
+Cases and forged/missing/duplicate controls in the same change. Preserve the
+existing shared Functional Contract, exact projections, admission sessions and
+proofs. Do not leave a domain on a detached compatibility evaluator or substitute
+a simpler workload for fresh structural revisions.
+
+** P2: unchanged full acceptance and process evidence
+
+Require all 51 catalog entries, nine families and 81 original workload observations,
+all relevant type/Contract/proof/negative checks and full Rust replay. Compare
+actual baseline/candidate receipt bytes and retain refusal order, scope retirement,
+resource bounds and previous regressions. Measure ordinary native executables in
+alternating complete process cohorts, with CPU, RSS, allocations, preparation and
+execution separated. Record first-file launch separately; an algorithm microstudy
+cannot establish macOS launch improvement or application latency. Preserve all
+observations and disclose concurrent-build contamination rather than dropping it.
+Verify current-head Linux CI and cache identities before downstream closure.
+PR #8 remains unmerged with auto-merge disabled.
+
+* Decision and scope
+
+The 2026-10-30 audit separates macOS first-file execution assessment from Cedar
+work. The extra delay is predominantly before Rust main, on the observed
+syspolicyd/Gatekeeper/XProtect scan-and-wait path. Repeated application work has
+its own remaining bottlenecks: revision normalization, request/schema preparation
+and allocation traffic. They require shared-owner changes across all applicable
+Examples and Production cases, rather than another migration of one industry.
+PR #8 stays open, with auto-merge disabled.
+
+The baseline is commit 8df74a8323111473a7543d0a9099c00440eb887c. Its ordinary
+release executable SHA-256 is
+=289dd3972971608d6a1f1f8e61527e9195e3c0959c41f2ed249ed57452927142=.
+The [[file:native-preparation-acceptance.org][previous implementation acceptance]] remains the correctness/performance
+baseline. This audit adds diagnostics and a next plan; it does not claim another
+application-runtime speedup.
+
+* First-file root cause: matched executable, scan, wait and main
+
+** Reproduction and boundary
+
+Host: macOS 26.6.1 (25G76), arm64. The 9.5 MiB binary has an ad hoc linker
+signature; no quarantine attribute was present. The diagnostic copy passed
+=codesign --verify --strict=. Provenance attributes were present before and after
+execution. No system security setting, signature or attribute was changed to
+obtain a faster result. This is not evidence that provenance removal is a fix.
+
+Two fresh copies of the ordinary binary each received the same rejected empty
+manifest, then two repeat invocations. Each child exited 1 as expected. This
+small input isolates launch overhead; these are NOT successful Cedar replay or
+Production-admission receipts.
+
+| Ordinary cohort | First process ms | Repeat 1 ms | Repeat 2 ms | First PID | syspolicyd path hash |
+|-----------------+------------------+-------------+-------------+-----------+---------------------|
+| 1               |          374.323 |       8.495 |       8.881 |     59344 | 5b72875731d12fd8    |
+| 2               |          365.194 |       8.407 |       6.258 |     59383 | 29d2bdfa83223a2c    |
+
+The selected system events below identify the same executable file URI and
+path hash, rather than aggregate system activity. Timestamps are local +08:00
+on 2026-10-30. Unrelated system log contents are deliberately not published.
+
+| Cohort | Queue for scan    | Gatekeeper performScan | XProtect result   | Scan finished, wake waiters |
+|--------+-------------------+------------------------+-------------------+----------------------------|
+| 1      | 13:15:36.291177   | 13:15:36.291666        | 13:15:36.657614   | 13:15:36.657892            |
+| 2      | 13:15:36.695121   | 13:15:36.695624        | 13:15:37.043735   | 13:15:37.052513            |
+
+The matching executable suffixes were
+=cedar-ordinary-1-1793337336282123000= and
+=cedar-ordinary-2-1793337336689239000=. Both had the ordinary SHA above;
+system code identity was =cedar_poo_bridge-b385e082a45f0cbd=, CDHash
+=3ebb58ededd63ae0d61692fd6b37f7c61ea145db=.
+
+An instrumented example places a timestamp at the first main statement and a
+second at CLI return. Its separate SHA is
+=d4b618f77da30361f87acf2ca18d0f593cf809f60dd9ab67eaccadd49923fb4b=;
+example/dev feature unification means its latency must not be substituted for
+ordinary-binary latency. Three independently matched first-file observations:
+
+| PID   | Path hash        | Before main ms | CLI main span ms | Matched scan/wake interval |
+|-------+------------------+----------------+------------------+----------------------------|
+| 20372 | a9db7e67f16eee91 |        541.011 |            0.377 | 13:11:50.328240–50.850235   |
+| 23810 | 361293d762afc2d3 |        390.162 |            0.291 | 13:12:34.729729–35.104496   |
+| 23993 | c5b997341a121cf1 |        368.222 |            0.321 | 13:12:35.256805–35.608606   |
+
+For PID 20372, scan wait spans about 522 ms of the 541 ms before main; the
+process enters main only after the matching scan completes and waiters wake.
+The repeat invocations of the latter two files enter main in 5–18 ms; their
+PID-specific provenance events say the process was already in the sandbox.
+This local attribution also survives the ordinary-binary control above.
+Parent Popen returned in approximately 1–7 ms, so timing Popen alone misses it.
+Queue logging and parent timestamps are different observations; queue initiation
+can precede the parent's recorded spawn. These are not exact per-stage CPU costs.
+
+The checked-in =just probe-native-launch= reproduces two fresh files × three
+invocations, records executable identity, parent monotonic time, main timestamps,
+clock disagreement and natural child exit. A further local six-run check measured
+first-main 521.968/350.718 ms versus repeats 3.134–5.282 ms. The helper drains
+stderr with communicate rather than mixing buffered readline with communicate.
+An invalid wall-clock ordering is labeled invalid, not repaired by a tolerance.
+CI checks the protocol on Ubuntu; it does not require the macOS latency pattern.
+For local attribution, retain the child PID, executable SHA/path and a bounded
+start/end window; query =/usr/bin/log show --style json= within that window for
+syspolicyd and XProtectService. Match the path hash and explicit executable URI
+through queue, scan and wake events, then compare main timestamps. Default
+privacy redaction stays enabled; unmatched events are not attribution evidence.
+The ordinary executable and all ordinary replay gates are untouched.
+
+** What is and is not established
+
+[[https://developer.apple.com/forums/thread/706379][Apple DTS Gatekeeper troubleshooting]] documents signature and system-log identity
+checks. Here the specific attribution comes from the matched local scan/wake/main
+observations, not from generic Gatekeeper documentation. They establish a
+host execution-assessment wait before application work. They do not isolate
+XProtect CPU from its surrounding assessment chain, prove an external network
+fetch, or establish universal macOS/Ubuntu startup latency. Other system network
+or ticket logs cannot be assigned to this binary without matching evidence.
+Disabling Gatekeeper/XProtect is not a proposed performance optimization.
+
+* Remaining application costs: one baseline, overlapping views
+
+Nine ordinary samples from three same-host complete benchmark processes at the
+baseline SHA give a median replay of 389.717 ms. The phase view is:
+
+| Runtime phase                   | Median ms | Share of median replay |
+|---------------------------------+-----------+------------------------|
+| Revision preparation            |   143.997 |                  36.9% |
+| Request preparation             |    56.420 |                  14.5% |
+| Schema preparation              |    39.004 |                  10.0% |
+| Authorization                   |    15.868 |                   4.1% |
+| Receipt construction            |     8.474 |                   2.2% |
+| Diagnostics                     |     1.134 |                   0.3% |
+| Entity preparation (IN request) |     8.159 |                   2.1% |
+
+Component medians need not add to the replay median. Approximately 125.3 ms is
+outside the six non-nested runtime phase medians. A separate, overlapping catalog
+view measures decode 41.171 ms, entries 329.593 ms, finalization 16.403 ms and
+cleanup 2.482 ms. Do not add these to the runtime phases or call the whole
+unattributed remainder JSON cost. The [[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-entry-timings.csv][all-51-entry timing inventory]] retains every
+entry, row count and median; different workloads make its rank unsuitable as a
+reason to optimize only the highest-ranked industry.
+
+Allocation instrumentation reports about 4.70 million requests / 984.6 MB
+cumulative traffic for one replay; requested-live peak is about 102 MB and process
+peak RSS about 123–128 MB for a roughly 5.7 MB catalog. Traffic, live requested
+bytes and OS RSS are separate measures, not interchangeable resource bounds.
+
+A one-second, 1 ms warm CPU sample of the ordinary executable shows allocation,
+free, memmove and Cedar Expr cloning among the active stacks. In particular:
+=canonical_policy_body -> Policy::to_json -> text_to_cst= and
+=canonical_policy_body -> Policy::to_cedar -> TemplateBody Display -> Expr::clone=.
+This is qualitative owner attribution, not a stable CPU percentage. The pinned
+[[https://docs.rs/cedar-policy/4.12.0/src/cedar_policy/api.rs.html][Cedar 4.12 public API/source]] corroborates the text/EST conversion path. Source
+inspection finds normalization on both compiled and independently parsed rendered
+policies for every revision. The text parse and both authorization paths remain
+required controls even if internal conversion allocations can be removed.
+
+* Next integrated delivery: P0 through P2
+
+** P0: fixed evidence and subphase ownership
+
+Keep one baseline/artifact identity and all current workloads. Add bounded
+revision subphase accounting for source loading, initial rendering, independent
+text parse, compiled/rendered body normalization and hashing. Account for catalog
+normalization/DTO conversion/retention separately, with units and nested-phase
+boundaries. Reproduce the CPU/allocation observation against those subphases
+before choosing an API replacement. Do not add a threshold based on this one
+sampling window. The build-cache audit found a separate ownership mismatch: the action names
+=target= while Just exports =rust/target=. Completed baseline CI run 41003179614
+logs explicitly list the repository-root =target= as the cached workspace path
+in all three Rust-consuming jobs, each with a full cache hit (~23 MB). A cache
+hit therefore does not establish reuse of Just's compiled artifacts. Align that
+path in the next build-lifecycle change and verify actual restored artifacts and
+rebuild work; the current audit does not quantify a build-time speedup or assign
+this mismatch to application-runtime/first-file latency.
+
+Deliverables: an all-domain phase/resource table, exact inputs and artifact SHA,
+first-file versus repeat receipts, and an explicit map of which public SDK
+conversions allocate/reparse. P0 is complete only when the phase classification
+and process accounting are reproducible, not when a hot microbenchmark is faster.
+
+** P1: shared runtime and typed-object changes
+
+1. Revision owner: remove demonstrably redundant serialization/reparse/cloning
+   through supported pinned SDK interfaces. Preserve independent rendered text
+   parsing, compiled/rendered policy-body equality, policy ID checks, schema
+   validation, both authorizers, reason/error parity and original error order.
+   Add metamorphic controls for formatting, annotations, templates/IDs, duplicate
+   and malformed input before accepting a different canonical representation.
+   Cache only immutable revision-owned data at its original lazy admission point.
+2. Request/catalog owner: assess immutable loaded-policy-ID preparation once per
+   checked revision, root Value retention and DTO conversion/borrowing. Keep
+   complete global JSON syntax/numeric validation, duplicate-last-wins behavior,
+   sorted catalog order and first-error precedence. Direct Manifest decoding
+   already failed duplicate-field parity; do not quietly restore that rejected
+   path. Retain fresh context/action/UID/request preparation and the one-slot,
+   invocation/schema-bound successful Entities cache. Larger entity caches and
+   decision/context caches are not justified by the remaining 2.1% entity cost.
+3. Lean Functional owner: reduce constructor/inherited-read/plan allocation across
+   all nine families, all accepted/refused/missing modes and inherited scopes.
+   Existing public cachedRead/LazyInstance/SlotLayout soundness is useful; the
+   pinned CompiledPlan.resolve_sound for open methods does not by itself prove
+   whole Memoized self-knot equivalence. Establish factory/alias/scope and closed
+   self equivalence before replacing that representation. Keep dependent field
+   types, Contract admission and complete report/refusal-order proofs. No parallel
+   object engine, global interning or per-industry wrapper is needed.
+
+These are shared owners. Run all 51 consumers after each candidate, and publish
+one converged result; payment/health/finance/agents/custody and the other domains
+are never separate completion criteria. Hashing (8.5 ms), diagnostics (1.1 ms)
+and authorization (15.9 ms) are not the first optimization targets.
+
+** P2: process, artifact lifecycle and whole-unit acceptance
+
+Use a stable immutable executable during repeated runs; avoid materializing a
+fresh executable per business request. Continue measuring first materialization
+separately so reuse does not hide startup cost. A long-lived host is a distinct
+lifecycle experiment requiring explicit retention/retirement evidence, not an
+assumed production deployment. Compiler/LTO experiments follow owner changes;
+measure build time, binary size, first-file and repeat execution, CPU and RSS in
+separate artifact cohorts, using the workspace profile owner. Keep default Cargo
+jobs, dependency pins, timeouts, heap/heartbeat budgets and negative controls.
+Distribution signing may be assessed for an actual distribution need, but is not
+required to make this simulation pass and does not replace the measured diagnosis.
+
+Final acceptance is one unit: 48 frozen manifest byte identities, 51 entries,
+1280 rows and 2560 compiled/rendered authorizations per complete sample; independent
+original workflows for 23 schema + 24 raw manifests; 14 handoffs with only ready
+cases admitted; four Production fixtures; nine families × three modes × three
+samples × 128 objects (81 observations), existing root/hot/churn controls; all
+13 shared laws and existing type/Contract/axiom/negative proofs. Preserve exact
+error/refusal/receipt parity and scope retirement. Current Rust gates exercise
+109 tests plus the two artifact-dependent tests; Python now has 14 process and
+source-boundary tests. The six launch observations are expected exit-1 diagnostics,
+not additions to the 18 successful resource receipts or 15 complete Rust samples.
+
+Publish paired same-host full-process and phase comparisons, allocated/live/RSS
+metrics, regressions and variation, along with exact-head four-job CI. A faster
+phase without complete-process benefit remains an incomplete performance result.
+Cross-host CI confirms execution and controls, not a cross-host speed ratio.
+Keep PR #8 unmerged until the user changes that instruction. No real external
+Host authorization or production deployment is required for these simulations.

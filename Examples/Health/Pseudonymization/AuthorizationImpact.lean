@@ -1,4 +1,4 @@
-import CedarPooSpec.AuthorizationDeltaJson
+import CedarPooSpec.Authorization.Delta.Json
 import Examples.Health.Pseudonymization
 
 /-!
@@ -8,7 +8,7 @@ provider participates in policy composition or Cedar's symbolic query.
 
 namespace CedarPooSpec.PseudonymizationExample.AuthorizationImpact
 
-open CedarPooSpec.AuthorizationDelta
+open CedarPooSpec.Authorization.Delta
 open CedarPooSpec.PseudonymizationExample
 open Cedar.Spec Cedar.Data
 
@@ -48,10 +48,10 @@ def run : IO Lean.Json := do
       | throw (IO.userError s!"could not compare {kind} snapshots")
     if !impact.lost || impact.gained then
       throw (IO.userError s!"{kind} change did not revoke the selected join")
-    let .ok report := CedarPooSpec.AuthorizationDeltaJson.snapshotReport
+    let .ok report := CedarPooSpec.Authorization.Delta.Json.snapshotReport
       impact linkedBefore after
       | throw (IO.userError s!"could not render {kind} snapshots")
-    let .ok manifest := CedarPooSpec.AuthorizationDeltaJson.snapshotCases
+    let .ok manifest := CedarPooSpec.Authorization.Delta.Json.snapshotCases
       kind model hospitalView.name hospitalView.name linkedBefore after
       | throw (IO.userError s!"could not render {kind} replay cases")
     pure <| Lean.Json.mkObj [
@@ -66,20 +66,20 @@ def run : IO Lean.Json := do
     | .error error => throw (IO.userError s!"recovery analysis: {reprStr error}")
   if restored.noGain || !restored.noLoss then
     throw (IO.userError "recovery must restore access without revoking access")
-  let .ok suspendedJson := CedarPooSpec.AuthorizationDeltaJson.impactReport suspended
+  let .ok suspendedJson := CedarPooSpec.Authorization.Delta.Json.impactReport suspended
     | throw (IO.userError "could not render incident impact")
-  let .ok restoredJson := CedarPooSpec.AuthorizationDeltaJson.impactReport restored
+  let .ok restoredJson := CedarPooSpec.Authorization.Delta.Json.impactReport restored
     | throw (IO.userError "could not render recovery impact")
-  let .ok suspendedManifest := CedarPooSpec.AuthorizationDeltaJson.impactWitnessCases
+  let .ok suspendedManifest := CedarPooSpec.Authorization.Delta.Json.impactWitnessCases
     suspended model hospitalView.name incident.name
     | throw (IO.userError "could not render incident witnesses")
-  let .ok restoredManifest := CedarPooSpec.AuthorizationDeltaJson.impactWitnessCases
+  let .ok restoredManifest := CedarPooSpec.Authorization.Delta.Json.impactWitnessCases
     restored model incident.name recovered.name
     | throw (IO.userError "could not render recovery witnesses")
-  let .ok approvalJson := CedarPooSpec.AuthorizationDeltaJson.snapshotReport
+  let .ok approvalJson := CedarPooSpec.Authorization.Delta.Json.snapshotReport
     approvalImpact beforeSnapshot afterSnapshot
     | throw (IO.userError "could not render approval snapshots")
-  let .ok approvalManifest := CedarPooSpec.AuthorizationDeltaJson.snapshotCases
+  let .ok approvalManifest := CedarPooSpec.Authorization.Delta.Json.snapshotCases
     "approval" model hospitalView.name hospitalView.name beforeSnapshot afterSnapshot
     | throw (IO.userError "could not render approval replay cases")
   return Lean.Json.mkObj [

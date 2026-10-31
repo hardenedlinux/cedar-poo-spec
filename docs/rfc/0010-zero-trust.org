@@ -1,0 +1,296 @@
+#+TITLE: RFC 0010: Research-Aligned Zero Trust Effect Boundary
+#+LANGUAGE: en
+#+OPTIONS: toc:2
+
+* Status and decision
+
+The Lean API is a candidate reusable functional framework in SPEC, not a certification of a
+deployed Gateway. Applications enrich it with concrete identity, persistence,
+budget/history and effect-boundary implementations. Review the research basis
+before treating an interface name or a passing example as a security claim.
+The engineering sequence follows [[file:0004-authorization-delta.org][Authorization Delta]]:
+research question, precise model, explicit premises, proof/counterexample,
+public API, then implementation refinement. Preserve the distinction between
+a theorem, a solver report, a finite test and an unimplemented Host obligation.
+
+* Primary sources and what is actually reused
+
+| Source | Inspected contribution | Use here | Evidence boundary |
+|--------+------------------------+----------+-------------------|
+| [[https://doi.org/10.6028/NIST.SP.800-207][NIST SP 800-207]], Sections 2.1 and 3 | Resource-oriented access, dynamic assessment, logical Policy engine / administrator / enforcement point | Architectural requirements and role vocabulary | Architecture guidance; not a Lean proof or an implementation specification |
+| [[https://csrc.nist.gov/pubs/sp/800/207/a/final][NIST SP 800-207A]] | Application/service identity in cloud-native access control | Workload identity is an input to admission, not ambient trust from a cluster/network | Does not specify our one-use ledger, anti-rollback floor or shared budget |
+| Park and Sandhu, [[https://doi.org/10.1145/984334.984339][The UCONABC Usage Control Model]] (2004), [[https://profsandhu.com/journals/tissec/p128-park.pdf][author copy]] | Authorizations, obligations and conditions; continuity and mutable attributes | Separate pre-admission, ongoing use and post-use evidence | Conceptual foundation, not a theorem imported into Lean |
+| Zhang, Parisi-Presicce, Sandhu and Park, [[https://doi.org/10.1145/1108906.1108908][Formal Model and Policy Specification of Usage Control]] (2005), [[https://profsandhu.com/journals/tissec/p351-zhang.pdf][published author copy]] | State sequences, usage actions and temporal policy rules | Review revocation and state changes over usage, rather than only one initial decision | Paper formalization; no machine-checked translation of its whole rule system is supplied here |
+| Cutler et al., [[https://arxiv.org/abs/2403.04651][Cedar language paper]]; [[https://github.com/cedar-policy/cedar-spec/tree/main/cedar-lean][official executable Lean specification]] | Defined authorization, validation and symbolic reasoning | Direct imports through existing SPEC Gateway and Delta APIs | Cedar does not authenticate Host facts or atomically perform external IO |
+| Disselkoen et al., [[https://arxiv.org/abs/2407.01688][How We Built Cedar: A Verification-Guided Approach]] | Executable models, proofs, differential testing and PBT | Separate model reasoning from implementation conformance | Passing examples do not establish full implementation refinement |
+| Collina et al., [[https://arxiv.org/abs/2609.15803][Delegating Authorization to Misaligned Agents]] | Sequential safety under its utility/MDP and reviewer-alignment assumptions | Retain RFC 0004's distinction between same-world Delta and trajectory safety | We do not implement its reviewer model or inherit its safety theorem |
+
+The official Cedar repository provides executable definitions and theorem
+artifacts. A GitHub repository mentioning Zero Trust is not equivalent evidence.
+The inspected [[https://github.com/sarmishra/ZT-MCP-Project][ZT-MCP repository]] is a
+domain-specific reference candidate; its README claim of a formal CapBAC model
+is not admitted as a checked dependency or a proof of this API. No repository
+above supplies a universal, drop-in Zero Trust theorem covering Gateway recovery.
+
+* Architecture completeness review
+
+The predicate conjunction is an effect-boundary kernel. It is insufficient as a
+complete Zero Trust architecture without identity, resource inventory, protected
+communications, dynamic Policy administration, posture monitoring, authenticated
+fact sources and feedback. A consumer cannot discharge these responsibilities
+by providing predicates that always return True.
+
+The seven-tenet alignment to NIST SP 800-207 is an architectural checklist:
+all services/data are resources; communications are protected independently of
+location; grants are scoped to sessions/resources; decisions use dynamic facts;
+resource posture is measured; authentication/authorization precede access and
+are reevaluated; security observations inform governed improvements. These
+tenets are not seven properties established by the current Lean code.
+
+| Logical role | Framework interpretation | Application evidence required |
+|--------------+--------------------------+-------------------------------|
+| Policy engine | Authorization decision over authenticated subject, resource, right and current context | Concrete Cedar projection and validated source facts |
+| Policy administrator | Establish/revoke the admitted path using the engine decision | Bound publication/activation, credential custody and revocation ordering |
+| Policy enforcement point | Admit, monitor and terminate effects at the real use boundary | Complete mediation, current-state join and exclusive execution capability |
+| Identity / posture / resource sources | Provenance-bound, versioned evidence interpreted by requirements | Attestation, expiry, trust-domain binding, redaction and source availability semantics |
+| Monitoring and audit | Observations and outcomes inform later governed decisions | Durable records, privacy and a controlled path back to Policy publication |
+
+Roles are independent of programming languages and may be colocated. Protected
+networking alone does not imply application authorization. Resource ownership,
+cluster membership and shared workload identity do not establish an actor's
+incarnation or delegation rights. The core remains independent of Gateway.
+
+Public reference interfaces clarify concrete missing obligations:
+[[https://github.com/spiffe/spiffe/blob/main/standards/SPIFFE_Workload_API.md][SPIFFE's Workload API]]
+requires caller identification and complete update/redaction handling; a
+reconnected stream does not preserve removed identity material. The
+[[https://github.com/spiffe/spire/blob/main/doc/plugin_agent_workloadattestor_k8s.md][SPIRE Kubernetes attestor]]
+documents that its selectors do not resist a compromised node. The
+[[https://github.com/openziti/ziti][OpenZiti architecture]] illustrates service-level
+connectivity authorization and encrypted networking. None is a checked dependency
+or a proof of application consumption, budgets or recovery. They motivate
+consumer identity/channel requirements; this library does not implement them.
+
+=ZeroTrust.UsageControl= now distinguishes initial/ongoing authorization,
+environmental conditions, obligation actions across actual before/after states,
+and allowed mutations. It retains =Framework.required= at every new effect.
+The application's existing transition relation is reused. =resume= means only
+that its recovery relation holds; it cannot authorize a new effect. =close=
+requires terminal and accounted evidence, and cannot release unknown exposure
+from a terminal label alone. Post-use accounting is an application extension;
+the library does not claim UCON's full temporal rule system, fairness or eventual
+obligation fulfillment. This addition uses no Gateway types or new scheduler.
+
+The application must materialize a current context containing authoritative
+subject/delegation, resource/right, Policy/profile, posture, budget/history and
+execution-owner evidence. Evidence needs producer authority, meaning/schema,
+source cut and validity. The deciding transition must order relevant changes
+against use. A lease only bounds staleness unless the source protocol provides
+stronger ordering; unavailable sources do not imply healthy/current.
+
+Authorization Delta review must identify the exact authoritative parent and
+candidate in that context. Existing LeanPoo EvidenceBinding preserves the
+original invocation rule while binding subject/descriptor/context references.
+Reference equality does not authenticate the producer or implement final CAS.
+The required parent must be selected independently of the child. In particular,
+the review API now prevents ordinary record construction/update that splices
+analysis and snapshot fields. This does not authenticate deserialized artifacts
+or prove solver results. =Gateway.PublicationReview= composes actual LeanPoo
+evidence-bound invocation with current ZeroTrust guards and the Host commit
+relation. The adapter's exact-result checks are distinct from native durability
+and atomic publication admission, which remain implementation obligations.
+The application adapter additionally distinguishes approved lookup from durable
+registration, recovered projection and current registrar incarnation. A stale
+worker cannot acquire a current final witness from a historical matching artifact.
+The native Host must join the independent registration commitment, actor and
+epoch with final publication under one authority decision; local readiness is
+not anti-rollback evidence. Model laws do not revoke a real transport credential.
+The adapter's single =RegistrarAuthority.admitted= meaning binds the complete
+credential and exact command possession. Its command-indexed hook retains
+ZeroTrust and original Contract requirements. Concurrent/fault models consume
+qualified references; they do not define another identity policy evaluator.
+Pending results and lost replies must reconcile the original intent, not replace
+the evidence, rebase the parent or clear unresolved consumption.
+
+* Modular frameworks and dependency direction
+
+=ZeroTrust.lean= and =Authorization.lean= are aggregate entrypoints, not monolithic
+implementations. Their directories own models and public composition functions.
+
+#+begin_example
+CedarPooSpec/
+  ZeroTrust.lean
+  ZeroTrust/
+    Model.lean          -- typed predicates, Framework, Observation
+    Composition.lean    -- adapt, strengthen, refinement
+    Continuous.lean     -- freshness, revocation, mediated trace projection
+    UsageControl.lean   -- phases, conditions, witnessed obligations and mutation
+    ProfileObject.lean  -- generic LeanPoo objects and strengthening Sessions
+  Authorization.lean
+  Authorization/
+    Compound.lean
+    Delta.lean
+    Delta/
+      Model.lean
+      Proof.lean
+      Operational.lean
+      OperationalExact.lean
+      OperationalExactProof.lean
+      BooleanCore.lean
+      Reasons.lean
+      EffectiveReasons.lean
+      EffectiveReasonsProof.lean
+      Compound.lean
+      Evidence.lean
+      Interaction.lean
+      Release.lean
+      Trace.lean
+      Json.lean
+  Gateway/
+    ZeroTrust.lean       -- application specialization; imports both frameworks
+#+end_example
+
+The core imports no Gateway types. =Tests.ZeroTrust.ImportBoundary= checks the
+actual transitive import header, including the optional POO interpretation.
+Authorization owns Cedar policy combination and Delta reasoning. Zero Trust owns
+generic execution requirements. Gateway combines them through actual LeanPoo
+publication/Contract/Session and its scenario-specific consumption ledger.
+No compatibility modules remain at the old AuthorizationDelta source paths.
+
+* Functional model and POO interpretation
+
+=Requirement Effect View= is a typed predicate function. =Framework.required=
+conjoins authenticated identity, authorization, current-at-use observation,
+committed consumption, unknown-exposure retention, non-revocation and mediation.
+=adapt= projects application effect/view types; =strengthen= and
+=Framework.withRequirement= preserve original requirements by implication.
+These are pure framework functions, not a new Policy language or Cedar evaluator.
+
+=ZeroTrust.ProfileObject= reuses =LeanPoo.Object.Dataflow.define/extendWith=,
+inherited field extension, =Functional.ObjectProfile= Contract and the actual
+factory-indexed Session. A selected profile carries a typed proof that its
+requirement refines the original function. Adding a child requirement preserves
+that original requirement. The original is a type index, not an overridable
+field; choosing which original is authoritative remains a Host obligation.
+Objects and inheritance interpret the generic functions. They do not put a
+Gateway operation, provider, protocol or account into the core.
+
+The root index alone does not retain every extra parent condition under raw
+overrides. The executable POO counterexample admits a root-only override of a
+stronger parent. =composeSessions= therefore retains the independently required
+parent and selected Sessions; =Composed.requirement= conjoins their actual reads.
+Gateway's =fromFrameworkObject= requires both. Its proof preserves parent
+requirements and the original Gateway Contract. The publisher must still bind
+the required parent's full source/Contract independently of the child request.
+
+* Continuity, mutable attributes and revocation
+
+The selected fragment formalizes checks at each new effect boundary.
+=Observation= binds attributes and an authoritative generation.
+=atObservation= adds equality against the actual observation at use. Restoring
+equal attribute values in a later generation does not revive an old observation.
+No generation non-reuse or independent persistence implementation is inferred:
+the application must establish the reader's authority and monotonic recovery.
+
+=MediatedStep framework step before effect after= wraps the application's
+existing transition relation. Every =some effect= transition must satisfy the
+framework against its actual pre-state. A =none= transition can represent fact
+changes, recovery, observation or previously admitted buffer drain. =Run= composes
+arbitrary finite checked histories; =run_preserves= projects any invariant whose
+step-preservation law the application has already proved. It is not a second
+runtime state machine or a proof that every native IO is correctly labelled.
+
+The checked laws include =effect_step_rechecks=, =revoked_state_cannot_emit=,
+=changed_generation_blocks= and strengthening/refinement composition.
+These express a finite safety fragment motivated by UCON continuity/mutability;
+they do not translate its entire temporal rule system, establish fairness or
+guarantee eventual post-use updates. Revocation blocks new admissions after its
+authoritative ordering point. It cannot recall already admitted bytes.
+
+* Gateway consumption of the frameworks
+
+=CedarPooSpec.Gateway.ZeroTrust= owns the former application-specific Host,
+publication-indexed Proposal and FinalUse. Its =framework= and =specialize=
+functions interpret the generic requirements through existing POO publication,
+Cedar admission and consumption laws. =final_use_satisfies_framework= and
+=specialization_preserves_core_and_original= retain both the generic conditions
+and the actual original profile Contract. These immutable proofs are duplicable;
+they are not affine send capabilities.
+
+The initial =FinalUse= binds one captured admission pre-state. It is not a
+per-row root-consumption API. =continuing= instead keeps the original scope and
+consumption while requiring a fresh assessment at the current state.
+=CommittedPrefix= explicitly requires the current authoritative operation
+history to contain the installed consumption plus later history.
+=committed_prefix_rejects_reconsumption= rejects a renewed authority against
+that actual recovered ledger. A Host Boolean called committed alone is
+insufficient. The adapter does not prove that its assessment corresponds to
+real immutable Cedar facts or that its prefix witness is recoverable from disk.
+
+Authorization Delta still compares policy roots in the same validated world,
+under existing exact-query/schema/UNSAT premises. It does not prove safety across
+changing entities, agent choices, budgets or histories. Combining it with Zero
+Trust does not remove those premises or turn a solver report into a Lean proof.
+
+* Rust final-boundary correspondence and missing evidence
+
+| Obligation | Concrete Weaver correspondence | Evidence / gap |
+|------------+--------------------------------+----------------|
+| Persistent parent consumption before request | Durable dispatch burn, followed by a separate fresh guarded transaction around the transport callback | Existing actual retry/crash tests; no checked isomorphism to the SPEC pure ledgers |
+| Persist unknown exposure before response release | =prepare_provider_release= commits unknown range/frontier before returning its one-use handle | Real pending-range recovery tests; ordinary restart is not snapshot anti-rollback |
+| Current-at-use + final mediation | =release_provider= checks current Policy/profile/owner and every row under the transaction enclosing queue insertion | Real capacity-wait revocation tests; full trusted-view/IO trace refinement remains unproved |
+| Release completion after enqueue | Local released marker commits after the callback; queue insertion can precede commit failure | Unknown range/hold must remain; final release completion is not the consumption prerequisite |
+| Mutable attributes and revoked state | Fresh authoritative generation and actual assessments, not a cached informer/Allow | Local Policy/profile checks exist; general external fact/history/budget projection remains open |
+| Recovery prefix | Current operation history extends committed original consumption | SPEC proves the conditional law; independent rollback-resistant native recovery evidence remains open |
+| Reviewed Policy publication | Current Rust publication validates Policy/schema and CAS/fence | It does not yet require bound Delta/replay evidence; the authorized-widening native counterexample remains an unimplemented target |
+
+The final-callback component test independently observes the already durable
+canonical claim, original reservation, consumed provider state, dispatch burn
+and unknown range. An immediate second SQLite writer is blocked during that
+callback. Injected callback failure leaves the unknown frontier and hold through
+restart. This checks the local order, not the complete Host/IO refinement.
+
+The isolated CVC5 qualification uses the [[https://github.com/cvc5/cvc5/releases/tag/cvc5-1.4.2][official arm64 static 1.4.2 archive]],
+SHA-256 =24397f7d022e755876ca836193d4c5f9c1d4326f0f6c01f7d7fc1ddd6bc5096c=.
+Four existing recipes completed solver analysis, assertions and Rust Cedar replay:
+authorization-delta (four cases), authorization-delta-operational (four),
+payment-delta (two) and payment-interaction (four). Fourteen replay cases are
+finite observations; overlapping requests are not independent universal proofs.
+These solver reports are not Lean UNSAT certificates or runtime publication
+admission. Repository pins and historical raw evidence remain unchanged.
+
+The separate existing payment schema-bound producer/consumer gate also passed
+for thirty-two validated receipts and its manifest-relative assertions. This
+does not make the fourteen ordinary Delta replay cases schema-bound or enforce
+review evidence at Weaver's native publication endpoint.
+
+The Host must also establish authoritative identity/original selection, actual
+credential ownership, capability non-copyability, final ordering against all
+writers and exclusion of alternate SDK send/retry paths. No proof of physical
+isolation, cryptography, compiler/OS correctness or deployed NIST compliance is
+claimed. Queue insertion is the local response release boundary, not peer receipt.
+
+* Tests and acceptance
+
+The [[file:../../Tests/ZeroTrust/UsageControl.lean][UsageControl fixture]] adds a
+non-Gateway usage example: an authenticated Allow can still fail posture or
+obligation checks; mutable updates cannot reset consumed state; recovery does
+not refresh authorization; terminal alone cannot close unknown accounting.
+These checked safety examples are not implementation or liveness evidence.
+
+The generic artifact fixture imports no Gateway and checks initial use,
+revocation despite currentness, attribute ABA, fresh observation without
+reconsumption, missing commit/hold and an unchecked-effect counterexample.
+The generic POO fixture constructs a real inherited object, opens its Session,
+reads its selected profile and proves original refinement; a weaker requirement
+has an explicit counterexample.
+
+Gateway tests retain real Cedar/POO publication and raw-Receipt refusal, renewed
+authority refusal, unknown commit/hold cases and a rolled-back empty history
+that cannot provide CommittedPrefix. Inspect printed axioms: no new axioms or
+sorry are introduced; inherited Cedar native-decision assumptions remain visible.
+
+Applications on an older fixed pin must validate the new API separately in
+isolation. Import and namespace migration is direct; no dependency pin change
+or native Gateway implementation is included in this review. Model proofs,
+finite integration tests and remote CI are separate receipts.

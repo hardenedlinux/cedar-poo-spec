@@ -1,7 +1,6 @@
-import CedarPooSpec.PolicyJson
 import CedarPooSpec.Governance.SeparationOfDuties
-import CedarPooSpec.CompoundAuthorization
-import CedarPooSpec.Vertical.FinancialServices.ControllerRelease
+import CedarPooSpec.Functional.Capabilities
+import CedarPooSpec.Vertical.FinancialServices.ControllerReleaseProfile
 
 /-!
 Two authorization queries form one payment release. The controls illustrate
@@ -108,10 +107,31 @@ def policy (id : String) (effect : Effect) (action : EntityUID)
 def preparePermit : Policy :=
   policy "prepare-matched-payment" .permit prepare (.mem clerk)
     (.and selfRelease (.and matched positive))
-def controllerRelease : ControllerRelease :=
+def controllerTemplate : ControllerRelease :=
   { policyId := "controller-release", action := release,
     controllerGroup := controller, seniorGroup := senior,
     resourceScope := .resourceScope (.mem operations), threshold := "500.0000" }
+def controllerProfile : ControllerReleaseProfile.Object :=
+  (ControllerReleaseProfile.define "ControllerRelease" controllerTemplate).toOption.get
+    (by native_decide)
+
+/-- One admission for all projections of this exact immutable profile. -/
+def controllerProfileAccess : CedarPooSpec.Functional.ObjectProfile.Session ControllerReleaseProfile.contract (CedarPooSpec.Functional.ObjectProfile.factory ControllerReleaseProfile.contract) controllerProfile :=
+  (CedarPooSpec.Functional.ObjectProfile.Session.open ControllerReleaseProfile.contract
+    (CedarPooSpec.Functional.ObjectProfile.factory ControllerReleaseProfile.contract) controllerProfile).toOption.get (by native_decide)
+
+def controllerRelease : ControllerRelease :=
+  (controllerProfileAccess.read .control).get (by native_decide)
+
+def controllerPolicy : Policy :=
+  (controllerProfileAccess.read .policy).get (by native_decide)
+
+def restrictedControllerProfile : ControllerReleaseProfile.Object :=
+  (ControllerReleaseProfile.withThreshold controllerProfile "RestrictedControllerRelease"
+    "200.0000").toOption.get (by native_decide)
+
+def restrictedControllerPolicy : Policy :=
+  (ControllerReleaseProfile.policy? restrictedControllerProfile).get (by native_decide)
 def legacyBypass : Policy :=
   policy "legacy-matched-release" .permit release .any matched
 
@@ -129,28 +149,34 @@ def modelResult : Except LeanPoo.C4.Error Model := do
   let base : Model := { modules := [
     { name := "Base", edits := [.extend preparePermit, controllerRelease.introduce,
         .extend legacyBypass] }] }
-  let threshold ← base.extend "Threshold" "Base" [controllerRelease.strengthen]
+  let threshold ← base.extend "Threshold" "Base" [.overlay controllerPolicy]
   let duties ← threshold.extend "Duties" "Base" [dutiesControl.edit .introduce]
   let risk ← duties.extend "Risk" "Base" [.extend riskVeto]
   let retired ← risk.extend "Retired" "Base" [.remove legacyBypass.id]
-  retired.mix "Integrated" ["Threshold", "Duties", "Risk", "Retired"]
+  let integrated ← retired.mix "Integrated" ["Threshold", "Duties", "Risk", "Retired"]
+  integrated.extend "Restricted" "Integrated" [.overlay restrictedControllerPolicy]
 
 def model : Model := modelResult.toOption.get (by native_decide)
+
+def roots : List String :=
+  ["Base", "Threshold", "Duties", "Risk", "Retired", "Integrated", "Restricted"]
+
+def program : CedarPooSpec.Functional.Program model schema :=
+  (CedarPooSpec.Functional.prepareProgram CedarPooSpec.Functional.standard model schema roots).toOption.get
+      (by native_decide)
 
 def request (principal action resource : EntityUID) : Request :=
   ⟨principal, action, resource, Map.empty⟩
 
 def authorized (root : String) (principal action resource : EntityUID) : Bool :=
-  match model.compile root with
+  match program.authorize root [request principal action resource] entities with
   | .error _ => false
-  | .ok policies =>
-      let response := isAuthorized (request principal action resource) entities policies
-      response.decision == .allow && response.erroringPolicies.isEmpty
+  | .ok receipt => receipt.allowed
 
 /-- The application must require both permissions on the same payment snapshot. -/
 def releaseOperation (root : String) (preparer releaser resource : EntityUID) : Bool :=
   let requests := [request preparer prepare resource, request releaser release resource]
-  match CedarPooSpec.CompoundAuthorization.authorizeAll model root requests entities with
+  match program.authorize root requests entities with
   | .error _ => false
   | .ok receipt => receipt.allowed
 
@@ -182,15 +208,14 @@ def operationsExact : Bool := operationCases.all fun (_, root, preparer, release
 theorem operationsExactFully : operationsExact = true := by native_decide
 
 theorem emptyCompoundRejected :
-    (match CedarPooSpec.CompoundAuthorization.authorizeAll model "Integrated" [] entities with
+    (match program.authorize "Integrated" [] entities with
      | .ok receipt => receipt.allowed
      | .error _ => false) = false := by native_decide
 
 def branchCasesExact : Bool := branchCases.all fun (_, root, principal, action, resource, expected) =>
-  match model.compile root with
+  match CedarPooSpec.PaymentReleaseExample.program.response root (request principal action resource) entities with
   | .error _ => false
-  | .ok policies =>
-      let response := isAuthorized (request principal action resource) entities policies
+  | .ok response =>
       response.decision == expected && response.erroringPolicies.isEmpty
 
 theorem branchCasesExactFully : branchCasesExact = true := by native_decide
@@ -222,12 +247,11 @@ def integratedPolicyIdsExact : Bool :=
 theorem legacyRetired : integratedPolicyIdsExact = true := by native_decide
 
 theorem validatedIntegrated :
-    (CedarPooSpec.PolicyJson.publish model "Integrated" schema).isOk = true := by
+    (program.publish "Integrated").isOk = true := by
   native_decide
 
 def allRootsValidated : Bool :=
-  ["Base", "Threshold", "Duties", "Risk", "Retired", "Integrated"].all fun root =>
-    (CedarPooSpec.PolicyJson.publish model root schema).isOk
+  roots.all fun root => (program.publish root).isOk
 
 theorem allRootsValidatedFully : allRootsValidated = true := by native_decide
 

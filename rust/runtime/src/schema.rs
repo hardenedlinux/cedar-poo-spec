@@ -1,18 +1,22 @@
 //! Strict Cedar schema validation and schema-bound replay records.
+use crate::observation::ReplayMetrics;
+use crate::preparation::PreparedReplay;
+use crate::replay::check_manifest_prepared_using;
 
-use crate::bridge::{
-    Case, ReplayReceipt, check_manifest_inner, json_sha256, load_policy_set,
-    render_identified_policy_sources,
-};
+use crate::input::{Case, ReplayReceipt};
+use crate::policy_codec::{load_policy_set, render_identified_policy_sources};
+use crate::revision::SourcePolicies;
 use cedar_policy::{Entities, Schema, ValidationMode, Validator};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::{BTreeMap, BTreeSet};
+use std::time::Instant;
 
 /// A schema-bearing manifest intended for admission as a deployment candidate.
 #[derive(Debug, Deserialize)]
 pub struct ValidatedManifest {
     pub schema: Value,
+    #[serde(deserialize_with = "crate::input::cases")]
     pub cases: Vec<Case>,
 }
 
@@ -50,7 +54,7 @@ pub fn render_validated_policy_sources(
             "Cedar strict policy validation failed: {validation:?}"
         ));
     }
-    Entities::from_json_value(case.entities.clone(), Some(&schema))
+    Entities::from_json_value((*case.entities).clone(), Some(&schema))
         .map_err(|error| format!("Cedar schema entities: {error}"))?;
     render_identified_policy_sources(&case.policies)
 }
@@ -81,24 +85,80 @@ pub struct SchemaOnlyRevisionReceipt {
 pub fn replay_validated_manifest(
     manifest: &ValidatedManifest,
 ) -> Result<Vec<SchemaBoundReceipt>, String> {
-    let schema = Schema::from_json_value(manifest.schema.clone())
-        .map_err(|error| format!("Cedar schema: {error}"))?;
-    let validator = Validator::new(schema);
-    let mut revisions = BTreeSet::new();
+    replay_validated_observed(manifest, None)
+}
+
+/// Observe strict schema preparation and the canonical schema-bound replay.
+pub fn replay_validated_manifest_measured(
+    manifest: &ValidatedManifest,
+    metrics: &mut ReplayMetrics,
+) -> Result<Vec<SchemaBoundReceipt>, String> {
+    replay_validated_observed(manifest, Some(metrics))
+}
+
+fn replay_validated_observed(
+    manifest: &ValidatedManifest,
+    mut metrics: Option<&mut ReplayMetrics>,
+) -> Result<Vec<SchemaBoundReceipt>, String> {
+    let started = metrics.as_ref().map(|_| Instant::now());
+    let prepared =
+        crate::schema_preparation::PreparedSchema::parse(&manifest.schema, metrics.as_deref_mut())?;
+    if let (Some(stats), Some(started)) = (metrics.as_deref_mut(), started) {
+        let elapsed = started.elapsed().as_nanos();
+        stats.runtime_preparation_ns += elapsed;
+        stats.schema_preparation_ns += elapsed;
+    }
+    replay_with_schema(manifest, &prepared, metrics)
+}
+
+pub(crate) fn replay_with_schema(
+    manifest: &ValidatedManifest,
+    prepared: &crate::schema_preparation::PreparedSchema,
+    metrics: Option<&mut ReplayMetrics>,
+) -> Result<Vec<SchemaBoundReceipt>, String> {
+    replay_with_schema_using(manifest, prepared, metrics, &mut PreparedReplay::default())
+}
+
+pub(crate) fn replay_with_schema_using(
+    manifest: &ValidatedManifest,
+    prepared: &crate::schema_preparation::PreparedSchema,
+    mut metrics: Option<&mut ReplayMetrics>,
+    preparation: &mut PreparedReplay,
+) -> Result<Vec<SchemaBoundReceipt>, String> {
+    let started = metrics.as_ref().map(|_| Instant::now());
+    let validator = &prepared.validator;
+    let mut revisions = BTreeMap::new();
     for case in &manifest.cases {
-        if revisions.insert(&case.revision) {
-            let policies = load_policy_set(&case.policies)?;
-            let result = validator.validate(&policies, ValidationMode::Strict);
+        if !revisions.contains_key(&case.revision) {
+            let policies =
+                SourcePolicies::prepared(case, metrics.as_deref_mut(), Some(preparation))?;
+            if let Some(stats) = metrics.as_deref_mut() {
+                stats.policy_validation_calls += 1;
+            }
+            let result = validator.validate(policies.policies(), ValidationMode::Strict);
             if !result.validation_passed() {
                 return Err(format!(
                     "{}: Cedar strict policy validation failed: {result:?}",
                     case.revision
                 ));
             }
+            revisions.insert(case.revision.clone(), policies);
         }
     }
-    let schema_sha256 = json_sha256(&manifest.schema)?;
-    check_manifest_inner(&manifest.cases, true, Some(validator.schema())).map(|receipts| {
+    let schema_sha256 = prepared.digest()?.to_owned();
+    if let (Some(stats), Some(started)) = (metrics.as_deref_mut(), started) {
+        let elapsed = started.elapsed().as_nanos();
+        stats.runtime_preparation_ns += elapsed;
+        stats.schema_preparation_ns += elapsed;
+    }
+    check_manifest_prepared_using(
+        &manifest.cases,
+        Some(validator.schema()),
+        metrics,
+        revisions,
+        preparation,
+    )
+    .map(|receipts| {
         receipts
             .into_iter()
             .map(|replay| SchemaBoundReceipt {
@@ -167,4 +227,17 @@ pub fn verify_schema_only_revision(
         );
     }
     Ok(())
+}
+
+impl crate::schema_preparation::SchemaPreparation {
+    /// Replay the exact schema source, strictly validating every revision afresh.
+    pub fn replay(
+        &mut self,
+        manifest: &ValidatedManifest,
+        metrics: Option<&mut ReplayMetrics>,
+    ) -> Result<Vec<SchemaBoundReceipt>, String> {
+        let mut metrics = metrics;
+        let schema = self.acquire(&manifest.schema, metrics.as_deref_mut())?;
+        replay_with_schema(manifest, &schema, metrics)
+    }
 }

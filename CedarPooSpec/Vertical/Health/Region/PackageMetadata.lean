@@ -1,4 +1,4 @@
-import Lean
+import Lean.Data.Json
 
 /-!
 Read only the publication identity of an official FHIR NPM package. Resource

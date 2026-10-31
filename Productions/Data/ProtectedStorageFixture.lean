@@ -1,6 +1,6 @@
 import CedarPooSpec.Data.ProtectedRead
 import Productions.Data.StorageEffectFixture
-import Lean
+import Lean.Data.Json
 
 namespace CedarPooSpec.Data.ProtectedStorageFixture
 

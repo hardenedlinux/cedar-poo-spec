@@ -10,7 +10,7 @@ rev = "017c35c3d1f856a0f8b62a66660ee6628870bbcf"
 [[require]]
 name = "LeanPoo"
 git = "https://github.com/tao3k/lean-poo.git"
-rev = "71609603d45bead8eec6375471991a4f76dbb430"
+rev = "c684858fdbf3df2557b96868d02b451676ea9784"
 
 [[lean_lib]]
 name = "CedarPooSpec"
@@ -29,3 +29,29 @@ globs = ["Productions.+"]
 name = "Tests"
 roots = ["Tests"]
 globs = ["Tests.+"]
+
+[[lean_exe]]
+name = "policyReuseNative"
+root = "Benchmarks.PolicyReuse"
+
+[[lean_exe]]
+name = "functionalReuseNative"
+root = "Benchmarks.FunctionalReuse"
+
+[[lean_exe]]
+name = "objectProfilesNative"
+root = "Tests.Functional.ProfilesMain"
+
+[[lean_exe]]
+name = "caseManifestsNative"
+root = "Examples.Manifests"
+
+# Only the diagnostic executable imports this initialization observer.
+[[lean_lib]]
+name = "Benchmarks"
+roots = ["Benchmarks.ManifestInitialization"]
+globs = ["Benchmarks.ManifestInitialization"]
+
+[[lean_exe]]
+name = "manifestLifecycleNative"
+root = "Benchmarks.ManifestLifecycle"

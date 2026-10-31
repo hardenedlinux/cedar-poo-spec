@@ -1,0 +1,200 @@
+#+title: Typed Cases and proof-bearing SourceSnapshots across Cedar production exports
+#+options: toc:2 num:nil
+
+* Shared representation and scope
+
+This stage follows [[file:native-sdk-source-preparation.org][finite SDK preparation]]. Its frozen baseline is
+c2dd8a5534a7100e5fd630d2e4b45fae07a85083; LeanPOO
+1b1d41eafe6c979387c4fa69e194fb921bd4befe, Cedar specification
+017c35c3d1f856a0f8b62a66660ee6628870bbcf and Lean 4.34.1 remain fixed.
+PR #8 remains open; this work does not authorize merging it.
+
+Every applicable export now produces a semantic =Transport.Case= inventory.
+Its fields bind the actual Request, Entities, policies, source projection and
+expected-response equation. JSON for each complete case is generated at an
+output boundary, rather than retained globally and decoded again by the catalog.
+The expectation thunk refers to immutable authoring inputs; live business
+authorization and Rust's two authorizers still execute against current inputs.
+
+The main catalog covers all 51 existing entries: 47 case manifests, schema
+evolution, deployment policy artifacts, and two explicitly classified data
+fixtures. The three Cloud replay workflows outside that catalog also migrate.
+Schema evolution carries two typed manifests. Named deployment artifacts carry
+typed policy snapshots. A schema-bound manifest consumes a schema snapshot.
+The separate public template-source JSON bundles are policy-source artifacts,
+not case inventories, and keep their existing codec.
+
+The same inventory has two projections:
+
+| Owner | Responsibility |
+|-------+----------------|
+| Functional Ready/Compilation | Bind actual compiled/checked policies and selected authorization method |
+| Transport.Case | Retain immutable semantic inputs and exact response witness |
+| SourceSnapshot kind | Bind a complete JSON value to one memoized full encoding |
+| Transport.Manifest/Entry | Explicit raw/schema/evolution/artifact/data inventory |
+| Entry.toJson | Existing standalone authoring JSON |
+| SourceCatalog | Existing canonical v2 bulk wire without constructing inline case JSON |
+| Rust runtime | Fresh SDK admission, independent text normalization and both authorizers |
+
+Policy JSON is still prepared at publication, once per retained prepared root;
+schema JSON is still projected by the schema owner. Models, prepared Programs
+and typed case inventories still have persistent Lean globals. This migration
+removes per-case persistent JSON materialization, not every global initializer.
+
+* Types, actual Contracts and proofs
+
+=PolicySource.aligned= relates the actual policies to their complete JSON
+snapshot. =Case.evaluated= relates its expected response to Cedar authorization
+on that exact request, entities and policy list. =Ready.case= uses the selected
+method's real =authorizeLayer_response= witness and the validated publication,
+rather than substituting a second unbound policy computation.
+
+=Case.inline_projection= universally proves complete Except/JSON equality with
+the existing primitive inline serializer. The original public JSON APIs remain
+output projections and independent test references. Their ordered batch API
+and the new typed batch API share =traverseInputsFrom=, whose arbitrary-renderer
+theorem preserves values, input order and first preparation error.
+
+=SourceSnapshot= stores a JSON value and a thunk of an encoding/equality pair.
+=SourcePool.publishSnapshot= is the actual native publisher. Complete encoded
+equality still validates hash candidates; a reference or digest alone cannot
+admit a hit. Both generic frame/value laws and the actual Functional source
+Contract apply to this publisher. The new universal proofs depend only on
+propext, Classical.choice and Quot.sound, with no new native-decision axiom.
+
+Entity projection uses the existing POO certified ContextSlot over the complete
+semantic Entities value. Its retained result has the original factory equality,
+including errors; at most one entity owner is retained. Its scope ends with the
+catalog invocation. Policy snapshot encoding belongs to the finite immutable
+prepared publication's lifetime. This is distinct from the Rust catalog's finite
+SDK syntax plan, which still retires on last use.
+
+The factory-first-error control remains. Its malformed-publication counterpart
+now uses an actual typed case with self-ancestor entities: entity projection must
+fail before the later factory error. Changed, missing and forged source-reference
+controls remain. All applicable frozen examples and independent pre-migration
+algorithms still compare complete output bytes.
+
+The universal laws cover full individual case projection and actual published
+source values/Contracts. Whole-catalog composition is exercised by the complete
+corpus and mutation controls; this audit does not claim an unproved universal
+catalog-expansion theorem.
+
+* Encoding and native implementation
+
+The generated C places source compression inside the snapshot's captured
+encoding closure. =wire= uses =lean_thunk_get_own=, and =publishSnapshot= contains
+no direct JSON compression call. Lean's pinned [[https://raw.githubusercontent.com/leanprover/lean4/v4.34.1/src/include/lean/lean.h][runtime header]] checks a thunk's
+stored value before evaluating its closure. A prepared publication shares the
+same snapshot with its cases; the entity ContextSlot shares its prepared snapshot
+on exact hits. Equal but separately constructed snapshots are not asserted to
+share one physical thunk.
+
+Append computes the old array size before push. Generated C confirms this order,
+avoiding the old post-push size read that retained the pre-push array. The
+publication frame law remains unchanged.
+
+The final envelope still serializes its unique source JSON values. This stage
+does not claim zero-copy output or removal of every encoding across standalone
+and bulk projections.
+
+* Complete acceptance and cold build
+
+The complete =just check= succeeds, including all applicable Cases, domain
+Contracts, proofs, independent raw/schema Rust workflows, full catalog mutation
+controls, golden wires, object families and authorization-delta proofs.
+All 52 frozen wire artifacts remain unchanged. All Examples/Tests compile;
+Python's 21 framework tests and all-targets/all-features Rust Clippy pass.
+
+A new, initially absent project build directory compiles the standard complete
+native production graph in 60.559 seconds, with default parallelism and unchanged
+120-second supervision. The OS-reported compiler maximum RSS is 1472.203 MiB.
+This is the reported process/maximum-child accounting, not a proven aggregate
+memory bound for concurrent compiler children.
+
+Pinned external SDK artifacts under =.lake/packages= remain cached. The receipt
+therefore qualifies a cold project production graph, not a cold SDK/toolchain.
+Prior artifacts are preserved by a reversible directory move. Noncompiler
+inputs/evidence are restored without overwrite; the new cold production
+artifacts are used in the subsequent process cohort.
+
+The cold producer and full Rust replay return identical catalog/receipt bytes.
+Hot/cold producer and diagnostic executables are byte-identical. Auxiliary
+profile/functional executables have identical runtime sections but different
+LC_UUID and LC_BUILD_VERSION SDK metadata; those differences are retained,
+without inferring a stale-cache bug or attributing performance to them.
+
+* Fixed whole-process results
+
+The unchanged official driver completes 48 native children, 15 full-output
+comparisons, 486 object observations and 1836 entry observations. Each variant
+has nine paired benchmark samples plus nine additional file-lifecycle samples.
+The [[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-typed-case-lifecycle.json][complete process receipt]], [[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-typed-case-evidence.json][machine evidence]],
+[[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-typed-case-object-observations.csv][object observations]] and [[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-typed-case-entry-observations.csv][entry observations]] preserve every result.
+
+| Complete producer-to-Rust pipeline | Baseline | Candidate |
+|-----------------------------------+----------+-----------|
+| CPU, pairs 1/2/3 | 340/310/320 ms | 290/270/270 ms |
+| Wall, pairs 1/2/3 | 1965.680/343.555/343.475 ms | 1782.022/303.997/295.368 ms |
+| Peak process RSS median | 59.000 MiB | 50.703 MiB |
+| Producer CPU median | 150 ms | 110 ms |
+
+All three fixed pairs improve in this cohort. Pipeline CPU median decreases
+about 15.6%; peak process RSS decreases about 14.1%. Repeated full pipeline wall
+decreases about 11.5% and 14.0%. The first-file pair also improves, but OS
+execution-policy state, host scheduling and first-file waits remain uncontrolled;
+these observations do not establish an arbitrary first-file latency guarantee.
+CPU accounting is rounded at the OS's reported 10-ms precision.
+
+The Rust executable and complete input are byte-identical across both variants.
+Its 18-sample internal replay median moves from 171.071 to 177.930 ms, and its
+replay process RSS from 25.563 to 25.641 MiB. These changes are a negative control
+for host/process variability, not a Rust algorithm change or an admitted SDK
+regression caused by this Lean migration. Rust's 158 source loads, 112 strict
+validations, 221 revision bindings, 1280 ordinary rows and 2560 authorizations
+remain enforced. Schema-evolution/artifact checks remain separate full-catalog
+workflows.
+
+* Pre-main evidence and remaining boundary
+
+Twelve separate actual full-catalog diagnostic launches all exit zero, match
+ordinary catalog/full-receipt hashes and satisfy the clock protocol. A bounded
+one-second, 10-ms sample of the first Lean child captures 70 samples at
+=_dyld_start +0= before later initialization and main execution. Apple's
+[[https://raw.githubusercontent.com/apple-oss-distributions/dyld/main/dyld/dyldStartup.s][startup assembly]] identifies that entry as the kernel's initial user program
+counter. Public source explains the symbol; it is not asserted to be the
+installed dyld's byte-identical source.
+
+The Rust sampling tool exits zero but records an empty call graph. This attempt
+is explicitly unqualified and is not retried with expanded sampling. Its
+executable hash is identical to the previous qualified Rust stack sample in
+[[file:native-sdk-source-preparation.org][the preceding audit]], which remains historical evidence. Successful launch
+protocols and empty stack coverage are recorded separately.
+
+Current Lean import-initialization observations are approximately 65–78 ms and
+main spans 31–35 ms. The preceding audit observed approximately 89–92 ms and
+47–50 ms. Those phase observations are from different diagnostic cohorts,
+not a newly paired phase experiment. The symmetric ordinary whole-process
+cohort above supplies the evidence that total work and RSS decrease.
+
+Same-PID raw-Mach policy records still appear near the end of the first-file
+delay. Lean fresh waits are approximately 1.44/1.35 seconds before main; Rust
+approximately 905/635 ms. Warm Rust main entry remains approximately 3.4–3.6 ms.
+The current Lean sample and the identical-Rust historical sample locate loader
+entry waits; they do not partition the preceding kernel/service wait among
+queueing, scanning, page faults and scheduling. Activity IDs remain insufficient
+for that causal division. Raw unrelated OS logs stay local; only own-PID
+redacted matches are published. No security, signing or provenance setting is
+changed to improve timings.
+
+* Remaining shared work
+
+Prepared Program/C4 initialization, typed request inventory construction and
+unique policy/schema publication still execute during import. Final unique
+source envelope serialization also remains. Further changes should optimize
+those shared owners, preserve the current full projection/Contract laws and
+repeat this complete cold-project/process/resource protocol. They must not
+replace supported SDK interfaces, weaken strict validation, increase resource
+limits, or hide the external pre-main wait behind warm-only results.
+
+Publication-head Ubuntu CI is a separate receipt linked from PR #8 after push.

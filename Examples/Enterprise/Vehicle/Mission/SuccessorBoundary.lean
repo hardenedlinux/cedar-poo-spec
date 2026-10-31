@@ -1,6 +1,7 @@
+import CedarPooSpec.Functional.Capabilities
 import CedarPooSpec.Revision
 import CedarPooSpec.PolicyJson
-import CedarPooSpec.CompoundAuthorization
+import CedarPooSpec.Authorization.Compound
 import Cedar.Validation.RequestEntityValidator
 
 /-!
@@ -149,11 +150,15 @@ def modelResult : Except LeanPoo.C4.Error Model := do
 
 def model : Model := modelResult.toOption.get (by native_decide)
 
+/-- Checked immutable policy context; current request inputs are supplied at consumption. -/
+protected def program : CedarPooSpec.Functional.Program model schema :=
+  (CedarPooSpec.Functional.prepareProgram CedarPooSpec.Functional.standard
+    model schema (model.modules.map (·.name))).toOption.get (by native_decide)
+
 def authorizedRequest (root : String) (req : Request) : Bool :=
-  match CedarPooSpec.CompoundAuthorization.authorizeLayers model
-      [(root, req)] entities with
+  match CedarPooSpec.SuccessorBoundaryExample.program.authorizeLayers [(root, req)] entities with
   | .error _ => false
-  | .ok receipts => CedarPooSpec.CompoundAuthorization.layersAllowed receipts
+  | .ok receipts => CedarPooSpec.Authorization.Compound.layersAllowed receipts
 def authorized (root : String) (action : EntityUID) (candidate : Candidate) : Bool :=
   authorizedRequest root (request action candidate)
 
@@ -269,7 +274,7 @@ theorem matrixExact :
 
 def rootsValidated : Bool :=
   ["Base", "Platform", "Mission", "Evidence", "Integrated", "Current"].all fun root =>
-    (CedarPooSpec.PolicyJson.publish model root schema).isOk
+    (CedarPooSpec.SuccessorBoundaryExample.program.publish root).isOk
 theorem rootsValidatedFully : rootsValidated = true := by native_decide
 
 def freshnessRevision : Revision :=

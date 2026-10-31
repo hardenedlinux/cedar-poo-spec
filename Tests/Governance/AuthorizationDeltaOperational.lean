@@ -1,4 +1,4 @@
-import CedarPooSpec.AuthorizationDeltaOperationalExact
+import CedarPooSpec.Authorization.Delta.OperationalExact
 import CedarPooSpec.PolicyJson
 import Examples.Governance.TicketSharing
 
@@ -12,7 +12,7 @@ namespace CedarPooSpec.AuthorizationDeltaOperationalTest
 
 open Cedar.Spec Cedar.Validation Cedar.Data
 open CedarPooSpec.PolicyModules CedarPooSpec.TicketSharingExample
-open CedarPooSpec.AuthorizationDelta
+open CedarPooSpec.Authorization.Delta
 
 def amountActionEntry : ActionSchemaEntry :=
   { actionEntry with context := Map.make [

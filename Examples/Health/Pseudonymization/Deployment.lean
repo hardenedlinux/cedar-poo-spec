@@ -1,5 +1,4 @@
 import Examples.Health.Pseudonymization
-import CedarPooSpec.PolicyJson
 
 /-!
 Only an explicitly selected governed root can become a deployment artifact.
@@ -29,6 +28,6 @@ def Root.name : Root → String
   | .recovered => PseudonymizationExample.recovered.name
 
 def publish (root : Root) :=
-  CedarPooSpec.PolicyJson.publish model root.name schema
+  program.publish root.name
 
 end CedarPooSpec.PseudonymizationExample.Deployment

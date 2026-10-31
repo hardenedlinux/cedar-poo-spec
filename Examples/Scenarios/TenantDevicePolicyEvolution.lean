@@ -1,3 +1,4 @@
+import CedarPooSpec.Functional.Capabilities
 import CedarPooSpec.Slicing
 import CedarPooSpec.PolicyModules
 
@@ -155,6 +156,11 @@ def modelResult : Except LeanPoo.C4.Error Model := do
 
 def model : Model := modelResult.toOption.get (by native_decide)
 
+/-- Checked immutable policy context; current request inputs are supplied at consumption. -/
+protected def program : CedarPooSpec.Functional.Program model schema :=
+  (CedarPooSpec.Functional.prepareProgram CedarPooSpec.Functional.standard
+    model schema (model.modules.map (·.name))).toOption.get (by native_decide)
+
 def finalPolicies : Policies :=
   (model.compile "Remove").toOption.get (by native_decide)
 
@@ -179,12 +185,10 @@ def scenarioConforms : Bool :=
   (LeanPoo.C4.linearize model.graph "Remove").toOption ==
       some ["Remove", "Composed", "TenantStrict", "DeviceVeto", "Base"] &&
   expectedDecisions.all fun (root, request, expected) =>
-    match model.compile root with
+    match CedarPooSpec.TenantDeviceAuthorizationExample.program.response root request entities with
     | .error _ => false
-    | .ok policies =>
-      (validate policies schema).isOk &&
-      (isAuthorized request entities policies).decision == expected &&
-      (isAuthorized request entities policies).erroringPolicies.isEmpty
+    | .ok response =>
+      response.decision == expected && response.erroringPolicies.isEmpty
 
 theorem scenarioConformsFully : scenarioConforms = true := by native_decide
 

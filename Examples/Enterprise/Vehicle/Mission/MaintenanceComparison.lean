@@ -1,3 +1,4 @@
+import CedarPooSpec.Functional.Capabilities
 import Examples.Enterprise.Vehicle.Mission.SuccessorBoundary
 
 /-!
@@ -20,15 +21,20 @@ def changedModel : Model :=
         { module with edits := [.extend nominal, .extend guardedFallback] }
       else module }
 
+/-- Checked immutable policy context; current request inputs are supplied at consumption. -/
+protected def changedProgram : CedarPooSpec.Functional.Program changedModel CedarPooSpec.SuccessorBoundaryExample.schema :=
+  (CedarPooSpec.Functional.prepareProgram CedarPooSpec.Functional.standard
+    changedModel CedarPooSpec.SuccessorBoundaryExample.schema (changedModel.modules.map (·.name))).toOption.get (by native_decide)
+
 def deniedFallback : Candidate := { routeApproved := false }
 def roots : List String :=
   ["Base", "Platform", "Mission", "Evidence", "Integrated", "Current"]
 
 def changedAllows (root : String) (candidate : Candidate) : Bool :=
-  match CedarPooSpec.CompoundAuthorization.authorizeLayers changedModel
+  match CedarPooSpec.MaintenanceComparisonExample.changedProgram.authorizeLayers
       [(root, request fallback candidate)] entities with
   | .error _ => false
-  | .ok receipts => CedarPooSpec.CompoundAuthorization.layersAllowed receipts
+  | .ok receipts => CedarPooSpec.Authorization.Compound.layersAllowed receipts
 
 theorem oneOwnerEditChangesEveryRevision :
     roots.length = 6 ∧
@@ -41,13 +47,11 @@ theorem oneOwnerEditChangesEveryRevision :
 def manifest : Except String Lean.Json := do
   let mut rows : List Lean.Json := []
   for root in roots do
-    let receipt ← CedarPooSpec.PolicyJson.authorizationCase
-      s!"fallback-route-{root.toLower}" root.toLower changedModel root
-      (request fallback deniedFallback) entities
+    let receipt ← CedarPooSpec.MaintenanceComparisonExample.changedProgram.authorizationCase
+        s!"fallback-route-{root.toLower}" root.toLower root (request fallback deniedFallback) entities
     rows := rows ++ [receipt]
-    let receipt ← CedarPooSpec.PolicyJson.authorizationCase
-      s!"fallback-clear-{root.toLower}" root.toLower changedModel root
-      (request fallback clear) entities
+    let receipt ← CedarPooSpec.MaintenanceComparisonExample.changedProgram.authorizationCase
+        s!"fallback-clear-{root.toLower}" root.toLower root (request fallback clear) entities
     rows := rows ++ [receipt]
   return Lean.Json.mkObj [("cases", Lean.toJson rows)]
 

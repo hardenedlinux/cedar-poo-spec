@@ -1,3 +1,4 @@
+import CedarPooSpec.Functional.Capabilities
 import CedarPooSpec.TemplateValidation
 import CedarPooSpec.Revision
 
@@ -134,6 +135,12 @@ def modelResult : Except LeanPoo.C4.Error Model := do
   let posture ← initial.extend "Posture" "Published" postureReconciliation.edits
   posture.extend "Revoked" "Posture" revokedReconciliation.edits
 def model : Model := modelResult.toOption.get (by native_decide)
+
+/-- Checked immutable policy context; current request inputs are supplied at consumption. -/
+protected def program : CedarPooSpec.Functional.Program model schema :=
+  (CedarPooSpec.Functional.prepareProgram CedarPooSpec.Functional.standard
+    model schema (model.modules.map (·.name))).toOption.get (by native_decide)
+
 def finalPolicies : Policies :=
   (model.compile "Revoked").toOption.get (by native_decide)
 def revokedLinked : LinkedSet schema :=
@@ -148,6 +155,12 @@ def expandedReconciliation : Reconciliation finalPolicies expandedPolicies :=
 def expandedModel : Model :=
   (model.extend "Expanded" "Revoked" expandedReconciliation.edits).toOption.get
     (by native_decide)
+
+/-- Checked immutable policy context; current request inputs are supplied at consumption. -/
+protected def expandedProgram : CedarPooSpec.Functional.Program expandedModel schema :=
+  (CedarPooSpec.Functional.prepareProgram CedarPooSpec.Functional.standard
+    expandedModel schema (expandedModel.modules.map (·.name))).toOption.get (by native_decide)
+
 def expandedLinked : LinkedSet schema :=
   (revokedLinked.tryRefresh postureTemplates expandedLinks).toOption.get (by native_decide)
 

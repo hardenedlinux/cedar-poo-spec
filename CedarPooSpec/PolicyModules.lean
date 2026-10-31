@@ -1,8 +1,7 @@
 import Cedar.Spec.Policy
-import LeanPoo.Object.Builder
-import LeanPoo.Object.Memo
 import LeanPoo.Object.Definition
 import LeanPoo.Object.Debug
+import LeanPoo.C4.Prepared
 import LeanPoo.Compose
 
 /-!
@@ -52,22 +51,27 @@ structure Model where
   modules : List Module
   built : Option Built := none
 
-/-- A record update to `modules` invalidates the cached LeanPOO schema. -/
+private def Built.source : Built → List Module
+  | .schema source _ | .object source _ => source
+
+private def Built.toSchema : Built →
+    LeanPoo.Object.Schema PolicyID (fun _ => Option Policy)
+  | .schema _ cached => cached
+  | .object _ cached => cached.plan.schema
+
+/-- One source-identity gate for every retained schema, plan and object view. -/
+private def Model.activeBuilt? (model : Model) : Option Built :=
+  model.built.filter fun built => built.source == model.modules
+
 private def Model.activeSchema? (model : Model) :
     Option (LeanPoo.Object.Schema PolicyID (fun _ => Option Policy)) :=
-  match model.built with
-  | some (.schema source schema) =>
-      if source == model.modules then some schema else none
-  | some (.object source object) =>
-      if source == model.modules then some object.plan.schema else none
-  | none => none
+  model.activeBuilt?.map Built.toSchema
 
 /-- Return the active first-class object only while its source modules match. -/
 def Model.currentObject? (model : Model) :
     Option (LeanPoo.Object.Memoized PolicyID (fun _ => Option Policy)) :=
-  match model.built with
-  | some (.object source object) =>
-      if source == model.modules then some object else none
+  match model.activeBuilt? with
+  | some (.object _ object) => some object
   | _ => none
 
 def Model.graph (model : Model) : LeanPoo.C4.Graph :=
@@ -108,6 +112,13 @@ private def Model.schema (model : Model) :
           (model.modules.find? (fun module => module.name == name)).map
             Module.declaration }
 
+private def Model.planAt (model : Model) (root : String) :
+    Except LeanPoo.C4.Error
+      (LeanPoo.Object.Plan PolicyID (fun _ => Option Policy)) := do
+  if let some object := model.currentObject? then
+    if object.plan.root == root then return object.plan
+  LeanPoo.Object.compile model.schema root
+
 /-- Obtain a first-class object for any valid root in this policy family.
     This is a composition view; publish through Cedar validation instead. -/
 def Model.objectAt (model : Model) (root : String) :
@@ -115,14 +126,14 @@ def Model.objectAt (model : Model) (root : String) :
       (LeanPoo.Object.Memoized PolicyID (fun _ => Option Policy)) := do
   if let some object := model.currentObject? then
     if object.plan.root == root then return object
-  let plan ← LeanPoo.Object.compile model.schema root
+  let plan ← model.planAt root
   return plan.memoize
 
 /-- Inspect C4 resolution even if the Cedar edit sequence is invalid. -/
 def Model.explainResolution (model : Model) (root : String) (id : PolicyID) :
     Except LeanPoo.C4.Error (LeanPoo.Object.Debug.Resolution PolicyID) := do
-  let object ← model.objectAt root
-  return LeanPoo.Object.Debug.Plan.explain object.plan id
+  let plan ← model.planAt root
+  return LeanPoo.Object.Debug.Plan.explain plan id
 
 /-- Stage a single-parent policy owner through LeanPOO's extension API.
     The final mix or publication compiles the complete C4 topology. -/
@@ -169,11 +180,84 @@ def Model.combine (first : Model) (firstRoot : String)
 def Model.compilePlan (model : Model) (root : String) :
     Except LeanPoo.C4.Error
       (LeanPoo.Object.CompiledPlan PolicyID (fun _ => Option Policy)) := do
-  if let some object := model.currentObject? then
-    if object.plan.root == root then
-      return object.plan.compileMemo
-  let plan ← LeanPoo.Object.compile model.schema root
+  let plan ← model.planAt root
   return plan.compileMemo
+
+private theorem Model.schema_graph (model : Model) : model.schema.graph = model.graph := by
+  cases h : model.activeSchema? <;> simp [Model.schema, Model.graph, h]
+
+/-- The root Plan and provenance fold consume the same graph-bound C4 results.
+An existing object at its own root still retains its original Plan directly. -/
+private def Model.planAtPrepared (model : Model) (prepared : LeanPoo.C4.Prepared model.graph)
+    (root : String) : Except LeanPoo.C4.Error
+      (LeanPoo.Object.Plan PolicyID (fun _ => Option Policy)) := do
+  if let some object := model.currentObject? then
+    if object.plan.root == root then return object.plan
+  let bound : LeanPoo.C4.Prepared model.schema.graph := by
+    simpa only [model.schema_graph] using prepared
+  LeanPoo.Object.compilePrepared model.schema bound root
+
+private theorem Model.planAtPrepared_eq (model : Model)
+    (prepared : LeanPoo.C4.Prepared model.graph) (root : String) :
+    model.planAtPrepared prepared root = model.planAt root := by
+  simp only [Model.planAtPrepared, Model.planAt, LeanPoo.Object.compilePrepared_eq]
+
+def Model.compilePlanPrepared (model : Model) (prepared : LeanPoo.C4.Prepared model.graph)
+    (root : String) : Except LeanPoo.C4.Error
+      (LeanPoo.Object.CompiledPlan PolicyID (fun _ => Option Policy)) := do
+  let plan ← model.planAtPrepared prepared root
+  return plan.compileMemo
+
+theorem Model.compilePlanPrepared_eq (model : Model)
+    (prepared : LeanPoo.C4.Prepared model.graph) (root : String) :
+    model.compilePlanPrepared prepared root = model.compilePlan root := by
+  simp only [Model.compilePlanPrepared, Model.compilePlan, model.planAtPrepared_eq]
+
+private theorem Model.currentObject_graph (model : Model) (object)
+    (found : model.currentObject? = some object) : object.plan.schema.graph = model.graph := by
+  cases active : model.activeBuilt? with
+  | none => simp [Model.currentObject?, active] at found
+  | some built =>
+    cases built with
+    | schema source schema => simp [Model.currentObject?, active] at found
+    | object source value =>
+      simp [Model.currentObject?, active] at found
+      subst object
+      simp [Model.graph, Model.activeSchema?, active, Built.toSchema]
+
+private theorem Model.planAt_graph (model : Model) (root : String) (plan)
+    (compiled : model.planAt root = .ok plan) : plan.schema.graph = model.graph := by
+  have fromSchema (h : LeanPoo.Object.compile model.schema root = .ok plan) :
+      plan.schema.graph = model.graph := by
+    unfold LeanPoo.Object.compile at h
+    split at h
+    · simp_all
+    · simp only [Except.ok.injEq] at h
+      subst plan
+      exact model.schema_graph
+  cases ho : model.currentObject? with
+  | none => exact fromSchema (by simpa [Model.planAt, ho] using compiled)
+  | some object =>
+    by_cases same : object.plan.root = root
+    · have result : (pure object.plan : Except LeanPoo.C4.Error _) = .ok plan := by
+        simpa [Model.planAt, ho, same] using compiled
+      change Except.ok object.plan = Except.ok plan at result
+      have equal := Except.ok.inj result
+      subst plan
+      exact model.currentObject_graph object ho
+    · exact fromSchema (by simpa [Model.planAt, ho, same] using compiled)
+
+/-- The compiled plan owns exactly the graph selected by this immutable model. -/
+theorem Model.compilePlan_graph (model : Model) (root : String) (plan)
+    (compiled : model.compilePlan root = .ok plan) :
+    plan.plan.schema.graph = model.graph := by
+  unfold Model.compilePlan at compiled
+  cases hp : model.planAt root with
+  | error error => simp [hp] at compiled
+  | ok selected =>
+    simp [hp] at compiled
+    subst plan
+    exact model.planAt_graph root selected hp
 
 inductive Error where
   | c4 (error : LeanPoo.C4.Error)
@@ -238,26 +322,34 @@ private def applyEdit (owner : String) (ancestors : List String)
 
 /-- Share the compiled C4 plan with diagnostics without resolving the graph
     a second time. Cedar's fold retains edit intent, order, and provenance. -/
+private def Model.compileSelected (model : Model)
+    (compiled : LeanPoo.Object.CompiledPlan PolicyID (fun _ => Option Policy))
+    (resolve : String → Except LeanPoo.C4.Error (List String)) :
+    Except Error
+      (LeanPoo.Object.CompiledPlan PolicyID (fun _ => Option Policy) × Compilation) := do
+    let reversed ← compiled.plan.precedence.reverse.foldlM (fun current name => do
+      let some module := model.modules.find? (fun item => item.name == name)
+        | throw (.missingModule name)
+      let ancestors ← (resolve name).mapError .c4
+      module.edits.foldlM (fun state edit => do
+        let origins ← applyEdit name ancestors state.1 edit
+        return (origins, { moduleName := name, edit } :: state.2))
+        current) (([], []) : List PolicyOrigin × List AppliedEdit)
+    let policies ← reversed.1.mapM fun origin => do
+      let some (some policy) := compiled.resolve origin.id (fun _ => none)
+        | throw (.inconsistentResolution origin.id)
+      let compiled : CompiledPolicy :=
+        { policy := policy, introducedBy := origin.introducedBy,
+          lastEditedBy := origin.lastEditedBy }
+      return compiled
+    return (compiled, { policies, applied := reversed.2.reverse })
+
 private def Model.compileWithPlan (model : Model) (root : String) :
     Except Error
       (LeanPoo.Object.CompiledPlan PolicyID (fun _ => Option Policy) × Compilation) := do
-  let compiled ← (model.compilePlan root).mapError .c4
-  let reversed ← compiled.plan.precedence.reverse.foldlM (fun current name => do
-    let some module := model.modules.find? (fun item => item.name == name)
-      | throw (.missingModule name)
-    let ancestors ← (LeanPoo.C4.linearize model.graph name).mapError .c4
-    module.edits.foldlM (fun state edit => do
-      let origins ← applyEdit name ancestors state.1 edit
-      return (origins, { moduleName := name, edit } :: state.2))
-      current) (([], []) : List PolicyOrigin × List AppliedEdit)
-  let policies ← reversed.1.mapM fun origin => do
-    let some (some policy) := compiled.resolve origin.id (fun _ => none)
-      | throw (.inconsistentResolution origin.id)
-    let compiled : CompiledPolicy :=
-      { policy := policy, introducedBy := origin.introducedBy,
-        lastEditedBy := origin.lastEditedBy }
-    return compiled
-  return (compiled, { policies, applied := reversed.2.reverse })
+    let compiled ← (model.compilePlan root).mapError .c4
+    let graph := compiled.plan.schema.graph
+    model.compileSelected compiled (fun name => LeanPoo.C4.linearize graph name)
 
 /-- C4 and compiled object slots choose policy bodies. The Cedar-specific fold
     checks edit intent, keeps policy order, and records provenance only. -/
@@ -272,6 +364,31 @@ def Model.compileWithProvenance (model : Model) (root : String) :
 /-- Materialize the compiled policies for Cedar's validator and authorizer. -/
 def Model.compile (model : Model) (root : String) : Except Error Policies :=
   (model.compileWithProvenance root).map (·.map CompiledPolicy.policy)
+
+/-- One actual graph-owned C4 table is shared by every root in a Program.
+The compiled object still resolves policy bodies and edit checks stay ordered. -/
+def Model.compilePrepared (model : Model) (prepared : LeanPoo.C4.Prepared model.graph)
+    (root : String) : Except Error Policies := do
+  let compiled ← (model.compilePlanPrepared prepared root).mapError .c4
+  let result ← model.compileSelected compiled prepared.at
+  return result.2.policies.map CompiledPolicy.policy
+
+theorem Model.compilePrepared_eq (model : Model) (prepared : LeanPoo.C4.Prepared model.graph)
+    (root : String) : model.compilePrepared prepared root = model.compile root := by
+  unfold Model.compilePrepared Model.compile Model.compileWithProvenance Model.compileWithTrace
+  rw [model.compilePlanPrepared_eq]
+  unfold Model.compileWithPlan
+  cases success : model.compilePlan root with
+  | error error => rfl
+  | ok compiled =>
+    have same : prepared.at = (fun name => LeanPoo.C4.linearize compiled.plan.schema.graph name) := by
+      funext name
+      rw [prepared.at_eq, model.compilePlan_graph root compiled success]
+    rw [same]
+    change (model.compileSelected compiled _ >>= fun result =>
+      pure (result.2.policies.map CompiledPolicy.policy)) = _
+    cases h : model.compileSelected compiled (fun name => LeanPoo.C4.linearize compiled.plan.schema.graph name) <;>
+      simp [h, bind, pure, Except.pure, Except.mapError, Except.bind, Except.map]
 
 /-- Explain one policy ID after Cedar edit validation. Declaration nodes include
     tombstones; `effective` reports whether a policy survives those edits. -/

@@ -160,7 +160,7 @@ impl PolicyBundle {
         if cases.next().is_some() {
             return Err("duplicate governed disclosure case".into());
         }
-        let entities = Entities::from_json_value(case.entities.clone(), Some(&schema))
+        let entities = Entities::from_json_value((*case.entities).clone(), Some(&schema))
             .map_err(|error| format!("Cedar entities: {error}"))?;
         let policies = load_policy_set(&case.policies)?;
         Ok(Self {

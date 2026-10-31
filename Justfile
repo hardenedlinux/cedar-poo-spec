@@ -1,5 +1,4 @@
 set shell := ["sh", "-eu", "-c"]
-export CARGO_TARGET_DIR := "rust/target"
 
 # Example recipes follow the source publisher or project area.
 mod example 'Examples/Justfile'
@@ -37,8 +36,10 @@ build-productions: check-lean-layers build
 check-docs:
     emacs --batch -Q --eval '(progn (require (quote org-element)) (dolist (file (append (list "README.org") (directory-files-recursively "CedarPooSpec" "\\.org$") (directory-files-recursively "docs" "\\.org$") (directory-files-recursively "Examples" "\\.org$") (directory-files-recursively "Productions" "\\.org$") (directory-files-recursively "rust" "\\.org$") (directory-files-recursively "Tests" "\\.org$") (directory-files-recursively "Benchmarks" "\\.org$"))) (with-temp-buffer (insert-file-contents file) (org-mode) (org-element-parse-buffer))) (princ "ORG-OK"))'
 
-check: check-tests check-docs
+check: check-functional-consumers check-tests check-docs
     just check-conformance
+    just bench-functional-allocation
+    just bench-functional-native
     just check-policy-reuse
     just example governance attested-views
     just check-cedar-language
@@ -67,7 +68,7 @@ check: check-tests check-docs
 check-quick:
     lake build CedarPooSpec Tests
 
-check-lean: check-tests check-authorization-delta-proof check-policy-reuse
+check-lean: check-functional-consumers check-tests check-authorization-delta-proof check-policy-reuse
 
 check-lean-layers:
     uv run --project python --package cedar-poo-py-test --locked cedar-poo-py-test check-lean-layers

@@ -19,6 +19,7 @@ structure ControllerRelease where
   threshold : String
   amountAttribute : String := "amount"
   matchedAttribute : String := "matched"
+  deriving DecidableEq
 
 private def field (name : String) : Expr :=
   .getAttr (.var .resource) name

@@ -1,5 +1,6 @@
 import Examples.Health.PriorAuthorization.PriorAuthorization
-import CedarPooSpec.Vertical.Health.DisclosureChannel
+import CedarPooSpec.Vertical.Health.DisclosureProfile
+import CedarPooSpec.Functional.Capabilities
 
 /-!
 The same provider workflow has two internal boundaries that the payer-submit
@@ -39,14 +40,44 @@ def entities : Entities := Map.make (PriorAuthorizationExample.entities.toList +
   (delegate, actionSchemaEntryToEntityData delegateEntry),
   (remember, actionSchemaEntryToEntityData rememberEntry)])
 
-def verificationObject : DisclosureChannel :=
+def verificationTemplate : DisclosureChannel :=
   { policyId := "delegate-verification", action := delegate,
     destination := verifier, purpose := "verify-prior-authorization",
     payloadClass := "verification-token" }
+def verificationProfile : DisclosureProfile.Object :=
+  (DisclosureProfile.define "VerificationChannel" verificationTemplate).toOption.get
+    (by native_decide)
+
+/-- One admission for all projections of this exact immutable profile. -/
+def verificationProfileAccess : CedarPooSpec.Functional.ObjectProfile.Session DisclosureProfile.contract (CedarPooSpec.Functional.ObjectProfile.factory DisclosureProfile.contract) verificationProfile :=
+  (CedarPooSpec.Functional.ObjectProfile.Session.open DisclosureProfile.contract
+    (CedarPooSpec.Functional.ObjectProfile.factory DisclosureProfile.contract) verificationProfile).toOption.get (by native_decide)
+
+def verificationObject : DisclosureChannel :=
+  (verificationProfileAccess.read .channel).get (by native_decide)
+
+def memoryProfile : DisclosureProfile.Object :=
+  (verificationProfile.extendWith "MemoryChannel" do
+    LeanPoo.Object.Dataflow.Builder.value .policyId "write-shared-memory"
+    LeanPoo.Object.Dataflow.Builder.value .action remember
+    LeanPoo.Object.Dataflow.Builder.value .destination memory
+    LeanPoo.Object.Dataflow.Builder.value .purpose "resume-prior-authorization"
+    LeanPoo.Object.Dataflow.Builder.value .payloadClass "workflow-handle").toOption.get
+      (by native_decide)
+
+/-- One admission for all projections of this exact immutable profile. -/
+def memoryProfileAccess : CedarPooSpec.Functional.ObjectProfile.Session DisclosureProfile.contract (CedarPooSpec.Functional.ObjectProfile.factory DisclosureProfile.contract) memoryProfile :=
+  (CedarPooSpec.Functional.ObjectProfile.Session.open DisclosureProfile.contract
+    (CedarPooSpec.Functional.ObjectProfile.factory DisclosureProfile.contract) memoryProfile).toOption.get (by native_decide)
+
 def memoryObject : DisclosureChannel :=
-  { policyId := "write-shared-memory", action := remember,
-    destination := memory, purpose := "resume-prior-authorization",
-    payloadClass := "workflow-handle" }
+  (memoryProfileAccess.read .channel).get (by native_decide)
+
+def verificationPolicy : Policy :=
+  (verificationProfileAccess.read .policy).get (by native_decide)
+
+def memoryPolicy : Policy :=
+  (memoryProfileAccess.read .policy).get (by native_decide)
 def revokedChannel : Policy :=
   policy "revoked-internal-delegation" .forbid
     (.actionInAny [delegate, remember]) .any (not_ (fact "delegationActive"))
@@ -63,7 +94,7 @@ def modelResult : Except LeanPoo.C4.Error Model := do
     [memoryObject.introduce]
   let base ← stored.mix "ChannelBase" ["VerificationHandoff", "SharedMemory"]
   let privacy ← base.extend "ChannelPrivacy" "ChannelBase"
-    [verificationObject.strengthen, memoryObject.strengthen]
+    [.overlay verificationPolicy, .overlay memoryPolicy]
   let temporal ← privacy.extend "ChannelTemporal" "ChannelBase"
     [.extend revokedChannel]
   let combined ← temporal.mix "ChannelGoverned"
@@ -75,6 +106,14 @@ def modelResult : Except LeanPoo.C4.Error Model := do
   incident.extend "ChannelRecovered" "ChannelIncident" [.remove memoryFreeze.id]
 
 def model : Model := modelResult.toOption.get (by native_decide)
+
+def roots : List String :=
+  ["VerificationHandoff", "SharedMemory", "ChannelBase", "ChannelPrivacy", "ChannelTemporal",
+    "ChannelGoverned", "MemoryRemoved", "ChannelIncident", "ChannelRecovered"]
+
+def program : CedarPooSpec.Functional.Program model schema :=
+  (CedarPooSpec.Functional.prepareProgram CedarPooSpec.Functional.standard model schema roots).toOption.get
+      (by native_decide)
 
 inductive Payload where
   | verificationToken | workflowHandle | fullChart
@@ -101,11 +140,9 @@ def request (envelope : Envelope) : Request :=
     ("delegationActive", .prim (.bool envelope.delegationActive))]⟩
 
 def admitted (root : String) (envelope : Envelope) : Bool :=
-  match model.compile root with
+  match program.authorize root [request envelope] entities with
   | .error _ => false
-  | .ok policies =>
-      let response := isAuthorized (request envelope) entities policies
-      response.decision == .allow && response.erroringPolicies.isEmpty
+  | .ok receipt => receipt.allowed
 
 /-- Replace this synthetic boundary with a host connector that projects the
     real immutable payload and performs the authorized effect. -/

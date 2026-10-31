@@ -4,10 +4,9 @@ namespace CedarPooSpec.PriorAuthorizationInternalChannelsExport
 
 open CedarPooSpec.PriorAuthorizationInternalChannels
 
-def manifest : Except String Lean.Json := do
-  let rows ← cases.mapM fun (name, root, envelope, _) =>
-    CedarPooSpec.PolicyJson.authorizationCase name root model root
-      (request envelope) entities
-  CedarPooSpec.SchemaJson.validatedManifest schema rows
+def manifest : Except String CedarPooSpec.Transport.Manifest := do
+  let rows ← LeanPoo.Functional.Validation.traverse (fun (name, root, envelope, _) =>
+    program.case name root root (request envelope) entities) cases
+  CedarPooSpec.SchemaJson.manifest schema rows
 
 end CedarPooSpec.PriorAuthorizationInternalChannelsExport

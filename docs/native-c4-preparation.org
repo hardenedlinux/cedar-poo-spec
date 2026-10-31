@@ -1,0 +1,228 @@
+#+title: Graph-bound C4 preparation, output ownership and complete native qualification
+#+options: toc:2 num:nil
+
+* Current shared-Plan and native startup audit
+
+The subsequent whole-domain implementation and resource findings are in
+[[file:native-shared-plan-rendering.org][shared C4 Plans, rendering ownership and native startup]]. The measurements
+below retain their original revision and are not replaced by that audit.
+
+* Common owner and all-domain scope
+
+This stage follows [[file:native-program-wire.org][Program schema preparation and certified fragments]].
+The frozen baseline is =b18eeb194b3fcdef788921502e3a0abc3317fd88=.
+The new immutable LeanPOO revision is
+=6ee9a4117ce418f6589abc238f3635722b66da84=; Cedar specification
+=017c35c3d1f856a0f8b62a66660ee6628870bbcf= and Rust SDK 4.12.0 stay fixed.
+The upstream revision preserves concurrent Property API/documentation updates;
+this is not an experiment that changes only one C4 function. Cedar uses Lean
+4.34.1; the upstream's own declared qualification uses Lean 4.34.0.
+PR #8 remains open and must not be merged by this work.
+
+All nine object families and all applicable domains use the same capabilities.
+The 51-entry catalog includes 47 case manifests, the two sides of schema
+evolution, named policy artifacts and the explicitly classified data fixtures.
+The three Cloud workflows outside the catalog keep their complete Rust replay.
+Standalone template-source bundles retain their source-artifact codec.
+
+| Owner | Shared state and responsibility |
+|-------+---------------------------------|
+| LeanPOO C4.prepare | One node index and a finite dependent table of lazy complete declared-root results |
+| Functional Program | Own that actual model graph's preparation for retained and open-root requests |
+| PolicyModules | Original object-plan selection, ordered edit/provenance checks and policy body resolution |
+| SchemaFacts | Existing actual-schema definition/well-formedness facts; per-root policy validation remains fresh |
+| Transport EncodedJson | Actual JSON value and certified complete encoding fragments |
+| Native output boundary | Detach rendering ownership, force fragments, then consume them through standard IO |
+| Rust runtime | Independent current admission, normalization and both authorizers |
+
+* Exact C4 result contracts
+
+=PreparedResult graph root= is a thunk of a complete Except result together
+with its equality to the original =C4.linearize graph root=. A dependent
+=Std.DHashMap= binds the result to the actual requested root. =Prepared.at_eq=
+is universal over graphs, preparations and roots, including exact error
+payloads. Unknown roots use the source-bound fallback without growing the
+finite table. Repeated declared-root queries share the same thunk.
+
+The original resolver is factored as =linearizeIndexed=; ordinary/checked
+entrypoints supply their original node index. Validation remains restricted to
+the requested reachable subgraph. No unrelated duplicate, cycle or suffix error
+is raised during preparation. Existing checked resolver/audit proofs are retained.
+Forty-two executable controls cover reachable/unreachable duplicates, missing
+nodes, cycles, conflicting orders and incompatible suffixes with interleaved
+revisits and complete result comparisons.
+
+This preparation memoizes each requested root's complete result. Distinct roots
+can still repeat internal parent resolution. The resolver's temporary full table
+is released rather than retained separately for every root. This is not a claim
+that every ancestor is globally computed once. The graph and its finite result
+table retire with their immutable Program owner; there is no cross-model global
+cache or decision cache.
+
+=Model.compilePrepared_eq= universally proves equality to the independent
+ordinary policy compiler, including errors. The same edit/provenance fold is
+parameterized by its actual resolver. A successful compiled-plan graph is proved
+equal to the model graph; this proof is erased, with no repeated graph equality
+test in the native fold. The selected compile capability consumes the actual
+preparation. Its returned =Compiled= still witnesses the original model/root
+compiler equation. Existing types, joint Contracts and live authorization
+receipts therefore continue to constrain actual values and callbacks.
+
+The new equality/detachment laws require only the existing standard logical
+axioms, with no new native-decision axiom. Full underlying Cedar specification
+proof dependencies retain their original, separately declared assumptions.
+
+* Output-buffer and source ownership findings
+
+The frozen native output has 1,177,068 encoded bytes plus its trailing newline.
+It comprises 465 complete fragments. The prior final =String.join= allocated
+another catalog-sized string. The pinned [[https://github.com/leanprover/lean4/blob/v4.34.1/src/runtime/object.cpp][Lean runtime]] can reserve additional
+capacity on append; its UTF-8 byte-array conversions also copy, so a custom
+byte-array reserve/conversion path was not introduced.
+
+The native entrypoint now writes complete certified fragments through the
+existing [[https://github.com/leanprover/lean4/blob/v4.34.1/src/runtime/io.cpp][standard string IO implementation]], which writes existing string bytes.
+It constructs no final whole-catalog string. Public JSON and string projections
+remain available and share the same source preparation.
+
+Generated C revealed a second lifetime issue: the intermediate serializer
+borrowed the entire =EncodedJson= during rendering. =EncodedJson.detach= now
+consumes that container and captures only its rendering field in the returned
+thunk. Generated C explicitly increments the rendering reference and decrements
+the semantic container before constructing the output thunk. =detach_eq= and
+=detach_certified= bind the detached result to the actual original chunks/value.
+Child renderers can still retain the source values they need; this does not
+claim immediate retirement of every semantic object or immutable publication.
+
+The generated output loop releases the temporary list prefix before writing
+each fragment and jumps back with its tail, using constant stack. Policy
+snapshots and typed Case inputs keep their declared Program/global lifetimes.
+StdIO buffering and process-exit flushing remain included in complete process
+accounting; no durable-storage or unrestricted IO refinement theorem is claimed.
+
+The intermediate streaming cohort is preserved in
+[[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-c4-intermediate-lifecycle.json][its complete lifecycle receipt]], with source replacements and the independent
+RSS survey in [[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-c4-preparation-evidence.json][integrated evidence]]. Its median peak-child RSS was about
+49.97 MiB versus the final cohort's 50.19 MiB. These are separate cohorts, not a
+paired incremental experiment. Early semantic-container retirement is verified
+in generated ownership operations; an additional RSS reduction from that last
+change is not admitted. No favorable intermediate sample replaces a final one.
+
+* Full acceptance and cold builds
+
+Complete =just check= returns zero. All applicable Case workflows, types,
+Contracts, proofs, independent Rust oracle/tamper controls and 52 canonical
+golden exports pass. The Python framework's 24 tests include owned-child
+observation/cleanup and exited-PID handling. All-targets/all-features workspace
+Clippy passes. Golden checks occur at the canonical export lifecycle point;
+later standalone domain recipes can rewrite shared artifact paths in a different
+format without changing the parsed values.
+
+Two artifact roots were initially absent, after reversible moves preserving
+prior compiler artifacts and receipts. Both builds use default project settings
+and unchanged 120-second supervision.
+
+| Cold project | Scope | Wall | Reported compiler maximum process/child RSS |
+|--------------+-------+------+--------------------------------------------|
+| LeanPOO | Complete public library and native C4 scale target, 404 jobs | 77.084 s | 1461.422 MiB |
+| Cedar | Four native production/diagnostic targets, 934 jobs | 75.868 s | 1476.609 MiB |
+
+The installed toolchain/stdlib remain cached. Cedar also retains pinned SDK
+artifacts under =.lake/packages=. These are project-cold builds, not a compiler
+bootstrap or cold external SDK claim. Reported compiler RSS is not an aggregate
+bound for concurrent compiler children. All four Cedar hot/cold native hashes
+match exactly, and the POO C4 executable's hot/cold hash also matches. The cold
+C4 deep/wide complete-result controls, cold catalog and full Rust receipts pass.
+
+* Fixed complete-process evidence
+
+[[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-c4-preparation-lifecycle.json][The final ordinary receipt]] owns all source/executable identities and all
+48 children/15 wire comparisons. [[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-c4-preparation-object-observations.csv][Object observations]] retain 486 rows;
+[[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-c4-preparation-entry-observations.csv][entry observations]] retain 1836. Eighteen internal samples per variant are
+nine paired samples plus nine additional file-lifecycle samples. No task-owned
+builds/tests overlap that ordinary cohort. Unrelated host scheduling is not
+controlled. RSS below is the median of the maximum sequential child, not a sum
+of producer and consumer memory or retained heap.
+
+| Ordinary complete-process observation | Baseline | Final |
+|---------------------------------------+----------+-------|
+| Pipeline CPU median | 260 ms | 240 ms |
+| Producer CPU median | 90 ms | 80 ms |
+| Pipeline peak-child RSS median | 51.875 MiB | 50.188 MiB |
+| First paired pipeline wall | 2598.636 ms | 1884.199 ms |
+| Second paired pipeline wall | 287.758 ms | 277.951 ms |
+| Third paired pipeline wall | 289.125 ms | 279.752 ms |
+
+All three pairs improve in this cohort. CPU accounting is rounded by the OS;
+these finite observations do not establish a universal latency guarantee.
+Rust executables and complete input/output bytes are identical negative
+controls. Its 18-sample internal replay medians are 170.405/169.502 ms; no Rust
+algorithm or allocation improvement is attributed to this Lean-only change.
+Ordinary allocation instrumentation remains disabled. Lean heartbeat counts
+are allocation proxies, not allocated bytes.
+
+* Instrumented resource and pre-main evidence
+
+The existing process launcher separately records current resident bytes of
+its owned Popen child at a fixed 5-ms interval: Darwin's complete 96-byte
+=proc_taskinfo= ABI or Linux's =/proc/pid/statm=. Reads are bracketed by owned
+child liveness checks, and the observer is stopped before its receipt is saved.
+Sampler cleanup is outside the recorded child end timestamp. The observer is
+used only by launch diagnostics, not the ordinary process driver/resource wrapper.
+It can miss short peaks, especially the very short stdio output interval; a
+sampled maximum is not OS high-water RSS, retained heap or an RSS bound.
+
+The source-ready/encoding/output phase clock uses its own origin after main
+entry. Phase attribution retains a bracket from the main span and final phase,
+rather than pretending both clocks start simultaneously. The observed resident
+rise occurs after pre-main and through source preparation/encoding, supporting
+the buffer/lifetime investigation. Baseline/candidate sampled maxima overlap;
+the survey does not independently prove an exclusive byte-level cause.
+
+The final six-launch diagnostic has median import initialization
+53.254/45.588 ms, main span 27.942/27.683 ms and combined initialization/main
+81.237/73.308 ms. Main execution is essentially unchanged at this granularity.
+Output writes cost more while the final joined buffer is removed; no claim is
+based solely on the shorter serialization subspan.
+
+There are 42 complete instrumented controls: baseline Lean copies, candidate
+Lean/Rust copies, candidate Lean/Rust hardlinks, and separately sampled
+Lean/Rust launches, six executions per group. Every output hash, clock interval
+and exit status is checked. Both fixed acquisition requests obtain eligible
+loader-entry frames in the final variant: 83 Lean and 62 Rust samples. The
+intermediate Lean acquisition was empty despite exit zero and stays recorded
+as unqualified; it is not replaced by the final variant's different executable.
+
+Same-inode controls still show first-path delays: Lean 1569.679 ms on the first
+path and 742.665 ms on the second, with repeated launches around 69 ms. Rust
+has 365.859/85.816 ms first-path spans, then roughly 3 ms. Reusing the inode
+alone therefore does not close the delay. Hardlink creation also changes link
+metadata, and provenance/xattrs/global OS cache state are not held constant;
+this does not isolate a pure pathname or inode effect.
+
+Owned-child wait-channel probes expose sleeping state but hide the channel
+symbol/address. PID/lifetime-matched raw Mach events retain both clock-domain
+projections with assessment identifiers redacted. Apple [[https://github.com/apple-oss-distributions/dyld/blob/main/dyld/dyldStartup.s][dyld entry assembly]]
+and the [[https://github.com/apple-oss-distributions/xnu/blob/main/bsd/kern/kern_exec.c][XNU exec path]] locate possible loader/security boundaries, not the
+exclusive blocking callback on this host. Current evidence does not divide the
+tail into kernel, runtime, service queue or scanning durations. No security,
+signing or xattr configuration is changed and no system-wide stack capture is used.
+
+* Remaining common-owner work
+
+1. Share prepared topology with original object-root plan selection, then
+   investigate reuse of internal ancestor results across distinct roots. Preserve
+   exact ordinary error order, reachable-only validation and edit origins before
+   replacement. Extend existing owners rather than adding a global cache.
+2. Profile remaining metadata JSON compression and leaf-renderer retention.
+   Keep public projections and detached fragment certificates consistent across
+   the entire domain matrix. Use allocator live-byte evidence only through an
+   appropriate owner; do not infer it from RSS or heartbeat counts.
+3. Refine owned-process pre-runtime/loader boundaries and link/provenance state
+   where the platform exposes them. Keep copy/inode, sampled, ordinary, cold and
+   Ubuntu observations separate. Do not change security settings or choose
+   favorable repeats to manufacture a startup SLO.
+
+The upstream exact revision passed all 17 CI jobs. Cedar publication-head CI
+and its real launch closure are recorded separately in PR #8 after publication;
+this source snapshot does not pre-claim a future run.

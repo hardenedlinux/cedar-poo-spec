@@ -1,3 +1,4 @@
+import CedarPooSpec.Functional.Capabilities
 import CedarPooSpec.PolicyJson
 import CedarPooSpec.SchemaJson
 import Examples.Governance.AttestedDataAccess
@@ -9,21 +10,17 @@ namespace CedarPooSpec.AttestedSchemaEvolutionExport
 open CedarPooSpec.AttestedDataAccessExample
 open CedarPooSpec.AttestedManifest
 
-private def manifest (candidate : Cedar.Validation.Schema) : Except String Lean.Json := do
-  let mut rows : List Lean.Json := []
+private def manifest (candidate : Cedar.Validation.Schema) : Except String CedarPooSpec.Transport.Manifest := do
+  let mut rows : List CedarPooSpec.Transport.Case := []
   for (name, req, _) in unchangedCases do
-    let receipt ← CedarPooSpec.PolicyJson.authorizationCase
-      name Root.strengthened.artifactRevision model Root.strengthened.name req entities
+    let receipt ← CedarPooSpec.AttestedDataAccessExample.program.case
+        name Root.strengthened.artifactRevision Root.strengthened.name req entities
     rows := rows ++ [receipt]
-  let stale ← CedarPooSpec.PolicyJson.authorizationCase
-    "stale-attestation" Root.strengthened.artifactRevision
-    model Root.strengthened.name
-    (request customerDataset { attestationFresh := false }) entities
-  CedarPooSpec.SchemaJson.validatedManifest candidate (rows ++ [stale])
+  let stale ← CedarPooSpec.AttestedDataAccessExample.program.case
+      "stale-attestation" Root.strengthened.artifactRevision Root.strengthened.name (request customerDataset { attestationFresh := false }) entities
+  CedarPooSpec.SchemaJson.manifest candidate (rows ++ [stale])
 
-def bundle : Except String Lean.Json := do
-  return Lean.Json.mkObj [
-    ("before", ← manifest schema),
-    ("after", ← manifest schemaWithClassification)]
+def bundle : Except String CedarPooSpec.Transport.Entry := do
+  return .evolution (← manifest schema) (← manifest schemaWithClassification)
 
 end CedarPooSpec.AttestedSchemaEvolutionExport

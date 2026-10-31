@@ -14,6 +14,7 @@ structure SourceControlBoundary where
   resourceScope : ResourceScope
   protectedBranch : String
   principalScope : PrincipalScope := .principalScope .any
+  deriving DecidableEq
 
 private def fact (name : String) : Expr := .getAttr (.var .context) name
 private def target (name : String) : Expr := .getAttr (.var .resource) name

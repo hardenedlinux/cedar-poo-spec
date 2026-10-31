@@ -1,4 +1,4 @@
-import CedarPooSpec.AuthorizationDeltaOperationalExactProof
+import CedarPooSpec.Authorization.Delta.OperationalExactProof
 import Examples.Governance.TicketSharing
 
 /-!
@@ -176,8 +176,8 @@ private theorem tightened_no_error (p : Policy) (e guard : Expr)
 /-- A successful error-free Allow in the revised linked policies was already
     an error-free Allow in the earlier linked policies, for every Cedar Env. -/
 theorem noErrorFreeAllowGain (env : Cedar.Spec.Env)
-    (h : CedarPooSpec.AuthorizationDelta.errorFreeAllow posturePolicies env = true) :
-    CedarPooSpec.AuthorizationDelta.errorFreeAllow publishedPolicies env = true := by
+    (h : CedarPooSpec.Authorization.Delta.errorFreeAllow posturePolicies env = true) :
+    CedarPooSpec.Authorization.Delta.errorFreeAllow publishedPolicies env = true := by
   have errorsExact (ps : Policies) :
       (isAuthorized env.request env.entities ps).erroringPolicies =
         errorPolicies ps env.request env.entities := by
@@ -186,11 +186,11 @@ theorem noErrorFreeAllowGain (env : Cedar.Spec.Env)
   have hAfterParts :
       (isAuthorized env.request env.entities posturePolicies).decision = .allow ∧
       (errorPolicies posturePolicies env.request env.entities).isEmpty = true := by
-    simpa only [CedarPooSpec.AuthorizationDelta.errorFreeAllow,
+    simpa only [CedarPooSpec.Authorization.Delta.errorFreeAllow,
       errorsExact, Bool.and_eq_true, beq_iff_eq] using h
   have hBeforeDecision := decision_no_gain env.request env.entities hAfterParts.1
   have hAfterEval : ∀ p ∈ posturePolicies, hasError p env.request env.entities = false :=
-    (CedarPooSpec.AuthorizationDelta.errorPoliciesEmpty_iff_everyPolicyEvaluates
+    (CedarPooSpec.Authorization.Delta.errorPoliciesEmpty_iff_everyPolicyEvaluates
       posturePolicies env.request env.entities).mp hAfterParts.2
   have hBeforeEval : ∀ p ∈ publishedPolicies, hasError p env.request env.entities = false := by
     intro p hp
@@ -209,9 +209,9 @@ theorem noErrorFreeAllowGain (env : Cedar.Spec.Env)
       simpa only [← oldB_condition] using ho
     · exact hAfterEval sharedV (by rw [after_shape]; simp)
   have hBeforeErrors :=
-    (CedarPooSpec.AuthorizationDelta.errorPoliciesEmpty_iff_everyPolicyEvaluates
+    (CedarPooSpec.Authorization.Delta.errorPoliciesEmpty_iff_everyPolicyEvaluates
       publishedPolicies env.request env.entities).mpr hBeforeEval
-  simpa only [CedarPooSpec.AuthorizationDelta.errorFreeAllow,
+  simpa only [CedarPooSpec.Authorization.Delta.errorFreeAllow,
     errorsExact, Bool.and_eq_true, beq_iff_eq] using
     (show (isAuthorized env.request env.entities publishedPolicies).decision = .allow ∧
       (errorPolicies publishedPolicies env.request env.entities).isEmpty = true from
@@ -220,9 +220,9 @@ theorem noErrorFreeAllowGain (env : Cedar.Spec.Env)
 /-- The C4 revision compiles to these exact linked policies. This wrapper
     inherits the fixture's model-construction certificates. -/
 theorem noErrorFreeAllowGainForRevision (env : Cedar.Spec.Env)
-    (h : CedarPooSpec.AuthorizationDelta.errorFreeAllow
+    (h : CedarPooSpec.Authorization.Delta.errorFreeAllow
       policyRevision.afterPolicies env = true) :
-    CedarPooSpec.AuthorizationDelta.errorFreeAllow
+    CedarPooSpec.Authorization.Delta.errorFreeAllow
       policyRevision.beforePolicies env = true := by
   obtain ⟨hBefore, hAfter⟩ := policyRevisionBodies
   rw [hAfter] at h

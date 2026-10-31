@@ -1,5 +1,4 @@
 import Examples.Enterprise.Personnel.SourceCustody
-import CedarPooSpec.PolicyJson
 import CedarPooSpec.SchemaJson
 
 namespace CedarPooSpec.SourceCustodyValidatedExport
@@ -49,10 +48,10 @@ def scenarios : List (String × String × Cedar.Spec.Entities ×
   ("incident-still-reads", "Incident", entities, normalRead),
   ("recovered-release", "Recovered", entities, approvedRelease 1)]
 
-def manifest : Except String Lean.Json := do
-  let rows ← scenarios.mapM fun (name, root, store, operation) =>
-    CedarPooSpec.PolicyJson.authorizationCase name root model root
-      operation.request store
-  CedarPooSpec.SchemaJson.validatedManifest schema rows
+def manifest : Except String CedarPooSpec.Transport.Manifest := do
+  let rows ← LeanPoo.Functional.Validation.traverse (fun (name, root, store, operation) =>
+    program.case name root root
+      operation.request store) scenarios
+  CedarPooSpec.SchemaJson.manifest schema rows
 
 end CedarPooSpec.SourceCustodyValidatedExport

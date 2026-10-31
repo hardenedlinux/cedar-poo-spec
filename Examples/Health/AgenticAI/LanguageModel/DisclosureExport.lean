@@ -1,4 +1,3 @@
-import CedarPooSpec.PolicyJson
 import CedarPooSpec.SchemaJson
 import Examples.Health.AgenticAI.LanguageModel.Disclosure
 
@@ -9,10 +8,10 @@ namespace CedarPooSpec.AgenticAI.LanguageModel.DisclosureExport
 
 open CedarPooSpec.AgenticAI.LanguageModel.Disclosure
 
-def manifest : Except String Lean.Json := do
-  let rows ← Disclosure.cases.mapM fun (name, root, state, effect, _) =>
-    CedarPooSpec.PolicyJson.authorizationCase name root
-      publicationModel root (projectedRequest state effect) publicationEntities
-  CedarPooSpec.SchemaJson.validatedManifest publicationSchema rows
+def manifest : Except String CedarPooSpec.Transport.Manifest := do
+  let rows ← LeanPoo.Functional.Validation.traverse (fun (name, root, state, effect, _) =>
+    program.case name root
+      root (projectedRequest state effect) publicationEntities) Disclosure.cases
+  CedarPooSpec.SchemaJson.manifest publicationSchema rows
 
 end CedarPooSpec.AgenticAI.LanguageModel.DisclosureExport

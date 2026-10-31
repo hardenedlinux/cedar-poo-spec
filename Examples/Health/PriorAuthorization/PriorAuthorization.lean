@@ -1,5 +1,5 @@
-import CedarPooSpec.PolicyJson
 import CedarPooSpec.SchemaJson
+import CedarPooSpec.Functional.Capabilities
 
 /-!
 A finite provider-to-payer prior-authorization workflow. A clinical agent
@@ -167,6 +167,14 @@ def modelResult : Except LeanPoo.C4.Error Model := do
 
 def model : Model := modelResult.toOption.get (by native_decide)
 
+def roots : List String :=
+  ["Base", "Identity", "Administration", "Privacy", "PayerRules", "Temporal",
+    "Combined", "Governed", "Incident", "Recovered"]
+
+def program : CedarPooSpec.Functional.Program model schema :=
+  (CedarPooSpec.Functional.prepareProgram CedarPooSpec.Functional.standard model schema roots).toOption.get
+    (by native_decide)
+
 structure State where
   expectedPatient : String := "patient-a"
   clinicalSeen : Bool := false
@@ -201,11 +209,9 @@ def request (state : State) (attempt : Attempt) : Request :=
     ("delegationActive", .prim (.bool state.delegationActive))]⟩
 
 def authorized (root : String) (state : State) (attempt : Attempt) : Bool :=
-  match model.compile root with
+  match program.authorize root [request state attempt] entities with
   | .error _ => false
-  | .ok policies =>
-      let response := isAuthorized (request state attempt) entities policies
-      response.decision == .allow && response.erroringPolicies.isEmpty
+  | .ok receipt => receipt.allowed
 
 def advance (state : State) (attempt : Attempt) : State :=
   { state with
@@ -214,13 +220,19 @@ def advance (state : State) (attempt : Attempt) : State :=
     billingSeen := state.billingSeen ||
       (attempt.action == readBilling && attempt.resource == billingA) }
 
+def replayFactory (attempts : List Attempt) : LeanPoo.Functional.Factory (String × State)
+    (fun _ => State × List (Request × Bool)) :=
+  LeanPoo.Functional.Factory.fold
+    (fun (root, _) (state, rows) attempt =>
+      let req := request state attempt
+      let allowed := authorized root state attempt
+      (if allowed then advance state attempt else state, rows ++ [(req, allowed)]))
+    (fun (_, initial) => (initial, []))
+    (attempts.map fun attempt _ => attempt)
+
 def replay (root : String) (initial : State) (attempts : List Attempt) :
     List (Request × Bool) × State :=
-  let (state, rows) := attempts.foldl (fun (state, rows) attempt =>
-    let req := request state attempt
-    let allowed := authorized root state attempt
-    (if allowed then advance state attempt else state,
-      rows ++ [(req, allowed)])) (initial, [])
+  let (state, rows) := replayFactory attempts (root, initial)
   (rows, state)
 
 def decisions (root : String) (initial : State) (attempts : List Attempt) :
@@ -300,9 +312,7 @@ theorem missingDisclosureFactCannotGrant :
       true := by native_decide
 
 theorem allRootsValidate :
-    ["Base", "Identity", "Administration", "Privacy", "PayerRules",
-      "Temporal", "Combined", "Governed", "Incident", "Recovered"].all
-      (fun root => (CedarPooSpec.PolicyJson.publish model root schema).isOk) =
+    roots.all (fun root => (program.publish root).isOk) =
         true := by native_decide
 
 end CedarPooSpec.PriorAuthorizationExample

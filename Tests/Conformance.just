@@ -30,7 +30,13 @@ check-storage-profiles-v1:
 check-google-table-batch-v1:
     lake env lean --run Productions/Pseudonymization/TableBatchFixtureMain.lean | diff -u Tests/Conformance/google-table-batch-v1.json -
 
-check-delta: check-authorization-delta check-authorization-delta-operational check-authorization-delta-reasons check-authorization-delta-effective-reasons check-payment-delta check-payment-interaction check-agent-trace-delta check-health-authorization-impact
+check-delta: check-gateway-delta check-authorization-delta check-authorization-delta-operational check-authorization-delta-reasons check-authorization-delta-effective-reasons check-payment-delta check-payment-interaction check-agent-trace-delta check-health-authorization-impact
+
+check-gateway:
+    lake build CedarPooSpec.Gateway Tests.Gateway.Contracts Tests.Gateway.Counterexamples Tests.Gateway.Objects Tests.Gateway.Publication Tests.Gateway.Delta Tests.Gateway.ZeroTrust
+
+check-gateway-delta: check-gateway
+    lake env lean --run Tests/Gateway/Delta.lean
 
 check-replay-receipts: prepare-agent-payment-manifest
     cargo run --locked --quiet -p cedar-poo-bridge --manifest-path Cargo.toml -- replay-receipts < .lake/build/agent-payment-manifest.json > .lake/build/agent-payment-replay-receipts.json
@@ -61,13 +67,13 @@ check-authorization-delta: build-examples
     uv run --project python --package cedar-poo-py-test --locked cedar-poo-py-test check authorization-delta
 
 check-authorization-delta-operational:
-    lake build CedarPooSpec.AuthorizationDeltaOperationalExactProof Tests.Governance.AuthorizationDeltaOperational Tests.Governance.AuthorizationDeltaFormula
+    lake build CedarPooSpec.Authorization.Delta.OperationalExactProof Tests.Governance.AuthorizationDeltaOperational Tests.Governance.AuthorizationDeltaFormula
     uv run --project python --package cedar-poo-py-test --locked cedar-poo-py-test check authorization-delta-operational
 
 # Research artifact only: emits the exact query and cvc5's CPC output.
 # The fixture's UNSAT theorem is separate and uses native computation certificates.
 probe-authorization-delta-proof:
-    lake build CedarPooSpec.AuthorizationDeltaOperationalExactProof Examples.Governance.TicketSharing
+    lake build CedarPooSpec.Authorization.Delta.OperationalExactProof Examples.Governance.TicketSharing
     timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 --run Tests/Governance/AuthorizationDeltaProofProbe.lean > .lake/build/authorization-delta-exact.smt2
     timeout --signal=TERM --kill-after=3s 120s "$CVC5" --lang=smt --produce-proofs --proof-check=lazy --dump-proofs --proof-format-mode=cpc .lake/build/authorization-delta-exact.smt2 > .lake/build/authorization-delta-exact.cpc
     rg -q '^\(check-sat\)$' .lake/build/authorization-delta-exact.smt2
@@ -84,7 +90,7 @@ check-authorization-delta-reasons:
     uv run --project python --package cedar-poo-py-test --locked cedar-poo-py-test check authorization-delta-reasons
 
 check-authorization-delta-effective-reasons:
-    lake build CedarPooSpec.AuthorizationDeltaEffectiveReasonsProof Tests.Governance.AuthorizationDeltaEffectiveReasons
+    lake build CedarPooSpec.Authorization.Delta.EffectiveReasonsProof Tests.Governance.AuthorizationDeltaEffectiveReasons
     uv run --project python --package cedar-poo-py-test --locked cedar-poo-py-test check authorization-delta-effective-reasons
 
 check-payment-interaction:
@@ -108,7 +114,8 @@ check-health-authorization-impact:
     uv run --project python --package cedar-poo-py-test --locked cedar-poo-py-test check health-authorization-impact
 
 check-authorization-delta-proof:
-    lake build CedarPooSpec.AuthorizationDeltaProof CedarPooSpec.AuthorizationDeltaBooleanCore Tests.Governance.AuthorizationDeltaFormula Tests.Governance.AuthorizationDeltaDirect Tests.Governance.AuthorizationDeltaAxiomAudit
+    just check-gateway
+    lake build CedarPooSpec.Authorization.Delta.Proof CedarPooSpec.Authorization.Delta.BooleanCore Tests.Governance.AuthorizationDeltaFormula Tests.Governance.AuthorizationDeltaDirect Tests.Governance.AuthorizationDeltaAxiomAudit
 
 check-payment-delta: build-examples
     uv run --project python --package cedar-poo-py-test --locked cedar-poo-py-test check payment-delta
@@ -131,3 +138,37 @@ check-agentic-ai-commerce-wire-sdk sdk_root:
 
 check-agentic-ai-commerce-constraint-sdk sdk_root:
     uv run --project python --package cedar-poo-py-test --extra ap2-sdk --locked cedar-poo-py-test ap2-constraints --sdk-root {{quote(sdk_root)}}
+
+# Compile the existing manifest entrypoint; its output must match Lean execution byte for byte.
+check-native-catalog: build-examples
+    sha256sum .lake/build/lib/lean/Examples/Governance/AttestedDataAccess.olean .lake/build/lib/lean/Examples/Enterprise/Procurement/PurchaseApproval.olean .lake/build/lib/lean/Examples/Enterprise/Agent/Delegation/AgentDelegation.olean > .lake/build/native-artifact-owner.sha256
+    just check-policy-reuse
+    just example governance trusted-network
+    just example enterprise procurement delegated-approval
+    just example enterprise agent chain
+    sha256sum -c .lake/build/native-artifact-owner.sha256
+    lake build caseManifestsNative
+    timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 --run Examples/Manifests.lean catalog > .lake/build/functional-catalog-lean.json
+    timeout --signal=TERM --kill-after=3s 120s .lake/build/bin/caseManifestsNative catalog > .lake/build/functional-catalog-native.json
+    cmp .lake/build/functional-catalog-lean.json .lake/build/functional-catalog-native.json
+
+# Complete catalog replay; preserve all pre-migration wire artifacts exactly.
+check-functional-catalog: check-native-catalog
+    timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 --run Examples/Manifests.lean all
+    sha256sum -c Tests/Conformance/functional-manifests.sha256
+    timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 --run Examples/Manifests.lean catalog > .lake/build/functional-catalog.json
+    cargo run --locked --quiet -p cedar-poo-bridge --manifest-path Cargo.toml -- replay-catalog < .lake/build/functional-catalog.json > .lake/build/functional-catalog-receipts.json
+    jq -e 'length == 51 and (."claim-settlement-handoff".scenarios | length) == 14 and ([."claim-settlement-handoff".scenarios[] | select(.admitted) | .name] == ["ready"])' .lake/build/functional-catalog-receipts.json > /dev/null
+    cargo test --locked -p cedar-poo-bridge --lib emitted_catalog_rejects_cross_artifact_tampering -- --ignored
+    cargo test --locked -p cedar-poo-runtime --lib prepared_catalog_matches_original_workflows -- --ignored
+
+# Consumer migration is an enforced boundary; primitives retain compatibility APIs.
+check-functional-consumers:
+    if rg -U -n 'def (policy\?|owner\?|control\?|channel\?|boundary\?|intent\?|scope\?|artifact\?)[^\n]*\n[ \t]+profile\.read' CedarPooSpec --glob '*.lean'; then exit 1; fi
+    if rg -n 'PolicyJson\.(authorizationCase|publish|compiled)\b|CompoundAuthorization\.authorize(All|Layers)\b' Examples Productions --glob '*.lean'; then exit 1; fi
+    if rg -n 'PolicyJson\.authorizationCase\b|CompoundAuthorization\.authorize(All|Layers)\b' CedarPooSpec --glob '*.lean' --glob '!Compilation.lean' --glob '!CompilationJson.lean'; then exit 1; fi
+
+check-claim-settlement-replay: build-examples
+    timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 --run Examples/Manifests.lean catalog claim-settlement-claims claim-settlement-banking claim-settlement-handoff > .lake/build/claim-settlement-catalog.json
+    cargo run --locked --quiet -p cedar-poo-bridge --manifest-path Cargo.toml -- replay-catalog < .lake/build/claim-settlement-catalog.json > .lake/build/claim-settlement-receipts.json
+    jq -e 'length == 3 and (."claim-settlement-handoff".scenarios | length) == 14 and ([."claim-settlement-handoff".scenarios[] | select(.admitted) | .name] == ["ready"])' .lake/build/claim-settlement-receipts.json > /dev/null

@@ -70,7 +70,13 @@ construction-time boundary for Lean-POO multiple dispatch across independently
 extensible policy profiles.
 [[file:docs/rfc/0008-composable-control-objects.org][RFC 0008]] defines an
 open, scenario-driven control-object library above Cedar's upstream semantics.
-Pseudonymization, Admission, Governance, Data,
+[[file:docs/rfc/0010-zero-trust.org][RFC 0010]] aligns the reusable
+[[file:docs/zero-trust-contract.org][Zero Trust effect-boundary contract]] with
+NIST, UCON and executable Cedar foundations, separating checked conditional laws
+from native currentness, durability and mediation obligations.
+[[file:CedarPooSpec/ZeroTrust/README.org][ZeroTrust]] and
+[[file:CedarPooSpec/Authorization/README.org][Authorization]] are reusable functional/POO frameworks.
+Pseudonymization, Admission, [[file:CedarPooSpec/Gateway/README.org][Gateway admission and execution Delta]], Governance, Data,
 [[file:CedarPooSpec/AgenticAI/README.org][AgenticAI]], and
 [[file:CedarPooSpec/Cloud/README.org][Cloud]] are cross-industry
 capability families;
@@ -167,6 +173,24 @@ library composes Cedar authorization controls. See the
 
 * Verification
 
+The [[file:docs/lean-poo-alignment.org][typed industry object and Contract alignment]] records the exact LeanPOO
+PR revision, medical/payment consumers and their static, contract and Cedar
+authorization boundaries.
+[[file:docs/rfc/0008-functional-cedar-capabilities.org][RFC 0008]] and [[file:CedarPooSpec/Functional/README.org][Functional Cedar capabilities]] describe the implemented
+shared typed preparation, publication, authorization and bounded root reuse.
+[[file:docs/functional-coverage.org][Whole-repository coverage]] records all Example families and library consumers,
+actual PolicyProfile/Handoff Contracts, retained semantic proof oracles and the
+51-entry Rust catalog replay. All 51 frozen manifest hash records retain their bytes.
+Library and Production imports remain independent of Examples.
+The shared ObjectProfile path now admits all nine materialized domain families
+through executable projection Contracts and kernel-audited provider laws.
+=just bench-functional-catalog= measures the native release Rust replay under
+fixed workloads, alongside the separate Lean-run reuse measurement.
+[[file:docs/native-performance-plan.org][Native lifecycle audit and next acceptance plan]] records whole-process accounting,
+shared ownership changes and the accepted all-domain optimization unit.
+[[file:docs/native-preparation-acceptance.org][P0-P2 implementation and acceptance]] records shared Entities preparation, proved
+Contract-report fusion and complete native process/resource evidence.
+
 =just lean-poo-api= lists the public modules from the locked LeanPOO
 dependency. =just lean-poo-api-find 'Multimethod.register'= searches its Lean
 declarations and uses the same revision that Lake builds for this project.
@@ -250,3 +274,16 @@ Cedar and =cedar-spec= are developed by the
 François-René Rideau, Alex Knauth, and Nada Amin. Their projects retain
 their own copyright and licenses. This repository is licensed under the
 Apache License 2.0; see [[file:LICENSE][LICENSE]].
+
+The [[file:docs/native-performance-next.org][first-file launch attribution and next integrated plan]] separates matched macOS
+execution-assessment waits from remaining shared runtime and object allocation
+costs, with all 51 entries retained in one acceptance unit.
+
+The [[file:docs/native-revision-acceptance.org][shared revision and typed-object acceptance]] records retained canonical
+rendering, proved static Functional provider selection, root diagnostic traversal,
+and corrected Cargo cache ownership with complete-domain resource evidence.
+
+The [[file:docs/native-dataflow-acceptance.org][complete POO field-algorithm migration and lifecycle evidence]] records the
+nine-family typed dependency migration, actual materialization proofs and full
+Case-producer/Rust process comparisons. Algorithm-scale gains and application
+lifecycle observations have separate acceptance boundaries. PR #8 stays unmerged.

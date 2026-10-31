@@ -1,3 +1,4 @@
+import CedarPooSpec.Functional.Capabilities
 import Examples.Governance.AttestedDataAccess
 import CedarPooSpec.PolicyJson
 import CedarPooSpec.Admission.SourceNetwork
@@ -62,6 +63,11 @@ def networkActionEntry : ActionSchemaEntry :=
 def networkSchema : Schema :=
   ⟨schemaWithClassification.ets, Map.make [(queryAction, networkActionEntry)]⟩
 
+/-- Checked immutable policy context; current request inputs are supplied at consumption. -/
+protected def networkProgram : CedarPooSpec.Functional.Program networkModel networkSchema :=
+  (CedarPooSpec.Functional.prepareProgram CedarPooSpec.Functional.standard
+    networkModel networkSchema (networkModel.modules.map (·.name))).toOption.get (by native_decide)
+
 def networkEntities : Entities := Map.make
   (entities.toList.map fun (uid, data) =>
     if uid == queryAction then
@@ -103,10 +109,9 @@ def cases : List (String × String × Request × Decision) := [
 
 def decisionsExact : Bool :=
   cases.all fun (_, root, req, expected) =>
-    match networkModel.compile root with
+    match CedarPooSpec.TrustedNetworkDataAccessExample.networkProgram.response root req networkEntities with
     | .error _ => false
-    | .ok policies =>
-        let response := isAuthorized req networkEntities policies
+    | .ok response =>
         response.decision == expected && response.erroringPolicies.isEmpty
 
 theorem decisionsExactFully : decisionsExact = true := by native_decide

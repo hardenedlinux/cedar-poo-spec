@@ -1,6 +1,6 @@
 import CedarPooSpec.Data.StorageEffect
 import CedarPooSpec.PolicyJson
-import Lean
+import Lean.Data.Json
 
 namespace CedarPooSpec.Data.StorageEffectFixture
 

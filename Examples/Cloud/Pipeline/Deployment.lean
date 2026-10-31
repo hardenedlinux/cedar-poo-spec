@@ -1,3 +1,4 @@
+import CedarPooSpec.Functional.Capabilities
 import Examples.Cloud.Pipeline.GoogleThreatCase
 
 /-! Only complete pipeline roots can be selected for publication. Stage roots
@@ -19,6 +20,6 @@ def Root.name : Root → String
   | .recovered => "Recovered"
 
 def publish (root : Root) :=
-  CedarPooSpec.PolicyJson.publish model root.name schema
+  CedarPooSpec.Cloud.Pipeline.GoogleThreatCase.program.publish root.name
 
 end CedarPooSpec.Cloud.Pipeline.GoogleThreatCase.Deployment

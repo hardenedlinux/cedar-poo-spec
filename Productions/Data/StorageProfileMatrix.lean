@@ -1,7 +1,7 @@
 import Productions.Data.StorageEffectFixture
 import Productions.Data.ProtectedStorageFixture
 import CedarPooSpec.Data.ProtectionProfile
-import Lean
+import Lean.Data.Json
 
 /-!
 Cross-profile production matrix. Each case is one exact physical effect
@@ -36,12 +36,11 @@ def rawAllowed (effect : StorageEffect) (current : CurrentStorageState) : Bool :
   effect.rawAdmitted { effect, epoch := 4, expiresAt := 100, allowed := true } current
 
 def protectedDecision? (effect : StorageEffect)
-    (current : CurrentStorageState) : Option Bool := do
-  let base ← (ProtectionProfile.define "matrix-base"
-    ProtectedStorageFixture.baseIntent).toOption
-  let variant ← (ProtectionProfile.withStorage base "matrix-case" effect).toOption
-  let intent ← ProtectionProfile.intent? variant
-  return intent.admitted { intent, epoch := 4, expiresAt := 100, allowed := true } current
+    (current : CurrentStorageState) : Option Bool :=
+  (ProtectionProfile.define "matrix-base" ProtectedStorageFixture.baseIntent).toOption.bind fun base =>
+    (ProtectionProfile.withStorage base "matrix-case" effect).toOption.bind fun variant =>
+      (ProtectionProfile.intent? variant).map fun intent =>
+        intent.admitted { intent, epoch := 4, expiresAt := 100, allowed := true } current
 
 def protectedAllowed (effect : StorageEffect) (current : CurrentStorageState) : Bool :=
   (protectedDecision? effect current).getD false

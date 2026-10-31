@@ -1,4 +1,4 @@
-import CedarPooSpec.AuthorizationDeltaOperationalExact
+import CedarPooSpec.Authorization.Delta.OperationalExact
 import Examples.Governance.TicketSharing
 
 /-!
@@ -10,7 +10,7 @@ UNSAT text or CPC output is not a Lean proof of the query.
 namespace CedarPooSpec.AuthorizationDeltaProofProbe
 
 open Cedar.Spec Cedar.Validation Cedar.SymCC
-open CedarPooSpec.AuthorizationDelta
+open CedarPooSpec.Authorization.Delta
 open CedarPooSpec.TicketSharingExample
 
 def script : IO String := do

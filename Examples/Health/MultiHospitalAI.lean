@@ -1,3 +1,4 @@
+import CedarPooSpec.Functional.Compilation
 import CedarPooSpec.Data.Lineage
 import CedarPooSpec.Data.LineageUse
 import CedarPooSpec.Pseudonymization.TokenCatalog
@@ -127,6 +128,11 @@ def modelResult : Except LeanPoo.C4.Error Model := do
 
 def model : Model := modelResult.toOption.get (by native_decide)
 
+/-- Compile-stage capability for this schema-free semantic fixture. -/
+protected def program : CedarPooSpec.Functional.Compilation model :=
+  CedarPooSpec.Functional.compilation model
+
+
 structure Facts where
   targetArtifact : String
   lineageRevision : String := "r1"
@@ -162,8 +168,7 @@ def request (actor action resource : EntityUID) (facts : Facts) : Request :=
     ("patientBound", .prim (.bool facts.patientBound))]⟩
 
 def decision (root revision : String) (req : Request) : Option Decision := do
-  let policies ← (model.compile root).toOption
-  let response := isAuthorized req (entities revision) policies
+  let response ← (CedarPooSpec.MultiHospitalAIExample.program.response root req (entities revision)).toOption
   if response.erroringPolicies.isEmpty then some response.decision else none
 
 def researchDecision (root revision : String) (action resource : EntityUID)

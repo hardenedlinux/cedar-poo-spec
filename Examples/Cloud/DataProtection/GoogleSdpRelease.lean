@@ -1,7 +1,7 @@
+import CedarPooSpec.Functional.Capabilities
 import CedarPooSpec.Cloud.DataProtection.PseudonymizationGate
 import CedarPooSpec.Pseudonymization.Tabular
 import CedarPooSpec.Platform.Google.SensitiveDataProtection
-import CedarPooSpec.PolicyJson
 import Examples.Cloud.Pipeline.GoogleThreatCase
 
 /-! Synthetic customer profiles combining a release pipeline with a Google
@@ -118,6 +118,11 @@ def modelResult : Except LeanPoo.Object.CombineError Model := do
 
 def model : Model := modelResult.toOption.get (by native_decide)
 
+/-- Exact checked policy snapshots; actual requests/entities remain per-call. -/
+def program : CedarPooSpec.Functional.Program model schema :=
+  (CedarPooSpec.Functional.prepareProgram CedarPooSpec.Functional.standard model schema
+    (model.modules.map (·.name))).toOption.get (by native_decide)
+
 structure Choice where
   name : String
   root : String
@@ -137,11 +142,9 @@ def transformRequest (choice : Choice) : Request :=
     ("keyAuthorized", .prim (.bool choice.keyAuthorized))]⟩
 
 def allowed (root : String) (request : Request) : Bool :=
-  match model.compile root with
+  match program.authorize root [request] entities with
   | .error _ => false
-  | .ok policies =>
-      let response := isAuthorized request entities policies
-      response.decision == .allow && response.erroringPolicies.isEmpty
+  | .ok receipt => receipt.allowed
 
 def pipelineAllowed (choice : Choice) : Bool :=
   allowed choice.root (GoogleThreatCase.request GoogleThreatCase.candidate choice.pipeline)
@@ -152,7 +155,11 @@ def transformAllowed (choice : Choice) : Bool :=
 /-- The sample Host admission checks both decisions before dispatching the
     provider effect; production redemption still needs an atomic receipt. -/
 def admitted (choice : Choice) : Bool :=
-  pipelineAllowed choice && transformAllowed choice
+  match program.authorize choice.root
+      [GoogleThreatCase.request GoogleThreatCase.candidate choice.pipeline,
+       transformRequest choice] entities with
+  | .error _ => false
+  | .ok receipt => receipt.allowed
 
 def choices : List Choice := [
   { name := "pipeline-only", root := "ReleaseReady",

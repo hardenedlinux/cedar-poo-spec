@@ -1,6 +1,11 @@
 import CedarPooSpec.Evaluation
 import CedarPooSpec.Validation
 import CedarPooSpec.Composition
+import CedarPooSpec.Functional.Compilation
+import CedarPooSpec.Functional.CompilationJson
+import CedarPooSpec.Functional.Capabilities
+import CedarPooSpec.Functional.Admission
+import CedarPooSpec.Functional.Reuse
 import CedarPooSpec.Soundness
 import CedarPooSpec.Slicing
 import CedarPooSpec.PolicyModules
@@ -16,14 +21,16 @@ import CedarPooSpec.Governance.Personnel.Assignment
 import CedarPooSpec.Governance.Personnel.KnowledgeScope
 import CedarPooSpec.Governance.Personnel.Admission
 import CedarPooSpec.Platform.AWS.AgentCore.Gateway
+import CedarPooSpec.Gateway
+import CedarPooSpec.ZeroTrust
 import CedarPooSpec.Platform.Google.SensitiveDataProtection
-import CedarPooSpec.Vertical.Health.DisclosureChannel
+import CedarPooSpec.Vertical.Health.DisclosureProfile
 import CedarPooSpec.Vertical.Health.EmergencyAccess
 import CedarPooSpec.Vertical.Health.FHIR.ConsumerAccess
 import CedarPooSpec.Vertical.Health.ClinicalExchange
 import CedarPooSpec.Vertical.Health.Region.Australia
 import CedarPooSpec.Vertical.Health.Region.UnitedStates
-import CedarPooSpec.Vertical.FinancialServices.ControllerRelease
+import CedarPooSpec.Vertical.FinancialServices.ControllerReleaseProfile
 import CedarPooSpec.Vertical.FinancialServices.BankingToolOwner
 import CedarPooSpec.Vertical.FinancialServices.BankingToolProfile
 import CedarPooSpec.Vertical.FinancialServices.ClaimSummaryVeto
@@ -52,7 +59,7 @@ import CedarPooSpec.AgenticAI.Boundary
 import CedarPooSpec.Data.Lakehouse.LocationBoundary
 import CedarPooSpec.Data.Lakehouse.LocationProfile
 import CedarPooSpec.Pseudonymization
-import CedarPooSpec.CompoundAuthorization
+import CedarPooSpec.Authorization
 import CedarPooSpec.Vertical.FinancialServices.PaymentOperation
 import CedarPooSpec.AgenticAI.Commerce.Budget
 import CedarPooSpec.AgenticAI.Commerce.Projection
@@ -69,24 +76,15 @@ import CedarPooSpec.TemplateValidation
 import CedarPooSpec.SchemaAdmission
 import CedarPooSpec.PolicyJson
 import CedarPooSpec.SchemaJson
-import CedarPooSpec.AuthorizationDelta
-import CedarPooSpec.AuthorizationDeltaOperational
-import CedarPooSpec.AuthorizationDeltaOperationalExact
-import CedarPooSpec.AuthorizationDeltaOperationalExactProof
-import CedarPooSpec.AuthorizationDeltaBooleanCore
-import CedarPooSpec.AuthorizationDeltaReasons
-import CedarPooSpec.AuthorizationDeltaEffectiveReasons
-import CedarPooSpec.AuthorizationDeltaEffectiveReasonsProof
-import CedarPooSpec.AuthorizationDeltaCompound
 import CedarPooSpec.Admission.PolicySnapshot
 import CedarPooSpec.Admission.AuthorityConsumption
 import CedarPooSpec.Admission.OperationIdentity
-import CedarPooSpec.AuthorizationDeltaEvidence
-import CedarPooSpec.AuthorizationDeltaInteraction
-import CedarPooSpec.AuthorizationDeltaRelease
-import CedarPooSpec.AuthorizationDeltaTrace
-import CedarPooSpec.AuthorizationDeltaJson
 
 import CedarPooSpec.AgenticAI.Commerce.Acceptance
 
 import CedarPooSpec.AgenticAI.Commerce.Presentation
+
+import CedarPooSpec.Data.LineageProfile
+import CedarPooSpec.Functional.ObjectProfile
+
+import CedarPooSpec.Transport.SourceCatalog
