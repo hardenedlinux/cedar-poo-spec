@@ -1,7 +1,14 @@
 #+TITLE: Complete Cedar typed dataflow migration and native lifecycle evidence
 #+OPTIONS: toc:2
 
-* Current Program preparation and final source encoding
+* Current C4 preparation and output ownership
+
+The current shared owner, complete all-domain qualification and resource evidence
+are in [[file:native-c4-preparation.org][graph-bound C4 preparation and detached output ownership]].
+The final source snapshot preserves the intermediate measurements and all
+Cases/Contracts/proofs/Rust replay. PR #8 remains open and unmerged.
+
+* Previous Program preparation and final source encoding
 
 The current all-domain implementation and complete lifecycle evidence are in
 [[file:native-program-wire.org][shared Program schema facts, compiled graph reuse and compositional encoding]].

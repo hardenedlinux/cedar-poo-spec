@@ -43,6 +43,18 @@ theorem EncodedJson.certified (encoded : EncodedJson) :
 theorem EncodedJson.wire_eq (encoded : EncodedJson) :
     encoded.wire = String.join encoded.chunks := rfl
 
+/-- Transfer only the certified rendering to an output consumer. Its closure
+captures the rendering field, not the enclosing semantic JSON container. -/
+def EncodedJson.detach (encoded : EncodedJson) : Thunk (List String) :=
+  let rendering := encoded.rendering
+  Thunk.mk fun _ => rendering.get.val
+
+theorem EncodedJson.detach_eq (encoded : EncodedJson) :
+    encoded.detach.get = encoded.chunks := rfl
+
+theorem EncodedJson.detach_certified (encoded : EncodedJson) :
+    JsonEncoding encoded.value encoded.detach.get := encoded.certified
+
 def EncodedJson.native (value : Lean.Json) : EncodedJson :=
   ⟨value, Thunk.mk fun _ => ⟨[value.compress], JsonEncoding.native value⟩⟩
 

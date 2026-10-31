@@ -34,6 +34,12 @@ def compile (model : Model) (root : String) : Except PolicyModules.Error (Compil
   | .error error => .error error
   | .ok policies => .ok ⟨policies, h⟩
 
+def compilePrepared (model : Model) (prepared : LeanPoo.C4.Prepared model.graph)
+    (root : String) : Except PolicyModules.Error (Compiled model root) :=
+  match h : model.compilePrepared prepared root with
+  | .error error => .error error
+  | .ok policies => .ok ⟨policies, by simpa only [model.compilePrepared_eq] using h⟩
+
 theorem compile_error (h : model.compile root = .error error) :
     compile model root = .error error := by
   unfold compile

@@ -10,7 +10,7 @@ rev = "017c35c3d1f856a0f8b62a66660ee6628870bbcf"
 [[require]]
 name = "LeanPoo"
 git = "https://github.com/tao3k/lean-poo.git"
-rev = "1b1d41eafe6c979387c4fa69e194fb921bd4befe"
+rev = "6ee9a4117ce418f6589abc238f3635722b66da84"
 
 [[lean_lib]]
 name = "CedarPooSpec"

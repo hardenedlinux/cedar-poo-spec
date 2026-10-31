@@ -10,6 +10,7 @@ import subprocess
 import tempfile
 import time
 from .clock_anchor import clock_anchor
+from .process_memory import ProcessMemory
 
 
 def observations(stderr: bytes):
@@ -69,15 +70,19 @@ def main() -> None:
                     child = subprocess.Popen([str(executable.resolve()), *args.child_arguments], stdin=input_file,
                                              stdout=output, stderr=subprocess.PIPE)
                     created = time.monotonic_ns()
+                    memory = ProcessMemory(child)
                     try:
-                        _, stderr = child.communicate(timeout=120)
-                    except subprocess.TimeoutExpired:
-                        child.kill()
-                        _, stderr = child.communicate()
-                        report_path.write_bytes(stderr)
-                        raise
-                    mono_end = time.monotonic_ns()
-                    wall_end = time.time_ns()
+                        try:
+                            _, stderr = child.communicate(timeout=120)
+                        except subprocess.TimeoutExpired:
+                            child.kill()
+                            _, stderr = child.communicate()
+                            report_path.write_bytes(stderr)
+                            raise
+                        mono_end = time.monotonic_ns()
+                        wall_end = time.time_ns()
+                    finally:
+                        memory_receipt = memory.finish(stdout_path.with_suffix(".memory.json"))
                 usage_after = resource.getrusage(resource.RUSAGE_CHILDREN)
                 usage = {name: getattr(usage_after, name) - getattr(usage_before, name)
                          for name in ("ru_utime", "ru_stime", "ru_minflt", "ru_majflt", "ru_nvcsw", "ru_nivcsw", "ru_inblock", "ru_oublock")}
@@ -91,6 +96,7 @@ def main() -> None:
                           "stdout_sha256": hashlib.sha256(stdout_path.read_bytes()).hexdigest(),
                           "phases": [value for value in observations(stderr) if value.get("observation") == "native-phase"],
                           "child_rusage_delta": usage, "input_sha256": hashlib.sha256(payload).hexdigest(),
+                          "resident_observation": memory_receipt,
                           "arguments": args.child_arguments, "pid": child.pid, "executable_sha256": digest, "returncode": child.returncode,
                           "clock_anchor": anchor, "wall_start_ns": wall_start, "monotonic_start_ns": mono_start,
                           "spawn_ns": created-mono_start, "before_main_ns": entry["unix_ns"]-wall_start,

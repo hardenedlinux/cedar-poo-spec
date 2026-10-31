@@ -1,6 +1,7 @@
 import Cedar.Spec.Policy
 import LeanPoo.Object.Definition
 import LeanPoo.Object.Debug
+import LeanPoo.C4.Prepared
 import LeanPoo.Compose
 
 /-!
@@ -294,27 +295,46 @@ private def applyEdit (owner : String) (ancestors : List String)
 
 /-- Share the compiled C4 plan with diagnostics without resolving the graph
     a second time. Cedar's fold retains edit intent, order, and provenance. -/
-private def Model.compileWithPlan (model : Model) (root : String) :
+private def Model.compileWithPlanBy (model : Model) (root : String)
+    (resolve : (compiled : LeanPoo.Object.CompiledPlan PolicyID (fun _ => Option Policy)) →
+      model.compilePlan root = .ok compiled → String → Except LeanPoo.C4.Error (List String)) :
     Except Error
-      (LeanPoo.Object.CompiledPlan PolicyID (fun _ => Option Policy) × Compilation) := do
-  let compiled ← (model.compilePlan root).mapError .c4
-  let graph := compiled.plan.schema.graph
-  let reversed ← compiled.plan.precedence.reverse.foldlM (fun current name => do
-    let some module := model.modules.find? (fun item => item.name == name)
-      | throw (.missingModule name)
-    let ancestors ← (LeanPoo.C4.linearize graph name).mapError .c4
-    module.edits.foldlM (fun state edit => do
-      let origins ← applyEdit name ancestors state.1 edit
-      return (origins, { moduleName := name, edit } :: state.2))
-      current) (([], []) : List PolicyOrigin × List AppliedEdit)
-  let policies ← reversed.1.mapM fun origin => do
-    let some (some policy) := compiled.resolve origin.id (fun _ => none)
-      | throw (.inconsistentResolution origin.id)
-    let compiled : CompiledPolicy :=
-      { policy := policy, introducedBy := origin.introducedBy,
-        lastEditedBy := origin.lastEditedBy }
-    return compiled
-  return (compiled, { policies, applied := reversed.2.reverse })
+      (LeanPoo.Object.CompiledPlan PolicyID (fun _ => Option Policy) × Compilation) :=
+  match success : model.compilePlan root with
+  | .error error => .error (.c4 error)
+  | .ok compiled => do
+    let resolve := resolve compiled success
+    let reversed ← compiled.plan.precedence.reverse.foldlM (fun current name => do
+      let some module := model.modules.find? (fun item => item.name == name)
+        | throw (.missingModule name)
+      let ancestors ← (resolve name).mapError .c4
+      module.edits.foldlM (fun state edit => do
+        let origins ← applyEdit name ancestors state.1 edit
+        return (origins, { moduleName := name, edit } :: state.2))
+        current) (([], []) : List PolicyOrigin × List AppliedEdit)
+    let policies ← reversed.1.mapM fun origin => do
+      let some (some policy) := compiled.resolve origin.id (fun _ => none)
+        | throw (.inconsistentResolution origin.id)
+      let compiled : CompiledPolicy :=
+        { policy := policy, introducedBy := origin.introducedBy,
+          lastEditedBy := origin.lastEditedBy }
+      return compiled
+    return (compiled, { policies, applied := reversed.2.reverse })
+
+private def Model.compileWithPlan (model : Model) (root : String) :=
+  model.compileWithPlanBy root fun compiled _ =>
+    let graph := compiled.plan.schema.graph
+    fun name => LeanPoo.C4.linearize graph name
+
+private theorem Model.preparedResolver_eq (model : Model) (root : String)
+    (prepared : LeanPoo.C4.Prepared model.graph) :
+    (fun (compiled : LeanPoo.Object.CompiledPlan PolicyID (fun _ => Option Policy))
+      (_ : model.compilePlan root = .ok compiled) => prepared.at) =
+    (fun compiled (_ : model.compilePlan root = .ok compiled) =>
+      let graph := compiled.plan.schema.graph
+      fun name => LeanPoo.C4.linearize graph name) := by
+  funext compiled success name
+  rw [prepared.at_eq, model.compilePlan_graph root compiled success]
 
 /-- C4 and compiled object slots choose policy bodies. The Cedar-specific fold
     checks edit intent, keeps policy order, and records provenance only. -/
@@ -329,6 +349,21 @@ def Model.compileWithProvenance (model : Model) (root : String) :
 /-- Materialize the compiled policies for Cedar's validator and authorizer. -/
 def Model.compile (model : Model) (root : String) : Except Error Policies :=
   (model.compileWithProvenance root).map (·.map CompiledPolicy.policy)
+
+/-- One actual graph-owned C4 table is shared by every root in a Program.
+The compiled object still resolves policy bodies and edit checks stay ordered. -/
+def Model.compilePrepared (model : Model) (prepared : LeanPoo.C4.Prepared model.graph)
+    (root : String) : Except Error Policies :=
+  ((model.compileWithPlanBy root (fun _ _ => prepared.at)).map (·.2.policies)).map
+    (·.map CompiledPolicy.policy)
+
+theorem Model.compilePrepared_eq (model : Model) (prepared : LeanPoo.C4.Prepared model.graph)
+    (root : String) : model.compilePrepared prepared root = model.compile root := by
+  unfold Model.compilePrepared Model.compile Model.compileWithProvenance Model.compileWithTrace
+  rw [model.preparedResolver_eq root prepared]
+  change ((model.compileWithPlan root).map (fun result => result.2.policies)).map
+    (fun policies => policies.map CompiledPolicy.policy) = _
+  cases model.compileWithPlan root <;> rfl
 
 /-- Explain one policy ID after Cedar edit validation. Declaration nodes include
     tombstones; `effective` reports whether a policy survives those edits. -/

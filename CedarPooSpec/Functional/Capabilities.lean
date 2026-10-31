@@ -22,7 +22,8 @@ inductive Capability where
   deriving DecidableEq, Repr
 
 abbrev Value (context : Context) : Capability → Type
-  | .compile => Except PolicyJson.PublicationError (Compiled context.model context.root)
+  | .compile => LeanPoo.C4.Prepared context.model.graph →
+      Except PolicyJson.PublicationError (Compiled context.model context.root)
   | .validate => SchemaFacts context.schema → Compiled context.model context.root →
       Except PolicyJson.PublicationError (Validated context.model context.root context.schema)
   | .publish => Validated context.model context.root context.schema →
@@ -36,8 +37,8 @@ abbrev required : List Capability := [.compile, .validate, .publish, .authorize]
 abbrev Data (context : Context) := Requirements.Results Value context required
 
 def cedar : Operations
-  | .compile => some fun context =>
-      (PolicyPreparation.compile context.model context.root).mapError .composition
+  | .compile => some fun context prepared =>
+      (PolicyPreparation.compilePrepared context.model prepared context.root).mapError .composition
   | .validate => some fun _ facts compiled =>
       PolicyPreparation.checkUsing compiled facts
         PolicyJson.PublicationError.schema PolicyJson.PublicationError.policy
@@ -88,9 +89,10 @@ theorem Ready.allowed_pair (ready : Ready context) (first second : Request) (ent
   simp [Ready.allowed_eq]
 
 def constructUsing (context : Context) (data : Data context) (contract : Coherent context data)
+    (prepared : LeanPoo.C4.Prepared context.model.graph)
     (facts : SchemaFacts context.schema) :
     Except PolicyJson.PublicationError (Ready context) := do
-  let compiled ← data.1
+  let compiled ← data.1 prepared
   let checked ← data.2.1 facts compiled
   return {
     checked
@@ -99,10 +101,11 @@ def constructUsing (context : Context) (data : Data context) (contract : Coheren
     aligned := fun requests entities => (contract checked requests entities).2 }
 
 def construct (context : Context) (data : Data context) (contract : Coherent context data) :=
-  constructUsing context data contract (SchemaFacts.prepare context.schema)
+  constructUsing context data contract (LeanPoo.C4.prepare context.model.graph)
+    (SchemaFacts.prepare context.schema)
 
 private def prepareWithFacts (provider : Operations) : Except Capability
-    (Factory Context (fun context => SchemaFacts context.schema →
+    (Factory Context (fun context => LeanPoo.C4.Prepared context.model.graph → SchemaFacts context.schema →
       Except PolicyJson.PublicationError (Ready context))) :=
   Requirements.prepareConsumer provider required Coherent
     (fun factories _ context => coherent context (Requirements.build factories context)) constructUsing
@@ -155,7 +158,8 @@ def prepareProgram (provider : Operations) (model : PolicyModules.Model) (schema
     (roots : List String) : Except Error (Program model schema) := do
   let selected ← (prepareWithFacts provider).mapError .missingCapability
   let facts := SchemaFacts.prepare schema
-  let factory := fun root => selected ⟨model, root, schema⟩ facts
+  let prepared := LeanPoo.C4.prepare model.graph
+  let factory := fun root => selected ⟨model, root, schema⟩ prepared facts
   let entries ← Validation.traverse (fun root =>
     ((factory root).mapError (Error.context root)).map
       (fun ready => (⟨root, ready⟩ : (root : String) × Ready ⟨model, root, schema⟩))) roots.eraseDups

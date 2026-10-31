@@ -111,11 +111,21 @@ def evaluate {α : Type} (produce : Unit → Except String α) : IO α :=
   | .error message => throw (IO.userError message)
 
 /-- Keep compression inside the IO span: pure let bindings may be sunk past clocks. -/
-@[noinline] private def serialize (json : Transport.EncodedJson) : IO String := pure json.wire
+@[noinline] private def serialize (rendering : Thunk (List String)) : IO (List String) :=
+  pure rendering.get
+
+/-- Consume complete encoded fragments without allocating another catalog-sized
+string. The temporary list prefix can retire as each fragment is written. -/
+private def writeChunks (stdout : IO.FS.Stream) : List String → IO Unit
+  | [] => stdout.putStr "\n"
+  | chunk :: rest => do
+      stdout.putStr chunk
+      writeChunks stdout rest
 
 @[noinline] private def prepareSources (outputs : List (String × (Unit → Except String Transport.Entry))) :
-    IO Transport.EncodedJson :=
-  evaluate (fun _ => Transport.prepareCatalogFrom outputs)
+    IO (Thunk (List String)) := do
+  let encoded ← evaluate (fun _ => Transport.prepareCatalogFrom outputs)
+  return encoded.detach
 
 private def phase (started : Option Nat) (name : String) : IO Unit := do
   if let some start := started then
@@ -136,9 +146,9 @@ def run (args : List String) (observe : Bool := false) : IO Unit := do
       -- Factories are consumed one at a time; no complete raw catalog is retained.
       let encoded ← prepareSources selected
       phase started "sources-ready"
-      let text ← serialize encoded
+      let chunks ← serialize encoded
       phase started "serialized"
-      IO.println text
+      writeChunks (← IO.getStdout) chunks
       phase started "output-written"
   | ["all"] => do
       let outputs ← entries.mapM fun (name, produce) => do

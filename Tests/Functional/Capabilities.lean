@@ -93,7 +93,7 @@ def overrideOrder : LeanPoo.C4.VerifiedOrder overrideGraph "Industry" :=
   (LeanPoo.C4.linearizeVerified overrideGraph "Industry").toOption.get (by native_decide)
 
 def rejectingCompile : Operations
-  | .compile => some fun _ => .error (.composition (.missingModule "industry-contract"))
+  | .compile => some fun _ _ => .error (.composition (.missingModule "industry-contract"))
   | _ => none
 
 def overridden : Operations := assemble overrideOrder fun name =>
