@@ -1,6 +1,23 @@
 #+TITLE: Authorization Framework and Delta Family
 #+LANGUAGE: en
 
+* Review provenance and publication composition
+
+=Delta.Release.ReviewedInteraction= has a private constructor. Its public API
+allows reading a captured analysis/snapshot but not splicing them through record
+construction or update. =analyzeAndCapture= is the supported producer. This is an
+API integrity boundary, not cryptographic authenticity or a proof of solver UNSAT.
+
+The application adapter =CedarPooSpec.Gateway.PublicationReview= uses actual
+LeanPoo =Contract.bindEvidence= and =Invocation=. It binds the exact command,
+independently read parent, approved artifact and current cut while preserving the
+original invocation rule. Its =Final= also requires generic ZeroTrust guards,
+command-specific pending admission and the Host's actual commit relation. An
+administrative command may resolve its own staged intent while siblings remain;
+the provider effect's global pending barrier remains separate. No IO or second
+ledger is implemented. Trusted reference interpretation, durable registration,
+atomic current-state join and native transition refinement remain Host premises.
+
 * Ownership
 
 =CedarPooSpec.Authorization= aggregates the reusable authorization capabilities.

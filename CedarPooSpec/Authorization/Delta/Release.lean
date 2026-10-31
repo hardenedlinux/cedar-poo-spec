@@ -35,7 +35,11 @@ structure ReviewSnapshot where
   right : CedarPooSpec.Admission.PolicySnapshot
   combined : CedarPooSpec.Admission.PolicySnapshot
 
+/-- Captured only by analyzeAndCapture through the supported API. Read-only
+projections remain public. This prevents ordinary record-splicing, not hostile
+code using Lean's private-name internals or forged native serialized evidence. -/
 structure ReviewedInteraction where
+  private mk ::
   analysis : InteractionReport
   snapshot : ReviewSnapshot
 

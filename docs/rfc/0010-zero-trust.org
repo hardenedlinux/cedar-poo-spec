@@ -93,8 +93,12 @@ candidate in that context. Existing LeanPoo EvidenceBinding preserves the
 original invocation rule while binding subject/descriptor/context references.
 Reference equality does not authenticate the producer or implement final CAS.
 The required parent must be selected independently of the child. In particular,
-public review records with independently replaceable analysis/snapshot fields
-require a provenance/admission audit before being trusted as publication rights.
+the review API now prevents ordinary record construction/update that splices
+analysis and snapshot fields. This does not authenticate deserialized artifacts
+or prove solver results. =Gateway.PublicationReview= composes actual LeanPoo
+evidence-bound invocation with current ZeroTrust guards and the Host commit
+relation. The adapter's exact-result checks are distinct from native durability
+and atomic publication admission, which remain implementation obligations.
 Pending results and lost replies must reconcile the original intent, not replace
 the evidence, rebase the parent or clear unresolved consumption.
 
