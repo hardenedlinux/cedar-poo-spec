@@ -15,6 +15,7 @@ pub(crate) fn read(input: &str) -> Result<Inventory, String> {
         entries: doc.entries.len(),
         ..Inventory::default()
     };
+    let mut sources = BTreeSet::new();
     for raw in doc.entries.values() {
         let fields = crate::catalog_input::fields(raw);
         if !fields.contains_key("cases") {
@@ -28,7 +29,6 @@ pub(crate) fn read(input: &str) -> Result<Inventory, String> {
         };
         result.schemas += usize::from(schema);
         let mut revisions = BTreeSet::new();
-        let mut sources = BTreeSet::new();
         for (i, case) in cases.iter().enumerate() {
             result.entities += usize::from(i == 0 || case.entities != cases[i - 1].entities);
             if revisions.insert(&case.revision) {
@@ -37,7 +37,7 @@ pub(crate) fn read(input: &str) -> Result<Inventory, String> {
                 sources.insert(case.policies.source_identity()?.to_owned());
             }
         }
-        result.sources += sources.len();
     }
+    result.sources = sources.len();
     Ok(result)
 }

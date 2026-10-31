@@ -114,16 +114,24 @@ fn replay_validated_observed(
 pub(crate) fn replay_with_schema(
     manifest: &ValidatedManifest,
     prepared: &crate::schema_preparation::PreparedSchema,
+    metrics: Option<&mut ReplayMetrics>,
+) -> Result<Vec<SchemaBoundReceipt>, String> {
+    replay_with_schema_using(manifest, prepared, metrics, &mut PreparedReplay::default())
+}
+
+pub(crate) fn replay_with_schema_using(
+    manifest: &ValidatedManifest,
+    prepared: &crate::schema_preparation::PreparedSchema,
     mut metrics: Option<&mut ReplayMetrics>,
+    preparation: &mut PreparedReplay,
 ) -> Result<Vec<SchemaBoundReceipt>, String> {
     let started = metrics.as_ref().map(|_| Instant::now());
     let validator = &prepared.validator;
     let mut revisions = BTreeMap::new();
-    let mut preparation = PreparedReplay::default();
     for case in &manifest.cases {
         if !revisions.contains_key(&case.revision) {
             let policies =
-                SourcePolicies::prepared(case, metrics.as_deref_mut(), Some(&mut preparation))?;
+                SourcePolicies::prepared(case, metrics.as_deref_mut(), Some(preparation))?;
             if let Some(stats) = metrics.as_deref_mut() {
                 stats.policy_validation_calls += 1;
             }
@@ -148,7 +156,7 @@ pub(crate) fn replay_with_schema(
         Some(validator.schema()),
         metrics,
         revisions,
-        &mut preparation,
+        preparation,
     )
     .map(|receipts| {
         receipts

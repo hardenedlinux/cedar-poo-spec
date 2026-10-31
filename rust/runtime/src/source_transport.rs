@@ -106,6 +106,34 @@ pub struct ResolvedPolicyArtifact {
     pub policies: CompiledPolicyJson,
 }
 impl CatalogSources {
+    /// Project only complete policy sources used by actual cases. No SDK parsing
+    /// or revision admission is performed; malformed references remain replay errors.
+    pub fn policy_sources(&self, input: &str) -> Result<Vec<CompiledPolicyJson>, String> {
+        #[derive(Deserialize)]
+        struct Row {
+            policy_ref: PolicyRef,
+        }
+        #[derive(Deserialize)]
+        struct Projection {
+            cases: Vec<Row>,
+        }
+        let projection: Projection = serde_json::from_str(input).map_err(|e| e.to_string())?;
+        let indices = projection
+            .cases
+            .into_iter()
+            .map(|c| c.policy_ref.0)
+            .collect::<BTreeSet<_>>();
+        indices
+            .into_iter()
+            .map(|i| {
+                self.policies
+                    .get(i)
+                    .cloned()
+                    .ok_or_else(|| "policy reference out of bounds".to_owned())
+            })
+            .collect()
+    }
+
     /// Enforce source-table canonicality without moving SDK admission ahead of replay.
     pub fn check_unique(&self) -> Result<(), String> {
         for sources in [

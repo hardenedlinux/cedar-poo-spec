@@ -1,11 +1,14 @@
 //! Official Cedar validation, policy export and receipt replay.
 mod bridge;
 mod canonical;
+mod catalog_preparation;
 mod entities;
 mod input;
 mod observation;
 mod policy_codec;
 mod preparation;
+mod syntax_preparation;
+pub use catalog_preparation::CatalogPreparation;
 mod replay;
 mod revision;
 mod syntax;

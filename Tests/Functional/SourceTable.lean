@@ -44,3 +44,19 @@ theorem arbitrary_published_value (pool : SourcePool kind) (source : Lean.Json) 
 #print axioms arbitrary_source_frame
 #print axioms arbitrary_publication_contract
 end CedarPooSpec.Transport.SourceTableTest
+
+-- Streaming must stop at the first factory or publication error.
+#eval show IO Unit from do
+  let failed := CedarPooSpec.Transport.sourceCatalogFrom
+    [("first", fun _ => .error "first factory"), ("later", fun _ => .error "later factory")]
+  match failed with
+  | .error "first factory" => pure ()
+  | _ => throw (IO.userError "factory error order changed")
+  let malformed := CedarPooSpec.Transport.sourceCatalogFrom
+    [("first", fun _ => .ok (Lean.Json.mkObj [("cases", .null)])),
+     ("later", fun _ => .error "later factory")]
+  match malformed with
+  | .error message =>
+    if message == "later factory" then throw (IO.userError "publication error was deferred")
+  | .ok _ => throw (IO.userError "malformed publication admitted")
+  IO.println "SOURCE-CATALOG-FACTORY-OK first-factory/first-publication-error"

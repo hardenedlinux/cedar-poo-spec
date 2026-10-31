@@ -1,0 +1,212 @@
+#+title: Finite SDK preparation and streaming source publication
+#+options: toc:2 num:nil
+
+* Scope and identity
+
+This stage follows [[file:native-source-table.org][the canonical source-table audit]]. The baseline is
+13b69c90a17a283b36c611c8a28a4bfcce8be798, with LeanPOO
+1b1d41eafe6c979387c4fa69e194fb921bd4befe and Cedar SDK 4.12.0 unchanged.
+The same 51-entry catalog and all nine object families remain the workload.
+PR #8 remains open and must not be merged by this work.
+
+* Algorithm and ownership
+
+=CatalogPreparation= composes the existing finite Schema preparation with a
+finite SDK syntax-use plan. The plan counts distinct complete policy sources
+per actual case-bearing manifest. It retains only sources with multiple uses.
+A miss still parses JSON with the public SDK, independently renders and parses
+Cedar text, normalizes the text-side bodies, compares full body multiplicities,
+and binds the complete source digest. Only successful immutable syntax can be
+shared. Schema admission, entity slots, UID slots, request contexts, diagnostic
+checks and both authorizers remain local/fresh. A checked syntax hit rebinds its
+source to the current immutable source owner.
+
+Each manifest completion, including SDK/schema/request rejection, consumes one use of each distinct source. The last
+use removes its slot and releases its shared SDK owners. Unplanned sources are
+prepared locally and never create a shared slot. The plan performs no SDK
+admission; malformed later entries still fail at their original replay position.
+The whole catalog owner is explicitly dropped in the existing cleanup phase.
+
+The catalog producer consumes factories in entry order and immediately publishes
+each result, instead of retaining the complete raw inline catalog before encoding.
+Factory and publication errors stop at their entry. Each publication computes
+its full compressed encoding once and passes that same value, with an equality
+proof, to lookup and append. Hashes still only locate candidates. Existing
+kind-indexed references, publication frame/value proofs and the actual Functional
+ObjectContract continue checking complete encoded source equality.
+
+The native diagnostic now reports =sources-ready= after both factory evaluation
+and source publication. Standard generated C confirms that the old miss path
+called compression once for lookup and again in append; the new miss path
+compresses once, removing one full encoding at each of 220 new source insertions.
+The compiler comparison uses verbatim baseline source and the same Lean compiler,
+with a separate temporary module root.
+
+The former separate =catalog-ready= mark is removed,
+because no complete raw intermediate catalog exists. Pure work remains inside
+the noinline IO boundary so elapsed phases cannot silently move past clocks.
+
+* Executable obligations
+
+The 47 case-bearing manifest entries contain 194 per-manifest distinct policy preparations but
+158 distinct active complete policy sources. The finite plan shares 36 sources;
+all 36 retire. The observed maximum simultaneously retained SDK sources is 10.
+This is a source-slot count, not a byte or RSS bound. The schema-evolution bundle
+retains its independent before/after workflow, and named deployment artifacts
+retain their separate SDK rendering checks. Their work remains included in
+whole-catalog elapsed/allocation/RSS evidence, rather than being counted as one
+of the 221 ordinary manifest revision bindings. SDK preparation is therefore
+not claimed to occur once globally across every public workflow.
+
+Expected actual replay work after optimization:
+
+| Work | Baseline | Candidate |
+|------+----------+-----------|
+| SDK JSON policy loads | 194 | 158 |
+| Pure source/syntax reuse | 27 | 63 |
+| Text-side body normalizations | 335 | 287 |
+| Text-side body reuse | 494 | 428 |
+| Strict per-revision validation | 112 | 112 |
+| Both authorizers | 2560 | 2560 |
+| Replay rows | 1280 | 1280 |
+
+Single-manifest public workflows remain independently executable and invocation
+owned. The original uncached test oracle, independent inline authoring manifests,
+complete cross-artifact mutation controls and exact bulk wire golden remain
+separate acceptance checks. New controls exercise actual last-use retirement,
+failed-source exclusion, changed-source misses and fresh schema/context checks
+while the same SDK syntax is retained.
+
+* Measurement and remaining startup boundary
+
+The fixed official process driver compares frozen baseline binaries against the
+candidate, with both variants copied to fresh paths, three complete process pairs,
+all object profiles and ordinary benchmark samples. It preserves all observations,
+fixed workload, default Cargo concurrency, 120-second child limits and existing
+memory/heartbeat gates. Instrumented allocation and diagnostic launch processes
+are reported separately from ordinary timing.
+
+The prior read-only Mach-clock/PID correlation established execution-policy and
+provenance participation before main. Its log records have zero activity IDs;
+thread identity alone cannot assign interleaved service work to one child. The
+remaining pre-main interval cannot be charged wholesale to syspolicyd, its queue,
+scanning, or the dynamic loader without more direct evidence.
+
+Apple's [[https://developer.apple.com/forums/thread/706442][Resolving Trusted Execution Problems]] describes the relevant
+execution-policy log owners. This investigation uses read-only observation of
+our own child processes, preserving system security settings and binary identity.
+
+* Complete process and resource evidence
+
+The fixed cohort completed 48 child processes, 15 full-wire comparisons,
+486 object observations and 918 entry observations. All children exited zero.
+Both variants consume exactly the same complete v2 catalog and return identical
+complete receipts. The [[file:native-sdk-source-lifecycle.json][process receipt]],
+[[file:native-sdk-source-evidence.json][source, startup, allocation and validation evidence]],
+[[file:native-sdk-source-object-observations.csv][object observations]] and
+[[file:native-sdk-source-entry-observations.csv][entry observations]] retain the results.
+
+| Ordinary observation | Baseline | Candidate |
+|----------------------+----------+-----------|
+| Nine-sample full Rust replay median | 175.033 ms | 170.335 ms |
+| Runtime preparation median | 119.647 ms | 113.027 ms |
+| Independent text parse median | 21.441 ms | 19.019 ms |
+| Text normalization median | 26.072 ms | 23.139 ms |
+| Pipeline CPU, pair 1/2/3 | 350/310/300 ms | 330/300/320 ms |
+| Pipeline wall, pair 1/2/3 | 2190.100/338.584/334.400 ms | 2407.193/328.778/344.025 ms |
+| Pipeline RSS median | 58.891 MiB | 59.078 MiB |
+| Full replay process RSS median | 25.516 MiB | 25.609 MiB |
+
+Whole Rust replay improved approximately 2.7% in this fixed cohort. Whole-pipeline
+wall and CPU do not show stable acceleration; the repeated pair directions differ,
+and the first newly copied candidate file is slower. The CPU accounting is rounded
+at the OS's reported 10-ms precision. No stable end-to-end or RSS improvement is
+admitted from these results.
+
+Separate instrumented full-catalog samples reduce allocation requests from
+1,931,046 to 1,835,405 (about 5.0%) and requested bytes from 418,394,594 to
+390,789,514 (about 6.6%). The first-reference requested peak is effectively flat:
+14,327,267 versus 14,329,131 bytes. Post-cleanup requested live bytes are
+5,070,362 versus 5,069,906. These counters exclude allocator overhead/foreign
+allocations and are not RSS or a proven memory bound. The finite syntax owner
+therefore reduces repeated work without an admitted peak-memory reduction.
+
+An initially nonexistent Cargo target directory was used for the actual cold
+release build: 68.585 seconds, exit zero, default Cargo concurrency, peak OS RSS
+1941.906 MiB. Its full 51-entry CLI replay exits zero and exactly matches all
+receipt bytes, with 25.969 MiB peak RSS. This compiler high-water mark is separate
+from runtime RSS. The existing 120-second supervision was unchanged. Two launcher
+preflights did not start compilation: a bare executable path and the rustup proxy
+symlink were rejected/misresolved by the resource tool. The successful cold attempt
+uses the real toolchain Cargo binary returned by =rustup which cargo=, with the
+target still absent before that invocation. Both failures are retained as failures
+in the machine receipt, rather than counted as compiler runs.
+
+The full =just check= passed during development. Final owner error-path and
+borrowed-plan refinements then passed 97 workspace tests (two explicit artifact
+oracle tests excluded from the default run), all-features/all-targets Clippy,
+both explicitly invoked real-catalog oracle/tamper tests, all 52 frozen wire
+artifacts, 21 Python framework tests and the source publication/Contract proofs.
+Remote Ubuntu CI at the publication head is a separate receipt in PR #8; local
+results alone do not establish that remote state.
+
+* Direct pre-main observations and persistent producer roots
+
+A separate diagnostic invokes the same complete catalog six times per role,
+using the existing launch framework. A bounded sample targets only the first
+child of each role, once, for one second at a 10-ms interval. All 12 launches
+exit zero, satisfy the clock protocol and match the ordinary catalog/receipt
+hashes. They do not qualify ordinary latency: sampling suspends/resumes the
+child and may perturb scheduling.
+
+The actual installed dyld is observed at =_dyld_start +0= for 15 Rust samples
+and 73 Lean samples. Apple's [[https://raw.githubusercontent.com/apple-oss-distributions/dyld/main/dyld/dyldStartup.s][dyld startup assembly]] documents the kernel's
+initial program counter at that entry. This locates the sampled interval at the
+loader entry before observed SDK/manifest execution, rather than within Cedar
+normalization or source-table encoding. The public source is explanatory, not a
+claim of byte identity with the installed macOS release. Page faults, scheduling,
+execution-policy queues and scanning time are not individually distinguished.
+
+Same-PID raw-Mach policy records remain consistent with that boundary:
+
+| Role/fresh file | Spawn to main | Spawn to provenance event | Event to main |
+|-----------------+---------------+---------------------------+---------------|
+| Rust 1, sampled | 523.765 ms | 514.225 ms | 9.540 ms |
+| Rust 2 | 668.391 ms | 666.250 ms | 2.141 ms |
+| Lean 1, sampled | 1393.708 ms | 1252.852 ms | 140.856 ms |
+| Lean 2 | 2166.575 ms | 2031.794 ms | 134.781 ms |
+
+The actual call graph then shows Lean module initialization executing
+=Functional.prepareProgram=, C4 linearization in the AWS handoff/lineage path,
+and Health/Agentic manifest/program preparation. The existing import clock
+brackets approximately 89–92 ms of initialization in this diagnostic cohort.
+The generated =AgentDataFlowValidatedExport= C initializer explicitly evaluates
+the manifest and calls =lean_mark_persistent= on it. Its upstream raw exporter
+similarly evaluates and persists its manifest during import.
+
+Consequently, incremental factory consumption removes an extra raw output list
+but does not retire these persistent imported JSON/program globals. It must not
+be described as eliminating all producer materialization or reducing its RSS.
+This explains why removing the duplicate append encoding and SDK work alone
+cannot establish stable whole-process acceleration.
+
+* Next shared algorithm boundary
+
+The remaining producer work belongs at the common typed case/source publication
+boundary. A complete migration should give each immutable policy/entity/schema
+snapshot one encoded representation and pass kind-indexed proof-bearing snapshot
+references into both standalone and bulk projections. Merely wrapping existing
+persistent manifest values in Unit factories will not remove their initializer
+work. The required law is full expansion equality with each existing authoring
+manifest, alongside the actual Functional Contract and publication frame/value
+laws. All applicable raw/schema-bound cases, schema evolution, named policy
+artifacts and cross-artifact consumers must migrate together.
+
+Remaining SDK normalization must preserve the independent text parse, complete
+body multiplicities/diagnostic mapping and fresh strict validation. Any deeper
+canonical representation should use supported SDK interfaces; private AST access,
+source hashes, policy IDs or cached decisions cannot replace those obligations.
+A new candidate must repeat empty-artifact cold build and the same complete
+process/resource protocol before claiming end-to-end acceleration. The OS loader
+entry wait remains a separate diagnosis, not a reason to increase workload limits,
+change system security policy, or present only warm/focused timings.

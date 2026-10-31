@@ -65,8 +65,10 @@ private def payload (value : Lean.Json) : Encode Lean.Json := do
 
 /-- References are transport locations only. SDK admission and both authorizers
 remain the consumer's per-revision/per-request obligations. -/
-def sourceCatalog (entries : List (String × Lean.Json)) : Except String Lean.Json := do
-  let encode : Encode (List (String × Lean.Json)) := entries.mapM fun (name, value) => do
+def sourceCatalogFrom (entries : List (String × (Unit → Except String Lean.Json))) :
+    Except String Lean.Json := do
+  let encode : Encode (List (String × Lean.Json)) := entries.mapM fun (name, produce) => do
+    let value ← produce ()
     return (name, ← payload value)
   let (entries, pools) ← encode.run {}
   return Lean.Json.mkObj [
@@ -76,4 +78,8 @@ def sourceCatalog (entries : List (String × Lean.Json)) : Except String Lean.Js
       ("entities", .arr (pools.entities.entries.map (·.value))),
       ("schemas", .arr (pools.schemas.entries.map (·.value)))]),
     ("entries", Lean.Json.mkObj entries)]
+/-- Pure snapshots use the same publisher and ordering as factory publication. -/
+def sourceCatalog (entries : List (String × Lean.Json)) : Except String Lean.Json :=
+  sourceCatalogFrom (entries.map fun (name, value) => (name, fun _ => .ok value))
+
 end CedarPooSpec.Transport

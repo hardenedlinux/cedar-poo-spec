@@ -3,8 +3,7 @@ use crate::catalog_observation::{
     CatalogObservation, memory_end, memory_end_entry, memory_start, record,
 };
 use cedar_poo_runtime::{
-    ReplayMetrics, render_identified_policy_sources, replay_manifest, replay_manifest_measured,
-    replay_schema_only_revision,
+    ReplayMetrics, render_identified_policy_sources, replay_schema_only_revision,
 };
 use serde_json::{Value, json};
 use std::collections::{BTreeMap, BTreeSet};
@@ -34,11 +33,14 @@ pub(crate) fn replay_observed(
     }
     let memory = memory_start(&observation);
     let planned = observation.as_ref().map(|_| Instant::now());
-    let mut schemas = cedar_poo_runtime::SchemaPreparation::from_sources(
+    let mut preparation = cedar_poo_runtime::CatalogPreparation::from_sources(
         catalog
             .values()
             .filter(|raw| crate::catalog_input::is_schema_bound(&crate::catalog_input::fields(raw)))
             .filter_map(|raw| sources.schema_source(raw).ok()),
+        catalog
+            .values()
+            .filter_map(|raw| sources.policy_sources(raw).ok()),
     )?;
     if let (Some(observation), Some(started)) = (observation.as_deref_mut(), planned) {
         observation.shared_preparation_ns = started.elapsed().as_nanos();
@@ -63,7 +65,7 @@ pub(crate) fn replay_observed(
                 let manifest = sources
                     .validated_manifest(raw)
                     .map_err(|e| format!("{name}: {e}"))?;
-                let receipts = schemas.replay(&manifest, metrics.as_deref_mut())?;
+                let receipts = preparation.replay_validated(&manifest, metrics.as_deref_mut())?;
                 let result = json!({"kind":"schema-bound","receipts":receipts});
                 // Only these existing cross-artifact consumers borrow a manifest later.
                 // Other manifests finish their lifecycle at this entry, after replay.
@@ -79,11 +81,7 @@ pub(crate) fn replay_observed(
             } else {
                 let manifest = sources.manifest(raw).map_err(|e| format!("{name}: {e}"))?;
                 {
-                    let receipts = if let Some(stats) = metrics.as_deref_mut() {
-                        replay_manifest_measured(&manifest, stats)?
-                    } else {
-                        replay_manifest(&manifest)?
-                    };
+                    let receipts = preparation.replay(&manifest, metrics.as_deref_mut())?;
                     json!({"kind":"raw-evaluation","receipts":receipts})
                 }
             }
@@ -204,6 +202,7 @@ pub(crate) fn replay_observed(
     let memory = memory_start(&observation);
     let cleanup = observation.as_ref().map(|_| Instant::now());
     drop(verified);
+    drop(preparation);
     drop(sources);
     memory_end(&mut observation, "cleanup", memory);
     if let (Some(observation), Some(started)) = (observation, cleanup) {

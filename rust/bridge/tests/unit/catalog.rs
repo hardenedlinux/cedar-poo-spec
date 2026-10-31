@@ -64,15 +64,15 @@ fn emitted_catalog_rejects_cross_artifact_tampering() {
     assert_eq!(metrics.uid_parse_calls + metrics.uid_reuses, 3840);
     assert!(metrics.uid_reuses > 0);
     assert!(metrics.uid_slot_peak <= metrics.uid_parse_calls);
-    assert_eq!(metrics.policy_body_normalizations, 335);
-    assert_eq!(metrics.policy_body_reuses, 494);
+    assert_eq!(metrics.policy_body_normalizations, 287);
+    assert_eq!(metrics.policy_body_reuses, 428);
     assert_eq!(
         (
             metrics.source_policy_loads,
             metrics.source_policy_reuses,
             metrics.revision_syntax_reuses
         ),
-        (194, 27, 27)
+        (158, 63, 63)
     );
     assert_eq!(
         (
@@ -87,6 +87,9 @@ fn emitted_catalog_rejects_cross_artifact_tampering() {
         (53, 1227)
     );
     assert_eq!(metrics.policy_body_slot_peak, 21);
+    assert_eq!(metrics.catalog_policy_reuses, 36);
+    assert_eq!(metrics.catalog_syntax_retirements, 36);
+    assert_eq!(metrics.catalog_syntax_slot_peak, 10);
 
     assert_eq!(
         output.as_object().expect("catalog receipt object").len(),

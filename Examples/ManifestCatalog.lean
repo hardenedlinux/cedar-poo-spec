@@ -113,8 +113,8 @@ def evaluate (produce : Unit → Except String Lean.Json) : IO Lean.Json :=
 /-- Keep compression inside the IO span: pure let bindings may be sunk past clocks. -/
 @[noinline] private def serialize (json : Lean.Json) : IO String := pure json.compress
 
-@[noinline] private def prepareSources (outputs : List (String × Lean.Json)) : IO Lean.Json :=
-  evaluate (fun _ => Transport.sourceCatalog outputs)
+@[noinline] private def prepareSources (outputs : List (String × (Unit → Except String Lean.Json))) : IO Lean.Json :=
+  evaluate (fun _ => Transport.sourceCatalogFrom outputs)
 
 private def phase (started : Option Nat) (name : String) : IO Unit := do
   if let some start := started then
@@ -132,11 +132,8 @@ def run (args : List String) (observe : Bool := false) : IO Unit := do
           throw (IO.userError s!"unknown manifest: {name}")
       let selected := if requested.isEmpty then entries else
         entries.filter (fun entry => requested.contains entry.1)
-      let outputs ← selected.mapM fun (name, produce) => do
-        let json ← evaluate produce
-        pure (name, json)
-      phase started "catalog-ready"
-      let encoded ← prepareSources outputs
+      -- Factories are consumed one at a time; no complete raw catalog is retained.
+      let encoded ← prepareSources selected
       phase started "sources-ready"
       let text ← serialize encoded
       phase started "serialized"

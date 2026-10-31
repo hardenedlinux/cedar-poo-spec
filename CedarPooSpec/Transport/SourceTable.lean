@@ -26,22 +26,24 @@ structure Publication (before : SourcePool kind) (source : Lean.Json) where
   bound : next.resolve reference = some source.compress
   frame : ∀ i, i < before.entries.size → next.entries[i]? = before.entries[i]?
 
-private def append (pool : SourcePool kind) (source : Lean.Json) : Publication pool source where
-  next := ⟨pool.entries.push ⟨source, source.compress, rfl⟩,
-    pool.candidates.insert source.compress pool.entries.size⟩
+private def append (pool : SourcePool kind) (source : Lean.Json)
+    (wire : String) (encoded : wire = source.compress) : Publication pool source where
+  next := ⟨pool.entries.push ⟨source, wire, encoded⟩,
+    pool.candidates.insert wire pool.entries.size⟩
   reference := ⟨pool.entries.size⟩
-  bound := by simp [SourcePool.resolve]
+  bound := by simp [SourcePool.resolve, encoded]
   frame := by
     intro i h
     simp only [Array.getElem?_push, show i ≠ pool.entries.size from Nat.ne_of_lt h, ite_false]
 
 def SourcePool.publish (pool : SourcePool kind) (source : Lean.Json) : Publication pool source :=
-  match pool.candidates[source.compress]? with
+  let wire := source.compress
+  match pool.candidates[wire]? with
   | some index =>
-      if bound : pool.resolve ⟨index⟩ = some source.compress then
+      if bound : pool.resolve ⟨index⟩ = some wire then
         ⟨pool, ⟨index⟩, bound, fun _ _ => rfl⟩
-      else append pool source
-  | none => append pool source
+      else append pool source wire rfl
+  | none => append pool source wire rfl
 
 theorem SourcePool.publish_bound (pool : SourcePool kind) (source : Lean.Json) :
     (pool.publish source).next.resolve (pool.publish source).reference = some source.compress :=

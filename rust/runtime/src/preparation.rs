@@ -30,21 +30,31 @@ impl ParsedTextPolicies {
 /// Hits avoid this repeated EST parse as well as JSON-to-AST normalization.
 /// UID entries reuse only successful full-source syntax parses. Context parsing,
 /// schema/action validation, Request construction and both authorizers remain per case.
-/// The entire owner retires at the manifest invocation boundary.
+/// Local maps retire at the manifest boundary. Catalog sharing borrows a finite
+/// source-use plan; only immutable successful SDK syntax can outlive this owner.
 /// Revision names, policy IDs and observed decisions authorize no hit.
 #[derive(Default)]
-pub(crate) struct PreparedReplay {
+pub(crate) struct PreparedReplay<'catalog> {
+    shared: Option<&'catalog mut crate::syntax_preparation::SyntaxPreparation>,
     bodies: BTreeMap<String, String>,
     uids: BTreeMap<String, EntityUid>,
     compiled: BTreeMap<String, std::sync::Arc<PolicySet>>,
     checked: [BTreeMap<String, crate::syntax::CheckedRevision>; 2],
 }
 
-impl PreparedReplay {
+impl<'catalog> PreparedReplay<'catalog> {
+    pub(crate) fn sharing(
+        shared: &'catalog mut crate::syntax_preparation::SyntaxPreparation,
+    ) -> Self {
+        Self {
+            shared: Some(shared),
+            ..Self::default()
+        }
+    }
     pub(crate) fn compiled(
         &mut self,
         source: &crate::CompiledPolicyJson,
-        metrics: Option<&mut ReplayMetrics>,
+        mut metrics: Option<&mut ReplayMetrics>,
     ) -> Result<std::sync::Arc<PolicySet>, String> {
         let key = source.source_identity()?;
         if let Some(parsed) = self.compiled.get(key) {
@@ -53,7 +63,26 @@ impl PreparedReplay {
             }
             return Ok(parsed.clone());
         }
+        if let Some(parsed) = self
+            .shared
+            .as_deref()
+            .and_then(|shared| shared.compiled(key))
+        {
+            if let Some(stats) = metrics {
+                stats.source_policy_reuses += 1;
+                stats.catalog_policy_reuses += 1;
+            }
+            self.compiled.insert(key.to_owned(), parsed.clone());
+            return Ok(parsed);
+        }
         let parsed = std::sync::Arc::new(crate::policy_codec::load_policy_set(source)?);
+        if let Some(shared) = self.shared.as_deref_mut() {
+            shared.remember_compiled(key, parsed.clone());
+            if let Some(stats) = metrics.as_deref_mut() {
+                stats.catalog_syntax_slot_peak =
+                    stats.catalog_syntax_slot_peak.max(shared.retained());
+            }
+        }
         if let Some(stats) = metrics {
             stats.source_policy_loads += 1;
         }
@@ -65,17 +94,22 @@ impl PreparedReplay {
         source: &crate::CompiledPolicyJson,
         hash: bool,
     ) -> Result<Option<crate::syntax::CheckedRevision>, String> {
+        let key = source.source_identity()?;
         Ok(self.checked[usize::from(hash)]
-            .get(source.source_identity()?)
-            .cloned())
+            .get(key)
+            .cloned()
+            .or_else(|| self.shared.as_deref().and_then(|s| s.checked(key, hash))))
     }
     pub(crate) fn remember_checked(
         &mut self,
         checked: crate::syntax::CheckedRevision,
         hash: bool,
     ) -> Result<(), String> {
-        self.checked[usize::from(hash)]
-            .insert(checked.source.source_identity()?.to_owned(), checked);
+        let key = checked.source.source_identity()?.to_owned();
+        if let Some(shared) = self.shared.as_deref_mut() {
+            shared.remember_checked(&key, hash, checked.clone());
+        }
+        self.checked[usize::from(hash)].insert(key, checked);
         Ok(())
     }
     fn uid(

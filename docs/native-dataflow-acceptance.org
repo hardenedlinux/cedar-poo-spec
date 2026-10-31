@@ -1,6 +1,12 @@
 #+TITLE: Complete Cedar typed dataflow migration and native lifecycle evidence
 #+OPTIONS: toc:2
 
+* Current finite SDK and producer preparation
+
+The next shared algorithm and complete evidence are recorded in
+[[file:native-sdk-source-preparation.org][finite SDK preparation and streaming source publication]]. It preserves
+the canonical v2 wire and the same whole-domain workload.
+
 * Current canonical source-table closure
 
 The current [[file:native-source-table.org][canonical source-table audit]] covers all 51 entries, actual typed
