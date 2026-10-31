@@ -8,7 +8,7 @@ namespace CedarPooSpec.ModelStewardshipExample.ReplayExport
 open CedarPooSpec.ModelStewardshipExample
 open CedarPooSpec.ModelStewardshipExample.Admission
 
-def manifest : Except String Lean.Json := do
+def manifest : Except String CedarPooSpec.Transport.Manifest := do
   let cases : List (String × String × Effect × Snapshot) := [
     ("train-approved", "MedicalModel", trainingEffect, trainingSnapshot),
     ("train-swapped-source", "MedicalModel",
@@ -47,8 +47,8 @@ def manifest : Except String Lean.Json := do
     ("recovered-publish", "Recovered", publicationEffect, publicationSnapshot),
     ("recovered-infer", "Recovered", inferenceEffect, inferenceSnapshot)]
   let rows ← cases.mapM fun (name, root, effect, snapshot) =>
-    CedarPooSpec.ModelStewardshipExample.program.authorizationCase
+    CedarPooSpec.ModelStewardshipExample.program.case
         name root root (operationRequest effect snapshot) (entities snapshot.lineageRevision)
-  return Lean.Json.mkObj [("cases", Lean.toJson rows)]
+  return { cases := rows }
 
 end CedarPooSpec.ModelStewardshipExample.ReplayExport

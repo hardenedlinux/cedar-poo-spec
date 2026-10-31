@@ -6,9 +6,9 @@ namespace CedarPooSpec.AWS.Expense.ValidatedExport
 
 open CedarPooSpec.AWS.Expense
 
-def manifest : Except String Lean.Json := do
+def manifest : Except String CedarPooSpec.Transport.Manifest := do
   let rows ← cases.mapM fun (name, root, req, _) =>
-    CedarPooSpec.AWS.Expense.program.authorizationCase name root root req entities
-  CedarPooSpec.SchemaJson.validatedManifest schema rows
+    CedarPooSpec.AWS.Expense.program.case name root root req entities
+  CedarPooSpec.SchemaJson.manifest schema rows
 
 end CedarPooSpec.AWS.Expense.ValidatedExport

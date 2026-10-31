@@ -52,11 +52,30 @@ end CedarPooSpec.Transport.SourceTableTest
   match failed with
   | .error "first factory" => pure ()
   | _ => throw (IO.userError "factory error order changed")
+  let uid : Cedar.Spec.EntityUID := ⟨⟨"User", []⟩, "cycle"⟩
+  let store : Cedar.Spec.Entities := Cedar.Data.Map.make [
+    (uid, ⟨Cedar.Data.Map.empty, Cedar.Data.Set.make [uid], Cedar.Data.Map.empty⟩)]
+  let req : Cedar.Spec.Request := ⟨uid, uid, uid, Cedar.Data.Map.empty⟩
+  let source := CedarPooSpec.Transport.SourceSnapshot.ofJson
+    (Lean.Json.mkObj [("staticPolicies", Lean.Json.mkObj []),
+      ("templates", Lean.Json.mkObj []), ("templateLinks", Lean.toJson ([] : List Lean.Json))])
+  let input : CedarPooSpec.Transport.Case := {
+    name := "self-ancestor", revision := "source"
+    policy := ⟨[], source, rfl⟩
+    request := req, entities := store
+    response := Thunk.mk fun _ => Cedar.Spec.isAuthorized req store []
+    evaluated := rfl }
   let malformed := CedarPooSpec.Transport.sourceCatalogFrom
-    [("first", fun _ => .ok (Lean.Json.mkObj [("cases", .null)])),
+    [("first", fun _ => .ok (.manifest ⟨[input], none⟩)),
      ("later", fun _ => .error "later factory")]
   match malformed with
   | .error message =>
     if message == "later factory" then throw (IO.userError "publication error was deferred")
   | .ok _ => throw (IO.userError "malformed publication admitted")
   IO.println "SOURCE-CATALOG-FACTORY-OK first-factory/first-publication-error"
+
+#print axioms CedarPooSpec.Transport.publication_snapshot_contract
+#print axioms CedarPooSpec.Transport.publication_snapshot_value
+#print axioms CedarPooSpec.Transport.Case.inline_projection
+#print axioms CedarPooSpec.Transport.EntitySlot.read_value
+#print axioms CedarPooSpec.Transport.EntitySlot.bound

@@ -51,61 +51,61 @@ import Examples.Scenarios.TenantDevicePolicyEvolutionExport
 
 namespace CedarPooSpec.Manifests
 
-def entries : List (String × (Unit → Except String Lean.Json)) := [
-  ("claim-settlement-claims", fun _ => AWS.ClaimSettlementExport.claimsManifest),
-  ("claim-settlement-banking", fun _ => AWS.ClaimSettlementExport.bankingManifest),
-  ("claim-settlement-handoff", fun _ => AWS.ClaimSettlementExport.handoffs),
-  ("ticket-sharing", fun _ => TicketSharingExport.manifest),
-  ("clinical", fun _ => ClinicalBreakGlassExport.manifest),
-  ("pseudonymization-validated", fun _ => PseudonymizationExport.manifest),
-  ("pseudonymization-deployable", fun _ => PseudonymizationExport.deploymentManifest),
-  ("pseudonymization-tabular", fun _ => PseudonymizationExample.Tabular.fixture),
+def entries : List (String × (Unit → Except String Transport.Entry)) := [
+  ("claim-settlement-claims", fun _ => (AWS.ClaimSettlementExport.claimsManifest).map Transport.Entry.manifest),
+  ("claim-settlement-banking", fun _ => (AWS.ClaimSettlementExport.bankingManifest).map Transport.Entry.manifest),
+  ("claim-settlement-handoff", fun _ => (AWS.ClaimSettlementExport.handoffs).map Transport.Entry.data),
+  ("ticket-sharing", fun _ => (TicketSharingExport.manifest).map Transport.Entry.manifest),
+  ("clinical", fun _ => (ClinicalBreakGlassExport.manifest).map Transport.Entry.manifest),
+  ("pseudonymization-validated", fun _ => (PseudonymizationExport.manifest).map Transport.Entry.manifest),
+  ("pseudonymization-deployable", fun _ => (PseudonymizationExport.deploymentManifest).map Transport.Entry.artifacts),
+  ("pseudonymization-tabular", fun _ => (PseudonymizationExample.Tabular.fixture).map Transport.Entry.data),
   ("agentic-ai-language-model-health-disclosure", fun _ =>
-    AgenticAI.LanguageModel.DisclosureExport.manifest),
-  ("wearable-triage", fun _ => WearableTriageExport.manifest),
-  ("model-stewardship", fun _ => ModelStewardshipExample.ReplayExport.manifest),
-  ("prior-authorization-validated", fun _ => PriorAuthorizationValidatedExport.manifest),
-  ("prior-authorization-malformed", fun _ => PriorAuthorizationValidatedExport.malformedManifest),
-  ("prior-authorization-internal-channels", fun _ => PriorAuthorizationInternalChannelsExport.manifest),
-  ("my-health-record-consumer-platform", fun _ => MyHealthRecordExample.ValidatedExport.manifest),
-  ("australian-emr-upload", fun _ => AustralianEMRExample.ValidatedExport.manifest),
-  ("united-states-payer-exchange", fun _ => UnitedStatesPayerExample.ValidatedExport.manifest),
-  ("attested", fun _ => AttestedDataAccessExport.manifest),
-  ("attested-views-validated", fun _ => AttestedViewsValidatedExport.manifest),
+    (AgenticAI.LanguageModel.DisclosureExport.manifest).map Transport.Entry.manifest),
+  ("wearable-triage", fun _ => (WearableTriageExport.manifest).map Transport.Entry.manifest),
+  ("model-stewardship", fun _ => (ModelStewardshipExample.ReplayExport.manifest).map Transport.Entry.manifest),
+  ("prior-authorization-validated", fun _ => (PriorAuthorizationValidatedExport.manifest).map Transport.Entry.manifest),
+  ("prior-authorization-malformed", fun _ => (PriorAuthorizationValidatedExport.malformedManifest).map Transport.Entry.manifest),
+  ("prior-authorization-internal-channels", fun _ => (PriorAuthorizationInternalChannelsExport.manifest).map Transport.Entry.manifest),
+  ("my-health-record-consumer-platform", fun _ => (MyHealthRecordExample.ValidatedExport.manifest).map Transport.Entry.manifest),
+  ("australian-emr-upload", fun _ => (AustralianEMRExample.ValidatedExport.manifest).map Transport.Entry.manifest),
+  ("united-states-payer-exchange", fun _ => (UnitedStatesPayerExample.ValidatedExport.manifest).map Transport.Entry.manifest),
+  ("attested", fun _ => (AttestedDataAccessExport.manifest).map Transport.Entry.manifest),
+  ("attested-views-validated", fun _ => (AttestedViewsValidatedExport.manifest).map Transport.Entry.manifest),
   ("attested-schema-evolution", fun _ => AttestedSchemaEvolutionExport.bundle),
-  ("scope-pattern", fun _ => ScopeAndPatternExport.manifest),
-  ("scope-pattern-validated", fun _ => ScopeAndPatternValidatedExport.manifest),
-  ("namespaced-enum-validated", fun _ => NamespacedEnumValidatedExport.manifest),
-  ("network", fun _ => TrustedNetworkDataAccessExport.manifest),
-  ("network-validated", fun _ => TrustedNetworkValidatedExport.manifest),
-  ("country-approval", fun _ => CountryApprovalExport.manifest),
-  ("country-approval-validated", fun _ => CountryApprovalValidatedExport.manifest),
-  ("purchase-approval", fun _ => PurchaseApprovalExport.manifest),
-  ("delegated-approval", fun _ => DelegatedApprovalExport.manifest),
-  ("delegated-matrix", fun _ => DelegatedApprovalMatrixExport.manifest),
-  ("payment-release", fun _ => PaymentReleaseExport.manifest),
-  ("agent-delegation", fun _ => AgentDelegationExport.manifest),
-  ("agent-chain", fun _ => AgentChainExport.manifest),
-  ("agent-payment", fun _ => AgentPaymentExport.manifest),
-  ("agent-payment-validated", fun _ => AgentPaymentValidatedExport.manifest),
-  ("agent-data-flow", fun _ => AgentDataFlowExport.manifest),
-  ("agent-data-flow-validated", fun _ => AgentDataFlowValidatedExport.manifest),
-  ("lakehouse-gateway-validated", fun _ => LakehouseGatewayValidatedExport.manifest),
-  ("multi-account-banking-validated", fun _ => MultiAccountBankingValidatedExport.manifest),
-  ("reconciliation-validated", fun _ => CedarPooSpec.AWS.Reconciliation.ValidatedExport.manifest),
-  ("expense-governance-validated", fun _ => CedarPooSpec.AWS.Expense.ValidatedExport.manifest),
-  ("bounded-session", fun _ => BoundedSessionExport.manifest),
-  ("shared-budget", fun _ => SharedBudgetExport.manifest),
-  ("cross-agent-egress-validated", fun _ => CrossAgentEgressValidatedExport.manifest),
-  ("department-synthesis-validated", fun _ => DepartmentSynthesisValidatedExport.manifest),
-  ("source-custody-validated", fun _ => SourceCustodyValidatedExport.manifest),
-  ("supplier-transition", fun _ => SupplierTransitionExport.manifest),
-  ("vla-command", fun _ => VlaCommandBoundaryExport.manifest),
-  ("mission-successor", fun _ => SuccessorBoundaryExport.manifest),
-  ("extension-coverage", fun _ => ExtensionCoverageExport.manifest),
-  ("tenant-device", fun _ => TenantDevicePolicyEvolutionExport.manifest)]
+  ("scope-pattern", fun _ => (ScopeAndPatternExport.manifest).map Transport.Entry.manifest),
+  ("scope-pattern-validated", fun _ => (ScopeAndPatternValidatedExport.manifest).map Transport.Entry.manifest),
+  ("namespaced-enum-validated", fun _ => (NamespacedEnumValidatedExport.manifest).map Transport.Entry.manifest),
+  ("network", fun _ => (TrustedNetworkDataAccessExport.manifest).map Transport.Entry.manifest),
+  ("network-validated", fun _ => (TrustedNetworkValidatedExport.manifest).map Transport.Entry.manifest),
+  ("country-approval", fun _ => (CountryApprovalExport.manifest).map Transport.Entry.manifest),
+  ("country-approval-validated", fun _ => (CountryApprovalValidatedExport.manifest).map Transport.Entry.manifest),
+  ("purchase-approval", fun _ => (PurchaseApprovalExport.manifest).map Transport.Entry.manifest),
+  ("delegated-approval", fun _ => (DelegatedApprovalExport.manifest).map Transport.Entry.manifest),
+  ("delegated-matrix", fun _ => (DelegatedApprovalMatrixExport.manifest).map Transport.Entry.manifest),
+  ("payment-release", fun _ => (PaymentReleaseExport.manifest).map Transport.Entry.manifest),
+  ("agent-delegation", fun _ => (AgentDelegationExport.manifest).map Transport.Entry.manifest),
+  ("agent-chain", fun _ => (AgentChainExport.manifest).map Transport.Entry.manifest),
+  ("agent-payment", fun _ => (AgentPaymentExport.manifest).map Transport.Entry.manifest),
+  ("agent-payment-validated", fun _ => (AgentPaymentValidatedExport.manifest).map Transport.Entry.manifest),
+  ("agent-data-flow", fun _ => (AgentDataFlowExport.manifest).map Transport.Entry.manifest),
+  ("agent-data-flow-validated", fun _ => (AgentDataFlowValidatedExport.manifest).map Transport.Entry.manifest),
+  ("lakehouse-gateway-validated", fun _ => (LakehouseGatewayValidatedExport.manifest).map Transport.Entry.manifest),
+  ("multi-account-banking-validated", fun _ => (MultiAccountBankingValidatedExport.manifest).map Transport.Entry.manifest),
+  ("reconciliation-validated", fun _ => (CedarPooSpec.AWS.Reconciliation.ValidatedExport.manifest).map Transport.Entry.manifest),
+  ("expense-governance-validated", fun _ => (CedarPooSpec.AWS.Expense.ValidatedExport.manifest).map Transport.Entry.manifest),
+  ("bounded-session", fun _ => (BoundedSessionExport.manifest).map Transport.Entry.manifest),
+  ("shared-budget", fun _ => (SharedBudgetExport.manifest).map Transport.Entry.manifest),
+  ("cross-agent-egress-validated", fun _ => (CrossAgentEgressValidatedExport.manifest).map Transport.Entry.manifest),
+  ("department-synthesis-validated", fun _ => (DepartmentSynthesisValidatedExport.manifest).map Transport.Entry.manifest),
+  ("source-custody-validated", fun _ => (SourceCustodyValidatedExport.manifest).map Transport.Entry.manifest),
+  ("supplier-transition", fun _ => (SupplierTransitionExport.manifest).map Transport.Entry.manifest),
+  ("vla-command", fun _ => (VlaCommandBoundaryExport.manifest).map Transport.Entry.manifest),
+  ("mission-successor", fun _ => (SuccessorBoundaryExport.manifest).map Transport.Entry.manifest),
+  ("extension-coverage", fun _ => (ExtensionCoverageExport.manifest).map Transport.Entry.manifest),
+  ("tenant-device", fun _ => (TenantDevicePolicyEvolutionExport.manifest).map Transport.Entry.manifest)]
 
-def evaluate (produce : Unit → Except String Lean.Json) : IO Lean.Json :=
+def evaluate {α : Type} (produce : Unit → Except String α) : IO α :=
   match produce () with
   | .ok json => pure json
   | .error message => throw (IO.userError message)
@@ -113,7 +113,7 @@ def evaluate (produce : Unit → Except String Lean.Json) : IO Lean.Json :=
 /-- Keep compression inside the IO span: pure let bindings may be sunk past clocks. -/
 @[noinline] private def serialize (json : Lean.Json) : IO String := pure json.compress
 
-@[noinline] private def prepareSources (outputs : List (String × (Unit → Except String Lean.Json))) : IO Lean.Json :=
+@[noinline] private def prepareSources (outputs : List (String × (Unit → Except String Transport.Entry))) : IO Lean.Json :=
   evaluate (fun _ => Transport.sourceCatalogFrom outputs)
 
 private def phase (started : Option Nat) (name : String) : IO Unit := do
@@ -141,14 +141,14 @@ def run (args : List String) (observe : Bool := false) : IO Unit := do
       phase started "output-written"
   | ["all"] => do
       let outputs ← entries.mapM fun (name, produce) => do
-        let json ← evaluate produce
+        let json ← evaluate (fun _ => do (← produce ()).toJson)
         pure (name, json)
       for (name, json) in outputs do
         IO.FS.writeFile s!".lake/build/{name}-manifest.json" json.compress
   | [name] =>
       match entries.find? (fun entry => entry.1 == name) with
       | some (_, produce) => do
-          let json ← evaluate produce
+          let json ← evaluate (fun _ => do (← produce ()).toJson)
           IO.println json.compress
       | none => throw (IO.userError s!"unknown manifest: {name}")
   | _ => throw (IO.userError "expected a manifest name or all")

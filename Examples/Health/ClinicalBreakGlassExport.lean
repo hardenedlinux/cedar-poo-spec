@@ -8,13 +8,13 @@ namespace CedarPooSpec.ClinicalBreakGlassExport
 
 open CedarPooSpec.ClinicalBreakGlassExample
 
-def manifest : Except String Lean.Json := do
+def manifest : Except String CedarPooSpec.Transport.Manifest := do
   let integrated ← cases.mapM fun (name, req, _) =>
-    CedarPooSpec.ClinicalBreakGlassExample.program.authorizationCase name "clinical-integrated" "Integrated" req entities
-  let before ← CedarPooSpec.ClinicalBreakGlassExample.program.authorizationCase
+    CedarPooSpec.ClinicalBreakGlassExample.program.case name "clinical-integrated" "Integrated" req entities
+  let before ← CedarPooSpec.ClinicalBreakGlassExample.program.case
       "pre-integration-broad-permit" "clinical-emergency" "Emergency" (request remoteRecord {}) entities
-  let preference ← CedarPooSpec.ClinicalBreakGlassExample.program.authorizationCase
+  let preference ← CedarPooSpec.ClinicalBreakGlassExample.program.case
       "preference-released" "clinical-integrated" "Integrated" (request restrictedRecord {}) unrestrictedEntities
-  return Lean.Json.mkObj [("cases", Lean.toJson (before :: integrated ++ [preference]))]
+  return { cases := (before :: integrated ++ [preference]) }
 
 end CedarPooSpec.ClinicalBreakGlassExport

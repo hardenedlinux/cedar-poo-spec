@@ -7,17 +7,17 @@ namespace CedarPooSpec.SupplierTransitionExport
 
 open CedarPooSpec.SupplierTransitionExample
 
-def manifest : Except String Lean.Json := do
-  let mut rows : List Lean.Json := []
+def manifest : Except String CedarPooSpec.Transport.Manifest := do
+  let mut rows : List CedarPooSpec.Transport.Case := []
   for (name, root, supplier, target, facts, _, _) in updateCases do
     for ((layerRoot, request), index) in (updateChecks root supplier target facts).zipIdx do
-      let receipt ← CedarPooSpec.SupplierTransitionExample.program.authorizationCase
+      let receipt ← CedarPooSpec.SupplierTransitionExample.program.case
           s!"{name}-layer-{index}" layerRoot.toLower layerRoot request entities
       rows := rows ++ [receipt]
   for (name, root, target, facts, _) in manifestCases do
-    let receipt ← CedarPooSpec.SupplierTransitionExample.program.authorizationCase
+    let receipt ← CedarPooSpec.SupplierTransitionExample.program.case
         name root.toLower root (manifestRequest target facts) entities
     rows := rows ++ [receipt]
-  return Lean.Json.mkObj [("cases", Lean.toJson rows)]
+  return { cases := rows }
 
 end CedarPooSpec.SupplierTransitionExport

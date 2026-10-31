@@ -40,9 +40,9 @@ def exact : Bool := cases.all fun (_, root, req, expected) =>
 
 theorem exactFully : exact = true := by native_decide
 
-def manifest : Except String Lean.Json := do
+def manifest : Except String CedarPooSpec.Transport.Manifest := do
   let exported ← cases.mapM fun (name, root, req, _) =>
-    CedarPooSpec.DelegatedApprovalExample.delegatedProgram.authorizationCase name root.toLower root req delegatedEntities
-  return Lean.Json.mkObj [("cases", Lean.toJson exported)]
+    CedarPooSpec.DelegatedApprovalExample.delegatedProgram.case name root.toLower root req delegatedEntities
+  return { cases := exported }
 
 end CedarPooSpec.DelegatedApprovalMatrixExport

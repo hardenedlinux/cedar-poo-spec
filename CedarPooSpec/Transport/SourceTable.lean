@@ -10,12 +10,19 @@ inductive SourceKind where | policy | entities | schema
 structure SourceRef (kind : SourceKind) where
   index : Nat
   deriving Repr
-structure Snapshot (kind : SourceKind) where
+/-- One immutable source value with one memoized full encoding. -/
+structure SourceSnapshot (kind : SourceKind) where
   value : Lean.Json
-  wire : String
-  encoded : wire = value.compress
+  encoding : Thunk { wire : String // wire = value.compress }
+
+def SourceSnapshot.ofJson (value : Lean.Json) : SourceSnapshot kind :=
+  ⟨value, Thunk.mk fun _ => ⟨value.compress, rfl⟩⟩
+def SourceSnapshot.wire (snapshot : SourceSnapshot kind) : String := snapshot.encoding.get.val
+theorem SourceSnapshot.encoded (snapshot : SourceSnapshot kind) :
+    snapshot.wire = snapshot.value.compress := snapshot.encoding.get.property
+
 structure SourcePool (kind : SourceKind) where
-  entries : Array (Snapshot kind) := #[]
+  entries : Array (SourceSnapshot kind) := #[]
   candidates : Std.HashMap String Nat := {}
 
 def SourcePool.resolve (pool : SourcePool kind) (ref : SourceRef kind) : Option String :=
@@ -26,24 +33,29 @@ structure Publication (before : SourcePool kind) (source : Lean.Json) where
   bound : next.resolve reference = some source.compress
   frame : ∀ i, i < before.entries.size → next.entries[i]? = before.entries[i]?
 
-private def append (pool : SourcePool kind) (source : Lean.Json)
-    (wire : String) (encoded : wire = source.compress) : Publication pool source where
-  next := ⟨pool.entries.push ⟨source, wire, encoded⟩,
-    pool.candidates.insert wire pool.entries.size⟩
-  reference := ⟨pool.entries.size⟩
-  bound := by simp [SourcePool.resolve, encoded]
-  frame := by
-    intro i h
-    simp only [Array.getElem?_push, show i ≠ pool.entries.size from Nat.ne_of_lt h, ite_false]
+private def append (pool : SourcePool kind) (source : SourceSnapshot kind) :
+    Publication pool source.value :=
+  let index := pool.entries.size
+  { next := ⟨pool.entries.push source, pool.candidates.insert source.wire index⟩
+    reference := ⟨index⟩
+    bound := by simp [SourcePool.resolve, index, source.encoded]
+    frame := by
+      intro i h
+      simp only [Array.getElem?_push, show i ≠ pool.entries.size from Nat.ne_of_lt h, ite_false] }
 
-def SourcePool.publish (pool : SourcePool kind) (source : Lean.Json) : Publication pool source :=
-  let wire := source.compress
+/-- Typed publication reuses the snapshot's memoized encoding, including hits. -/
+def SourcePool.publishSnapshot (pool : SourcePool kind) (source : SourceSnapshot kind) :
+    Publication pool source.value :=
+  let wire := source.wire
   match pool.candidates[wire]? with
   | some index =>
       if bound : pool.resolve ⟨index⟩ = some wire then
-        ⟨pool, ⟨index⟩, bound, fun _ _ => rfl⟩
-      else append pool source wire rfl
-  | none => append pool source wire rfl
+        ⟨pool, ⟨index⟩, bound.trans (congrArg some source.encoded), fun _ _ => rfl⟩
+      else append pool source
+  | none => append pool source
+
+def SourcePool.publish (pool : SourcePool kind) (source : Lean.Json) : Publication pool source :=
+  pool.publishSnapshot (SourceSnapshot.ofJson source)
 
 theorem SourcePool.publish_bound (pool : SourcePool kind) (source : Lean.Json) :
     (pool.publish source).next.resolve (pool.publish source).reference = some source.compress :=
@@ -85,4 +97,19 @@ theorem publication_contract (pool : SourcePool kind) (source : Lean.Json) :
       ((pool.publish source).next, (pool.publish source).reference) = [] := by
   simp [diagnose, sourceContract, extras, required, (pool.publish source).bound,
     LeanPoo.Functional.ObjectDiagnostics.andThen, LeanPoo.Functional.ObjectDiagnostics.all]
+/-- The typed publisher used by the native catalog satisfies the actual Contract. -/
+theorem publication_snapshot_contract (pool : SourcePool kind) (source : SourceSnapshot kind) :
+    diagnose (sourceContract kind source.value.compress)
+      ((pool.publishSnapshot source).next, (pool.publishSnapshot source).reference) = [] := by
+  simp [diagnose, sourceContract, extras, required, (pool.publishSnapshot source).bound,
+    LeanPoo.Functional.ObjectDiagnostics.andThen, LeanPoo.Functional.ObjectDiagnostics.all]
+
+theorem publication_snapshot_value (pool : SourcePool kind) (source : SourceSnapshot kind) :
+    ((pool.publishSnapshot source).next.entries[(pool.publishSnapshot source).reference.index]?).map
+      (fun snapshot => snapshot.value.compress) = some source.value.compress := by
+  cases entry : (pool.publishSnapshot source).next.entries[(pool.publishSnapshot source).reference.index]? with
+  | none => simpa [SourcePool.resolve, entry] using (pool.publishSnapshot source).bound
+  | some snapshot =>
+    simpa [SourcePool.resolve, entry, snapshot.encoded] using (pool.publishSnapshot source).bound
+
 end CedarPooSpec.Transport

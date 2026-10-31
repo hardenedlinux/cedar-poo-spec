@@ -1,75 +1,68 @@
-import CedarPooSpec.Transport.SourceTable
+import CedarPooSpec.Transport.Case
 
-/-! One bulk transport for every applicable manifest, including schema evolution.
-Standalone Cedar manifests remain the independent public authoring projection. -/
+/-! Both public authoring JSON and the canonical bulk wire project typed entries.
+No inline case JSON is constructed and then decoded by the bulk publisher. -/
 namespace CedarPooSpec.Transport
 private structure Pools where
   policies : SourcePool .policy := {}
   entities : SourcePool .entities := {}
   schemas : SourcePool .schema := {}
+  entitySlot : EntitySlot := EntitySlot.empty
 private abbrev Encode := StateT Pools (Except String)
-private def object (json : Lean.Json) : Except String (List (String × Lean.Json)) :=
-  return (← json.getObj?).toList
-private def field (json : Lean.Json) (key : String) : Except String Lean.Json := json.getObjVal? key
-private def policyRef (value : Lean.Json) : Encode (SourceRef .policy) := do
+private def policyRef (value : SourceSnapshot .policy) : Encode (SourceRef .policy) := do
   let state ← get
-  let published := state.policies.publish value
+  let published := state.policies.publishSnapshot value
   set {state with policies := published.next}
   return published.reference
-private def entitiesRef (value : Lean.Json) : Encode (SourceRef .entities) := do
+private def entitiesRef (value : SourceSnapshot .entities) : Encode (SourceRef .entities) := do
   let state ← get
-  let published := state.entities.publish value
+  let published := state.entities.publishSnapshot value
   set {state with entities := published.next}
   return published.reference
-private def schemaRef (value : Lean.Json) : Encode (SourceRef .schema) := do
+private def schemaRef (value : SourceSnapshot .schema) : Encode (SourceRef .schema) := do
   let state ← get
-  let published := state.schemas.publish value
+  let published := state.schemas.publishSnapshot value
   set {state with schemas := published.next}
   return published.reference
-private def manifest (value : Lean.Json) : Encode Lean.Json := do
-  let cases ← (← field value "cases").getArr?
+private def manifest (value : Manifest) : Encode Lean.Json := do
   let mut rows := #[]
   let mut bindings : Std.HashMap String Nat := {}
-  for row in cases do
-    let policy ← policyRef (← field row "policies")
-    let entities ← entitiesRef (← field row "entities")
-    let revision ← (← field row "revision").getStr?
+  for row in value.cases do
+    let policy ← policyRef row.policy.snapshot
+    let state ← get
+    let (result, next, _) := state.entitySlot.read row.entities
+    set {state with entitySlot := next}
+    let entities ← entitiesRef (← result)
+    let revision := row.revision
     if let some prior := bindings[revision]? then
       unless prior = policy.index do throw s!"conflicting source for revision: {revision}"
     bindings := bindings.insert revision policy.index
-    let fields := (← object row).filter fun field =>
-      field.1 != "policies" && field.1 != "entities"
-    rows := rows.push (Lean.Json.mkObj (fields ++ [
+    rows := rows.push (Lean.Json.mkObj ((← row.fields) ++ [
       ("policy_ref", Lean.toJson policy.index), ("entities_ref", Lean.toJson entities.index)]))
-  let fields := (← object value).filter fun field => field.1 != "cases" && field.1 != "schema"
-  let mut fields := fields ++ [("cases", .arr rows),
+  let mut fields := [("cases", .arr rows),
     ("revision_sources", Lean.Json.mkObj (bindings.toList.map fun (key, index) => (key, Lean.toJson index)))]
-  if let .ok schema := field value "schema" then
+  if let some schema := value.schema then
     let ref ← schemaRef schema
     fields := fields ++ [("schema_ref", Lean.toJson ref.index), ("manifest_kind", Lean.toJson "schema-bound")]
   else
     fields := fields ++ [("manifest_kind", Lean.toJson "raw")]
   return Lean.Json.mkObj fields
-private def payload (value : Lean.Json) : Encode Lean.Json := do
-  if (field value "cases").isOk then return ← manifest value
-  if (field value "before").isOk && (field value "after").isOk then
-    return Lean.Json.mkObj [("before", ← manifest (← field value "before")),
-      ("after", ← manifest (← field value "after"))]
-  if let .ok rows := value.getArr? then
-    if !rows.isEmpty && rows.all (fun row => (field row "root").isOk && (field row "policies").isOk) then
-      let rows ← rows.mapM fun row => do
-        let ref ← policyRef (← field row "policies")
-        return Lean.Json.mkObj [("root", ← field row "root"), ("policy_ref", Lean.toJson ref.index)]
-      return .arr rows
-  return value
+private def payload : Entry → Encode Lean.Json
+  | .manifest value => manifest value
+  | .evolution before after => do
+      return Lean.Json.mkObj [("before", ← manifest before), ("after", ← manifest after)]
+  | .artifacts values => do
+      let rows ← values.mapM fun row => do
+        let ref ← policyRef row.source
+        return Lean.Json.mkObj [("root", Lean.toJson row.root), ("policy_ref", Lean.toJson ref.index)]
+      return Lean.toJson rows
+  | .data value => pure value
 
-/-- References are transport locations only. SDK admission and both authorizers
-remain the consumer's per-revision/per-request obligations. -/
-def sourceCatalogFrom (entries : List (String × (Unit → Except String Lean.Json))) :
+/-- References locate complete sources only; SDK admission remains fresh. -/
+def sourceCatalogFrom (entries : List (String × (Unit → Except String Entry))) :
     Except String Lean.Json := do
   let encode : Encode (List (String × Lean.Json)) := entries.mapM fun (name, produce) => do
-    let value ← produce ()
-    return (name, ← payload value)
+    return (name, ← payload (← produce ()))
   let (entries, pools) ← encode.run {}
   return Lean.Json.mkObj [
     ("format_version", Lean.toJson (2 : Nat)),
@@ -78,8 +71,7 @@ def sourceCatalogFrom (entries : List (String × (Unit → Except String Lean.Js
       ("entities", .arr (pools.entities.entries.map (·.value))),
       ("schemas", .arr (pools.schemas.entries.map (·.value)))]),
     ("entries", Lean.Json.mkObj entries)]
-/-- Pure snapshots use the same publisher and ordering as factory publication. -/
-def sourceCatalog (entries : List (String × Lean.Json)) : Except String Lean.Json :=
-  sourceCatalogFrom (entries.map fun (name, value) => (name, fun _ => .ok value))
 
+def sourceCatalog (entries : List (String × Entry)) : Except String Lean.Json :=
+  sourceCatalogFrom (entries.map fun (name, value) => (name, fun _ => .ok value))
 end CedarPooSpec.Transport

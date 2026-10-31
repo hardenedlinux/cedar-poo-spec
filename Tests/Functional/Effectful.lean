@@ -162,11 +162,11 @@ open Cedar.Spec Cedar.Validation CedarPooSpec.Functional
 private def wire (result : Except String Lean.Json) : Except String String :=
   result.map Lean.Json.compress
 
-example : wire AgenticAI.LanguageModel.DisclosureExport.manifest =
+example : wire (AgenticAI.LanguageModel.DisclosureExport.manifest.bind (·.toJson)) =
     wire Reference.DisclosureExport.manifest := by native_decide
-example : wire CrossAgentEgressValidatedExport.manifest =
+example : wire (CrossAgentEgressValidatedExport.manifest.bind (·.toJson)) =
     wire Reference.CrossExport.manifest := by native_decide
-example : wire SourceCustodyValidatedExport.manifest =
+example : wire (SourceCustodyValidatedExport.manifest.bind (·.toJson)) =
     wire Reference.CustodyExport.manifest := by native_decide
 
 namespace Cross

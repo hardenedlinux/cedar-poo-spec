@@ -48,10 +48,10 @@ def scenarios : List (String × String × Cedar.Spec.Entities ×
   ("incident-still-reads", "Incident", entities, normalRead),
   ("recovered-release", "Recovered", entities, approvedRelease 1)]
 
-def manifest : Except String Lean.Json := do
+def manifest : Except String CedarPooSpec.Transport.Manifest := do
   let rows ← LeanPoo.Functional.Validation.traverse (fun (name, root, store, operation) =>
-    program.authorizationCase name root root
+    program.case name root root
       operation.request store) scenarios
-  CedarPooSpec.SchemaJson.validatedManifest schema rows
+  CedarPooSpec.SchemaJson.manifest schema rows
 
 end CedarPooSpec.SourceCustodyValidatedExport

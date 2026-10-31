@@ -35,7 +35,9 @@ The payment and medical consumers show the full public sequence:
 3. Call =prepareProgram standard model schema roots= once and retain its result.
 4. Call =program.authorize root requests entities= for current inputs.
 5. Use =receipt.allowed= at the existing business-effect boundary.
-6. Call =program.publish= or =program.authorizationCase= for validated exports.
+6. Call =program.case= or =program.cases= for typed export inventories; project
+   =Transport.Manifest.toJson= only at a standalone JSON boundary.
+   =program.publish= remains the validated policy artifact operation.
 
 The constructor uses =Validation.traverse= and returns the first preparation
 error, without exposing a partially prepared Program. Duplicate root requests
@@ -332,3 +334,29 @@ The [[file:../../docs/native-dataflow-acceptance.org][POO dataflow migration]] b
 C4 source, compiled closure and exact inventory. Derived dependencies use the
 existing typed Computation language. The native controls check real per-field
 materialization work for all nine families; Contract admission stays per object.
+
+* Typed Case and SourceSnapshot publication
+
+[[file:../Transport/Case.lean][Transport.Case]] retains the actual Request, Entities, policy source and
+an expected-response thunk whose result is proved equal to Cedar authorization
+for exactly those immutable inputs. It replaces persistent per-case JSON trees
+in all applicable domain exports. It is an authoring expectation, not a runtime
+Host admission or a cache for changing requests. Rust still validates and runs
+both authorizers afresh.
+
+=PolicySource.aligned= binds complete policy JSON to the actual policies.
+=SourceSnapshot= owns a JSON value and one memoized full encoding with an equality
+proof. =PolicyJson.Publication= shares its snapshot across cases of the exact
+prepared root. The catalog's entity preparation uses a certified POO ContextSlot:
+only one exact semantic Entities owner is retained, and the result has the full
+original projection equality, including failure. Case rendering no longer
+constructs inline JSON just to read its source fields back out.
+
+=Manifest=, schema evolution, named policy artifacts and data fixtures are
+explicit =Entry= alternatives. Standalone JSON and the existing v2 bulk format
+are projections of that same typed inventory. =Case.inline_projection= proves
+equality with the existing primitive inline serializer; the typed publisher
+satisfies the actual Functional source Contract and full source-value law.
+The public JSON APIs remain output projections and independent test references.
+Their batch projection and typed batch production share one ordered root traversal
+with arbitrary-renderer value/first-error equality.

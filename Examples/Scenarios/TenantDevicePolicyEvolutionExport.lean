@@ -8,10 +8,10 @@ namespace CedarPooSpec.TenantDevicePolicyEvolutionExport
 
 open CedarPooSpec.TenantDeviceAuthorizationExample
 
-def manifest : Except String Lean.Json := do
+def manifest : Except String CedarPooSpec.Transport.Manifest := do
   let rows ← expectedDecisions.zipIdx.mapM fun ((root, req, _), index) =>
-    CedarPooSpec.TenantDeviceAuthorizationExample.program.authorizationCase
+    CedarPooSpec.TenantDeviceAuthorizationExample.program.case
         s!"{root.toLower}-case-{index}" root.toLower root req entities
-  return Lean.Json.mkObj [("cases", Lean.toJson rows)]
+  return { cases := rows }
 
 end CedarPooSpec.TenantDevicePolicyEvolutionExport

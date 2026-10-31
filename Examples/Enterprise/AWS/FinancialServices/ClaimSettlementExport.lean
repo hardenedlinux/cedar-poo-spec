@@ -42,24 +42,24 @@ def bankCalls (selection : Selection) :=
   CedarPooSpec.MultiAccountBankingLineage.transferRoute.map fun call =>
     { call with origin := selection.actors.bankOperator }
 
-def claimsManifest : Except String Lean.Json := do
+def claimsManifest : Except String CedarPooSpec.Transport.Manifest := do
   let batches ← LeanPoo.Functional.Validation.traverse (fun scenario =>
     LeanPoo.Functional.Validation.traverse (fun (request, index) =>
-      CedarPooSpec.LakehouseGatewayExample.program.authorizationCase
+      CedarPooSpec.LakehouseGatewayExample.program.case
         s!"{scenario.name}-claims-{index}" scenario.selection.claimRoot scenario.selection.claimRoot
         request CedarPooSpec.LakehouseGatewayExample.entities)
       (claimRequests scenario.selection).zipIdx) scenarios
-  SchemaJson.validatedManifest CedarPooSpec.LakehouseGatewayExample.schema batches.flatten
+  SchemaJson.manifest CedarPooSpec.LakehouseGatewayExample.schema batches.flatten
 
-def bankingManifest : Except String Lean.Json := do
+def bankingManifest : Except String CedarPooSpec.Transport.Manifest := do
   let batches ← LeanPoo.Functional.Validation.traverse (fun scenario =>
     LeanPoo.Functional.Validation.traverse (fun (call, index) =>
-      CedarPooSpec.MultiAccountBankingExample.program.authorizationCase
+      CedarPooSpec.MultiAccountBankingExample.program.case
         s!"{scenario.name}-bank-{index}" scenario.selection.bankRoot scenario.selection.bankRoot
         (CedarPooSpec.MultiAccountBankingExample.request call.origin call.action)
         CedarPooSpec.MultiAccountBankingExample.entities)
       (bankCalls scenario.selection).zipIdx) scenarios
-  SchemaJson.validatedManifest CedarPooSpec.MultiAccountBankingExample.schema batches.flatten
+  SchemaJson.manifest CedarPooSpec.MultiAccountBankingExample.schema batches.flatten
 
 def scopeJson (scope : Handoff.Scope) : Lean.Json := Lean.Json.mkObj [
   ("caseId", Lean.toJson scope.caseId), ("claimDigest", Lean.toJson scope.claimDigest),

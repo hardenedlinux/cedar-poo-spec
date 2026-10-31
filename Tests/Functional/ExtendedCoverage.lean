@@ -112,12 +112,12 @@ open Cedar.Spec CedarPooSpec.Functional
 
 private def wire (result : Except String Lean.Json) := result.map Lean.Json.compress
 
-example : wire Cloud.Pipeline.DeploymentCase.manifest = wire Reference.Deployment.manifest := by
+example : wire (Cloud.Pipeline.DeploymentCase.manifest.bind (·.toJson)) = wire Reference.Deployment.manifest := by
   native_decide
-example : wire Cloud.DataProtection.GoogleSdpRelease.manifest = wire Reference.Sdp.manifest := by
+example : wire (Cloud.DataProtection.GoogleSdpRelease.manifest.bind (·.toJson)) = wire Reference.Sdp.manifest := by
   native_decide
-example : wire PseudonymizationExport.manifest = wire Reference.Pseudonymization.manifest := by native_decide
-example : wire PseudonymizationExport.deploymentManifest =
+example : wire (PseudonymizationExport.manifest.bind (·.toJson)) = wire Reference.Pseudonymization.manifest := by native_decide
+example : wire (PseudonymizationExport.deploymentManifest.bind (fun values => (Transport.Entry.artifacts values).toJson)) =
     wire Reference.Pseudonymization.deploymentManifest := by native_decide
 
 namespace Deployment

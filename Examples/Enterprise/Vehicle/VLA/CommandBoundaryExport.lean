@@ -7,12 +7,12 @@ namespace CedarPooSpec.VlaCommandBoundaryExport
 
 open CedarPooSpec.VlaCommandBoundaryExample
 
-def manifest : Except String Lean.Json := do
-  let mut rows : List Lean.Json := []
+def manifest : Except String CedarPooSpec.Transport.Manifest := do
+  let mut rows : List CedarPooSpec.Transport.Case := []
   for (name, root, action, segment, facts, _) in cases do
-    let receipt ← CedarPooSpec.VlaCommandBoundaryExample.program.authorizationCase
+    let receipt ← CedarPooSpec.VlaCommandBoundaryExample.program.case
         name root.toLower root (request action segment facts) entities
     rows := rows ++ [receipt]
-  return Lean.Json.mkObj [("cases", Lean.toJson rows)]
+  return { cases := rows }
 
 end CedarPooSpec.VlaCommandBoundaryExport

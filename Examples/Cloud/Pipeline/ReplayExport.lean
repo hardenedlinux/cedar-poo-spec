@@ -4,10 +4,10 @@ import Examples.Cloud.Pipeline.GoogleThreatCase
 
 namespace CedarPooSpec.Cloud.Pipeline.GoogleThreatCase
 
-def manifest : Except String Lean.Json := do
+def manifest : Except String CedarPooSpec.Transport.Manifest := do
   let rows ← LeanPoo.Functional.Validation.traverse (fun (name, root, resource, facts, _) =>
-    program.authorizationCase name root root
+    program.case name root root
       (request resource facts) entities) cases
-  return Lean.Json.mkObj [("cases", Lean.toJson rows)]
+  return { cases := rows }
 
 end CedarPooSpec.Cloud.Pipeline.GoogleThreatCase

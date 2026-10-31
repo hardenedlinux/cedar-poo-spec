@@ -105,13 +105,13 @@ open Cedar.Spec Cedar.Validation CedarPooSpec.Functional
 private def wire (result : Except String Lean.Json) : Except String String :=
   result.map Lean.Json.compress
 
-example : wire AttestedDataAccessExport.manifest = wire Reference.Attested.manifest := by
+example : wire (AttestedDataAccessExport.manifest.bind (·.toJson)) = wire Reference.Attested.manifest := by
   native_decide
-example : wire Cloud.Pipeline.GoogleThreatCase.manifest = wire Reference.Threat.manifest := by
+example : wire (Cloud.Pipeline.GoogleThreatCase.manifest.bind (·.toJson)) = wire Reference.Threat.manifest := by
   native_decide
-example : wire AgentDataFlowExport.manifest = wire Reference.Flow.manifest := by
+example : wire (AgentDataFlowExport.manifest.bind (·.toJson)) = wire Reference.Flow.manifest := by
   native_decide
-example : wire AgentDataFlowValidatedExport.manifest = wire Reference.ValidatedFlow.manifest := by
+example : wire (AgentDataFlowValidatedExport.manifest.bind (·.toJson)) = wire Reference.ValidatedFlow.manifest := by
   native_decide
 
 private def project {model : PolicyModules.Model} {entities : Entities}

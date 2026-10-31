@@ -7,20 +7,20 @@ open CedarPooSpec.AgentDataFlowExample
 open CedarPooSpec.AgentDelegationExample
 
 /-- Replay identical allow and deny requests through both construction roots. -/
-def dispatchComparisonRows : Except String (List Lean.Json) := do
+def dispatchComparisonRows : Except String (List CedarPooSpec.Transport.Case) := do
   let requests := [
     ("allow", publishRequest publicDoc publicRepo admin reviewer true),
     ("deny", publishRequest internalDoc publicRepo admin reviewer true)]
   let rows ← LeanPoo.Functional.Validation.traverse (fun (label, req) =>
     LeanPoo.Functional.Validation.traverse (fun root =>
-      program.authorizationCase s!"dispatch-{label}-{root.toLower}" root.toLower root req dataEntities)
+      program.case s!"dispatch-{label}-{root.toLower}" root.toLower root req dataEntities)
       ["PublishGoverned", "PublishDispatched"]) requests
   return rows.flatten
 
-def manifest : Except String Lean.Json := do
+def manifest : Except String CedarPooSpec.Transport.Manifest := do
   let rows ← CedarPooSpec.AgentDataFlowExport.wellFormedRows
   let comparisons ← dispatchComparisonRows
-  CedarPooSpec.SchemaJson.validatedManifest
+  CedarPooSpec.SchemaJson.manifest
     dataSchema (rows ++ comparisons)
 
 end CedarPooSpec.AgentDataFlowValidatedExport

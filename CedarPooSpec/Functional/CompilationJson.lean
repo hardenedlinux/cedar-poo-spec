@@ -1,5 +1,5 @@
 import CedarPooSpec.Functional.Compilation
-import CedarPooSpec.PolicyJson
+import CedarPooSpec.Transport.Case
 
 /-! Compile-stage JSON projection without adding schema admission. -/
 namespace CedarPooSpec.Functional
@@ -19,4 +19,18 @@ theorem compilation_export (model : PolicyModules.Model) (name revision root : S
     (request : Request) (entities : Entities) :
     (compilation model).authorizationCase name revision root request entities =
       PolicyJson.authorizationCase name revision model root request entities := rfl
+/-- Typed compile-stage case; only the policy source is projected here. -/
+def Compilation.case (compiler : Compilation model)
+    (name revision root : String) (request : Request) (entities : Entities) :
+    Except String Transport.Case := do
+  let compiled ← (compiler root).mapError reprStr
+  match h : PolicyJson.policySet compiled.policies with
+  | .error error => .error (reprStr error)
+  | .ok json => .ok {
+      name, revision
+      policy := ⟨compiled.policies, Transport.SourceSnapshot.ofJson json, h⟩
+      request, entities
+      response := Thunk.mk fun _ => isAuthorized request entities compiled.policies
+      evaluated := rfl }
+
 end CedarPooSpec.Functional

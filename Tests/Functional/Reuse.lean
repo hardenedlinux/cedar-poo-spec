@@ -102,10 +102,10 @@ example : (let first := RootSlot.read (RootSlot.empty source) "Integrated"
 end Payment
 
 -- These compare final bytes against independent pre-migration algorithms.
-example : PriorAuthorizationValidatedExport.manifest.map Lean.Json.compress =
+example : (PriorAuthorizationValidatedExport.manifest.bind (·.toJson)).map Lean.Json.compress =
     FunctionalCapabilitiesTest.PriorAuthorization.referenceManifest.map Lean.Json.compress := by
   native_decide
-example : CrossAgentEgressValidatedExport.manifest.map Lean.Json.compress =
+example : (CrossAgentEgressValidatedExport.manifest.bind (·.toJson)).map Lean.Json.compress =
     EffectfulCapabilitiesTest.Reference.CrossExport.manifest.map Lean.Json.compress := by native_decide
 
 open Lean in

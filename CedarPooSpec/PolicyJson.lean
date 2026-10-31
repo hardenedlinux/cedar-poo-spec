@@ -1,4 +1,5 @@
 import CedarPooSpec.PolicyPreparation
+import CedarPooSpec.Transport.SourceTable
 import Cedar.Spec.Entities
 import Cedar.Spec.Request
 import Cedar.Spec.Authorizer
@@ -351,6 +352,8 @@ structure Publication (model : PolicyModules.Model) (root : String)
   idsUnique : (policies.map Policy.id).Nodup
   json : Lean.Json
   serialized : policySet policies = .ok json
+  snapshot : Transport.SourceSnapshot .policy
+  snapshot_value : snapshot.value = json
 
 private theorem policyIdsUniqueOfNodup (policies : Policies)
     (unique : (policies.map Policy.id).Nodup) :
@@ -374,7 +377,13 @@ def publishValidated (checked : PolicyPreparation.Validated model root schema) :
   | .error error => .error (.export error)
   | .ok json =>
       if unique : (checked.policies.map Policy.id).Nodup then
-        .ok { toValidated := checked, idsUnique := unique, json, serialized := hj }
+        .ok {
+          toValidated := checked
+          idsUnique := unique
+          json
+          serialized := hj
+          snapshot := Transport.SourceSnapshot.ofJson json
+          snapshot_value := rfl }
       else .error .duplicatePolicyIds
 
 def publish (model : PolicyModules.Model) (root : String)

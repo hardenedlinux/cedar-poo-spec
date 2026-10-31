@@ -54,16 +54,38 @@ structure AuthorizationInput where
   request : Request
   entities : Entities
 
-/-- Current request/entity rendering; no response or Host admission is retained. -/
-def Program.authorizationCasesFrom (program : Program model schema) :
-    List AuthorizationInput → RootSlot program → Except String (List Lean.Json)
+/-- One ordered root traversal serves both typed and public JSON projections. -/
+def Program.traverseInputsFrom {α : Type} (program : Program model schema)
+    (render : (input : AuthorizationInput) → Ready ⟨model, input.root, schema⟩ → Except String α) :
+    List AuthorizationInput → RootSlot program → Except String (List α)
   | [], _ => .ok []
   | input :: rest, slot => do
       let (result, next, _) := RootSlot.read slot input.root
       let ready ← result.mapError Error.message
-      let row ← ready.authorizationCase input.name input.revision input.request input.entities
-      let tail ← program.authorizationCasesFrom rest next
+      let row ← render input ready
+      let tail ← program.traverseInputsFrom render rest next
       return row :: tail
+
+theorem Program.traverseInputsFrom_eq {α : Type} (program : Program model schema)
+    (render : (input : AuthorizationInput) → Ready ⟨model, input.root, schema⟩ → Except String α)
+    (inputs : List AuthorizationInput) (slot : RootSlot program) :
+    program.traverseInputsFrom render inputs slot =
+      Validation.traverse (fun input => do
+        let ready ← (program.at input.root).mapError Error.message
+        render input ready) inputs := by
+  induction inputs generalizing slot with
+  | nil => rfl
+  | cons input rest ih =>
+      simp only [traverseInputsFrom, Validation.traverse, ih, RootSlot.read_value]
+      cases (program.at input.root).mapError Error.message with
+      | error error => rfl
+      | ok ready => cases render input ready <;> rfl
+
+/-- Current request/entity rendering; no response or Host admission is retained. -/
+def Program.authorizationCasesFrom (program : Program model schema)
+    (inputs : List AuthorizationInput) (slot : RootSlot program) : Except String (List Lean.Json) :=
+  program.traverseInputsFrom (fun input ready =>
+    ready.authorizationCase input.name input.revision input.request input.entities) inputs slot
 
 def Program.authorizationCases (program : Program model schema) (inputs : List AuthorizationInput) :
     Except String (List Lean.Json) :=
@@ -74,21 +96,37 @@ theorem Program.authorizationCasesFrom_eq (program : Program model schema)
     (inputs : List AuthorizationInput) (slot : RootSlot program) :
     program.authorizationCasesFrom inputs slot =
       Validation.traverse (fun input => program.authorizationCase input.name input.revision
-        input.root input.request input.entities) inputs := by
-  induction inputs generalizing slot with
-  | nil => rfl
-  | cons input rest ih =>
-      simp only [authorizationCasesFrom, Validation.traverse, Program.authorizationCase,
-        ih, RootSlot.read_value]
-      cases (program.at input.root).mapError Error.message with
-      | error error => rfl
-      | ok ready =>
-        cases ready.authorizationCase input.name input.revision input.request input.entities <;> rfl
+        input.root input.request input.entities) inputs :=
+  program.traverseInputsFrom_eq _ inputs slot
 
 theorem Program.authorizationCases_eq (program : Program model schema) (inputs : List AuthorizationInput) :
     program.authorizationCases inputs =
       Validation.traverse (fun input => program.authorizationCase input.name input.revision
         input.root input.request input.entities) inputs :=
   program.authorizationCasesFrom_eq inputs (RootSlot.empty program)
+
+/-- Current request/entity rendering; no response or Host admission is retained. -/
+def Program.casesFrom (program : Program model schema)
+    (inputs : List AuthorizationInput) (slot : RootSlot program) : Except String (List Transport.Case) :=
+  program.traverseInputsFrom (fun input ready =>
+    ready.case input.name input.revision input.request input.entities) inputs slot
+
+def Program.cases (program : Program model schema) (inputs : List AuthorizationInput) :
+    Except String (List Transport.Case) :=
+  program.casesFrom inputs (RootSlot.empty program)
+
+/-- Exact ordered values and first error for any initial slot and arbitrary inputs. -/
+theorem Program.casesFrom_eq (program : Program model schema)
+    (inputs : List AuthorizationInput) (slot : RootSlot program) :
+    program.casesFrom inputs slot =
+      Validation.traverse (fun input => program.case input.name input.revision
+        input.root input.request input.entities) inputs :=
+  program.traverseInputsFrom_eq _ inputs slot
+
+theorem Program.cases_eq (program : Program model schema) (inputs : List AuthorizationInput) :
+    program.cases inputs =
+      Validation.traverse (fun input => program.case input.name input.revision
+        input.root input.request input.entities) inputs :=
+  program.casesFrom_eq inputs (RootSlot.empty program)
 
 end CedarPooSpec.Functional

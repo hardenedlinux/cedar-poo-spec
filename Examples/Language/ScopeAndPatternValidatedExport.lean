@@ -3,10 +3,10 @@ import Examples.Language.ScopeAndPatternExport
 
 namespace CedarPooSpec.ScopeAndPatternValidatedExport
 
-def manifest : Except String Lean.Json := do
+def manifest : Except String CedarPooSpec.Transport.Manifest := do
   let rows ← CedarPooSpec.ScopeAndPatternExport.manifest
-  let cases ← (rows.getObjValAs? (List Lean.Json) "cases").mapError toString
-  CedarPooSpec.SchemaJson.validatedManifest
+  let cases := rows.cases
+  CedarPooSpec.SchemaJson.manifest
     CedarPooSpec.ScopeAndPatternExample.schema cases
 
 end CedarPooSpec.ScopeAndPatternValidatedExport

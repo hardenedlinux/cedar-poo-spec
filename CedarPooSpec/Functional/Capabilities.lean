@@ -258,4 +258,26 @@ def Program.authorizationCase (program : Program model schema) (name revision ro
   let ready ← (program.at root).mapError Error.message
   ready.authorizationCase name revision request entities
 
+/-- Keep semantic inputs and response evidence; defer request/entity JSON to output. -/
+def Ready.case (ready : Ready context) (name revision : String)
+    (request : Request) (entities : Entities) : Except String Transport.Case := do
+  let publication ← ready.publish.get.mapError
+    (fun cause => Error.message (.context context.root cause))
+  have same : ready.checked.policies = publication.policies :=
+    Except.ok.inj (ready.checked.compiled.symm.trans publication.compiled)
+  return {
+    name, revision
+    policy := ⟨publication.policies, publication.snapshot,
+      by simpa only [publication.snapshot_value] using publication.serialized⟩
+    request, entities
+    response := Thunk.mk fun _ => (ready.authorizeLayer request entities).response
+    evaluated := by
+      change (ready.authorizeLayer request entities).response = _
+      simpa only [same] using ready.authorizeLayer_response request entities }
+
+def Program.case (program : Program model schema) (name revision root : String)
+    (request : Request) (entities : Entities) : Except String Transport.Case := do
+  let ready ← (program.at root).mapError Error.message
+  ready.case name revision request entities
+
 end CedarPooSpec.Functional

@@ -1,7 +1,13 @@
 #+TITLE: Complete Cedar typed dataflow migration and native lifecycle evidence
 #+OPTIONS: toc:2
 
-* Current finite SDK and producer preparation
+* Current typed Case and SourceSnapshot representation
+
+The current whole-domain implementation and acceptance evidence are recorded in
+[[file:native-typed-case.org][typed Case and SourceSnapshot publication]]. It preserves all existing wire
+artifacts and records the complete cold-project and paired process results.
+
+* Previous finite SDK and producer preparation
 
 The next shared algorithm and complete evidence are recorded in
 [[file:native-sdk-source-preparation.org][finite SDK preparation and streaming source publication]]. It preserves

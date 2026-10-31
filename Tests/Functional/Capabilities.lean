@@ -43,7 +43,7 @@ private def referencePublish (model : PolicyModules.Model) (root : String) (sche
                 policyValid := hv
                 idsUnique := unique
                 json
-                serialized := hj }
+                serialized := hj, snapshot := Transport.SourceSnapshot.ofJson json, snapshot_value := rfl }
             else .error .duplicatePolicyIds
 
 /-- All inputs, including multi-error inputs, preserve the complete result. -/
@@ -197,7 +197,7 @@ def referenceManifest : Except String Lean.Json := do
     rows := rows ++ [row]
   return Lean.Json.mkObj [("cases", Lean.toJson rows)]
 
-example : CedarPooSpec.PaymentReleaseExport.manifest.toOption.map (·.compress) =
+example : (CedarPooSpec.PaymentReleaseExport.manifest.bind (·.toJson)).toOption.map (·.compress) =
     referenceManifest.toOption.map (·.compress) := by native_decide
 
 end Payment
@@ -232,7 +232,7 @@ def referenceManifest : Except String Lean.Json := do
     PolicyJson.authorizationCase name root model root (request input) entities
   SchemaJson.validatedManifest schema rows
 
-example : CedarPooSpec.PriorAuthorizationInternalChannelsExport.manifest.toOption.map (·.compress) =
+example : (CedarPooSpec.PriorAuthorizationInternalChannelsExport.manifest.bind (·.toJson)).toOption.map (·.compress) =
     referenceManifest.toOption.map (·.compress) := by native_decide
 
 end Medical
@@ -281,7 +281,7 @@ def referenceManifest : Except String Lean.Json := do
       rows := rows ++ [row]
   SchemaJson.validatedManifest schema rows
 
-example : CedarPooSpec.PriorAuthorizationValidatedExport.manifest.toOption.map (·.compress) =
+example : (CedarPooSpec.PriorAuthorizationValidatedExport.manifest.bind (·.toJson)).toOption.map (·.compress) =
     referenceManifest.toOption.map (·.compress) := by native_decide
 
 def malformedReference : Except String Lean.Json := do
@@ -289,7 +289,7 @@ def malformedReference : Except String Lean.Json := do
     missingDisclosureFact entities
   return Lean.Json.mkObj [("cases", Lean.toJson [row])]
 
-example : CedarPooSpec.PriorAuthorizationValidatedExport.malformedManifest.toOption.map (·.compress) =
+example : (CedarPooSpec.PriorAuthorizationValidatedExport.malformedManifest.bind (·.toJson)).toOption.map (·.compress) =
     malformedReference.toOption.map (·.compress) := by native_decide
 
 end PriorAuthorization

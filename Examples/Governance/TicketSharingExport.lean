@@ -26,12 +26,12 @@ theorem duplicateIdsRejected :
 
 private def case (name : String) (policyModel : CedarPooSpec.PolicyModules.Model)
     (root : String) (req : Cedar.Spec.Request)
-    (store : Cedar.Spec.Entities) : Except String Lean.Json := do
+    (store : Cedar.Spec.Entities) : Except String CedarPooSpec.Transport.Case := do
   let source ← (CedarPooSpec.Functional.prepareProgram CedarPooSpec.Functional.standard
     policyModel schema []).mapError CedarPooSpec.Functional.Error.message
-  source.authorizationCase name root.toLower root req store
+  source.case name root.toLower root req store
 
-def manifest : Except String Lean.Json := do
+def manifest : Except String CedarPooSpec.Transport.Manifest := do
   let baselineCases ← List.mapM (fun (name, root, req, store) =>
     case name model root req store) [
     ("published-alice", "Published", request alice ticketA false, entities),
@@ -45,6 +45,6 @@ def manifest : Except String Lean.Json := do
     (request alice ticketB true) entities
   let stillRevoked ← case "expanded-bob" expandedModel "Expanded"
     (request bob ticketB true) entities
-  return Lean.Json.mkObj [("cases", Lean.toJson (baselineCases ++ [newGrant, stillRevoked]))]
+  return { cases := (baselineCases ++ [newGrant, stillRevoked]) }
 
 end CedarPooSpec.TicketSharingExport
