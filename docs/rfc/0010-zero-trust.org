@@ -294,3 +294,191 @@ Applications on an older fixed pin must validate the new API separately in
 isolation. Import and namespace migration is direct; no dependency pin change
 or native Gateway implementation is included in this review. Model proofs,
 finite integration tests and remote CI are separate receipts.
+
+* 2026-11-02 research re-audit and next integrated unit
+
+This is a design and implementation plan, not a new theorem or native Host
+qualification. It extends the existing frameworks rather than creating another
+Gateway, identity service, authorization language or provider-specific backend.
+
+** Rechecked sources and the research questions they settle
+
+| Primary source / location | Consequence for this design | Question still owned by SPEC/application |
+|---------------------------+-----------------------------+-----------------------------------------|
+| [[https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-207.pdf][SP 800-207]], Sections 2.1, 3 and 3.1.1 | PE decides, PA establishes/revokes, PEP mediates the resource path; decisions use changing evidence. | Which actual transition orders publication, revocation and effect admission? |
+| [[https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-207A.pdf][SP 800-207A]], Section 4.5 | Ingress, egress and sidecar enforcement serve different paths; workload identity complements application policy. | Which paths and credentials can bypass the modeled effect boundary? |
+| [[https://profsandhu.com/journals/tissec/p128-park.pdf][UCONABC]], Sections 4.2, 4.4 and 4.6; [[https://profsandhu.com/journals/tissec/p351-zhang.pdf][formal UCON]], Sections 4–8 | Ongoing decisions, witnessed obligation actions and mutable state belong in usage transitions. | Which mutation preserves consumption and unknown holds, including recovery? |
+| [[https://arxiv.org/abs/2403.04651v2][Cedar]]; [[https://arxiv.org/abs/2407.01688v1][verification-guided development]] | Reuse the defined policy semantics, executable model, proofs and independent implementation comparisons. | Does the concrete publication/use path consume the same reviewed policy/schema and current input? |
+| [[https://arxiv.org/html/2609.15803v1#S4][Delegating Authorization]], Section 4, Theorem 2 | Its baseline-value result needs statewise continuation-aware soundness in a discounted MDP. | SPEC supplies neither that utility model nor reviewer-alignment evidence; Cedar no-gain cannot discharge these premises. |
+| [[https://arxiv.org/html/2609.31039v1][MetaPermit]], Sections 3.1, 3.3 and 4.5 | Typed inferred attributes and deterministic enforcement do not establish the attributes' semantic truth. | Bind inference inputs, schema/model version, authority and validity; treat changed inference as changed facts. |
+| [[https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/policy-enforcement-modes.html][AgentCore enforcement modes]] | LOG_ONLY does not block calls; removing the policy engine bypasses its checks. | Read/fence actual enforcement configuration at publication and use, rather than trusting a policy revision label. |
+
+These are distinct contributions. NIST gives architectural roles; UCON gives
+usage semantics; Cedar supplies authorization semantics; the delegated-agent
+paper studies a different sequential objective. No source supplies a universal
+proof that their combination makes this Gateway safe. The integration and proof
+obligations below are our design deductions from those sources and actual APIs.
+
+** One control loop, two semantic comparisons
+
+At publication, compare the independently selected active parent with the
+candidate under the exact schema and policy sources. Review decision gain/loss,
+error-free execution gain/loss, and required reason/provenance changes separately.
+At each effect, evaluate current authenticated facts and requirements under the
+actually active publication, then join that admission with committed original
+consumption, outstanding exposure and the final mediation transition.
+
+#+begin_example
+independent active parent + candidate + schema/source binding
+  -> Delta analysis and original Contract review
+  -> governed publication (current parent/epoch/mode; atomic Host commit)
+  -> current identity/facts + actual request + active publication
+  -> error-free Cedar admission + current Zero Trust requirements
+  -> committed consumption / unknown holds + final effect boundary
+  -> witnessed outcome / mutation / recovery -> next current assessment
+#+end_example
+
+This is a proposed integration flow, not an extracted theorem graph. Delta is
+an input to governed policy change; it is not a cached permission to use a
+resource. Zero Trust does not require every legitimate change to be no-gain.
+A financial unfreeze, consent grant or delegation extension may intentionally
+gain access and needs independently authorized, precisely bound review. Existing
+=advanceNoGain= remains the restriction/equivalence path; it must not silently
+be reused as an approved-expansion path. Unknown/error/incomplete analysis is
+neither no-gain nor approval.
+
+Let =Exec(P,w)= mean error-free Cedar Allow in one validated world. The existing
+no-expansion theorem proves =Exec(after,w) -> Exec(before,w)=. It does not prove
+=Exec(after,w_new) -> Exec(before,w_old)=. RFC 0004's existing 2-by-2 trace table
+holds policy or input fixed to expose this distinction; its diagonal alone
+cannot establish causation or safety of an alternate trajectory. Fact-source,
+projection or schema changes must be identified explicitly and revalidated.
+Cross-schema safety requires a separately specified relation between worlds.
+
+** Exact current coverage and the next proof interfaces
+
+| Existing owner / result | What is already available | Next obligation; no duplicate owner |
+|-------------------------+---------------------------+-------------------------------------|
+| =Authorization.Delta.Release.ReviewedInteraction= | Supported construction captures actual four-root analysis and snapshot together; =advanceNoGain= checks active policy/root/epoch/mode. | Specify how the actual analysis result and coverage become the admitted publication artifact; reference equality alone is insufficient. |
+| =Gateway.PublicationReview.Final= | Original invocation Contract, parent/artifact/cut binding, current guards, registration/recovery/registrar premises and Host commit relation. | Instantiate the generic Artifact meaning with the actual Delta/replay review and governed outcome. Generic test artifacts are intentionally not semantic Delta certificates. |
+| =Gateway.AdmissionBinding= and =ExactCoverage= | Actual schema/scope/source/root/policies and upstream typed-query/UNSAT proof premises. | Retain these premises at the concrete bridge; an executable UNSAT report has no conversion into =ExactCoverage=. |
+| =Gateway.ZeroTrust.final_use_preserves_authorization_delta= | Initial published admission, original Contract, current use and pointwise no-expansion compose conditionally. | Preserve this initial-use theorem; do not reuse its captured pre-state for a changed current world. |
+| =Gateway.ZeroTrust.continuing= | Current supplied assessment, original scope/profile, committed history prefix and unknown retention; renewed authority cannot reconsume the original operation. | Bind the supplied assessment to an actual current Cedar request/entities/admission, then compose the applicable same-world Delta premise for that assessment. |
+| =ZeroTrust.UsageControl= and =Run= | Per-effect core checks, obligation/mutation witnesses, recovery separation and invariant transport. | Supply and prove the real application transition's invariant-preservation law; =run_preserves= does not manufacture it. |
+
+The ongoing proof target is: accepted current assessment implies error-free
+Allow for its exact current request/entities and active policies; if a bound
+no-gain proof applies to that same validated world, it also implies baseline
+execution there. At the same time the original operation remains consumed and
+unknown exposure remains retained. A separate governed-gain path retains all
+current-use and consumption requirements without asserting baseline implication.
+These are proposed targets, not declarations already implemented in Lean.
+
+For histories, prove preservation of an explicitly defined application invariant
+under policy publication, fact updates, effect commits and recovery. Required
+components include scope continuity, retained consumption, retained unresolved
+exposure, and no new mediated effect after an ordered revocation. Each component
+needs a step law, including the non-effect transitions. This is an inductive
+safety goal; it establishes neither liveness nor the delegated-agent paper's
+expected-utility guarantee. Already admitted bytes are outside a retroactive
+revocation claim.
+
+** P0–P2 as one acceptance unit
+
+| Phase | Work in existing owners | Exit evidence |
+|-------+-------------------------+---------------|
+| P0: freeze meanings and counterexamples | Specify reviewed publication outcome, exact current-use assessment and application transitions in RFC 0004/0010 and existing Gateway/ZeroTrust tests. Inventory applicable domains and bypass paths. | For each proposed stronger claim, a precise premise list and a counterexample without it: changed facts, erroring Allow, replaced review, mode bypass, stale owner, ledger rollback and unresolved exposure. |
+| P1: implement the semantic joins | Extend existing Release/PublicationReview and Gateway.ZeroTrust composition; use current POO Contract/Session and parent refinement. Keep generic ZeroTrust independent of Gateway and domain IO. | Kernel-checked binding/composition and transition-preservation laws; governed gain and no-gain remain distinct; current request rejection, mutation and recovery controls pass. |
+| P2: close the complete simulated execution path | Replay the common transition scenarios in Lean and Rust using a deterministic simulated authority/store/final-effect observer in existing test owners. Retain normal official Cedar replay and the complete catalog. | Matching decisions, errors, review/source bindings, ordered effects and post-states; competing/stale commits, lost replies, unknown outcomes and restart preserve the invariant. Existing correctness, import, resource and exact-head CI gates pass. |
+
+No live Host deployment or production credential is needed for this phase.
+Simulation must contain an explicit authoritative state and an observable final
+effect boundary; a Boolean named authenticated/committed is not the whole test.
+Its native trace checks implementation correspondence for the simulated model,
+not a deployed Gateway or rollback-resistant external store. Use existing shared
+backend/test interfaces where applicable; no SQL dependency or provider-specific
+backend is introduced by this research plan.
+
+Coverage is by semantics across the existing catalog, not one industry at a
+time. Payment/commerce/banking exercise reservation and unknown settlement;
+healthcare exercises consent, approval and lineage changes; enterprise agent and
+cloud/Gateway cases exercise delegation, identity and enforcement mode; data,
+controller and pipeline cases exercise release, source, residency and lineage.
+Every existing catalog entry retains its type/Contract/proof and Rust replay.
+Apply continuous-use/fault scenarios where those effects exist; explicitly record
+inapplicable cases rather than inventing a streaming effect for a static object.
+
+Performance uses Lean native producer/benchmark workloads and Rust replay,
+including current checks and failure paths. Reuse only immutable preparation
+bound to exact sources/schema/query scope and query semantics; authenticate the
+current parent/epoch/mode and current facts again. Cached analysis does not issue
+a use capability or eliminate final admission. A change in inferred facts can
+leave policy analysis reusable while still invalidating the current-use decision.
+Retain misses, invalidations, gains, refusals and non-winning samples; measure the
+complete process, live allocations and RSS separately before claiming a benefit.
+
+Existing acceptance entrypoints remain =just check-lean=, =just check-gateway=,
+=just check-delta= and the full functional catalog/native replay checks. The
+publication-review fixture is in the full =Tests= target; do not infer its
+coverage merely from the shorter explicit =check-gateway= module list. New joins
+must enter the relevant existing focused gate as well as the aggregate. Remote
+CI qualifies its exact submitted source, not the unimplemented plan above.
+
+
+** Implementation and bounded acceptance of the semantic joins
+
+The P0–P2 table above records the integrated design, not an assertion that all
+Host obligations have been discharged. Its two API joins are now implemented:
+=Release.advanceReviewed= and =advanceReviewed_without_approval= retain the old
+no-gain path while admitting independently approved gains;
+=PublicationReview.Host.withDeltaReview= binds the selected/resolved actual
+analysis and exact committed post-state; =delta_final_retains_exact_review=,
+=unresolved_delta_cannot_commit= and =rejected_delta_cannot_commit= expose its
+positive meaning and refusals. A positive Final construction retains the actual
+original Contract as well as the checked release transition.
+
+=Gateway.ZeroTrust.currentAdmission= binds the current typed Cedar receipt and
+required-profile refinement. =current_admission_has_error_free_allow= retains
+the canonical operation and current error-free decision, including governed
+gains. =continuing_current_admission_preserves_delta= composes the actual current
+world, AdmissionBinding and ExactCoverage with original consumption and unknown
+retention. The changed-fact fixture proves that an old receipt cannot provide
+this current assessment, and that the current deny world has no such assessment.
+No solver-report-to-ExactCoverage conversion or new authorization evaluator is
+introduced. In particular, the current four-root Release analyzer classifies
+Cedar decisions, not exact error-free execution coverage. Publication review
+does not establish the ongoing Delta theorem without its additional explicit
+ExactCoverage premise. Actual current-use admission still rejects evaluation
+errors. Core ZeroTrust still imports no Gateway.
+
+The existing Gateway test owner reuses released LeanPoo =PropertyTesting.samples=,
+=TraceModel=, =traceValid= and =traceObservations=. This is deterministic finite
+Cartesian/sequence coverage, not a statistical claim about random sampling:
+384 release configurations and 1,372 complete three-command histories over seven
+commands. All 4,116 transition replies and full post-states are compared with an
+independent test-only Rust store interpreter. Actual analyzer results supply the
+no-gain/gain classifications; those reports remain external-solver evidence.
+Ten Functional-produced Cedar policy/current-fact cases are independently replayed
+by the official Rust authorizer. The full catalog acceptance additionally retains
+all 51 entries, frozen artifacts, native/interpreted equality and original
+uncached Rust workflow comparisons.
+
+Simulated recovery retains the authority's durable active image, independent
+epoch floor and unresolved result flag. Live rollback cannot revive a consumed
+review; lost replies remain unresolved through recovery. A deliberate control
+which also rewinds the authority floor can commit twice. This states the precise
+source-authority assumption, not a proof of rollback-resistant native storage.
+The model covers publication histories and current Cedar inputs; full application
+transition refinement, real credential custody, provider IO, settlement and
+unbounded fairness remain outside this bounded acceptance. Generic per-use
+requirements and existing consumption laws are retained rather than replaced
+with new domain-specific ledgers.
+
+=check-gateway= now explicitly includes publication review, UsageControl and
+import-boundary fixtures. =check-gateway-delta= uses the existing 120-second,
+M2048/T10000000 Lean limits and runs both native consumers; it remains in
+=check-delta= and the existing Ubuntu authorization-delta job. No dependency pin,
+job-count environment variable, provider backend or Python semantic test is added.
+Only source and tests are versioned; generated trace/receipt JSON stays in the
+ignored Lake build directory. Final source and remote CI qualification must be
+reported separately from this design/implementation inventory.

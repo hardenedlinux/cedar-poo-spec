@@ -151,4 +151,33 @@ def ReviewedInteraction.advanceNoGain (reviewed : ReviewedInteraction)
       epoch := state.epoch + 1 }
   return (next, policies)
 
+/-- Governed expansion is a separate path. The approval interpreter receives
+this exact reviewed result and current active state. Its authenticity is a Host
+obligation; approval never bypasses parent, mode, epoch, schema or source checks.
+A no-gain release retains the existing path and needs no expansion approval. -/
+def ReviewedInteraction.advanceReviewed (reviewed : ReviewedInteraction)
+    (model : Model) (schema : Schema) (state : ReleaseState)
+    (approveGain : ReviewedInteraction → ReleaseState → Bool) :
+    Except ReleaseError (ReleaseState × Policies) := do
+  match reviewed.advanceNoGain model schema state with
+  | .ok value => return value
+  | .error .requiresReview =>
+    if !approveGain reviewed state then throw .requiresReview
+    let policies ← reviewed.snapshot.currentPolicies model schema state.epoch
+    let next : ReleaseState :=
+      { activeRoot := reviewed.snapshot.combined.root,
+        activePolicies := policies, executionMode := .enforcing,
+        epoch := state.epoch + 1 }
+    return (next, policies)
+  | .error error => throw error
+
+theorem advanceReviewed_without_approval (reviewed : ReviewedInteraction)
+    (model : Model) (schema : Schema) (state : ReleaseState) :
+    reviewed.advanceReviewed model schema state (fun _ _ => false) =
+      reviewed.advanceNoGain model schema state := by
+  unfold ReviewedInteraction.advanceReviewed
+  cases h : reviewed.advanceNoGain model schema state with
+  | ok value => rfl
+  | error error => cases error <;> rfl
+
 end CedarPooSpec.Authorization.Delta

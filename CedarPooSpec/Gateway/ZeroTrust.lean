@@ -267,4 +267,65 @@ theorem final_use_preserves_authorization_delta (use : FinalUse proposal)
   exact ⟨use.current, use.committed,
     Gateway.published_execution_preserves_original_and_delta proposal.receipt plan binding coverage world before after⟩
 
+/-- Current-use assessment using an actual receipt for the current request,
+state, entities, schema, model and checks. The original requirement still refines
+the selected current profile. These readers must be authoritative Host inputs;
+this does not reuse the initial receipt or consume the operation again. -/
+def currentAdmission (requiredProfile : Gateway.Profile) (host : Host E V)
+    (preparedAt : V → Gateway.Prepared E S project) (modelAt : V → PolicyModules.Model)
+    (stateAt : V → S) (checksAt : V → List Gateway.Assessment) (entitiesAt : V → Entities) :
+    CedarPooSpec.ZeroTrust.Requirement E V := fun requested actual =>
+  ∃ _receipt : Gateway.Receipt (preparedAt actual) (modelAt actual) requested (stateAt actual)
+      (host.context actual) (checksAt actual) (entitiesAt actual),
+    requiredProfile.Refines (preparedAt actual).profile
+
+/-- Current admission also supports an independently approved gain: fresh
+error-free authorization and original-profile refinement do not require a
+no-gain claim. Keep the receipt so callers retain its exact policy provenance. -/
+theorem current_admission_has_error_free_allow
+    (requiredProfile : Gateway.Profile) (host : Host E V)
+    (preparedAt : V → Gateway.Prepared E S project) (modelAt : V → PolicyModules.Model)
+    (stateAt : V → S) (checksAt : V → List Gateway.Assessment) (entitiesAt : V → Entities)
+    (accepted : currentAdmission requiredProfile host preparedAt modelAt stateAt checksAt entitiesAt requested actual) :
+    ∃ receipt : Gateway.Receipt (preparedAt actual) (modelAt actual) requested (stateAt actual)
+      (host.context actual) (checksAt actual) (entitiesAt actual),
+      requiredProfile.Refines (preparedAt actual).profile ∧
+      (preparedAt actual).operationId.value = (host.context actual).scope.canonicalOperation ∧
+      Authorization.Delta.errorFreeAllow receipt.cedar.policies
+        (Env.mk (project requested (stateAt actual)) (entitiesAt actual)) = true := by
+  obtain ⟨receipt, refinement⟩ := accepted
+  exact ⟨receipt, refinement, Gateway.admitted_operation_is_canonical receipt,
+    Gateway.admitted_actual_request_is_error_free receipt⟩
+
+/-- Join ongoing use to the current Cedar world and a same-world Delta binding.
+The caller supplies actual coverage, never a conversion from a solver report.
+All initial-consumption and unknown-hold requirements remain in continuing. -/
+theorem continuing_current_admission_preserves_delta
+    (preparedAt : V → Gateway.Prepared E S project) (modelAt : V → PolicyModules.Model)
+    (stateAt : V → S) (checksAt : V → List Gateway.Assessment) (entitiesAt : V → Entities)
+    (accepted : (continuing proposal
+      (currentAdmission original host preparedAt modelAt stateAt checksAt entitiesAt)).required requested actual)
+    (plan : Gateway.DeltaPlan)
+    (binding : ∀ receipt : Gateway.Receipt (preparedAt actual) (modelAt actual) requested
+      (stateAt actual) (host.context actual) (checksAt actual) (entitiesAt actual),
+      Gateway.AdmissionBinding receipt plan)
+    (coverage : Gateway.ExactCoverage plan.schema plan.revision.beforePolicies plan.revision.afterPolicies)
+    (world : (Env.mk (project requested (stateAt actual)) (entitiesAt actual)).StronglyWellFormed)
+    (before : (Env.mk (project requested (stateAt actual)) (entitiesAt actual)).StronglyWellFormedForPolicies
+      plan.revision.beforePolicies)
+    (after : (Env.mk (project requested (stateAt actual)) (entitiesAt actual)).StronglyWellFormedForPolicies
+      plan.revision.afterPolicies)
+    (renewed : Admission.AuthorityLedger E) (renewedId : String) :
+    host.currentAtUse actual ∧ original.Refines (preparedAt actual).profile ∧
+    Authorization.Delta.errorFreeAllow plan.revision.beforePolicies
+      (Env.mk (project requested (stateAt actual)) (entitiesAt actual)) = true ∧
+    host.unknownRetained actual proposal.after ∧
+    Gateway.consumeAdmission publication proposal.receipt (host.operations actual) renewed renewedId =
+      .error .operationAlreadyAdmitted := by
+  have retained := continuing_use_preserves_original_consumption proposal accepted renewed renewedId
+  obtain ⟨receipt, refinement⟩ := retained.2.1
+  exact ⟨accepted.2.2.1, refinement,
+    Gateway.bound_admitted_execution_preserves_delta receipt plan (binding receipt) coverage world before after,
+    retained.2.2⟩
+
 end CedarPooSpec.Gateway.ZeroTrust

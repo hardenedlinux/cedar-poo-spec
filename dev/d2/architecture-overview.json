@@ -4,7 +4,7 @@
     "CedarPooSpec.lean": "d4fc5b573fdc7050fbb62074eeb59f364d4a782f152853e3efc2a103ba1951eb",
     "CedarPooSpec/Platform/AWS/AgentCore/README.org": "59c9695d0131b789e6b3342672a5fd20b3c196b1cd0fa8a5168d290ce60a638b",
     "CedarPooSpec/Vertical/Health/README.org": "8b7db1eeca779d26bbca0c93fe6152fdc70fe1550d14a5843e830919d220455b",
-    "CedarPooSpec/ZeroTrust/README.org": "6c6608f6b783249fb7e0b299e756dc1df82f0e215af453774d1df731fdfb9b87",
+    "CedarPooSpec/ZeroTrust/README.org": "30da5380c191d12d368272904324c377722e6f939b1eab1b0bf07a93cc4aacc4",
     "dev/.generated/architecture-overview-sdk.json": "6c2d887a362d7d3c721f03251f27393861b777942ddda3c8fc559470340e46db",
     "dev/artifacts.ts": "ca1096947536fbdbd5da5cbf1ce5c6f57521bd4a7b135233285dfe8fcff9859d",
     "dev/bun.lock": "2b7060a881aad9312d122f6d01146ef78c207b3c95254aa66b7b57a9eede5acd",
@@ -729,21 +729,21 @@
       "samples": 63,
       "requiredMinimum": 12
     },
-    "inputSHA256": "2ba10ce59f30a45e41c4b87986a79ea1a2fb3ba33fecbb68f39fd72e9918321b",
+    "inputSHA256": "378541c6682f203a6f4e49584da583d14fe3927383a39519ad02fe848505d682",
     "scenes": [
       {
         "inputSHA256": "e37712d455e547bad725dabd5b84f2c459f5477c15e4f5350e5ef58d5546586a",
         "layoutSHA256": "e3a006d7aedb8c3ed9f03375fdc88ec9edf699022226cf9f75a26b9dd3d7faed",
         "nodes": 10,
         "edges": 14,
-        "milliseconds": 128.697541
+        "milliseconds": 283.433583
       }
     ],
     "svgSHA256": [
-      "3b3867e562a9ff74106fd79032f864f4d7bcecffd3a28ae801c863cc2ab04d46",
+      "b8f33fe1a3d469790901560328f7583850d4b6c4daf23dbf7fc4d3d675ddffea",
       "1c1c8324c7774e2d1ab76e8273ca28604a281b8df09c4b09660f7c97bcac4449"
     ],
-    "composedHTMLSHA256": "1b79fa8bb10ca5a1574ca474628e6dee9a363375cd0387290ed9a09e673cc332",
+    "composedHTMLSHA256": "1d69a26c6b4115d86355a6d01bf63348b7959db4cf38949808d8272020dd455b",
     "dependencies": {
       "@fontsource/inter": "5.3.0",
       "@fontsource/kalam": "5.3.0",
@@ -756,12 +756,12 @@
       "web-worker": "1.5.0"
     },
     "regionSHA256": {},
-    "htmlSHA256": "720f899e0ddb31d0dd219bb9bfc6fa9c0180a984c2d8b34e480b361ba3e2a70a",
+    "htmlSHA256": "4d7a951df9f7e11178a80dcbb788120819171a375dcb83f58a49e5a1d071b4d2",
     "drawing": "roughjs@4.6.6",
     "routing": "elkjs@0.12.1",
     "assetSHA256": {
-      "@fontsource/kalam/files/kalam-latin-400-normal.woff2": "954410601a823f37e219f7930b7446f86afa15621326a7078d56fb9c910135cb",
-      "@fontsource/kalam/files/kalam-latin-700-normal.woff2": "252063af6ade8b9a744cde4ddad0fc21ea53b8ba711eed121a0c2e8610ea9c93"
+      "@fontsource/kalam/files/kalam-latin-700-normal.woff2": "252063af6ade8b9a744cde4ddad0fc21ea53b8ba711eed121a0c2e8610ea9c93",
+      "@fontsource/kalam/files/kalam-latin-400-normal.woff2": "954410601a823f37e219f7930b7446f86afa15621326a7078d56fb9c910135cb"
     },
     "pngSHA256": "7c4d74d9191fc43c579820bbc74f764c124b89cd423c1fb0e533eb30b832589f",
     "browser": "156.0.8078.4",

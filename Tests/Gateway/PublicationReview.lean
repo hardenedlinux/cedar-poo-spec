@@ -179,4 +179,56 @@ theorem bound_review_cannot_reset_consumption :
 #print axioms exact_final_is_admitted
 #print axioms replaced_evidence_is_refused
 #print axioms cached_matching_review_is_not_current_use
+
+-- All original reference/currentness checks can match while the referenced
+-- analysis is absent. The semantic adapter must still refuse publication.
+theorem matching_reference_without_analysis_is_refused
+    (modelAt : View → PolicyModules.Model) (schemaAt : View → Cedar.Validation.Schema)
+    (stateAt : View → Authorization.Delta.ReleaseState) :
+    ¬ Nonempty (Final (host.withDeltaReview (fun _ _ _ => none)
+      modelAt schemaAt stateAt (fun _ _ _ _ => true)) template prepare 9 initial) :=
+  unresolved_delta_cannot_commit (fun _ => rfl)
+
+#print axioms delta_final_retains_exact_review
+#print axioms unresolved_delta_cannot_commit
+#print axioms matching_reference_without_analysis_is_refused
+
+
+private def publishingHost : Host Nat Result View Nat Nat Nat :=
+  { host with commit := fun before _ after => after.cut = before.cut + 1 }
+private def publish (view : View) (_ : Nat) : Except Unit (Result × View) :=
+  .ok (result, {view with cut := view.cut + 1})
+private def activeAt (active next : Authorization.Delta.ReleaseState) (view : View) :=
+  if view.cut = 4 then active else next
+
+-- Positive integration: use the actual resolved review and its accepted next
+-- state in Final, while retaining the original Contract and all use guards.
+-- The premise can be obtained from the public analyzer/release transition; it
+-- is not a new constructor for an unreviewed analysis/snapshot pair.
+theorem accepted_analysis_can_reach_final
+    (reviewed : Authorization.Delta.ReviewedInteraction)
+    (model : PolicyModules.Model) (schema : Cedar.Validation.Schema)
+    (active next : Authorization.Delta.ReleaseState) (policies : Cedar.Spec.Policies)
+    (advanced : reviewed.advanceReviewed model schema active (fun _ _ => false) = .ok (next, policies)) :
+    Nonempty (Final (publishingHost.withDeltaReview (fun _ _ _ => some reviewed)
+      (fun _ => model) (fun _ => schema) (activeAt active next) (fun _ _ _ _ => false))
+      template publish 9 initial) := by
+  obtain ⟨receipt, _, sameResult, sameState⟩ :=
+    Contract.invoke_accepts (contract := publishingHost.contract template 9 initial)
+      (execute := publish initial) (args := 9) (result := result)
+      (state := {initial with cut := 5}) (by trivial) (by rfl) (by trivial) (by
+        simp [Host.contract, Contract.bindEvidence, Formula.Holds, Formula.relabel,
+          publishingHost, host, template, result, initial])
+  refine ⟨⟨receipt, ⟨7, rfl⟩, ?_, True.intro, True.intro, ?_, rfl, ?_⟩⟩
+  · intro artifact present
+    simpa [Host.withDeltaReview, publishingHost, host, initial] using present.symm
+  · simp [Host.withDeltaReview, publishingHost, ZeroTrust.Framework.required, host, security, initial]
+  · constructor
+    · simp [publishingHost, sameState, initial]
+    · refine ⟨7, reviewed, policies, rfl, rfl, ?_⟩
+      simpa [sameResult, sameState, activeAt, initial] using advanced
+
+#print axioms accepted_analysis_can_reach_final
+#print axioms rejected_delta_cannot_commit
+
 end CedarPooSpec.Gateway.PublicationReviewTest

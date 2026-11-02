@@ -581,3 +581,10 @@ optional operational qualification checks a sufficient condition for the
 application's error-free execution rule. Neither covers policy changes under
 a different schema, unvalidated host facts, or future operation histories.
 Those boundaries remain explicit at the deployment interface.
+
+The [[file:0010-zero-trust.org][2026-11-02 Zero Trust research re-audit]] defines the
+next integrated unit: bind actual Delta review semantics to publication, bind
+ongoing assessments to the current Cedar world, and prove the supplied
+application transitions preserve consumption and unresolved exposure. It keeps
+governed gains separate from no-gain publication, and uses complete simulated
+Lean/Rust execution evidence without requiring a live Host deployment.

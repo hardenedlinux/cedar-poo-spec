@@ -30,6 +30,8 @@ the framework's transitive import closure must not contain Gateway. See
 | Admission | Validate actual operation, schema, current source and error-free Cedar allow | BoundOperation, PolicySnapshot, Functional compilation, upstream validators |
 | Consumption | Compose original-operation admission and effect-bound grant consumption | OperationLedger and AuthorityLedger |
 | AuthorizationDelta | Prepare source-bound C4 revision, analyze gains/losses, compose conditional proofs | Exact operational Delta, policy/provenance changes, proof footprint |
+| PublicationReview | Resolve the reviewed artifact and bind the actual next release state at commit | Original EvidenceBinding Contract, durable registration, fencing and Delta Release transition |
+| ZeroTrust | Bind current Cedar admission and retain original consumption during ongoing use | Generic requirements, actual typed Receipts, profile refinement and committed history prefix |
 
 Authorization uses flat =Except= composition. Each validation step returns either
 a specific failure or evidence retained by the resulting =Receipt=. Transparent
@@ -232,3 +234,31 @@ validation combinators; no axiom, timeout or validator was weakened. Axiom audit
 prints inherited Cedar native-decide dependencies separately from ordinary Lean
 logical axioms. Full-repository CI and Weaver runtime admission are distinct
 receipts and must not be inferred from these focused tests.
+
+* Reviewed publication and current use
+
+=Host.withDeltaReview= strengthens the existing commit relation: the artifact
+selected by the actual deciding view must resolve to a =ReviewedInteraction=,
+and its checked advance must produce the actual committed post-state. The
+original Contract and all registration/current-use requirements remain intact.
+=advanceReviewed= separates governed gains from the unchanged =advanceNoGain=
+path; gain approval receives the exact review and active state and cannot bypass
+parent, source, schema, epoch or enforcement checks. Approval authority and the
+Host readers remain premises. The current four-root review classifies Cedar
+decisions; it is not an exact error-free execution coverage certificate. Actual
+use retains error-free admission, and an external UNSAT report is not =ExactCoverage=.
+
+=ZeroTrust.currentAdmission= requires an actual current request/state/entity
+receipt and refinement of the required profile. The error-free-current-use law
+applies also to independently approved gains. The ongoing Delta law additionally
+requires the exact same-world binding and coverage; it retains original
+consumption and unknown holds without reusing the initial receipt.
+
+=just check-gateway-delta= runs actual solver reviews, 384 finite release
+properties, 1,372 simulated three-command histories (4,116 steps), ten actual
+Cedar policy/fact replay cases and an independent Rust history interpreter.
+The histories exercise lost replies, recovery, live-image rollback, enforcement
+modes and repeated commits. Rolling back the independent epoch floor as well
+as the image admits a second commit in the deliberate negative control. These
+are bounded simulated-store checks, not deployed persistence or anti-rollback
+evidence. The full 51-entry catalog remains a separate acceptance requirement.

@@ -8,10 +8,10 @@
     "CedarPooSpec/Cloud/README.org": "a6d5a30acf136506b313dff1121cdfdfd0bd5330fbf34e0bda3b5d8c6b19ee08",
     "CedarPooSpec/Data/README.org": "b4f3e0ec993fe58f926ca5b5a195171fa8f12e6f9192e09ac260a00927e0dc0c",
     "CedarPooSpec/Functional/README.org": "31dfe979d62c2a65df9446631fb6bc80b72bfc3bc10399efe0de540ea3cc0385",
-    "CedarPooSpec/Gateway/README.org": "71edad34cfd0c2e40df59c00bd74c033b56cca9ae454f3e4a0abe7c2637ea5ac",
+    "CedarPooSpec/Gateway/README.org": "f98a90afd673ab2b578621ebe7e0c64762bc49b0d2487264302ffd88fb27a5fa",
     "CedarPooSpec/Governance/README.org": "7198754819ff70820dc4c0c1394957d506bdb305ebfd881ae526d901256872c1",
     "CedarPooSpec/Pseudonymization/README.org": "389ef357ad2d9efd79da03148883fe5ee35a5da832ed012b265c98ea32c0b4f2",
-    "CedarPooSpec/ZeroTrust/README.org": "6c6608f6b783249fb7e0b299e756dc1df82f0e215af453774d1df731fdfb9b87",
+    "CedarPooSpec/ZeroTrust/README.org": "30da5380c191d12d368272904324c377722e6f939b1eab1b0bf07a93cc4aacc4",
     "dev/.generated/model-components-sdk.json": "c6ce5891a562db16dfeb81066d31f6970341215b59d80e6872edc7911b84059b",
     "dev/artifacts.ts": "ca1096947536fbdbd5da5cbf1ce5c6f57521bd4a7b135233285dfe8fcff9859d",
     "dev/bun.lock": "2b7060a881aad9312d122f6d01146ef78c207b3c95254aa66b7b57a9eede5acd",
@@ -296,21 +296,21 @@
       "samples": 35,
       "requiredMinimum": 12
     },
-    "inputSHA256": "5415ff0e3d2e9d09d5ca42455a663166d1051678c20f15cc53214f42ecabce07",
+    "inputSHA256": "675bbd492e607f805537da268583fdece258f57ad9860e2ba62b3eafd001df50",
     "scenes": [
       {
         "inputSHA256": "b371b5b26dcbcba234f8bbdcfd7a35ec56b8e29e9569178e7062765811be850e",
         "layoutSHA256": "247803d29825952be1f5a1c64dd0d2fa8e118580d7765225cf5e4f55ddd73a57",
         "nodes": 10,
         "edges": 0,
-        "milliseconds": 99.17308299999968
+        "milliseconds": 269.8610840000001
       }
     ],
     "svgSHA256": [
-      "101d36e954c2e5bc08a96913af766800d36670011acbb4d3bb71c0d805c7c0c4",
+      "e12b854f1fe9ff151aef6f3ae0d7d3c5b1c7437179d9e847e023afd319151cfa",
       "4dbbdd37dd28ee2307b642190a55105116f079e05b886a21f639f968dd51c21b"
     ],
-    "composedHTMLSHA256": "47d9d969fd29829b89a1dc7dbe416e3212e6da3b663549cf9730fc79b8551213",
+    "composedHTMLSHA256": "7a6bf584d61afb656ceb1a79a59bd6083c425e3a488b1a660257735d94389e1a",
     "dependencies": {
       "@fontsource/inter": "5.3.0",
       "@fontsource/kalam": "5.3.0",
@@ -323,7 +323,7 @@
       "web-worker": "1.5.0"
     },
     "regionSHA256": {},
-    "htmlSHA256": "0a591741e6e7708747aeacb52a812de735c165c4e4af07fe0567cbc5303f43d9",
+    "htmlSHA256": "147c206fab6480cbdc9e50dd84708889049089b413d4d00052aa0e024ea51332",
     "drawing": "roughjs@4.6.6",
     "routing": "elkjs@0.12.1",
     "assetSHA256": {

@@ -96,4 +96,50 @@ end Counterexamples
 #print axioms ZeroTrust.specialization_preserves_core_and_original
 #print axioms ZeroTrust.continuing_use_preserves_original_consumption
 #print axioms ZeroTrust.continuing_objects_preserve_parent_and_consumption
+
+-- The current state is projected into the actual Cedar context. Keeping the
+-- initial permit, profile and source does not keep Allow when this fact changes.
+private def currentState (view : View) : Bool := view.floor == 0
+private def currentPrepared (view : View) : Gateway.Prepared String Bool request :=
+  { prepared with operation := ⟨"invoke", currentState view⟩ }
+private def currentAssessment := ZeroTrust.currentAdmission profile host currentPrepared
+  (fun _ => model) currentState (fun _ => checks) (fun _ => entities)
+
+theorem current_receipt_constructs_assessment
+    (receipt : Gateway.Receipt (currentPrepared initial) model "invoke" (currentState initial)
+      initial.context checks entities) : currentAssessment "invoke" initial :=
+  ⟨receipt, by decide⟩
+
+#guard (Gateway.authorize (currentPrepared initial) model "invoke" (currentState initial)
+  initial.context checks entities).isOk
+#guard !(Gateway.authorize (currentPrepared {initial with floor := 1}) model "invoke" false
+  initial.context checks entities).isOk
+
+-- An initial receipt has the wrong state index for the fresh current world.
+#check_failure fun (receipt : Gateway.Receipt (currentPrepared initial) model "invoke" true
+    initial.context checks entities) =>
+  (show Gateway.Receipt (currentPrepared {initial with floor := 1}) model "invoke" false
+    initial.context checks entities from receipt)
+
+theorem denied_current_world_has_no_assessment :
+    ¬ currentAssessment "invoke" {initial with floor := 1} := by
+  rintro ⟨receipt, _⟩
+  have accepted := Gateway.admitted_actual_request_is_error_free receipt
+  have compiled : (model.compile "base").toOption = some [permitPolicy] := by native_decide
+  have current := congrArg Except.toOption receipt.cedar.compiled
+  change (model.compile "base").toOption = some receipt.cedar.policies at current
+  rw [compiled] at current
+  have same := Option.some.inj current
+  rw [← same] at accepted
+  have denied : let response := Cedar.Spec.isAuthorized (request "invoke" false) entities [permitPolicy]
+    (response.decision == .allow && response.erroringPolicies.isEmpty) = false := by native_decide
+  change (let response := Cedar.Spec.isAuthorized (request "invoke" false) entities [permitPolicy]
+    (response.decision == .allow && response.erroringPolicies.isEmpty)) = true at accepted
+  rw [denied] at accepted
+  contradiction
+
+#print axioms ZeroTrust.current_admission_has_error_free_allow
+#print axioms ZeroTrust.continuing_current_admission_preserves_delta
+#print axioms denied_current_world_has_no_assessment
+
 end CedarPooSpec.Gateway.ZeroTrustTest

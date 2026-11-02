@@ -194,4 +194,66 @@ theorem stale_use_cannot_commit
     ¬ Nonempty (Final host template prepare command actual) :=
   fun ⟨publication⟩ => stale (final_retains_continuous_authorization publication).1
 
+/-- Refine the actual commit relation with the resolved analysis, not merely
+an artifact ID. Readers belong to the independent Host authority. The current
+model/schema/state are checked by the existing release transition, and the
+committed post-state must contain exactly its result. No UNSAT proof is inferred.
+The original Contract, registration, fencing and use requirements are retained. -/
+def Host.withDeltaReview (host : Host Command Result View Parent Artifact Cut)
+    (resolve : View → Command → Artifact → Option Authorization.Delta.ReviewedInteraction)
+    (modelAt : View → PolicyModules.Model) (schemaAt : View → Cedar.Validation.Schema)
+    (stateAt : View → Authorization.Delta.ReleaseState)
+    (approveGain : View → Command → Authorization.Delta.ReviewedInteraction →
+      Authorization.Delta.ReleaseState → Bool) : Host Command Result View Parent Artifact Cut :=
+  { host with commit := fun before result after =>
+      host.commit before result after ∧
+      ∃ artifact reviewed policies,
+        host.approvedEvidenceAt before (host.projection result).1 = some artifact ∧
+        resolve before (host.projection result).1 artifact = some reviewed ∧
+        reviewed.advanceReviewed (modelAt before) (schemaAt before) (stateAt before) (approveGain before (host.projection result).1) = .ok (stateAt after, policies) }
+
+theorem delta_final_retains_exact_review
+    {host : Host Command Result View Parent Artifact Cut}
+    {resolve modelAt schemaAt stateAt approveGain}
+    {template : Contract Atom Command Result} {command actual}
+    (publication : Final (host.withDeltaReview resolve modelAt schemaAt stateAt approveGain)
+      template prepare command actual) :
+    host.commit actual publication.receipt.result publication.receipt.state ∧
+      ∃ artifact reviewed policies,
+        host.approvedEvidenceAt actual command = some artifact ∧
+        resolve actual command artifact = some reviewed ∧
+        reviewed.advanceReviewed (modelAt actual) (schemaAt actual) (stateAt actual)
+          (approveGain actual command) = .ok (stateAt publication.receipt.state, policies) := by
+  have bound := (final_preserves_original_and_binding publication).2
+  have commandBound : (host.projection publication.receipt.result).1 = command :=
+    by simpa only [Host.withDeltaReview] using congrArg Prod.fst bound
+  simpa only [Host.withDeltaReview, commandBound] using publication.committed
+
+theorem unresolved_delta_cannot_commit
+    {host : Host Command Result View Parent Artifact Cut}
+    {resolve modelAt schemaAt stateAt approveGain}
+    {template : Contract Atom Command Result} {command actual}
+    (missing : ∀ artifact, resolve actual command artifact = none) :
+    ¬ Nonempty (Final (host.withDeltaReview resolve modelAt schemaAt stateAt approveGain)
+      template prepare command actual) := by
+  rintro ⟨publication⟩
+  obtain ⟨_, artifact, reviewed, _, _, resolved, _⟩ := delta_final_retains_exact_review publication
+  rw [missing artifact] at resolved
+  contradiction
+
+theorem rejected_delta_cannot_commit
+    {host : Host Command Result View Parent Artifact Cut}
+    {resolve modelAt schemaAt stateAt approveGain}
+    {template : Contract Atom Command Result} {command actual}
+    (rejected : ∀ artifact reviewed, resolve actual command artifact = some reviewed →
+      (reviewed.advanceReviewed (modelAt actual) (schemaAt actual) (stateAt actual)
+        (approveGain actual command)).isOk = false) :
+    ¬ Nonempty (Final (host.withDeltaReview resolve modelAt schemaAt stateAt approveGain)
+      template prepare command actual) := by
+  rintro ⟨publication⟩
+  obtain ⟨_, artifact, reviewed, policies, _, resolved, advanced⟩ := delta_final_retains_exact_review publication
+  have passed := congrArg Except.isOk advanced
+  rw [rejected artifact reviewed resolved] at passed
+  contradiction
+
 end CedarPooSpec.Gateway.PublicationReview

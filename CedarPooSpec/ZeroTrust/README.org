@@ -112,3 +112,12 @@ typed API laws and remaining Host premises. Pure proof data cannot authenticate
 a state reader, persist a ledger or enforce complete mediation on a socket.
 The transitive import-boundary test, generic functional/POO tests and Gateway
 adapter tests are separate checks in the existing Tests aggregate.
+
+Gateway's =currentAdmission= now supplies a typed current-Cedar assessment for
+=continuing=. =current_admission_has_error_free_allow= retains its actual receipt,
+original-profile refinement and canonical operation identity;
+=continuing_current_admission_preserves_delta= additionally joins same-world
+Delta coverage with original consumption and unknown retention. The selected
+proof diagrams above are not a complete inventory of these application laws.
+Current readers, original authority selection and final Host ordering remain
+explicit premises. See [[file:../Gateway/README.org][Gateway's executable acceptance]].

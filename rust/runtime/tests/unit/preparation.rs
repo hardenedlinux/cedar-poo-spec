@@ -460,3 +460,119 @@ fn wire_schema_preparation_preserves_original_sdk_rejection_and_invocation_count
         );
     }
 }
+
+// Test-only store interpreter: no native Gateway backend is introduced. The
+// authority's durable image/floor survive live-image rollback. Independent
+// Cedar replay checks the actual policy/current-fact manifest from the same run.
+#[test]
+#[ignore = "requires solver-produced Lean fixtures; run just check-gateway-delta"]
+fn simulated_publication_histories_match_lean() {
+    #[derive(Clone, Debug, PartialEq, Eq, serde::Serialize)]
+    struct Image {
+        root: String,
+        epoch: u64,
+        mode: String,
+        floor: u64,
+        durable_root: String,
+        durable_epoch: u64,
+        durable_mode: String,
+        unknown: bool,
+    }
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../.lake/build");
+    let manifest: Manifest = serde_json::from_str(
+        &std::fs::read_to_string(root.join("gateway-current-review-manifest.json")).unwrap(),
+    )
+    .unwrap();
+    assert_eq!(replay_manifest(&manifest).unwrap().len(), 10);
+    let input: serde_json::Value = serde_json::from_str(
+        &std::fs::read_to_string(root.join("gateway-publication-traces.json")).unwrap(),
+    )
+    .unwrap();
+    assert_eq!(input["format_version"], 1);
+    let runs = input["runs"].as_array().unwrap();
+    assert_eq!(runs.len(), 4);
+    let mut steps = 0;
+    for run in runs {
+        let base = run["base"].as_str().unwrap();
+        let candidate = run["candidate"].as_str().unwrap();
+        let no_gain = run["no_gain"].as_bool().unwrap();
+        let approved = run["approved"].as_bool().unwrap();
+        let traces = run["traces"].as_array().unwrap();
+        assert_eq!(traces.len(), 343);
+        for (seed, trace) in traces.iter().enumerate() {
+            assert_eq!(trace["seed"], seed);
+            let commands = trace["commands"].as_array().unwrap();
+            let observations = trace["observations"].as_array().unwrap();
+            assert_eq!(commands.len(), 3);
+            assert_eq!(observations.len(), 3);
+            let mut image = Image {
+                root: base.into(),
+                epoch: 7,
+                mode: "enforcing".into(),
+                floor: 7,
+                durable_root: base.into(),
+                durable_epoch: 7,
+                durable_mode: "enforcing".into(),
+                unknown: false,
+            };
+            let mut commits = 0;
+            for (index, (command, expected)) in commands.iter().zip(observations).enumerate() {
+                let command = command.as_u64().unwrap();
+                assert_eq!(command as usize, seed / 7usize.pow(index as u32) % 7);
+                let mut reply = 0;
+                match command {
+                    0 | 6 => {
+                        if image.epoch == image.floor
+                            && image.epoch == 7
+                            && image.root == base
+                            && image.mode == "enforcing"
+                            && (no_gain || approved)
+                        {
+                            image.root = candidate.into();
+                            image.epoch += 1;
+                            image.floor = image.epoch;
+                            image.durable_root = image.root.clone();
+                            image.durable_epoch = image.epoch;
+                            image.durable_mode = image.mode.clone();
+                            image.unknown |= command == 6;
+                            reply = if command == 6 { 2 } else { 1 };
+                            commits += 1;
+                        }
+                    }
+                    1 | 2 | 5 => {
+                        let mode = match command {
+                            1 => "observing",
+                            2 => "disabled",
+                            _ => "enforcing",
+                        };
+                        image.mode = mode.into();
+                        image.durable_mode = mode.into();
+                    }
+                    3 => {
+                        image.root = image.durable_root.clone();
+                        image.epoch = image.durable_epoch;
+                        image.mode = image.durable_mode.clone();
+                    }
+                    4 => {
+                        image.root = base.into();
+                        image.epoch = 7;
+                        image.mode = "enforcing".into();
+                    }
+                    _ => panic!("undeclared command"),
+                }
+                assert!(commits <= 1, "duplicate commit: {base}/{approved}/{seed}");
+                assert_eq!(
+                    expected["reply"], reply,
+                    "reply: {base}/{approved}/{seed}/{index}"
+                );
+                assert_eq!(
+                    expected["state"],
+                    serde_json::to_value(&image).unwrap(),
+                    "post-state: {base}/{approved}/{seed}/{index}"
+                );
+                steps += 1;
+            }
+        }
+    }
+    assert_eq!(steps, 4116);
+}

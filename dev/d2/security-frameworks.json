@@ -324,7 +324,7 @@
         "layoutSHA256": "4a432db44828e657def2d85df373b3adedde9ad127445b9de43d034751d4dda0",
         "nodes": 5,
         "edges": 4,
-        "milliseconds": 123.10470799999894
+        "milliseconds": 262.64408300000105
       }
     ],
     "svgSHA256": [
@@ -348,8 +348,8 @@
     "drawing": "roughjs@4.6.6",
     "routing": "elkjs@0.12.1",
     "assetSHA256": {
-      "@fontsource/kalam/files/kalam-latin-400-normal.woff2": "954410601a823f37e219f7930b7446f86afa15621326a7078d56fb9c910135cb",
-      "@fontsource/kalam/files/kalam-latin-700-normal.woff2": "252063af6ade8b9a744cde4ddad0fc21ea53b8ba711eed121a0c2e8610ea9c93"
+      "@fontsource/kalam/files/kalam-latin-700-normal.woff2": "252063af6ade8b9a744cde4ddad0fc21ea53b8ba711eed121a0c2e8610ea9c93",
+      "@fontsource/kalam/files/kalam-latin-400-normal.woff2": "954410601a823f37e219f7930b7446f86afa15621326a7078d56fb9c910135cb"
     },
     "pngSHA256": "1021d88c2244b888d8cd819c10f0b2dd585c333cff3d453cb64866a4518756c2",
     "browser": "156.0.8078.4",
