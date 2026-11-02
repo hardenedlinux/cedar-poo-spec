@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: Apache-2.0
+
 #+TITLE: Lawful POO context algorithms and exact-size source encoding
 #+OPTIONS: toc:2
 
