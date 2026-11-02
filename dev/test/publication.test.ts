@@ -5,9 +5,10 @@ import {test,expect} from 'bun:test';
 import {mkdtemp,mkdir,writeFile,readFile,unlink,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
-import {publishFigure,verifyFigure,type ExportedFiles} from '../artifacts';
+import {publishFigure,verifyFigure,htmlArtifact,type ExportedFiles} from '../artifacts';
 import {sha} from '../sources';
 const entry='dev/d2/case.d2',stem=entry.slice(0,-3);
+const output=(extension:string)=>extension==='html'?htmlArtifact(entry):stem+'.'+extension;
 /** Opaque byte fixtures test filesystem integrity; real figure exports have separate integration checks. */
 function exported(sources:Record<string,string>,generation:string,source=entry):ExportedFiles{
  const inputSHA256=sha(generation+JSON.stringify(sources));
@@ -22,8 +23,10 @@ async function fixture(run:(root:string,inputs:{entry:string;sources:Record<stri
 }
 test('receipt-last publication validates actual files and refuses a wrong expected input',async()=>{
  await fixture(async(root,inputs)=>{
+  await writeFile(join(root,stem+'.html'),'obsolete browser export');
   const image=exported(inputs.sources,'first');await publishFigure(root,inputs,async()=>image);
   await verifyFigure(root,entry,image.receipt.inputSHA256);
+  expect(await Bun.file(join(root,stem+'.html')).exists()).toBe(false);
   await expect(verifyFigure(root,entry,sha('different input'))).rejects.toThrow('Unexpected');
  });
 });
@@ -48,8 +51,8 @@ test('missing artifacts and individually mixed outputs cannot pass the renderer 
  await fixture(async(root,inputs)=>{
   for(const extension of ['png','svg','scene-1.svg','html']){
    const image=exported(inputs.sources,'current');await publishFigure(root,inputs,async()=>image);
-   await unlink(join(root,stem+'.'+extension));await expect(verifyFigure(root,entry)).rejects.toThrow();
-   await publishFigure(root,inputs,async()=>image);await writeFile(join(root,stem+'.'+extension),'bytes from another export');
+   await unlink(join(root,output(extension)));await expect(verifyFigure(root,entry)).rejects.toThrow();
+   await publishFigure(root,inputs,async()=>image);await writeFile(join(root,output(extension)),'bytes from another export');
    await expect(verifyFigure(root,entry)).rejects.toThrow('hash mismatch');
   }
  });
@@ -81,7 +84,7 @@ test('swapping a whole otherwise-valid output bundle cannot change the requested
   await publishFigure(root,inputs,async()=>exported(inputs.sources,'A'));
   const otherInputs={entry:other,sources:{[other]:sha('b: B')},binaries:{}};
   await publishFigure(root,otherInputs,async()=>exported(otherInputs.sources,'B',other));
-  for(const extension of ['png','svg','scene-1.svg','html','json'])await writeFile(join(root,stem+'.'+extension),await readFile(join(root,otherStem+'.'+extension)));
+  for(const extension of ['png','svg','scene-1.svg','html','json'])await writeFile(join(root,output(extension)),await readFile(join(root,extension==='html'?htmlArtifact(other):otherStem+'.'+extension)));
   await expect(verifyFigure(root,entry)).rejects.toThrow('another figure');
  });
 });

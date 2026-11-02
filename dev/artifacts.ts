@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 // SPDX-License-Identifier: Apache-2.0
 
-import {readFile,writeFile,rename,unlink,mkdtemp,rm,readdir} from 'node:fs/promises';
+import {readFile,writeFile,rename,unlink,mkdtemp,rm,readdir,mkdir} from 'node:fs/promises';
 import {resolve,dirname,join,basename} from 'node:path';
 import {isDeepStrictEqual} from 'node:util';
 import {parse,type DefaultTreeAdapterMap} from 'parse5';
@@ -16,6 +16,7 @@ const Provenance=v.object({inputSHA256:hash,sourceSHA256:hashes,view:v.object({s
 export interface PublicationInputs {readonly entry:string;readonly sources:Readonly<Record<string,string>>;readonly binaries:Readonly<Record<string,string>>;}
 export type ExportedFiles=Pick<FigureImage,'png'|'svg'|'html'> & {readonly receipt:Pick<FigureImage['receipt'],'inputSHA256'|'htmlSHA256'|'pngSHA256'|'svgSHA256'>};
 const svgName=(index:number)=>index===0?'svg':`scene-${index}.svg`;
+export const htmlArtifact=(entry:string)=>'.cache/render/'+base(entry)+'.html';
 function base(entry:string):string{
  if(!entry.endsWith('.d2'))throw new Error('Expected a D2 figure entry');
  return entry.slice(0,-3);
@@ -51,7 +52,7 @@ export async function verifyFigure(root:string,entry:string,expectedInputSHA256?
  await assertCurrent(root,{...receipt.sources,...receipt.binaries});
  const expected=new Set(receipt.receipt.svgSHA256.map((_,index)=>basename(stem)+'.'+svgName(index)));
  for(const file of await readdir(resolve(root,dirname(stem))))if(file.startsWith(basename(stem)+'.scene-')&&file.endsWith('.svg')&&!expected.has(file))throw new Error('Unlisted scene artifact');
- const png=await readFile(await repositoryPath(root,stem+'.png')),svg=await Promise.all(receipt.receipt.svgSHA256.map(async(_,index)=>readFile(await repositoryPath(root,stem+'.'+svgName(index)),'utf8'))),html=await readFile(await repositoryPath(root,stem+'.html'),'utf8');
+ const png=await readFile(await repositoryPath(root,stem+'.png')),svg=await Promise.all(receipt.receipt.svgSHA256.map(async(_,index)=>readFile(await repositoryPath(root,stem+'.'+svgName(index)),'utf8'))),html=await readFile(await repositoryPath(root,htmlArtifact(entry)),'utf8');
  checkFiles({png,svg,html,receipt:receipt.receipt},receipt);
  return receipt;
 }
@@ -60,6 +61,7 @@ export async function publishFigure<T extends PublicationInputs>(root:string,inp
  const stem=resolve(root,base(inputs.entry)),receiptPath=stem+'.json';
  await repositoryPath(root,inputs.entry);
  await unlink(receiptPath).catch((error:NodeJS.ErrnoException)=>{if(error.code!=='ENOENT')throw error;});
+ await unlink(stem+'.html').catch((error:NodeJS.ErrnoException)=>{if(error.code!=='ENOENT')throw error;});
  let temporary:string|undefined;
  try{
   await assertCurrent(root,{...inputs.sources,...inputs.binaries});
@@ -72,7 +74,8 @@ export async function publishFigure<T extends PublicationInputs>(root:string,inp
   await writeFile(join(temporary,'json'),JSON.stringify(payload,null,2)+'\n');
   await assertCurrent(root,{...inputs.sources,...inputs.binaries});
   for(const file of await readdir(dirname(stem),{withFileTypes:true}))if((file.isFile()||file.isSymbolicLink())&&file.name.startsWith(basename(stem)+'.scene-')&&file.name.endsWith('.svg'))await unlink(join(dirname(stem),file.name));
-  for(const[extension]of files)await rename(join(temporary,extension),stem+'.'+extension);
+  const htmlPath=resolve(root,htmlArtifact(inputs.entry));await mkdir(dirname(htmlPath),{recursive:true});await repositoryPath(root,dirname(htmlPath));
+  for(const[extension]of files)await rename(join(temporary,extension),extension==='html'?htmlPath:stem+'.'+extension);
   await assertCurrent(root,{...inputs.sources,...inputs.binaries});
   await rename(join(temporary,'json'),receiptPath);
   await verifyFigure(root,inputs.entry,image.receipt.inputSHA256);

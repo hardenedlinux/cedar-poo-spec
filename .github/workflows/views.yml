@@ -53,6 +53,7 @@ jobs:
           include-hidden-files: true
           if-no-files-found: error
           path: |
+            .cache/render/
             dev/.generated/
             dev/d2/
             dev/sysml/

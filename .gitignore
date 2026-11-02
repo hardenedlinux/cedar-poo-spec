@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: Apache-2.0
+
 .lake/
 .direnv/
 .devenv/
@@ -14,3 +17,6 @@ __pycache__/
 /docs/native-*.csv
 /docs/native-*.json
 /docs/lean-cache-evidence.json
+
+# Local browser export intermediates.
+/.cache/render/

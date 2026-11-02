@@ -4,13 +4,14 @@
 import {test,expect} from 'bun:test';
 import {readFile,readdir} from 'node:fs/promises';
 import {sha,rendererDependency} from '../sources';
-import {verifyFigure} from '../artifacts';
+import {verifyFigure,htmlArtifact} from '../artifacts';
 const root=new URL('../../',import.meta.url);
 interface Receipt {binaries:Record<string,string>;sources:Record<string,string>;receipt:{drawing:string;pngSHA256:string;htmlSHA256:string;svgSHA256:string[];readability:{minimumTextSize:number}};sdk:{modelHash:string;view:string;trace:{modelHash:string}};lean?:{path:string;sha256:string};renderer:{specifier:string;name:string;version:string};entry:string;}
 for(const name of (await readdir(new URL('../d2/',import.meta.url))).filter(name=>name.endsWith('.d2')).map(name=>name.slice(0,-3)).sort())test(name+' output binds actual input bytes, SDK model and hand-drawn artifacts',async()=>{
  const base='dev/d2/'+name,receipt:Receipt=JSON.parse(await readFile(new URL(base+'.json',root),'utf8'));
  await verifyFigure(root.pathname,base+'.d2');
- expect(sha(await readFile(new URL(base+'.png',root)))).toBe(receipt.receipt.pngSHA256);expect(sha(await readFile(new URL(base+'.svg',root)))).toBe(receipt.receipt.svgSHA256[0]!);expect(sha(await readFile(new URL(base+'.html',root)))).toBe(receipt.receipt.htmlSHA256);
+ expect(await Bun.file(new URL(base+'.html',root)).exists()).toBe(false);
+ expect(sha(await readFile(new URL(base+'.png',root)))).toBe(receipt.receipt.pngSHA256);expect(sha(await readFile(new URL(base+'.svg',root)))).toBe(receipt.receipt.svgSHA256[0]!);expect(sha(await readFile(new URL(htmlArtifact(base+'.d2'),root)))).toBe(receipt.receipt.htmlSHA256);
  expect(receipt.receipt.drawing.startsWith('roughjs@')).toBe(true);expect(receipt.receipt.readability.minimumTextSize).toBeGreaterThanOrEqual(12);expect(receipt.sdk.modelHash).toBe(receipt.sdk.trace.modelHash);
  if(receipt.lean)expect(receipt.lean.sha256).toBe(sha(await readFile(new URL(receipt.lean.path,root))));
  expect(receipt.renderer.specifier).toBe(rendererDependency(JSON.parse(await readFile(new URL('dev/package.json',root),'utf8'))));
@@ -29,7 +30,7 @@ test('real SDK view, renderer and catalog metadata cannot be mixed into another 
  try{
   for(const path of Object.keys(original.sources)){const destination=join(temporary,path);await mkdir(dirname(destination),{recursive:true});await writeFile(destination,await readFile(new URL(path,root)));}
   const extensions=['png','html','svg',...original.receipt.svgSHA256.slice(1).map((_,index)=>'scene-'+(index+1)+'.svg')];
-  for(const extension of extensions)await writeFile(join(temporary,stem+'.'+extension),await readFile(new URL(stem+'.'+extension,root)));
+  for(const extension of extensions){const path=extension==='html'?htmlArtifact(entry):stem+'.'+extension;await mkdir(dirname(join(temporary,path)),{recursive:true});await writeFile(join(temporary,path),await readFile(new URL(path,root)));}
   const receiptPath=join(temporary,stem+'.json');await writeFile(receiptPath,text);await verifyFigure(temporary,entry);
   const mixedSDK=structuredClone(original);mixedSDK.sdk=other.sdk;await writeFile(receiptPath,JSON.stringify(mixedSDK));await expect(verifyFigure(temporary,entry)).rejects.toThrow('SDK receipt binding');
   const mixedRenderer=structuredClone(original);mixedRenderer.renderer.version='unrelated';await writeFile(receiptPath,JSON.stringify(mixedRenderer));await expect(verifyFigure(temporary,entry)).rejects.toThrow('Renderer metadata binding');

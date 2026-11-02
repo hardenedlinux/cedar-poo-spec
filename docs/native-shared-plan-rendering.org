@@ -582,3 +582,14 @@ mid-write native rename failure, source mutation, missing files/fields, individu
 mixed artifacts and a complete output bundle copied to the wrong entry. Synthetic
 opaque byte fixtures qualify filesystem behavior; the real seven-view slice still
 uses the SDK, ELK/Rough.js, browser exports and independent Lean proof checks.
+
+
+Browser HTML is an ignored verification intermediate under the root
+=.cache/render/= directory; no HTML is tracked or retained under =dev/=.
+The original macOS failure for 3721c70 is retained in the PR's Actions logs:
+the combined SDK/native positive test reached 30002.77 ms, after which its child
+reported null exit with empty output. This does not establish a failed Lean law
+or isolate a compiler-startup cause. SDK/receipt observation and native validation
+now have separate, existing 30-second method budgets and phase timing/signal
+observations. Native memory/heartbeat arguments are unchanged. Final qualification
+uses both positive stages and all existing negative controls without retries.

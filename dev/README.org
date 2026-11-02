@@ -88,7 +88,7 @@ this view neither replaces them nor modifies their resource limits.
 | =.generated/*-sdk.json= | Actual SDK capture, retained by model hash |
 | =d2/*.png= | Hand-drawn documentation images; no external font load needed |
 | =d2/*.svg= | Vector export with embedded font notices |
-| =d2/*.html= | Offline materialized rendering |
+| =../.cache/render/dev/d2/*.html= | Browser verification intermediate; ignored by Git |
 | =d2/*.json= | Input/output hashes, SDK spans/model hash, input counts and observations |
 
 The source =CedarPooSpec/ZeroTrust/architecture.d2= and its RAW SVG are migrated to
@@ -248,3 +248,18 @@ bun install --frozen-lockfile
 The root manifest in the upstream repository exposes the package's sources under
 =packages/render=. =vendor/= is ignored and absent from Git; Release archives are
 not a development dependency.
+
+
+* Browser intermediate cleanup and verification budgets
+Generated HTML is not a source or documentation deliverable. It is absent from
+=dev/= and Git. The filesystem adapter removes legacy adjacent HTML and writes
+new browser intermediates only under the root =.cache/render/= directory. Native
+HTML hash/provenance validation remains active; CI uploads this ignored cache as
+build diagnostics. PNG/SVG are the documentation outputs.
+
+The SDK declaration/receipt comparison and native Lean validation are independent
+checks. Each retains the existing 30-second per-test bound; native Lean keeps its
+2048 MiB / 10000000-heartbeat arguments. The native check consumes the emitted SDK
+capture only after receipt validation, rather than charging SDK discovery and
+compiler startup to one combined test. Stage timing and child termination signal
+are recorded. This is not a retry policy or an extension of either method budget.
