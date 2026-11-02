@@ -558,3 +558,27 @@ binding. The renderer archive path is read from the existing package declaration
 Bun retains installation/version ownership. This change modifies the development
 rendering/verification chain only; Lean/Rust algorithms and performance claims
 remain with their existing owners and evidence.
+
+
+** Per-figure source closure and receipt-last export
+
+The Render Library is consumed through native Bun Git installation. The package
+manifest and lockfile own dependency identity; the installed upstream root manifest
+owns its version and directly exports =packages/render= sources. The committed
+vendor archive is removed.
+
+The host replaces whole-directory source capture with Bun's observed import graph
+and D2's existing reference declaration. Final D2 compilation uses only that closed
+virtual filesystem; missing direct/transitive imports fail in the official engine.
+Referenced SysML documents are parsed together. Catalog JSON/producer inputs are
+captured only by actual consumers. Footprints remain file-granular and do not
+claim compiler attestation or recursive Org hyperlink semantics.
+
+Before export the active receipt is invalidated. Native temporary files and
+renames stage bytes, and the existing renderer receipt is committed last after
+source rechecks. Verification binds the requested entry, source hashes, native
+HTML provenance and each output hash. Negative controls cover exporter failure,
+mid-write native rename failure, source mutation, missing files/fields, individually
+mixed artifacts and a complete output bundle copied to the wrong entry. Synthetic
+opaque byte fixtures qualify filesystem behavior; the real seven-view slice still
+uses the SDK, ELK/Rough.js, browser exports and independent Lean proof checks.
