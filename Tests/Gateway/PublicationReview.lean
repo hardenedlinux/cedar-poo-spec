@@ -231,6 +231,7 @@ theorem accepted_analysis_can_reach_final
 #print axioms accepted_analysis_can_reach_final
 #print axioms rejected_delta_cannot_commit
 #print axioms delta_final_retires_resolved_review
+#print axioms delta_final_rejects_resolved_review_after_run
 #print axioms Authorization.Delta.ReviewedInteraction.advanceReviewed_postcondition
 #print axioms Authorization.Delta.ReviewedInteraction.returned_state_rejects_republication
 

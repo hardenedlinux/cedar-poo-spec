@@ -284,4 +284,37 @@ theorem delta_final_retires_resolved_review
   exact reviewed.returned_state_rejects_republication (modelAt actual) otherModel (schemaAt actual) otherSchema
     (stateAt actual) (stateAt publication.receipt.state) policies (approveGain actual command) otherApproval advanced
 
+/-- Extend retirement through later reviews using the application's independent
+committed frontier. Live-image rollback is not monotone: the later use must
+establish equality with that preserved frontier before the raw Delta check. -/
+theorem delta_final_rejects_resolved_review_after_run
+    {host : Host Command Result View Parent Artifact Cut}
+    {resolve modelAt schemaAt stateAt approveGain}
+    {template : Contract Atom Command Result} {command actual}
+    (publication : Final (host.withDeltaReview resolve modelAt schemaAt stateAt approveGain)
+      template prepare command actual)
+    (frontier : View → Nat)
+    (installedFrontier : frontier publication.receipt.state = (stateAt publication.receipt.state).epoch)
+    (monotone : ∀ before effect after, step before effect after → frontier before ≤ frontier after)
+    (run : ZeroTrust.Run framework step publication.receipt.state later)
+    (current : (stateAt later).epoch = frontier later) :
+    ∃ artifact reviewed,
+      host.approvedEvidenceAt actual command = some artifact ∧
+      resolve actual command artifact = some reviewed ∧
+      ∀ otherModel otherSchema otherApproval,
+        (reviewed.advanceReviewed otherModel otherSchema (stateAt later) otherApproval).isOk = false := by
+  obtain ⟨artifact, reviewed, policies, present, resolved, epoch, installed, _⟩ :=
+    delta_final_retires_resolved_review publication
+  have forward : frontier publication.receipt.state ≤ frontier later :=
+    ZeroTrust.run_preserves
+      (fun view => frontier publication.receipt.state ≤ frontier view)
+      (fun before effect after event prior => Nat.le_trans prior (monotone before effect after event))
+      (Nat.le_refl _) run
+  refine ⟨artifact, reviewed, present, resolved, ?_⟩
+  intro otherModel otherSchema otherApproval
+  apply reviewed.stale_epoch_cannot_advance
+  have installedEpoch := congrArg Authorization.Delta.ReleaseState.epoch installed
+  dsimp only at installedEpoch
+  omega
+
 end CedarPooSpec.Gateway.PublicationReview

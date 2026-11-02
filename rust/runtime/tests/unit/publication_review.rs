@@ -16,19 +16,22 @@ struct Image {
     durable_mode: String,
     unknown: bool,
 }
+#[derive(Clone, Debug, PartialEq, Eq)]
 struct Review {
     base: String,
     candidate: String,
     no_gain: bool,
     approved: bool,
+    epoch: u64,
 }
 impl Review {
-    fn from_json(value: &serde_json::Value) -> Self {
+    fn from_json(value: &serde_json::Value, epoch: u64) -> Self {
         Self {
             base: value["base"].as_str().unwrap().into(),
             candidate: value["candidate"].as_str().unwrap().into(),
             no_gain: value["no_gain"].as_bool().unwrap(),
             approved: value["approved"].as_bool().unwrap(),
+            epoch,
         }
     }
 }
@@ -45,17 +48,20 @@ impl Image {
             unknown: false,
         }
     }
-    fn step(&mut self, command: u64, review: &Review) -> u64 {
+    fn step(&mut self, command: u64, review: &Review, initial: &Image) -> u64 {
         match command {
             0 | 6 => {
                 if self.epoch == self.floor
-                    && self.epoch == 7
+                    && self.epoch == review.epoch
                     && self.root == review.base
                     && self.mode == "enforcing"
                     && (review.no_gain || review.approved)
                 {
+                    let Some(epoch) = self.epoch.checked_add(1) else {
+                        return 0;
+                    };
                     self.root = review.candidate.clone();
-                    self.epoch += 1; // Entry above fixes this modeled epoch to seven.
+                    self.epoch = epoch;
                     self.floor = self.epoch;
                     self.durable_root = self.root.clone();
                     self.durable_epoch = self.epoch;
@@ -79,9 +85,9 @@ impl Image {
                 self.mode = self.durable_mode.clone();
             }
             4 => {
-                self.root = review.base.clone();
-                self.epoch = 7;
-                self.mode = "enforcing".into();
+                self.root = initial.root.clone();
+                self.epoch = initial.epoch;
+                self.mode = initial.mode.clone();
             }
             _ => panic!("undeclared command"),
         }
@@ -96,11 +102,12 @@ struct Ticket {
 struct Current {
     generation: u64,
     image: Image,
+    review: Arc<Review>,
 }
 struct Authority {
     owner: Arc<()>,
     current: Mutex<Current>,
-    review: Review,
+    initial: Image,
 }
 #[derive(Debug, PartialEq, Eq)]
 enum Attempt {
@@ -125,13 +132,15 @@ impl Attempt {
 }
 impl Authority {
     fn new(review: Review) -> Self {
+        let initial = Image::initial(&review.base);
         Self {
             owner: Arc::new(()),
             current: Mutex::new(Current {
                 generation: 0,
-                image: Image::initial(&review.base),
+                image: initial.clone(),
+                review: Arc::new(review),
             }),
-            review,
+            initial,
         }
     }
     fn capture(&self) -> Ticket {
@@ -158,7 +167,7 @@ impl Authority {
         }
         // Fresh admission, state installation and observation share this lock.
         let mut next = current.image.clone();
-        let reply = next.step(if lost { 6 } else { 0 }, &self.review);
+        let reply = next.step(if lost { 6 } else { 0 }, &current.review, &self.initial);
         if reply == 0 {
             return Attempt::Denied;
         }
@@ -176,7 +185,17 @@ impl Authority {
         let Some(generation) = current.generation.checked_add(1) else {
             return Err(Attempt::Exhausted);
         };
-        current.image.step(command, &self.review);
+        let review = Arc::clone(&current.review);
+        current.image.step(command, &review, &self.initial);
+        current.generation = generation;
+        Ok(())
+    }
+    fn register(&self, review: Arc<Review>) -> Result<(), Attempt> {
+        let mut current = self.current.lock().unwrap();
+        let Some(generation) = current.generation.checked_add(1) else {
+            return Err(Attempt::Exhausted);
+        };
+        current.review = review;
         current.generation = generation;
         Ok(())
     }
@@ -187,6 +206,7 @@ fn fixture_review(no_gain: bool, approved: bool) -> Review {
         candidate: "candidate".into(),
         no_gain,
         approved,
+        epoch: 7,
     }
 }
 
@@ -302,18 +322,38 @@ fn generation_exhaustion_refuses_before_installation_or_observation() {
         Attempt::Exhausted
     );
     assert_eq!(authority.control(1), Err(Attempt::Exhausted));
+    assert_eq!(
+        authority.register(Arc::new(fixture_review(false, true))),
+        Err(Attempt::Exhausted)
+    );
     let current = authority.current.lock().unwrap();
     assert_eq!(current.generation, u64::MAX);
     assert_eq!(current.image, original);
+    assert_eq!(*current.review, fixture_review(true, false));
+}
+
+#[test]
+fn release_epoch_exhaustion_refuses_without_changing_the_image() {
+    let mut review = fixture_review(true, false);
+    review.epoch = u64::MAX;
+    let mut image = Image::initial(&review.base);
+    image.epoch = u64::MAX;
+    image.floor = u64::MAX;
+    let original = image.clone();
+    assert_eq!(image.step(0, &review, &original), 0);
+    assert_eq!(image, original);
 }
 #[test]
 fn independent_prechecks_without_atomic_install_can_duplicate() {
     let review = fixture_review(true, false);
-    let original = Image::initial(&review.base);
-    let mut first = original.clone();
-    let mut second = original;
+    let initial = Image::initial(&review.base);
+    let mut first = initial.clone();
+    let mut second = initial.clone();
     // Expected counterexample, not an admitted authority implementation.
-    assert_eq!(first.step(0, &review) + second.step(0, &review), 2);
+    assert_eq!(
+        first.step(0, &review, &initial) + second.step(0, &review, &initial),
+        2
+    );
 }
 
 #[test]
@@ -334,7 +374,7 @@ fn simulated_publication_histories_match_lean() {
     assert_eq!(runs.len(), 4);
     let mut steps = 0;
     for run in runs {
-        let review = Review::from_json(run);
+        let review = Review::from_json(run, 7);
         let traces = run["traces"].as_array().unwrap();
         assert_eq!(traces.len(), 343);
         for (seed, trace) in traces.iter().enumerate() {
@@ -343,12 +383,13 @@ fn simulated_publication_histories_match_lean() {
             let observations = trace["observations"].as_array().unwrap();
             assert_eq!(commands.len(), 3);
             assert_eq!(observations.len(), 3);
-            let mut image = Image::initial(&review.base);
+            let initial = Image::initial(&review.base);
+            let mut image = initial.clone();
             let mut commits = 0;
             for (index, (command, expected)) in commands.iter().zip(observations).enumerate() {
                 let command = command.as_u64().unwrap();
                 assert_eq!(command as usize, seed / 7usize.pow(index as u32) % 7);
-                let reply = image.step(command, &review);
+                let reply = image.step(command, &review, &initial);
                 commits += usize::from(reply != 0);
                 assert!(commits <= 1);
                 assert_eq!(expected["reply"], reply, "reply: {seed}/{index}");
@@ -380,7 +421,7 @@ fn prepared_publication_interleavings_match_lean() {
         let traces = run["traces"].as_array().unwrap();
         assert_eq!(traces.len(), 632);
         for trace in traces {
-            let authority = Authority::new(Review::from_json(run));
+            let authority = Authority::new(Review::from_json(run, 7));
             let mut first: Option<Ticket> = None;
             let mut second: Option<Ticket> = None;
             let effects = AtomicUsize::new(0);
@@ -518,9 +559,11 @@ fn rolling_back_the_authority_record_remains_an_explicit_counterexample() {
     );
     // Fault injection violates the authority's non-rollback premise. A mutex
     // cannot authenticate a restored generation or recover erased consumption.
+    let review = Arc::clone(&authority.current.lock().unwrap().review);
     *authority.current.lock().unwrap() = Current {
         generation: ticket.generation,
         image: original,
+        review,
     };
     assert_eq!(
         authority.publish(Some(&ticket), false, |_| {
@@ -545,5 +588,209 @@ fn equal_generations_from_another_authority_are_not_a_ticket() {
     assert_eq!(
         other.publish(Some(&other.capture()), false, |_| {}),
         Attempt::Committed(1)
+    );
+}
+
+#[test]
+fn registration_is_fenced_with_commit_and_preserves_unknown() {
+    let first = Arc::new(fixture_review(true, false));
+    let mut changed = (*first).clone();
+    changed.candidate = "other-candidate".into();
+    let authority = Arc::new(Authority::new((*first).clone()));
+    let old = authority.capture();
+    authority.register(Arc::new(changed)).unwrap();
+    authority.register(Arc::clone(&first)).unwrap();
+    assert_eq!(
+        authority.publish(Some(&old), false, |_| panic!("revived ABA")),
+        Attempt::Stale
+    );
+
+    let next = Arc::new(Review {
+        base: first.candidate.clone(),
+        candidate: "follow-up".into(),
+        epoch: 8,
+        no_gain: true,
+        approved: false,
+    });
+    let (entered_tx, entered_rx) = std::sync::mpsc::channel();
+    let (probed_tx, probed_rx) = std::sync::mpsc::channel();
+    let writer_authority = Arc::clone(&authority);
+    let writer = std::thread::spawn(move || {
+        entered_rx.recv().unwrap();
+        assert!(matches!(
+            writer_authority.current.try_lock(),
+            Err(std::sync::TryLockError::WouldBlock)
+        ));
+        probed_tx.send(()).unwrap();
+        writer_authority.register(next).unwrap();
+    });
+    let prepared = authority.capture();
+    assert_eq!(
+        authority.publish(Some(&prepared), true, |image| {
+            assert!(image.unknown);
+            entered_tx.send(()).unwrap();
+            probed_rx.recv().unwrap();
+        }),
+        Attempt::Committed(2)
+    );
+    writer.join().unwrap();
+    assert_eq!(
+        authority.publish(Some(&prepared), false, |_| panic!("old review")),
+        Attempt::Stale
+    );
+    assert_eq!(
+        authority.publish(Some(&authority.capture()), false, |image| {
+            assert_eq!(image.epoch, 9);
+            assert!(image.unknown);
+        }),
+        Attempt::Committed(1)
+    );
+    authority.control(4).unwrap();
+    let current = authority.current.lock().unwrap();
+    assert_eq!(current.image.root, authority.initial.root);
+    assert_eq!(current.image.epoch, 7);
+    assert_eq!(current.image.floor, 9);
+    assert!(current.image.unknown);
+}
+
+#[test]
+fn unfenced_review_replacement_is_an_explicit_counterexample() {
+    let authority = Authority::new(fixture_review(true, false));
+    let old = authority.capture();
+    let mut replacement = fixture_review(true, false);
+    replacement.candidate = "substituted".into();
+    // Fault injection bypasses the participating-writer premise. Equal cuts
+    // alone cannot bind a preparation to the original reviewed artifact.
+    authority.current.lock().unwrap().review = Arc::new(replacement);
+    assert_eq!(
+        authority.publish(Some(&old), false, |image| {
+            assert_eq!(image.root, "substituted");
+        }),
+        Attempt::Committed(1)
+    );
+}
+
+#[test]
+#[ignore = "requires solver-produced Lean fixtures; run just check-gateway-delta"]
+fn registered_reviews_and_followup_publications_match_lean() {
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../.lake/build");
+    let manifest: Manifest = serde_json::from_str(
+        &std::fs::read_to_string(root.join("gateway-registration-manifest.json")).unwrap(),
+    )
+    .unwrap();
+    assert_eq!(replay_manifest(&manifest).unwrap().len(), 6);
+    let path = root.join("gateway-publication-registration.json");
+    let input: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
+    assert_eq!(input["format_version"], 1);
+    let runs = input["runs"].as_array().unwrap();
+    assert_eq!(runs.len(), 2);
+    let mut histories = 0;
+    let mut steps = 0;
+    let mut saw_two_commits = false;
+    for run in runs {
+        let reviews = run["reviews"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|value| Arc::new(Review::from_json(value, value["epoch"].as_u64().unwrap())))
+            .collect::<Vec<_>>();
+        assert_eq!(reviews.len(), 3);
+        let traces = run["traces"].as_array().unwrap();
+        assert_eq!(traces.len(), 400);
+        for trace in traces {
+            let authority = Authority::new((*reviews[0]).clone());
+            let mut registered = 0;
+            let mut tickets: [Option<Ticket>; 2] = [None, None];
+            let effects = AtomicUsize::new(0);
+            let mut commits = [0usize; 3];
+            let faults = trace["faults"].as_u64().unwrap();
+            assert!(faults < 4);
+            let commands = trace["commands"].as_array().unwrap();
+            let observations = trace["observations"].as_array().unwrap();
+            assert_eq!(commands.len(), observations.len());
+            for (command, expected) in commands.iter().zip(observations) {
+                let command = command.as_u64().unwrap();
+                let (generation, before, current_review) = {
+                    let current = authority.current.lock().unwrap();
+                    (
+                        current.generation,
+                        current.image.clone(),
+                        Arc::clone(&current.review),
+                    )
+                };
+                assert_eq!(current_review, reviews[registered]);
+                let reply = match command {
+                    0 | 1 => {
+                        tickets[command as usize] = Some(authority.capture());
+                        0
+                    }
+                    2 | 3 => {
+                        let actor = (command - 2) as usize;
+                        let lost = (faults >> actor) & 1 == 1;
+                        authority
+                            .publish(tickets[actor].as_ref(), lost, |_| {
+                                assert!(matches!(
+                                    authority.current.try_lock(),
+                                    Err(std::sync::TryLockError::WouldBlock)
+                                ));
+                                effects.fetch_add(1, Ordering::SeqCst);
+                            })
+                            .code()
+                    }
+                    4..=8 => {
+                        authority
+                            .control(match command {
+                                4 => 3,
+                                5 => 4,
+                                6 => 1,
+                                7 => 5,
+                                _ => 2,
+                            })
+                            .unwrap();
+                        0
+                    }
+                    9..=11 => {
+                        registered = (command - 9) as usize;
+                        authority
+                            .register(Arc::clone(&reviews[registered]))
+                            .unwrap();
+                        0
+                    }
+                    _ => panic!("undeclared registration command"),
+                };
+                if reply == 1 || reply == 2 {
+                    commits[registered] += 1;
+                }
+                let current = authority.current.lock().unwrap();
+                assert!(generation <= current.generation);
+                assert!(before.floor <= current.image.floor);
+                assert!(!before.unknown || current.image.unknown);
+                if command >= 9 {
+                    assert_eq!(current.generation, generation + 1);
+                    assert_eq!(current.image, before);
+                    assert!(Arc::ptr_eq(&current.review, &reviews[registered]));
+                }
+                let observed = serde_json::json!({"registered":registered,"schedule":{
+                    "generation":current.generation,"image":current.image,
+                    "first":tickets[0].as_ref().map(|ticket| ticket.generation),
+                    "second":tickets[1].as_ref().map(|ticket| ticket.generation)}});
+                assert_eq!(expected["reply"], reply, "{commands:?}");
+                assert_eq!(expected["state"], observed, "{commands:?}");
+                assert_eq!(expected["commits"], serde_json::json!(commits));
+                let total = commits.iter().sum::<usize>();
+                assert_eq!(effects.load(Ordering::SeqCst), total);
+                assert!(commits.iter().all(|count| *count <= 1) && total <= 2);
+                saw_two_commits |= total == 2;
+                steps += 1;
+            }
+            histories += 1;
+        }
+    }
+    assert_eq!(histories, 800);
+    assert_eq!(steps, 4064);
+    assert!(
+        saw_two_commits,
+        "must admit actual consecutive publications"
     );
 }

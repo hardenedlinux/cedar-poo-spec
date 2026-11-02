@@ -286,3 +286,14 @@ monotone observation generations and persistent refusal of retired cuts.
 The 2,528 native histories separately check these invariants against the actual
 authority and preserve complete Lean/Rust state equality. Finite conformance
 does not replace the induction or establish physical anti-rollback.
+
+The same native authority now serializes reviewed-artifact replacement with
+publication/control writers. A companion 800-history / 4,064-step replay and six
+new-root SDK Cases cover registration ABA and consecutive publications; the
+earlier corpora remain byte-identical. The public
+=delta_final_rejects_resolved_review_after_run= law carries actual Final review
+retirement through later runs with an explicit preserved frontier and fresh
+epoch binding. Registration-scheduler induction proves frontier/unknown
+retention. An unfenced replacement counterexample retains the requirement that
+every relevant writer advance the cut; these tests do not supply production
+registration credentials or physical durability.

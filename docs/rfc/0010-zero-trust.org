@@ -611,3 +611,48 @@ retention and stale-ticket state/observer preservation against its actual shared
 authority, separately from complete Lean JSON equality. The original fixtures,
 counts and negative controls remain intact. These are functional safety proofs
 and conformance checks, not fairness, persistence or performance claims.
+
+** Review replacement and consecutive publications
+
+The same test-owned native authority now keeps its registered reviewed artifact
+inside the current-state mutex. Registration checks generation exhaustion,
+installs the selected immutable review and advances the same cut without
+changing the release image or clearing unknown results. Equal-artifact
+re-registration also advances the cut. A real competing registrar cannot write
+while the final commit observer holds that boundary. No registration credential,
+durable registry or new production provider is implemented here.
+
+The actual four-root analyzer supplies three reviews: an epoch-seven governed
+gain, a distinct epoch-seven no-gain alternative, and an epoch-eight no-gain
+follow-up. The follow-up has two distinct branches inheriting the first
+candidate and their actual C4 merge; it does not fake four roots with the same
+name. Its three new roots also pass six original Functional/Cedar SDK Case
+replays. The companion POO corpus covers 800 histories / 4,064 steps: each
+registration at every boundary of all six actor interleavings, lost-reply
+choices, registration ABA, stale retries, recovery, rollback and two legitimate
+successive publications. Full replies, registered review, state, tickets and
+per-review observer counts agree with Rust. The earlier fixture bytes stay
+unchanged. The finite two-epoch corpus is conformance evidence, not a universal
+two-publication limit or a general registry protocol.
+
+=delta_final_rejects_resolved_review_after_run= extends the actual Final's
+resolved-review retirement across later application runs, which may use other
+reviews or approvals. Its explicit premises bind the post-commit independent
+frontier to the installed epoch, preserve that frontier for every later writer,
+and require the current live epoch to match it before the later raw Delta check.
+A restored live image can rewind; that is why this law uses an independent
+frontier rather than assuming the live epoch is monotone. The companion
+registration scheduler has a kernel step law and arbitrary-finite-history
+induction retaining both frontiers and unknown results, for arbitrary selected
+reviews and both publication models. The current floor guard remains mandatory.
+
+The native tests retain an unfenced replacement counterexample: if a writer
+changes the review without changing the cut, an old ticket can publish that
+substituted candidate. This violates the participating-writer premise, and
+matching cuts alone do not bind original evidence. Registration and release
+epoch exhaustion refuse without modifying the current record; Rust uses checked
+machine arithmetic. The existing Contract, trusted registration, pending-source
+qualification and anti-rollback premises remain intact. Retaining a lost reply
+about a locally committed publication does not discharge an unresolved external
+dependency. All semantic checks remain Lean/Rust; no Python semantic owner or
+performance claim is added.
