@@ -1162,24 +1162,146 @@ and target TID/priority/wait result for =MACH_MAKE_RUNNABLE=. It explains the
 interpretation limit; installed-kernel byte identity is not established.
 No security, signature, priority or logging-privacy setting changes are made.
 
-*** Next integrated boundary and publication state
+*** Release-tag baseline and shared constructor follow-up
 
-The next Lean candidate should reduce demonstrated Case-field/object construction
-and certified publication work, with one shared implementation for every domain,
-rather than retain a cache whose native workload does not win. SDK preparation
-still needs separation of unique schema/text parsing, request construction and
-source/DTO lifetime costs through supported public types. Preserve schema hints,
-independent parsing, error/refusal precedence and both authorization paths.
+LeanPoo now uses the latest verified non-prerelease GitHub release tag
+=v0.1.2= (published 2026-11-02); Lake records that tag as input and resolves
+=b29ea0d9d2ffeed0c13b66794fc6d418fd5b0393=. The release-only baseline is local
+commit =5ae138b=. Its four Lean executables, Rust executable and complete catalog
+are byte-identical to the preceding qualified revision. Release alignment is
+therefore kept separate from the constructor experiment.
 
-Any further candidate needs the same full type/Contract/proof/replay gate,
-source-bound native build identities, original-workflow controls, all process
-samples and resource receipts. Startup diagnosis must keep raw-clock intervals,
-module import, source publication and actual kernel waits separate. A readable
-target stack would be needed to name the opaque kernel object; a service log
-notice is not a substitute. Whole-chain performance remains an open acceptance
-item despite the measured Rust savings.
+The shared publisher now fills one fixed nine-field Case layout rather than
+constructing field-pair lists, appending references and reinserting constant keys
+for every row. The existing PolicyJson owner applies the same algorithm to
+two-field entity UIDs, four-field requests and four-field entity wrappers.
+Only public standard-library tree-map operations are used. There is no new
+source/decision cache, alternate parser, custom JSON writer or domain-specific
+implementation. Existing source-byte validation, authorization and replay remain.
 
-Raw evidence stays local and ignored in =../cedar-schema-request-20261102/=,
-=../cedar-prepared-source-key-20261102/= and =../cedar-schema-request-final-20261102/=.
-No CSV, archive, rendered HTML or vendor directory is added. Changes remain local,
-unpushed and unmerged; remote exact-head CI is not claimed for this follow-up.
+Each layout is filled from typed records. Case source references retain their
+kind indices; a private constructor certificate binds the actual encoded value
+to both the POO ObjectContract inventory and the complete original field object.
+The inventory Contract checks required/known/unique names; exact value equality
+is a separate universal theorem, not an assertion that inventory validates values.
+The original logical UID/request projections remain unchanged. Kernel-checked
+=csimp= equalities select their native implementations, including the original
+request-error branch and entity validation order. None of these new proofs uses =sorry=.
+The existing tests retain complete, permuted, missing, duplicate and extra-field
+controls, alongside source-binding and refusal-order controls.
+
+The first implementation (=1389128=) stores field projection functions in the
+shared layouts. Its full gate passes, but the complete performance cohort is a
+non-win: nine Lean samples have medians 37.590 -> 68.022 ms, and the two repeated
+pipeline pairs are slower by 41.644 and 63.356 ms. Those samples are retained.
+Generated-code inspection motivates the final =f099f60= implementation: private
+finite typed selectors replace function-valued fields. All four specialized
+mapped constructors now contain zero indirect =lean_apply_= field calls. The
+same universal equalities and Contract certificate continue to hold.
+
+*** Final fixed native evidence and limitations
+
+Both candidates pass =lake build Examples Tests=, the entire =just check= suite,
+explicit builds of all four native roles, and the locked release Rust build.
+This includes the nine existing object families, original per-domain workflows,
+schema-bound/refusal cases, proofs, independent Rust replay and artifact-tampering
+checks. The final native workload covers all 51 catalog entries with the existing
+warmup and sample counts. All 48 lifecycle children pass and all 15 complete-wire
+comparisons pass. Catalog bytes remain 1,177,069 with SHA-256
+=c6856fdb9e8b2d36407b8605756659e8a1c02fca09ce628bc41c845f0e376657=.
+The 12 additional copy/hardlink launch diagnostics also preserve those bytes.
+
+Lean owns every benchmark workload and emits native =measurement:= records.
+Each ordinary stage run retains 832 records; each authorization-separated run
+retains 1240. Rust owns SDK/replay and its separate allocation workload.
+Python only observes external processes, OS resources, artifacts and clocks.
+No sample is discarded or rerun to obtain a pass.
+
+The final warm per-pass small-allocation counts are deterministic across all
+three samples, including the authorization-separated control:
+
+| Stage               | Release baseline | Final selector layout | Delta  |
+|---------------------+------------------+-----------------------+--------|
+| Source produce      |           172678 |                172030 |   -648 |
+| Publish             |           720593 |                692149 | -28444 |
+| Finish              |             1228 |                  1228 |      0 |
+| Serialize           |            95389 |                 95389 |      0 |
+| Total               |           989888 |                960796 | -29092 |
+
+The authorization-separated workload keeps authorization allocations unchanged
+at 533764, while publication allocations fall 188273 -> 159829. This attributes
+the removed work to construction rather than omitted authorization or encoding.
+First-use production allocations fall 800308 -> 793636; first-use publication
+falls 804093 -> 775649. Allocation instrumentation remains separate from timing.
+
+Final nine-sample Lean timing medians are 123.034 -> 126.788 ms: still a non-win.
+Complete producer-plus-replay pairs are retained in full:
+
+| Pair / file state | Baseline wall ms | Candidate wall ms | Baseline CPU ms | Candidate CPU ms |
+|-------------------+------------------+-------------------+-----------------+------------------|
+| 1 / first use     |         9617.596 |          2483.964 |             340 |              290 |
+| 2 / repeated      |          612.080 |           732.252 |             300 |              280 |
+| 3 / repeated      |          570.185 |           658.047 |             280 |              250 |
+
+CPU observations improve in these three pairs, at the OS counter's coarse
+precision, but repeated wall time regresses by 120.172 and 87.862 ms. Peak pipeline
+RSS rises by 245760, 311296 and 245760 bytes respectively. Neither stable whole-chain
+latency nor OS RSS improvement is accepted. The final Rust ordinary and allocation
+images are identical to their baseline images: this is an A/A control, not a Rust
+optimization claim. Its nine-sample replay median nevertheless shifts
+1152.848 -> 771.172 ms; allocation peak/live remain 17078567/8991899 bytes.
+Tiny request-count/byte differences are not attributed to an algorithm change.
+
+Our own builds stop before measurement. The pre-cohort snapshot still contains
+13 other compiler processes. Post-cohort read-only observations show about
+11.7 GiB swap used; this is a snapshot, not proof that a particular wait was
+caused by swapping. Process CPU, involuntary context switches and wall time are
+retained for every child. Environmental variation prevents causal attribution
+of the large wall differences from this cohort alone.
+
+Root-project cold builds preserve dependency directories, but Lake still rebuilds
+some dependency modules. Neither candidate completes within the unchanged
+120-second/default-job limit: exit 124 at 120.066 and 120.102 seconds, with OS peak
+RSS 1008451584 and 837615616 bytes. Partial build trees and receipts are preserved;
+qualified warm trees are restored and frozen images used for timing. No complete
+cold-build or cold/hot identity pass is claimed. Two earlier observer setup
+failures never start Lean: resolving Nix's timeout link exposes the coreutils
+multicall executable. Its documented =--coreutils-prog=timeout= dispatch fixes the
+observer; both failures remain in the first evidence directory. No actual cold
+build is retried with relaxed limits. Unchanged Rust source/configuration and
+exact binary identity permit reuse of its earlier project-release-cold receipt;
+that is dependency-reusing evidence, not a new empty-cache build.
+
+*** Pre-main correlation and remaining acceptance
+
+Both new diagnostic cohorts retain raw Mach-domain joins for all 12 exact child
+PIDs, using the existing native clock calibration after verifying the same boot.
+The first cohort's notices occur 48-84 ms before main. The final cohort is much
+more variable: first-file pre-main spans approximately 1.34-2.46 seconds, and even
+repeated launches range approximately 89-931 ms. Import initialization also
+varies 17-559 ms. A provenance/skip notice can precede main by 66-923 ms, including
+that initialization; it is not a completion/wakeup signal. The final log query
+retains 7759 events and matches notices inside all owned child lifetimes.
+Displayed log wall timestamps are still excluded from latency calculations.
+
+The previously captured 2731.498-ms blocked event and its recorded =syspolicyd=
+wakeup execution context remain useful independent evidence. Its transformed
+wait key still does not identify a kernel object type or wake subroutine.
+The new log correlations do not resolve that limit. No signature, security,
+priority or log-privacy setting is changed.
+
+The shared algorithm/type/Contract/proof/replay migration is validated across the
+catalog; the performance acceptance remains open. The next integrated gate must
+separate immutable Case/request projection cost, SDK preparation, import
+initialization and off-CPU wait in the same full workload. Any further reuse
+belongs to the existing typed source/Case owner, must preserve complete-byte and
+independent-replay controls, and must demonstrate a whole-process benefit before
+being described as a speedup. A readable target wait stack is still needed to
+name the opaque kernel wait; another service notice cannot supply that evidence.
+
+Both complete cohorts, all non-wins, generated-code identities and resource
+receipts remain local/ignored in =../cedar-case-fields-release-20261102/= and
+=../cedar-case-selectors-20261102/=. Earlier rejected candidates remain preserved
+in their existing evidence directories. No CSV, archive, rendered HTML or vendor
+content is added. These follow-up changes remain local, unpushed and unmerged;
+remote exact-head CI is not claimed.
