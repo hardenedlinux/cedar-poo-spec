@@ -619,3 +619,17 @@ Local final qualification passed 40 tests / 244 assertions (177.14 s), including
 job-level cache declaration used the step-only runner context. The cache directory
 is now passed directly to native =bun install= via the shell's =RUNNER_TEMP=;
 no failed build/test is relabeled as a pass and no test budget is widened.
+
+
+An additional native Bun negative control changed the Render Git commit while
+retaining the original lockfile. Installation refused with =lockfile had changes,
+but lockfile is frozen= (preserved in the local qualification log). Removing a
+direct dependency that remains transitive can be accepted without rewriting the
+lockfile; frozen installation is not exact manifest equality. The real receipt
+control therefore separately removes the direct =parse5= declaration from the
+captured valid manifest and verifies rejection until the original bytes return.
+
+All six changed files pass =reuse lint-file=. A full repository REUSE audit is
+still not compliant: 94/895 files have copyright information and 93/895 have
+license information. Existing Lean/Rust and other repository headers are outside
+this rendering-only change; no repository-wide compliance claim is made.

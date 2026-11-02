@@ -58,7 +58,9 @@ test('restored real exports require their cache and exact captured sources',asyn
   expect(mutations.some(path=>path.endsWith('.sysml'))).toBe(true);
   for(const path of mutations){
    expect(Object.hasOwn(receipt.sources,path)).toBe(true);
-   await writeFile(join(temporary,path),new Uint8Array([0]));
+   const original=await readFile(new URL(path,root),'utf8');
+   if(path==='dev/package.json'){const manifest=JSON.parse(original);delete manifest.dependencies.parse5;await writeFile(join(temporary,path),JSON.stringify(manifest));}
+   else await writeFile(join(temporary,path),original+'\n');
    await expect(verifyFigure(temporary,entry)).rejects.toThrow('changed');
    await copy(path);await verifyFigure(temporary,entry);
   }
