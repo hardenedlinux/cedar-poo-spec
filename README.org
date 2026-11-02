@@ -31,7 +31,12 @@ source modules, theorem kinds and declared lemma uses. D2 owns localized catalog
 captions, while the shared projection preserves model identities and topology.
 Per-figure source closures and receipt-last exports reject missing or mixed
 artifacts. Bun installs the Render Library from its reviewed Git revision; no
-vendor archive is tracked.
+vendor archive is tracked. The selected Render Git source includes upstream
+[[https://github.com/hardenedlinux/deterministic-engineering/pull/5][compiler lifecycle recovery]]: each compilation settles after its native process
+closes, including IPC failure paths. Cedar consumes this Library capability
+without a local process wrapper. Fresh-install and dependency-recovery CI use the same
+frozen Bun lockfile. Restored exports require the ignored browser intermediate
+and unchanged captured sources; missing, stale or mixed bundles are rejected.
 
 * Architecture and ownership
 

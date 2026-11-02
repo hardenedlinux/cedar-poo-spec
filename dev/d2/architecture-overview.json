@@ -7,14 +7,14 @@
     "CedarPooSpec/ZeroTrust/README.org": "6c6608f6b783249fb7e0b299e756dc1df82f0e215af453774d1df731fdfb9b87",
     "dev/.generated/architecture-overview-sdk.json": "6c2d887a362d7d3c721f03251f27393861b777942ddda3c8fc559470340e46db",
     "dev/artifacts.ts": "ca1096947536fbdbd5da5cbf1ce5c6f57521bd4a7b135233285dfe8fcff9859d",
-    "dev/bun.lock": "ff7dfa5e83619b9ea614de09044a6ea84674934b8f284e440d253beeb6677663",
+    "dev/bun.lock": "2b7060a881aad9312d122f6d01146ef78c207b3c95254aa66b7b57a9eede5acd",
     "dev/catalog.ts": "6d65a91afcddb11de668cc668aa3c6b9076435c02e73a90323c7bf28a991965e",
     "dev/d2/architecture-overview.d2": "040b9de8acb2b8ef9780b231f4dd171f74f856ea21b0c0614597383c560c3c6f",
     "dev/inputs.ts": "8ccc4bd7ceda2013d5fd86b37d2565beb60f1a8761004d67be77d0c2acd1265e",
     "dev/Justfile": "a13b2b6ef2cabfdd03841bbdc3da89fa70245071abf15f653c0095ae3defba7b",
-    "dev/package.json": "12b30695d6155fbd6652264c866f3d34be2f714d2c6cbb6bc18f767ed1ff9027",
+    "dev/package.json": "4597c8e94f87afcc8655b9be5197b5835e620ed5610f8182b20ee386194f6a5f",
     "dev/projection.ts": "3fd049e50798aee9dce54af6cd6e6fccad45fec5ab24b994bb6a8a4b33d7252d",
-    "dev/proofs.ts": "ec657848f47b8fa1724105df2aab6f25bb528f909ec9e7a996036d7fdc89184c",
+    "dev/proofs.ts": "7ecca5b114869cbf7ea212bfeb7982c04a3015ea47d0e34a136b022d097d8d2f",
     "dev/render.ts": "1b07616b3a05602676ea0101546ab66f20fd73943326382fda0ebafef2735201",
     "dev/sources.ts": "3cd11d095476ee65c9086172773813e6e37e88087c9d01ee962cec59369d7ed8",
     "dev/sysml/architecture.sysml": "8a526add85cfc800df512e08a18eeed84591daaf944fdb350a90a4cd1576efb8",
@@ -376,9 +376,9 @@
     "observations": []
   },
   "renderer": {
-    "specifier": "git+https://github.com/hardenedlinux/deterministic-engineering.git#6223c5c44cc368e6e5b6d597421b275c160f9064",
+    "specifier": "git+https://github.com/hardenedlinux/deterministic-engineering.git#1fe20380441a0cd85055695c2adcc55ce699a369",
     "name": "@deterministic-engineering/render",
-    "version": "1.0.1"
+    "version": "1.0.2"
   },
   "receipt": {
     "attribution": {
@@ -729,21 +729,21 @@
       "samples": 63,
       "requiredMinimum": 12
     },
-    "inputSHA256": "11a83463c7b380282463907a02968b790d9cf40d7548d3cb8c50a2844ade3e38",
+    "inputSHA256": "0d401a630f5c5a000fec0c22dc044adb0266c87ce47611ba747f8fca2001d48c",
     "scenes": [
       {
         "inputSHA256": "e37712d455e547bad725dabd5b84f2c459f5477c15e4f5350e5ef58d5546586a",
         "layoutSHA256": "e3a006d7aedb8c3ed9f03375fdc88ec9edf699022226cf9f75a26b9dd3d7faed",
         "nodes": 10,
         "edges": 14,
-        "milliseconds": 240.24333399999978
+        "milliseconds": 207.712583
       }
     ],
     "svgSHA256": [
-      "e0deebcd3b05a1e2953555fe25e86bb03586876c6759ae500195d15a3d187dd2",
+      "e89571022a53ac2e53e0500e9b25899755a132ac7cc2a2f18f12bd3f05c64ba1",
       "1c1c8324c7774e2d1ab76e8273ca28604a281b8df09c4b09660f7c97bcac4449"
     ],
-    "composedHTMLSHA256": "c5a2b8f1ec86ca64ca89aa73a189e33715a456f40387db3e542133110f1e32da",
+    "composedHTMLSHA256": "ba028abc1facb6e681b2bfb9a397052cd6ecdf6e20facc9574369bb5ad35983a",
     "dependencies": {
       "@fontsource/inter": "5.3.0",
       "@fontsource/kalam": "5.3.0",
@@ -756,7 +756,7 @@
       "web-worker": "1.5.0"
     },
     "regionSHA256": {},
-    "htmlSHA256": "f5d50cc9ff81dbf5efba40ae64eef20af61bc034e3c328f0a790a76c1db04dd3",
+    "htmlSHA256": "2b4711e9e70a8e92a19829077982894720967743237a0078ce0ea3a72761bb2a",
     "drawing": "roughjs@4.6.6",
     "routing": "elkjs@0.12.1",
     "assetSHA256": {

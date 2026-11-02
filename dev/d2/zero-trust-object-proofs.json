@@ -9,14 +9,14 @@
     "CedarPooSpec/ZeroTrust/UsageControl.lean": "e8198fb65cd7be9ca9fbaf9260857054c7480ed22e0766b8103dc6c60d67c27d",
     "dev/.generated/zero-trust-object-proofs-sdk.json": "82953e376e1e0b6634884044940f514d3cbced1c6dfa55560946c5120ad919bd",
     "dev/artifacts.ts": "ca1096947536fbdbd5da5cbf1ce5c6f57521bd4a7b135233285dfe8fcff9859d",
-    "dev/bun.lock": "ff7dfa5e83619b9ea614de09044a6ea84674934b8f284e440d253beeb6677663",
+    "dev/bun.lock": "2b7060a881aad9312d122f6d01146ef78c207b3c95254aa66b7b57a9eede5acd",
     "dev/catalog.ts": "6d65a91afcddb11de668cc668aa3c6b9076435c02e73a90323c7bf28a991965e",
     "dev/d2/zero-trust-object-proofs.d2": "4cc1b2cea918c37cff09abd8206d4bba6d35fe455f7e3e92a0e8f19af583e511",
     "dev/inputs.ts": "8ccc4bd7ceda2013d5fd86b37d2565beb60f1a8761004d67be77d0c2acd1265e",
     "dev/Justfile": "a13b2b6ef2cabfdd03841bbdc3da89fa70245071abf15f653c0095ae3defba7b",
-    "dev/package.json": "12b30695d6155fbd6652264c866f3d34be2f714d2c6cbb6bc18f767ed1ff9027",
+    "dev/package.json": "4597c8e94f87afcc8655b9be5197b5835e620ed5610f8182b20ee386194f6a5f",
     "dev/projection.ts": "3fd049e50798aee9dce54af6cd6e6fccad45fec5ab24b994bb6a8a4b33d7252d",
-    "dev/proofs.ts": "ec657848f47b8fa1724105df2aab6f25bb528f909ec9e7a996036d7fdc89184c",
+    "dev/proofs.ts": "7ecca5b114869cbf7ea212bfeb7982c04a3015ea47d0e34a136b022d097d8d2f",
     "dev/render.ts": "1b07616b3a05602676ea0101546ab66f20fd73943326382fda0ebafef2735201",
     "dev/sources.ts": "3cd11d095476ee65c9086172773813e6e37e88087c9d01ee962cec59369d7ed8",
     "dev/sysml/zero-trust-proofs.sysml": "0b85a38957e0a94e1e9b3ddfa5f8681e11596b865f3efc9a6fde4ad1a7868eab",
@@ -329,9 +329,9 @@
     ]
   },
   "renderer": {
-    "specifier": "git+https://github.com/hardenedlinux/deterministic-engineering.git#6223c5c44cc368e6e5b6d597421b275c160f9064",
+    "specifier": "git+https://github.com/hardenedlinux/deterministic-engineering.git#1fe20380441a0cd85055695c2adcc55ce699a369",
     "name": "@deterministic-engineering/render",
-    "version": "1.0.1"
+    "version": "1.0.2"
   },
   "receipt": {
     "attribution": {
@@ -553,21 +553,21 @@
       "samples": 55,
       "requiredMinimum": 12
     },
-    "inputSHA256": "98de50e9479b761032960cf3d895a6c9326b56bb150c84965fd64aa9847805e3",
+    "inputSHA256": "afc5e89d6fd143b3c85dbccf61741f48bfa0db40547636901df61625d582ce1b",
     "scenes": [
       {
         "inputSHA256": "95042781c56cf061e6e24692d229b9b803f8f105cd7589ecf382872e43e67564",
         "layoutSHA256": "44c74cde850c0814de853925b0a9ac92d2ac6d21f8e77d1ede01a86c4404cda7",
         "nodes": 7,
         "edges": 7,
-        "milliseconds": 161.76637500000288
+        "milliseconds": 128.82941700000083
       }
     ],
     "svgSHA256": [
-      "7256f0c5de26aa325f70543a511e103a6f25fa2965e19510249eaa39dc9f7777",
+      "e59ccebbb64c72891d0571a05bda40d34eb6bd503e7c7a1281c470432127936b",
       "2d48780605cb63ba88423abd05f3862549f3652c8324326bfb22c3bf3b6e8d0d"
     ],
-    "composedHTMLSHA256": "c9eb16742f29e6436e09d2884114b121fbfcdc5546b552eda4e68bff6117d853",
+    "composedHTMLSHA256": "161a7cde2db4813b356bbf5a4524bae4cdbbb689dabfbdd0851a9df956ceffa9",
     "dependencies": {
       "@fontsource/inter": "5.3.0",
       "@fontsource/kalam": "5.3.0",
@@ -580,12 +580,12 @@
       "web-worker": "1.5.0"
     },
     "regionSHA256": {},
-    "htmlSHA256": "8b93eaa234733686730f4caac9b3668a5fe7be9196702737bdc810bdfd057eb3",
+    "htmlSHA256": "5b05c2e56b0147fe518ada791261a0746c1eecfeded5fe9ec222a79ab331c2c2",
     "drawing": "roughjs@4.6.6",
     "routing": "elkjs@0.12.1",
     "assetSHA256": {
-      "@fontsource/kalam/files/kalam-latin-700-normal.woff2": "252063af6ade8b9a744cde4ddad0fc21ea53b8ba711eed121a0c2e8610ea9c93",
-      "@fontsource/kalam/files/kalam-latin-400-normal.woff2": "954410601a823f37e219f7930b7446f86afa15621326a7078d56fb9c910135cb"
+      "@fontsource/kalam/files/kalam-latin-400-normal.woff2": "954410601a823f37e219f7930b7446f86afa15621326a7078d56fb9c910135cb",
+      "@fontsource/kalam/files/kalam-latin-700-normal.woff2": "252063af6ade8b9a744cde4ddad0fc21ea53b8ba711eed121a0c2e8610ea9c93"
     },
     "pngSHA256": "317bfdcf688d2a6d1be278d5ed883514118ee7bf65f3d08ada9a718a4a3635e6",
     "browser": "156.0.8078.4",
