@@ -37,6 +37,8 @@ jobs:
       - name: Restore compatible Lean artifacts
         uses: ./.github/actions/lean-cache
       - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+      - name: Process and resource observer controls
+        run: uv run --project python --package cedar-poo-py-test --locked python -m unittest discover -s python/tests -v
       - run: just check-lean
       - run: |
           mkdir -p .lake/build/resources
@@ -47,6 +49,19 @@ jobs:
       - run: just bench-catalog-preparation | tee .lake/build/resources/catalog-preparation.log
       - run: just bench-catalog-stages | tee .lake/build/resources/catalog-stages.log
       - run: just bench-catalog-authorization | tee .lake/build/resources/catalog-authorization.log
+      - name: Verify native recovery with the declared toolchain and official cache
+        run: |
+          lake build caseManifestsNative objectProfilesNative functionalReuseNative manifestLifecycleNative
+          just bench-project-native-cold "$RUNNER_TEMP/project-native-cold"
+      - name: Preserve native recovery receipts
+        if: ${{ always() }}
+        run: |
+          mkdir -p .lake/build/resources/native-cold
+          for name in toolchain.txt toolchain.json resource.json resource.stderr.txt build.log exit-status identities.json; do
+            if test -f "$RUNNER_TEMP/project-native-cold/$name"; then
+              cp "$RUNNER_TEMP/project-native-cold/$name" .lake/build/resources/native-cold/
+            fi
+          done
       - name: Check benchmark source tree is clean
         run: |
           git diff --exit-code

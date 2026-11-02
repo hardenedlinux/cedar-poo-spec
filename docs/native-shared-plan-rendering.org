@@ -1591,3 +1591,29 @@ is pushed or merged here.
 The closure audit, direct cache controls, every failed observation and cancellation
 receipt are local/ignored in =../cedar-closure-audit-20261102/=. Existing complete
 performance cohorts remain untouched in their original directories.
+
+
+*** Submission boundary and Ubuntu closure
+
+The delivery branch integrates current main =8fd948b=, preserving the reviewed
+Render Git revision =1fe20380441a0cd85055695c2adcc55ce699a369=, installation/recovery
+controls and published view semantics. All seven source-bound figures are
+regenerated with the actual LeanPoo =v0.1.2= input. Standard rendering/SDK/Lean
+verification passes 40 tests / 244 assertions, and all four native executable
+images remain identical to the already qualified constructor/observer audit.
+
+The existing Ubuntu Lean job now runs the complete Python process/resource
+protocol suite and the existing four-target, declared-toolchain native recovery
+recipe. Recovery keeps the same 120-second/default-job limit and the explicit
+dependency/official-cache-preserving boundary. Toolchain identity, natural exit,
+complete resources, child-group quiescence and all four image hashes remain
+required. Partial logs and receipts are retained by the existing artifact upload;
+compiler build trees are not uploaded as benchmark evidence.
+
+Historical local-only and remote-CI-pending statements above describe their
+qualification snapshots. This follow-up is submitted for exact-head review and
+CI, without merging or enabling auto-merge. Remote results must be read from the
+actual submission head; local acceptance is not substituted for Ubuntu results.
+All previous negative controls, timing non-wins and failed observations stay in
+their original evidence directories. Publication does not turn the mixed native
+wall/RSS results into a stable whole-process acceleration claim.

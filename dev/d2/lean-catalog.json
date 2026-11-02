@@ -1,7 +1,7 @@
 {
   "entry": "dev/d2/lean-catalog.d2",
   "sources": {
-    "CedarPooSpec/Transport/SourceCatalog.lean": "6a558ed2d6191b9e0264a43d7fdf8c508102f475e01048c76fb9c541a9100c22",
+    "CedarPooSpec/Transport/SourceCatalog.lean": "cd42b311663736f3b31c3bbafbb860b61821fe94778e314181a6ff12ee9a1b38",
     "dev/.generated/lean-catalog-sdk.json": "753379a05389491ce2c0871239106ba5422fb279c6b12de9670bf05273456abf",
     "dev/.generated/lean-catalog.json": "c6856fdb9e8b2d36407b8605756659e8a1c02fca09ce628bc41c845f0e376657",
     "dev/artifacts.ts": "ca1096947536fbdbd5da5cbf1ce5c6f57521bd4a7b135233285dfe8fcff9859d",
@@ -10,19 +10,19 @@
     "dev/d2/lean-catalog.d2": "38a9447d8239d93a2f2cd00fbfc03731aad9dceec0c6b4d6dbe8ff048eb470a9",
     "dev/inputs.ts": "8ccc4bd7ceda2013d5fd86b37d2565beb60f1a8761004d67be77d0c2acd1265e",
     "dev/Justfile": "a13b2b6ef2cabfdd03841bbdc3da89fa70245071abf15f653c0095ae3defba7b",
-    "dev/package.json": "4597c8e94f87afcc8655b9be5197b5835e620ed5610f8182b20ee386194f6a5f",
+    "dev/package.json": "4eb137a6d73d5dfb1e43020c3041e9a42151d480b26d6e01b99ee0ebc2997d90",
     "dev/projection.ts": "3fd049e50798aee9dce54af6cd6e6fccad45fec5ab24b994bb6a8a4b33d7252d",
     "dev/proofs.ts": "7ecca5b114869cbf7ea212bfeb7982c04a3015ea47d0e34a136b022d097d8d2f",
     "dev/render.ts": "1b07616b3a05602676ea0101546ab66f20fd73943326382fda0ebafef2735201",
     "dev/sources.ts": "3cd11d095476ee65c9086172773813e6e37e88087c9d01ee962cec59369d7ed8",
     "dev/sysml/lean-catalog.sysml": "ab7215eb4846306aec3ef2b0f16ec55dda87179efb10ea762f02b78d0c6234e5",
     "Examples/ManifestCatalog.lean": "7c1c1eb2d288dfc7d3601062f2fe452d302b693d231ac455dcf24238a3a8219c",
-    "lake-manifest.json": "005293d31347e363a7f46a7a2a2bfbfea3f18484d688d7b75d144ca1ad16e3cd",
-    "lakefile.toml": "017f19694164250b32c95ce483b1bfb9ed03290f6c39d2eb938a8f347e22f80c",
+    "lake-manifest.json": "2a29d4c80859e24738a30d7a4b6e1bbba68ad7571fbaf0eddcf431b60ec5cffe",
+    "lakefile.toml": "44a18411f9971ff9695f63be48d8f5db7d5b0238c2fc419ff2f1ab5cda36849d",
     "lean-toolchain": "d5edba4e4b8faad9c1baeadb265716d20d03be4d1a2647dc5e35b0c0325bea7b"
   },
   "binaries": {
-    ".lake/build/bin/caseManifestsNative": "39c53fec2d23f19c449657b660f4588e179220f762502c5e1025636e752dc1e4"
+    ".lake/build/bin/caseManifestsNative": "ef12149bcd18205983821b0e4b1c9b8f3fa6cc20d93b17224052ba46b6263049"
   },
   "sdk": {
     "modelHash": "665d61c642370cfe88a2c7e787417b4a2d132e45b98c4d2faf82b05cdd669043",
@@ -230,21 +230,21 @@
       "samples": 15,
       "requiredMinimum": 12
     },
-    "inputSHA256": "721657df857c5e1d326a65b1036916a7a861e157feca54a00ab7420cc6648546",
+    "inputSHA256": "1b89a2957ddb4423acbcc1157368edbe3b9193b51d103c4647d1e9564e0daeb7",
     "scenes": [
       {
         "inputSHA256": "b82c75dbd14a51b3f16fca7a2f47aa2d4b03f7dfeabd7a73dd998da2b0bd5780",
         "layoutSHA256": "a221a5e4f7349068f8701046972ce793ab445e84da6753666a375097cdd42d80",
         "nodes": 5,
         "edges": 0,
-        "milliseconds": 144.723833
+        "milliseconds": 107.75087499999972
       }
     ],
     "svgSHA256": [
-      "3867849425766142436607193dd3b3636d49515a2ce491ab08d22bdede74b35e",
+      "0fd8172670f89707ddc9d4230262125e4ea43ff1a18fc424b74501c59d834f58",
       "2bba8ad7741dd2f690377128044235869511e92e8aa3ae5e0a648562ac01dbc0"
     ],
-    "composedHTMLSHA256": "f0b399d3629fa7aca81b4b20ea0bb7d57cbe374f851e1ea6960298947468917c",
+    "composedHTMLSHA256": "dae94b68eb2913af298e1a6930acfa54459f27d1d125601e88e2756d69c014fd",
     "dependencies": {
       "@fontsource/inter": "5.3.0",
       "@fontsource/kalam": "5.3.0",
@@ -257,7 +257,7 @@
       "web-worker": "1.5.0"
     },
     "regionSHA256": {},
-    "htmlSHA256": "8af6bf00933aadb649ab7f8ee5ac5f5a818eede1e65047de780482b4042d96d1",
+    "htmlSHA256": "200dec855e47329300dfebf4ae0228a6c71714572392885eb88b934e64794175",
     "drawing": "roughjs@4.6.6",
     "routing": "elkjs@0.12.1",
     "assetSHA256": {
