@@ -836,3 +836,161 @@ and resource evidence; current non-wins are frozen references, not discarded.
 Raw native outputs, resource receipts and traces remain local and ignored under
 =../cedar-native-sdk-20261102/=; no CSV or evidence archive enters Git. These are
 local qualification receipts, not remote CI for this follow-up. No merge or push.
+** Public typed SDK body binding and wait owner (2026-11-02)
+
+This tranche compares local implementation =5451a77= with frozen =d85b4a4=.
+It keeps the original independent text parser and original non-prepared workflow
+oracle. A private =RenderedSource= binds the rendered text and canonical bodies
+to the immutable source owner. After independently parsing that text, public
+[[https://docs.rs/cedar-policy/4.12.0/cedar_policy/struct.Policy.html#method.new_id][Cedar 4.12 Policy::new_id]] and =Policy::eq= compare every static policy after
+rebinding only a temporary parsed policy's ID. The SDK equality implementation
+compares the AST, including annotations; no hidden AST conversion is called.
+
+Sorted source order is only a candidate hint. Policy count, template exclusion,
+static status and full typed equality must all hold before bodies bind to the
+actual parsed IDs. Otherwise the unchanged normalizer remains authoritative.
+The complete multiset comparison, fresh strict schema validation, source/cache
+ownership, both authorizers and reason/error mapping remain in place. This is
+shared runtime preparation for every applicable catalog consumer, with no
+per-industry bypass, decision cache or additional source index.
+
+Four differential tests cover empty sources, permit/forbid, annotations and
+Unicode/escaping, constraints, records/sets, extension literals, duplicate body
+multiplicity, permutations, more than ten renamed IDs and parsed templates.
+The original workflows execute the old canonical-body oracle independently.
+The first directory check exposed an obsolete expectation of 21 normalized-body
+slots; the new path requires zero. That failed run is retained, and the corrected
+check separately requires zero typed fallbacks rather than merely removing the
+assertion.
+
+*** Recorded pre-main wakeup attribution
+
+Read-only decoding of the existing System Trace now reaches the wakeup omitted
+by the timed-out global XML exports. The stored scheduler descriptor specifies
+80-byte records; timestamp, core, class, subclass, code, qualifier and all four
+arguments match all 102414 complete rows of Apple's partial XML export exactly.
+The separate complete =thread-info= export matches all 6321 stored ownership
+records by timestamp, PID and TID. This is validated artifact decoding, not a new
+benchmark workload, new trace capture or guess from timing correlation alone.
+
+At 4159.545791 ms the =MACH_MAKE_RUNNABLE= record targets TID 2460240. Its source
+thread resolves to TID 2460279 / PID 539, =syspolicyd=. The same thread logs
+=GK evaluateScanResult= for =manifestLifecycleNative= and provenance publication.
+The target's consistent path identity also appears in =GK performScan= at
+12:37:58.098271 and evaluation at 12:38:00.822566. Together these identify the
+execution-assessment owner of this recorded 2731.498083-ms blocked interval;
+the subsequent runnable-to-running delay is only 0.651125 ms.
+
+The raw wait event =0x42d43ca7db63f02f= remains opaque: no specific mutex,
+semaphore or internal assessment-object layout is established. These observations
+do not partition scan CPU, queueing and network work, or prove that every ordinary
+launch has this same cause. The original stopped-stub/pulse capture remains
+instrumented evidence. System security, signatures, priorities and all workload
+limits are unchanged. Failed/partial exports are preserved rather than retried
+with larger native budgets.
+
+*** Complete native and resource qualification
+
+=lake build Examples Tests= and the complete =just check= pass, including the
+all-domain Functional/type/Contract/proof, frozen artifact, strict-schema,
+independent original-workflow, negative-control and Rust feature/isolation gates.
+Runtime focused tests pass 63 with one original artifact-dependent test ignored;
+both artifact-dependent directory/original-workflow gates also run explicitly
+and pass. The typed path binds 715 policies, performs zero legacy normalizations
+and has zero fallbacks on the current complete catalog. Source loads/reuses,
+strict validations, Entities ownership and all 2560 authorizations remain checked.
+
+The baseline ordinary bridge is =fb94784dcf4eb148b35a0a3e861ab80fa61eb6ee80e36637ff2a3e4b26bbde94=;
+the candidate is =4be7170fb443925a1fd883c2f8d8553306b9354a85f34757250a6d12647f1d2d=.
+All four Lean image roles are byte-identical between variants. The separate
+candidate allocation image is =ddb22fe0214485ce08aa278cbd56364577638aa95be48365485f144314a79fd5=.
+Explicit =cargo clean --release= of core/runtime/bridge followed by the default
+release build takes 8.768 s, exits zero and reproduces the exact ordinary candidate
+SHA; compiler high-water RSS is 475938816 bytes. This is project-release cold
+with dependency artifacts reused, not a dependency-empty build or runtime bound.
+The fixed 120-second supervision and default job count remain unchanged.
+
+The ordinary cohort passes 48 native child processes and all 15 complete-wire
+comparisons. Every complete replay covers the same 51 entries / 1280 rows /
+2560 authorizations. Three additional paired Lean/Rust native benchmark processes,
+per-variant stage attribution (832 measurements), authorization-separated stage
+attribution (1240 measurements / 204 records), and three separate allocation
+pairs also pass their existing native wire/semantic gates. Stage authorization
+covers 1292 rows per pass, including evolution projections. Workload/equality
+logic stays in Lean/Rust; external Python only launches processes and observes
+OS resources, clocks and artifacts.
+
+| Fixed observation | Baseline | Candidate |
+|-------------------+----------+-----------|
+| Complete replay median, 18 lifecycle-native samples | 308.559 ms | 217.332 ms |
+| Body preparation median, same 18 samples | 28.071 ms | 0.577 ms |
+| Separate native replay median, nine samples | 304.654 ms | 229.643 ms |
+| Separate revision preparation median | 68.939 ms | 52.388 ms |
+| Allocation requests median, nine separate samples | 1604423 | 1524387 |
+| Requested bytes median, same allocation samples | 371258658 | 302412326 |
+| Process requested peak bytes median | 17083503 | 17078567 |
+
+The allocation change is -80036 requests (-4.9885%) and -68846332 requested bytes
+(-18.5440%). Requested peak is effectively unchanged (-4936 bytes / -0.0289%).
+These counters exclude allocator overhead/foreign allocation and do not establish
+RSS improvement. First-sample requested live bytes are identical (8881709).
+Later samples retain benchmark observation JSON: baseline live bytes are
+8881709 / 8991639 / 9101569, candidate 8881709 / 8991899 / 9102089, repeated
+exactly in all three allocation processes. The increase appears as prior observation JSON is retained in =results=, and
+the candidate also serializes additional metrics. These process-wide snapshots
+cannot establish SDK leakage or a general retained-heap bound.
+
+| Pair | Ordinary Rust process wall, before / after | Whole pipeline wall, before / after |
+|------+--------------------------------------------+-------------------------------------|
+| 1 | 699.806 / 738.221 ms | 2396.916 / 2070.171 ms |
+| 2 | 257.876 / 242.369 ms | 437.997 / 357.500 ms |
+| 3 | 207.499 / 192.403 ms | 317.596 / 338.767 ms |
+
+The first Rust process and third pipeline are retained non-wins. In the third
+pair the unchanged Lean producer grows from 110.097 to 146.365 ms while Rust
+falls from 207.499 to 192.403 ms. In the first pair the producer improves by
+365.160 ms while Rust worsens by 38.415 ms. These are distinct owners and cannot
+be credited wholesale to SDK code. Separate Rust benchmark process walls are
+1586.977 / 1283.424, 1024.940 / 922.246 and 988.521 / 825.680 ms. Ordinary Rust
+RSS varies in both directions; no stable OS RSS improvement is admitted.
+
+Own builds/gates finish before these cohorts, but the pre-cohort process receipt
+records other host clang/gcc compiler work. No other task is stopped or
+reprioritized. All samples remain intact and explicitly host-contended; neither
+the native medians nor the selected winning processes qualify an isolated or
+stable end-to-end latency claim. No favorable rerun replaces this cohort.
+
+*** Lean producer variance and next shared boundary
+
+Twelve separate matched producer diagnostic launches (two materializations times
+three trials for copy and hardlink) preserve complete catalog bytes, exit zero
+and satisfy the existing clock protocol. They remain separate from ordinary
+latency. Across these launches, import initialization is 17.205-28.096 ms,
+source preparation 39.834-76.657 ms, serialization 5.104-9.089 ms and final output
+0.656-1.587 ms. First-launch pre-main is 791.335-1395.861 ms; repeated pre-main
+is 47.322-57.206 ms and includes import initialization. Hardlinks also show
+first-launch tails, so same-inode/new-path reuse alone is not a demonstrated fix.
+
+This separates a large host launch tail from the smaller, still variable source
+publication phase. The recorded trace directly identifies one execution-policy
+wake owner; it does not assign every copy/hardlink tail to that same event.
+The exec-wait record still labels the owned child with its pre-exec Python stub
+name, before entry into the source-qualified Lean image. Output duration does
+not explain these samples' dominant wall variation. Unchanged Lean binaries and
+concurrent host compiler work also prohibit interpreting the source-time spread
+as a new Lean algorithm regression.
+
+Next work remains one shared delivery: inspect SDK schema/request and independent
+text-parser allocation with supported typed APIs and exact source/schema ownership;
+reduce producer source construction at the shared proof-bearing Program/Case
+boundary; keep initialization, publication, serialization and OS execution
+assessment separate. Any representation change must preserve every applicable
+case, original oracle, Contract, proof and Rust receipt, including errors and
+non-wins. Further object-type attribution requires an actual kernel stack or
+assessment-object decoder; the now-resolved =syspolicyd= wakeup must not be
+reported as still unknown, or promoted into a claim about network/XProtect cost.
+
+All current raw receipts, samples and scripts remain local and ignored under
+=../cedar-typed-sdk-20261102/=. No CSV, archive, rendered HTML or vendor directory
+is added. These are local exact-source results; no remote CI result is claimed
+for the unpushed follow-up. No push, new PR or merge is performed.
