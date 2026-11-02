@@ -17,6 +17,8 @@ test('actual SDK identities and relationships bind independently of D2 enumerati
  const missing={...capture,rendering:{...capture.rendering,nodes:capture.rendering.nodes.slice(1)}};expect(()=>bindView(author,missing,bindings)).toThrow();
  const edgeMissing={...capture,rendering:{...capture.rendering,edges:capture.rendering.edges.slice(1)}};expect(()=>bindView(author,edgeMissing,bindings)).toThrow('omitted');
  const dangling={...capture,rendering:{...capture.rendering,edges:[{...capture.rendering.edges[0]!,to:'not-a-node'},...capture.rendering.edges.slice(1)]}};expect(()=>bindView(author,dangling,bindings)).toThrow('endpoint');
- expect(()=>bindView(author,capture,{...bindings,core:{...bindings.core!,countRef:'fake'}})).toThrow('paired');
+ expect(()=>bindView(author,capture,bindings,{missing:'invented'})).toThrow('Unbound display caption');
+ const translated=bindView(author,capture,bindings,{core:'核心定义'});expect(translated.model.subjects.find(node=>node.id===translated.mapping.core)?.label).toBe('核心定义');
+ expect(()=>v.parse(ProjectionSchema,{sysml:{source:'model',view:'v',bindings:{a:{name:'a',icon:'model',category:'raw'}}}})).toThrow();
  expect(()=>bindView(author,capture,{...bindings,extra:{name:'missing',icon:'model'}})).toThrow('binding');
 },30000);

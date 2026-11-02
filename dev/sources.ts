@@ -3,7 +3,9 @@
 
 import {readFile,realpath} from 'node:fs/promises';
 import {resolve,relative,isAbsolute} from 'node:path';
-import {sha} from './catalog';
+import * as v from 'valibot';
+import {createHash} from 'node:crypto';
+export const sha=(value:string|Uint8Array)=>createHash('sha256').update(value).digest('hex');
 
 /** Host filesystem boundary only; the renderer still owns figure fingerprints. */
 export async function repositoryPath(root:string,path:string):Promise<string>{
@@ -22,4 +24,14 @@ export async function assertCurrent(root:string,hashes:Readonly<Record<string,st
   const actual=sha(await readFile(await repositoryPath(root,path)));
   if(actual!==expected)throw new Error('Captured source changed before publication: '+path);
  }
+}
+
+/** Read the existing package pin; do not maintain a second archive revision. */
+export function rendererArchive(manifest:unknown):string{
+ const {dependencies}=v.parse(v.object({dependencies:v.object({'@deterministic-engineering/render':v.string()})}),manifest);
+ const spec=dependencies['@deterministic-engineering/render'];
+ if(!spec.startsWith('file:')||!spec.endsWith('.tgz'))throw new Error('Expected the declared local renderer package archive');
+ const path=spec.slice(5);
+ if(!path||path.includes('\\')||isAbsolute(path)||path.split('/').includes('..'))throw new Error('Renderer archive must be package-relative');
+ return 'dev/'+path;
 }

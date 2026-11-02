@@ -536,3 +536,22 @@ declarations are distinct. SDK-evaluated symbols and source modules are checked
 against the compiled Lean environment. Two arrows claiming actual lemma use are
 checked against proof terms. This authored map is not an automatically extracted
 complete proof graph or deployed Host evidence.
+
+
+** Declarative proof-view and projection follow-up
+
+The proof reader now consumes the actual SDK symbol tree, resolved types and
+values. SysML declares proof-use references; SDK-rendered edges must contain the
+claimed relation before native Lean inspects its proof term. Card counts, source
+imports and use pairs follow declarations rather than a regular expression or
+fixed TS list. Missing metadata, unsupported roles, unresolved/unpictured uses,
+source-module drift, false theorem roles and fabricated proof dependencies are
+negative controls. These remain authored proof-reading maps, not complete proof
+graph extraction or deployed authorization evidence.
+
+D2 separates =catalog.counts= from generic =sysml.bindings=. Catalog-specific
+counts and localized units are projected before the generic SDK/D2 identity
+binding. The renderer archive path is read from the existing package declaration;
+Bun retains installation/version ownership. This change modifies the development
+rendering/verification chain only; Lean/Rust algorithms and performance claims
+remain with their existing owners and evidence.

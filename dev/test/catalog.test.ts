@@ -3,8 +3,9 @@
 
 import {test,expect} from 'bun:test';
 import {readFile} from 'node:fs/promises';
-import {connectWasm} from '@openmbee/opensysml';
-import {observeCatalog,catalogSysML,categories} from '../catalog';
+import {connectWasm,type Model} from '@openmbee/opensysml';
+import type {FigureInput} from '@deterministic-engineering/render';
+import {observeCatalog,catalogSysML,categories,catalogCaptions} from '../catalog';
 const input=()=>({format_version:2,sources:{policies:[{}],entities:[[]],schemas:[{}]},entries:{example:{manifest_kind:'schema-bound',schema_ref:0,revision_sources:{r:0},cases:[{name:'case',revision:'r',policy_ref:0,entities_ref:0,expected:'deny'}]}}});
 test('display observations retain source references and never promote expected decisions',()=>{
  const result=observeCatalog(JSON.stringify(input()));expect(result.entries[0]!.expectedDeny).toBe(1);expect(result.entries[0]!.expectedAllow).toBe(0);expect(result.entries[0]!.category).toBe('schema-bound');
@@ -26,3 +27,18 @@ test('actual Lean catalog becomes a parsed SDK model and category values round-t
   const broken=await connection.loads('package Broken { part ;');expect(broken.ok).toBe(false);expect(()=>broken.raiseForErrors()).toThrow();
  }finally{await connection.close();}
 },30000);
+
+test('catalog annotations validate native counts and keep display units in D2',async()=>{
+ const catalog=observeCatalog(JSON.stringify(input())),author:Pick<FigureInput,'model'>={model:{subjects:[{id:'group',type:'rectangle',label:'范围'}],relations:[]}};
+ const metadata={catalog:{counts:{group:{expression:'Count',category:'schema-bound',one:'个条目',other:'个条目'}}}};
+ const model:Pick<Model,'eval'>={eval:async()=>({kind:'int',value:1n})};
+ expect((await catalogCaptions(model,author,catalog,metadata)).captions.group).toBe('范围\n1 个条目');
+ const two=input();const doubled=observeCatalog(JSON.stringify({...two,entries:{a:two.entries.example,b:two.entries.example}}));
+ expect((await catalogCaptions({eval:async()=>({kind:'int',value:2n})},author,doubled,{catalog:{counts:{group:{expression:'Count',category:'schema-bound',one:'item',other:'items'}}}})).captions.group).toBe('范围\n2 items');
+ expect(await catalogCaptions(model,author,catalog,{})).toEqual({captions:{},observations:[]});
+ await expect(catalogCaptions({eval:async()=>({kind:'int',value:2n})},author,catalog,metadata)).rejects.toThrow('mismatch');
+ await expect(catalogCaptions({eval:async()=>({kind:'string',value:'1'})},author,catalog,metadata)).rejects.toThrow('not an integer');
+ await expect(catalogCaptions(model,{model:{subjects:[],relations:[]}},catalog,metadata)).rejects.toThrow('Unbound');
+ await expect(catalogCaptions(model,author,catalog,{catalog:{counts:{group:{expression:'Count',category:'invented',one:'x',other:'y'}}}})).rejects.toThrow();
+ await expect(catalogCaptions(model,author,catalog,{catalog:{counts:{group:{expression:'Count',category:'raw'}}}})).rejects.toThrow();
+});

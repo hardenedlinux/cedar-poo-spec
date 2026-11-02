@@ -121,7 +121,7 @@ adds only Cedar's heading/legend composition; it implements no layout solver.
 The finite catalog categories and format 2 describe the existing Lean wire
 contract, not a second policy parser or version registry. Source pools remain
 opaque. Malformed declared manifests/artifacts refuse instead of silently
-becoming domain data. Count expressions must pair with a catalog category.
+becoming domain data. Catalog count expressions, categories and localized units live in the D2 =catalog.counts= declaration. The catalog adapter alone evaluates/counts them; generic projection accepts only explicit display captions.
 
 =sources.ts= is the host filesystem boundary: it restricts input references to
 the repository and compares captured content hashes before publication. It does
@@ -158,3 +158,35 @@ are distinguished explicitly. The rendering does not create a certificate or
 infer deployed Host behavior. Edges are authored logical premises/lemma uses;
 the counterexample edge is explicitly design motivation. Full proof terms and
 additional laws remain in the linked Lean sources and adjacent module guide.
+
+* SDK proof declarations and adapter boundaries
+
+D2 proof figures select a =proofs.namespace=. =proofs.ts= reads that scope with
+the installed SDK's =Model.symbol= and =ModelSymbol.children=. Resolved part types
+supply roles; SDK =eval= supplies the existing =<part>Symbol=, =<part>Source= and
+optional =<part>Uses= attributes. There is no SysML text parser or fixed card count.
+The current WASM backend supports these APIs but does not advertise Query;
+no substitute query engine or SDK upgrade is introduced.
+
+=Uses= names existing SysML declaration identities. The SDK resolves each identity
+and supplies the selected views' actual edges. Unresolved references, unsupported
+roles, orphan claims, duplicate claims and claims absent from the SDK topology
+refuse. The two current proof-use claims are authored in SysML, not listed in TS.
+Lean then checks existence, defining module, theorem kind and actual proof-term
+uses. Imports come from the SDK-observed source declarations. The direct Lean
+compiler invocation is verification, not a nested test/build runner.
+
+Render receipts retain =proofClaims= and capture their declared Lean sources.
+These are SDK observations of authored claims, not newly issued Lean certificates;
+=just test= is the native checking entrypoint. Formatting changes and added valid
+cards need no parser/count edits; false theorem labels and fabricated lemma uses
+are negative controls, not rendered proof evidence.
+
+=projection.ts= owns SDK/D2 identity and relation closure, icons and supplied
+captions. It imports no catalog schema, category or English count formatter.
+=catalog.ts= owns native catalog observation and =catalog.counts= validation.
+D2 supplies singular/plural units; generic captions may use any source language.
+The host reads the renderer archive location from the existing =package.json=
+dependency declaration. Source guards restrict it to the declared local archive;
+there is no second revision pin or custom dependency installer. Bun's frozen lock
+continues to own dependency installation and transitive versions.

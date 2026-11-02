@@ -5,19 +5,20 @@
     "dev/.generated/lean-catalog.json": "c6856fdb9e8b2d36407b8605756659e8a1c02fca09ce628bc41c845f0e376657",
     "dev/.generated/security-frameworks-sdk.json": "2021c0471e10263855ebf35a954c6c17720c84054c8dee7aaaa8140f19213a9f",
     "dev/bun.lock": "24ae62404f675c395c3890562d805dcba2024b3dd54a6a7981d5a8e36c37f5d1",
-    "dev/catalog.ts": "2f201bb5b793a16c9b2e3766736522c16106e42c1cb15675cbc3be472b4a1463",
+    "dev/catalog.ts": "6bff1f1e8f235f80a5fb7286d38cf81e46825fa64edf26d042174487037fe49a",
     "dev/d2/architecture-overview.d2": "040b9de8acb2b8ef9780b231f4dd171f74f856ea21b0c0614597383c560c3c6f",
-    "dev/d2/lean-catalog.d2": "5d4f1b2be11e2122e7750a08d663ae08b88f5c3265fca351514a6f31c7af1249",
+    "dev/d2/lean-catalog.d2": "38a9447d8239d93a2f2cd00fbfc03731aad9dceec0c6b4d6dbe8ff048eb470a9",
     "dev/d2/model-components.d2": "bd1f5e867012261c03c011e9f3f2f60ba5acfa112a27b2cc6354c4a16e0bd91f",
     "dev/d2/security-frameworks.d2": "901fd692144ac61c02293a965bde1deb95e38073ab7cdc8db9b4491d7689de1c",
     "dev/d2/verticals-platforms.d2": "e81ccf945900c7a6fa0ffc08aca2119d8ea23245db03a2e576b08d27f2b10e03",
-    "dev/d2/zero-trust-model-proofs.d2": "fa450fd51185405e8c7e110fb958d0f1d2d40c58f29e490602e3abeebf734934",
-    "dev/d2/zero-trust-object-proofs.d2": "f0c5009927362fb7468d19a976b86e09c2f08ecb9bf5434d0789fb0e27995df3",
+    "dev/d2/zero-trust-model-proofs.d2": "7a387edd1f065146c33d8338b4d85feab6a4b396c8570e3aa52fa0a98150cd20",
+    "dev/d2/zero-trust-object-proofs.d2": "4cc1b2cea918c37cff09abd8206d4bba6d35fe455f7e3e92a0e8f19af583e511",
     "dev/Justfile": "a13b2b6ef2cabfdd03841bbdc3da89fa70245071abf15f653c0095ae3defba7b",
     "dev/package.json": "d861ed19512d396cec7a13b9b8e95b2d3400bbc6828ef7b0540784cf65a57df5",
-    "dev/projection.ts": "a3cb1b3b01fd17b8abbb648fd327bad1a7c889775292028f41f0e1336cd8381f",
-    "dev/render.ts": "90ee49c4fc387154a2ceca05ba1339131e7799b2da423a8a2e2fc0a509d0e215",
-    "dev/sources.ts": "20f3237ea1d5e62451acc28942a48cad23165e796269940c9e87f9245e2f1cb9",
+    "dev/projection.ts": "3fd049e50798aee9dce54af6cd6e6fccad45fec5ab24b994bb6a8a4b33d7252d",
+    "dev/proofs.ts": "ec657848f47b8fa1724105df2aab6f25bb528f909ec9e7a996036d7fdc89184c",
+    "dev/render.ts": "73abbe90b7d5df0d5eb785eb5d38993aca456a207095632ff6c4d9f4dd734f05",
+    "dev/sources.ts": "c6d2ce6fc272c75380c680ed151e0b2f2e7e76abf75c4a55679ef0c7580400c4",
     "dev/sysml/security-frameworks.sysml": "724460397a8f3194d5469cd66dc879578b8644bb5fa3f303b3dc28f514513e27",
     "Examples/ManifestCatalog.lean": "7c1c1eb2d288dfc7d3601062f2fe452d302b693d231ac455dcf24238a3a8219c",
     "lake-manifest.json": "005293d31347e363a7f46a7a2a2bfbfea3f18484d688d7b75d144ca1ad16e3cd",
@@ -183,21 +184,21 @@
       "samples": 30,
       "requiredMinimum": 12
     },
-    "inputSHA256": "90f1137ef97c90ddc42858a1cd8c459ffe710402d2b132a20831323cb5cd7887",
+    "inputSHA256": "2149a39e4a19464994367d5db06a89a18dafa8d610b04315fb3b38e2f6da5705",
     "scenes": [
       {
         "inputSHA256": "75517e118c4c919af36c800fe94379b54024bdac668ba87a4c5d30d50935bacb",
         "layoutSHA256": "4a432db44828e657def2d85df373b3adedde9ad127445b9de43d034751d4dda0",
         "nodes": 5,
         "edges": 4,
-        "milliseconds": 120.20508400000017
+        "milliseconds": 453.62624999999935
       }
     ],
     "svgSHA256": [
-      "aac65987cf013cc1da3cb27154f3242bbf9843daaee526f916602dc33e61e5d5",
+      "e65d6d40bd9ea014a62b28a7ee7db9b3d38fbde44999e823546c548cf50352c2",
       "814a2af3255f5a4cebda87bc26b2856855523b4ac308fdff73326a7249826f51"
     ],
-    "composedHTMLSHA256": "3724267b169d7ce2cc815db12cf154d409ec922289f38777986cd44fdd9c19c0",
+    "composedHTMLSHA256": "24174ec8004953dc78c28b5bbcd63b4bd2b169c94bb784457b0313203f27180b",
     "dependencies": {
       "@fontsource/inter": "5.3.0",
       "@fontsource/kalam": "5.3.0",
@@ -210,7 +211,7 @@
       "web-worker": "1.5.0"
     },
     "regionSHA256": {},
-    "htmlSHA256": "f4751eb58b7f7299e3fe3fb83e4f6ddcc71d0fdadea23621edf1ca373f885b71",
+    "htmlSHA256": "4aa6606945dc12bcd1768b7b4208ae0f1762aa1a12d22a1f8e85437114ad82e4",
     "drawing": "roughjs@4.6.6",
     "routing": "elkjs@0.12.1",
     "assetSHA256": {
@@ -373,7 +374,7 @@
   },
   "binaries": {
     "dev/vendor/render-d000902.tgz": "abd7bcba27ba23d0260c65534c897e902fd4c814c1e4fbf8704c87429804b44c",
-    ".lake/build/bin/caseManifestsNative": "038918d3292cc60fc4415948e4ab2df4e4c16db12d3473a9bfdab57a9c786f6c"
+    ".lake/build/bin/caseManifestsNative": "39c53fec2d23f19c449657b660f4588e179220f762502c5e1025636e752dc1e4"
   },
   "rendererArchiveSHA256": "abd7bcba27ba23d0260c65534c897e902fd4c814c1e4fbf8704c87429804b44c"
 }

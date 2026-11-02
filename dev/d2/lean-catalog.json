@@ -4,19 +4,20 @@
     "dev/.generated/lean-catalog-sdk.json": "753379a05389491ce2c0871239106ba5422fb279c6b12de9670bf05273456abf",
     "dev/.generated/lean-catalog.json": "c6856fdb9e8b2d36407b8605756659e8a1c02fca09ce628bc41c845f0e376657",
     "dev/bun.lock": "24ae62404f675c395c3890562d805dcba2024b3dd54a6a7981d5a8e36c37f5d1",
-    "dev/catalog.ts": "2f201bb5b793a16c9b2e3766736522c16106e42c1cb15675cbc3be472b4a1463",
+    "dev/catalog.ts": "6bff1f1e8f235f80a5fb7286d38cf81e46825fa64edf26d042174487037fe49a",
     "dev/d2/architecture-overview.d2": "040b9de8acb2b8ef9780b231f4dd171f74f856ea21b0c0614597383c560c3c6f",
-    "dev/d2/lean-catalog.d2": "5d4f1b2be11e2122e7750a08d663ae08b88f5c3265fca351514a6f31c7af1249",
+    "dev/d2/lean-catalog.d2": "38a9447d8239d93a2f2cd00fbfc03731aad9dceec0c6b4d6dbe8ff048eb470a9",
     "dev/d2/model-components.d2": "bd1f5e867012261c03c011e9f3f2f60ba5acfa112a27b2cc6354c4a16e0bd91f",
     "dev/d2/security-frameworks.d2": "901fd692144ac61c02293a965bde1deb95e38073ab7cdc8db9b4491d7689de1c",
     "dev/d2/verticals-platforms.d2": "e81ccf945900c7a6fa0ffc08aca2119d8ea23245db03a2e576b08d27f2b10e03",
-    "dev/d2/zero-trust-model-proofs.d2": "fa450fd51185405e8c7e110fb958d0f1d2d40c58f29e490602e3abeebf734934",
-    "dev/d2/zero-trust-object-proofs.d2": "f0c5009927362fb7468d19a976b86e09c2f08ecb9bf5434d0789fb0e27995df3",
+    "dev/d2/zero-trust-model-proofs.d2": "7a387edd1f065146c33d8338b4d85feab6a4b396c8570e3aa52fa0a98150cd20",
+    "dev/d2/zero-trust-object-proofs.d2": "4cc1b2cea918c37cff09abd8206d4bba6d35fe455f7e3e92a0e8f19af583e511",
     "dev/Justfile": "a13b2b6ef2cabfdd03841bbdc3da89fa70245071abf15f653c0095ae3defba7b",
     "dev/package.json": "d861ed19512d396cec7a13b9b8e95b2d3400bbc6828ef7b0540784cf65a57df5",
-    "dev/projection.ts": "a3cb1b3b01fd17b8abbb648fd327bad1a7c889775292028f41f0e1336cd8381f",
-    "dev/render.ts": "90ee49c4fc387154a2ceca05ba1339131e7799b2da423a8a2e2fc0a509d0e215",
-    "dev/sources.ts": "20f3237ea1d5e62451acc28942a48cad23165e796269940c9e87f9245e2f1cb9",
+    "dev/projection.ts": "3fd049e50798aee9dce54af6cd6e6fccad45fec5ab24b994bb6a8a4b33d7252d",
+    "dev/proofs.ts": "ec657848f47b8fa1724105df2aab6f25bb528f909ec9e7a996036d7fdc89184c",
+    "dev/render.ts": "73abbe90b7d5df0d5eb785eb5d38993aca456a207095632ff6c4d9f4dd734f05",
+    "dev/sources.ts": "c6d2ce6fc272c75380c680ed151e0b2f2e7e76abf75c4a55679ef0c7580400c4",
     "dev/sysml/lean-catalog.sysml": "ab7215eb4846306aec3ef2b0f16ec55dda87179efb10ea762f02b78d0c6234e5",
     "Examples/ManifestCatalog.lean": "7c1c1eb2d288dfc7d3601062f2fe452d302b693d231ac455dcf24238a3a8219c",
     "lake-manifest.json": "005293d31347e363a7f46a7a2a2bfbfea3f18484d688d7b75d144ca1ad16e3cd",
@@ -121,21 +122,21 @@
       "samples": 15,
       "requiredMinimum": 12
     },
-    "inputSHA256": "a4b13dd11aa580315fb73d991ba830d037835b06c0f508fd525ace2e0b6382d5",
+    "inputSHA256": "c1811fdd76366ec5385f34b4b969c9a0478206d22c39c9ed047f86ff462c7b1b",
     "scenes": [
       {
         "inputSHA256": "b82c75dbd14a51b3f16fca7a2f47aa2d4b03f7dfeabd7a73dd998da2b0bd5780",
         "layoutSHA256": "a221a5e4f7349068f8701046972ce793ab445e84da6753666a375097cdd42d80",
         "nodes": 5,
         "edges": 0,
-        "milliseconds": 104.19179200000008
+        "milliseconds": 472.3240420000002
       }
     ],
     "svgSHA256": [
-      "0e7c6ed2065211275c1767351adde8c0b393c3fc1cbfe9bec8efef18101b7535",
+      "a2e06c8547c35bc1160c40921a050c80e069887b7d2d2b7a33de06deb0fcba33",
       "2bba8ad7741dd2f690377128044235869511e92e8aa3ae5e0a648562ac01dbc0"
     ],
-    "composedHTMLSHA256": "dca25c6a81b8f3ffcb0a476cce7b69608a8597fe1cb329d4ef433bb614f84435",
+    "composedHTMLSHA256": "90d242cfe3fa29b58802580355cf53b48ab0e57d373c96d50974502eb419cdbe",
     "dependencies": {
       "@fontsource/inter": "5.3.0",
       "@fontsource/kalam": "5.3.0",
@@ -148,7 +149,7 @@
       "web-worker": "1.5.0"
     },
     "regionSHA256": {},
-    "htmlSHA256": "e5405d42b2165edda9274f2e9ff795b8e9d8cbbbe30c3c538c9da690caea74ef",
+    "htmlSHA256": "e59d788d6c32c9e1b9d73daacdb082ee9501daf856bb908f61a1846e7bd20336",
     "drawing": "roughjs@4.6.6",
     "routing": "elkjs@0.12.1",
     "assetSHA256": {
@@ -267,7 +268,7 @@
   },
   "binaries": {
     "dev/vendor/render-d000902.tgz": "abd7bcba27ba23d0260c65534c897e902fd4c814c1e4fbf8704c87429804b44c",
-    ".lake/build/bin/caseManifestsNative": "038918d3292cc60fc4415948e4ab2df4e4c16db12d3473a9bfdab57a9c786f6c"
+    ".lake/build/bin/caseManifestsNative": "39c53fec2d23f19c449657b660f4588e179220f762502c5e1025636e752dc1e4"
   },
   "rendererArchiveSHA256": "abd7bcba27ba23d0260c65534c897e902fd4c814c1e4fbf8704c87429804b44c"
 }

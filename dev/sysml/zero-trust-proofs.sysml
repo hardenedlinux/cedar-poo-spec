@@ -22,6 +22,8 @@ package ZeroTrustProofs {
  part recovery : KernelLaw;
  attribute recoverySymbol : String = "CedarPooSpec.ZeroTrust.usage_rechecks_after_recovery";
  attribute recoverySource : String = "CedarPooSpec/ZeroTrust/UsageControl.lean";
+ // Proof-term claims reference existing model declarations, not a second edge graph.
+ attribute recoveryUses : String[0..*] = ("ZeroTrustProofs::usage");
  part meanings : HostPremise;
  attribute meaningsSymbol : String = "CedarPooSpec.ZeroTrust.Framework";
  attribute meaningsSource : String = "CedarPooSpec/ZeroTrust/Model.lean";
@@ -46,6 +48,7 @@ package ZeroTrustProofs {
  part continuing : KernelLaw;
  attribute continuingSymbol : String = "CedarPooSpec.Gateway.ZeroTrust.continuing_objects_preserve_parent_and_consumption";
  attribute continuingSource : String = "CedarPooSpec/Gateway/ZeroTrust.lean";
+ attribute continuingUses : String[0..*] = ("ZeroTrustProofs::preserved");
  connection modelEdge0 connect required to refinement;
  connection modelEdge1 connect required to observed;
  connection modelEdge2 connect required to mediated;

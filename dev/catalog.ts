@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import * as v from 'valibot';
-import {createHash} from 'node:crypto';
+import type {Model} from '@openmbee/opensysml';
+import type {FigureInput} from '@deterministic-engineering/render';
+import {sha} from './sources';
 const text=v.pipe(v.string(),v.minLength(1));
 const natural=v.pipe(v.number(),v.integer(),v.minValue(0),v.check((value:number)=>Number.isSafeInteger(value)));
 const Case=v.object({name:text,revision:text,expected:v.picklist(['allow','deny']),policy_ref:natural,entities_ref:natural});
@@ -12,7 +14,6 @@ export const categories=['raw','schema-bound','evolution','artifacts','data'] as
 export type Category=typeof categories[number];
 export interface EntrySummary {readonly key:string;readonly symbol:string;readonly category:Category;readonly cases:number;readonly expectedAllow:number;readonly expectedDeny:number;readonly revisions:number;}
 export interface CatalogSummary {readonly sha256:string;readonly bytes:number;readonly formatVersion:number;readonly entries:readonly EntrySummary[];readonly pools:{readonly policies:number;readonly entities:number;readonly schemas:number};}
-export const sha=(value:string|Uint8Array)=>createHash('sha256').update(value).digest('hex');
 /** A display projection of native Lean JSON, not a Cedar parser, authorizer or proof checker. */
 export function observeCatalog(raw:string):CatalogSummary {
  const input:unknown=JSON.parse(raw),catalog=v.parse(Envelope,input),pools={policies:catalog.sources.policies.length,entities:catalog.sources.entities.length,schemas:catalog.sources.schemas.length};
@@ -53,4 +54,22 @@ package LeanCatalog {
  }
  view overview {${categories.map((_,index)=>`expose group${index};`).join(' ')}}
 }`;
+}
+
+/** Catalog-specific annotations; generic SDK projection knows neither categories nor units. */
+export const CatalogViewSchema=v.object({catalog:v.optional(v.strictObject({counts:v.record(text,v.strictObject({expression:text,category:v.picklist(categories),one:text,other:text}))}))});
+export async function catalogCaptions(model:Pick<Model,'eval'>,author:Pick<FigureInput,'model'>,catalog:CatalogSummary,metadata:unknown){
+ const counts=v.parse(CatalogViewSchema,metadata).catalog?.counts??{};
+ const captions:Record<string,string>={},observations:{expression:string;value:string}[]=[];
+ for(const[id,binding]of Object.entries(counts)){
+  const subject=author.model?.subjects.find(subject=>subject.id===id);
+  if(!subject)throw new Error('Unbound catalog subject: '+id);
+  const value=await model.eval(binding.expression);
+  if(value.kind!=='int')throw new Error('Catalog count expression is not an integer');
+  const expected=catalog.entries.filter(entry=>entry.category===binding.category).length;
+  if(value.value!==BigInt(expected))throw new Error('Lean / SysML category count mismatch');
+  observations.push({expression:binding.expression,value:value.value.toString()});
+  captions[id]=(subject.label??subject.id)+'\n'+value.value.toString()+' '+(value.value===1n?binding.one:binding.other);
+ }
+ return{captions,observations};
 }

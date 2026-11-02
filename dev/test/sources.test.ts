@@ -5,8 +5,7 @@ import {test,expect} from 'bun:test';
 import {mkdtemp,mkdir,writeFile,unlink,rm,symlink} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
-import {sha} from '../catalog';
-import {assertCurrent,captureFiles,repositoryPath} from '../sources';
+import {assertCurrent,captureFiles,repositoryPath,rendererArchive,sha} from '../sources';
 
 test('changed/missing model, D2, JSON, adapter, archive and executable invalidate publication',async()=>{
  const root=await mkdtemp(join(tmpdir(),'cedar-view-sources-'));
@@ -30,4 +29,11 @@ test('source declarations cannot escape the repository through paths or symlinks
   await expect(captureFiles(root,['alias'])).rejects.toThrow('escapes');
   await writeFile(join(root,'inside'),'source');expect(await captureFiles(root,['inside'])).toEqual({inside:'source'});
  }finally{await rm(base,{recursive:true,force:true});}
+});
+
+test('renderer archive follows the existing package declaration, with no second revision pin',()=>{
+ const manifest=(spec:unknown)=>({dependencies:{'@deterministic-engineering/render':spec}});
+ expect(rendererArchive(manifest('file:vendor/new-revision.tgz'))).toBe('dev/vendor/new-revision.tgz');
+ for(const spec of [undefined,42,'file:../outside.tgz','file:/outside.tgz','file:vendor/../../outside.tgz','https://example.org/package.tgz'])expect(()=>rendererArchive(manifest(spec))).toThrow();
+ expect(()=>rendererArchive({})).toThrow();
 });

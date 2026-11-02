@@ -11,8 +11,9 @@ import {compileModel,readD2Figure,composeFigure,composeDiagram,modelDiagram,comp
 import {captureOpenSysMLView} from '@deterministic-engineering/render/opensysml';
 import {exportFigure} from '@deterministic-engineering/render/export';
 import {ProjectionSchema,bindView} from './projection';
-import {observeCatalog,catalogSysML,sha} from './catalog';
-import {assertCurrent,captureFiles,repositoryPath} from './sources';
+import {observeCatalog,catalogSysML,catalogCaptions} from './catalog';
+import {ProofViewSchema,readProofMap} from './proofs';
+import {assertCurrent,captureFiles,repositoryPath,rendererArchive,sha} from './sources';
 const text=v.pipe(v.string(),v.minLength(1));
 const compose:FigureComposer=context=>{
  if(!context.model)throw new Error('Missing projected SDK model');
@@ -37,29 +38,26 @@ const d2Sources=await captureFiles(root,entries.map(file=>'dev/d2/'+file));
 const adapters=(await readdir(resolve(root,'dev'))).filter(file=>file.endsWith('.ts')).map(file=>'dev/'+file);
 const sourceFiles=[...adapters,'dev/Justfile','dev/package.json','dev/bun.lock','Examples/ManifestCatalog.lean','CedarPooSpec/Transport/SourceCatalog.lean','lean-toolchain','lakefile.toml','lake-manifest.json'];
 const sharedSources=await captureFiles(root,sourceFiles);
-const archive='dev/vendor/render-d000902.tgz',producer='.lake/build/bin/caseManifestsNative';
+const archive=rendererArchive(JSON.parse(sharedSources['dev/package.json']!)),producer='.lake/build/bin/caseManifestsNative';
 const binaryHashes=Object.fromEntries(await Promise.all([archive,producer].map(async path=>[path,sha(await readFile(await repositoryPath(root,path)))])));
 const connection=await connectWasm();
 try{browser=await chromium.launch();for(const entry of entries){
  const name=basename(entry,'.d2'),file='dev/d2/'+entry;
  const compiled=await compileModel(d2Sources,file),author=readD2Figure(compiled,d2Sources);
- const projection=v.parse(ProjectionSchema,JSON.parse(v.parse(v.object({figure:text}),compiled.data).figure)).sysml;
+ const metadata:unknown=JSON.parse(v.parse(v.object({figure:text}),compiled.data).figure);
+ const projection=v.parse(ProjectionSchema,metadata).sysml;
  const modelBytes=await readFile(await repositoryPath(root,projection.source),'utf8');
  const model:Model=(await connection.parseSources([[projection.source,modelBytes]])).raiseForErrors();
  const capture=await captureOpenSysMLView(connection,model.hash,projection.view,{depth:1});
- const counts:Record<string,string>={},observations:{expression:string;value:string}[]=[];
- for(const[id,binding]of Object.entries(projection.bindings))if(binding.countRef){
-  const value=await model.eval(binding.countRef);if(value.kind!=='int')throw new Error('Count expression is not an integer');
-  const expected=catalog.entries.filter(entry=>entry.category===binding.category).length;
-  if(value.value!==BigInt(expected))throw new Error('Lean / SysML category count mismatch');
-  observations.push({expression:binding.countRef,value:value.value.toString()});counts[id]=value.value.toString();
- }
+ const proofSelection=v.parse(ProofViewSchema,metadata).proofs;
+ const proofClaims=proofSelection?await readProofMap(model,proofSelection.namespace):undefined;
+ const {captions,observations}=await catalogCaptions(model,author,catalog,metadata);
  if(capture.requestedView!==projection.view||capture.modelHash!==model.hash)throw new Error('SDK model / view drift');
- const linked=bindView(author,capture,projection.bindings,counts);
+ const linked=bindView(author,capture,projection.bindings,captions);
  const capturePath=`dev/.generated/${name}-sdk.json`;const captureJSON=JSON.stringify(capture);
  await mkdir(resolve(root,'dev/.generated'),{recursive:true});await writeFile(resolve(root,capturePath),captureJSON);
  const sources:Record<string,string>={...sharedSources,...d2Sources,[projection.source]:modelBytes,[relative(root,inputPath)]:raw,[capturePath]:captureJSON};
- for(const path of Object.values(author.references)){
+ for(const path of [...Object.values(author.references),...(proofClaims?.cards.map(card=>card.source)??[])]){
   if(Object.hasOwn(sources,path))continue;
   sources[path]=await readFile(await repositoryPath(root,path),'utf8');
  }
@@ -72,7 +70,7 @@ try{browser=await chromium.launch();for(const entry of entries){
  await assertCurrent(root,{...figure.sourceSHA256,...binaryHashes});
  const base=resolve(root,`dev/d2/${name}`);
  for(const [extension,data]of [['png',image.png],['svg',image.svg[0]!],['html',image.html]] as const)await writeFile(base+'.'+extension,data);
- await writeFile(base+'.json',JSON.stringify({sources:figure.sourceSHA256,receipt:image.receipt,sdk:{modelHash:model.hash,view:projection.view,trace:linked.trace,diagnostics:model.diagnostics,observations},lean:{path:relative(root,inputPath),sha256:catalog.sha256,formatVersion:catalog.formatVersion,entries:catalog.entries.length,pools:catalog.pools},binaries:binaryHashes,rendererArchiveSHA256:binaryHashes[archive]},null,2)+'\n');
+ await writeFile(base+'.json',JSON.stringify({sources:figure.sourceSHA256,receipt:image.receipt,sdk:{modelHash:model.hash,view:projection.view,trace:linked.trace,diagnostics:model.diagnostics,observations},lean:{path:relative(root,inputPath),sha256:catalog.sha256,formatVersion:catalog.formatVersion,entries:catalog.entries.length,pools:catalog.pools},proofClaims,binaries:binaryHashes,rendererArchiveSHA256:binaryHashes[archive]},null,2)+'\n');
  console.log(name,{subjects:linked.model.subjects.length,relations:linked.model.relations.length,minimumTextSize:image.receipt.readability.minimumTextSize,modelHash:model.hash});
 }}finally{await browser?.close();await connection.close();}
 await assertCurrent(root,binaryHashes);

@@ -9,19 +9,20 @@
     "dev/.generated/lean-catalog.json": "c6856fdb9e8b2d36407b8605756659e8a1c02fca09ce628bc41c845f0e376657",
     "dev/.generated/verticals-platforms-sdk.json": "516e466302ccfb3a9612971f59a55642c853d04fa4d7dfb2b712f81c8627b280",
     "dev/bun.lock": "24ae62404f675c395c3890562d805dcba2024b3dd54a6a7981d5a8e36c37f5d1",
-    "dev/catalog.ts": "2f201bb5b793a16c9b2e3766736522c16106e42c1cb15675cbc3be472b4a1463",
+    "dev/catalog.ts": "6bff1f1e8f235f80a5fb7286d38cf81e46825fa64edf26d042174487037fe49a",
     "dev/d2/architecture-overview.d2": "040b9de8acb2b8ef9780b231f4dd171f74f856ea21b0c0614597383c560c3c6f",
-    "dev/d2/lean-catalog.d2": "5d4f1b2be11e2122e7750a08d663ae08b88f5c3265fca351514a6f31c7af1249",
+    "dev/d2/lean-catalog.d2": "38a9447d8239d93a2f2cd00fbfc03731aad9dceec0c6b4d6dbe8ff048eb470a9",
     "dev/d2/model-components.d2": "bd1f5e867012261c03c011e9f3f2f60ba5acfa112a27b2cc6354c4a16e0bd91f",
     "dev/d2/security-frameworks.d2": "901fd692144ac61c02293a965bde1deb95e38073ab7cdc8db9b4491d7689de1c",
     "dev/d2/verticals-platforms.d2": "e81ccf945900c7a6fa0ffc08aca2119d8ea23245db03a2e576b08d27f2b10e03",
-    "dev/d2/zero-trust-model-proofs.d2": "fa450fd51185405e8c7e110fb958d0f1d2d40c58f29e490602e3abeebf734934",
-    "dev/d2/zero-trust-object-proofs.d2": "f0c5009927362fb7468d19a976b86e09c2f08ecb9bf5434d0789fb0e27995df3",
+    "dev/d2/zero-trust-model-proofs.d2": "7a387edd1f065146c33d8338b4d85feab6a4b396c8570e3aa52fa0a98150cd20",
+    "dev/d2/zero-trust-object-proofs.d2": "4cc1b2cea918c37cff09abd8206d4bba6d35fe455f7e3e92a0e8f19af583e511",
     "dev/Justfile": "a13b2b6ef2cabfdd03841bbdc3da89fa70245071abf15f653c0095ae3defba7b",
     "dev/package.json": "d861ed19512d396cec7a13b9b8e95b2d3400bbc6828ef7b0540784cf65a57df5",
-    "dev/projection.ts": "a3cb1b3b01fd17b8abbb648fd327bad1a7c889775292028f41f0e1336cd8381f",
-    "dev/render.ts": "90ee49c4fc387154a2ceca05ba1339131e7799b2da423a8a2e2fc0a509d0e215",
-    "dev/sources.ts": "20f3237ea1d5e62451acc28942a48cad23165e796269940c9e87f9245e2f1cb9",
+    "dev/projection.ts": "3fd049e50798aee9dce54af6cd6e6fccad45fec5ab24b994bb6a8a4b33d7252d",
+    "dev/proofs.ts": "ec657848f47b8fa1724105df2aab6f25bb528f909ec9e7a996036d7fdc89184c",
+    "dev/render.ts": "73abbe90b7d5df0d5eb785eb5d38993aca456a207095632ff6c4d9f4dd734f05",
+    "dev/sources.ts": "c6d2ce6fc272c75380c680ed151e0b2f2e7e76abf75c4a55679ef0c7580400c4",
     "dev/sysml/architecture.sysml": "8a526add85cfc800df512e08a18eeed84591daaf944fdb350a90a4cd1576efb8",
     "Examples/ManifestCatalog.lean": "7c1c1eb2d288dfc7d3601062f2fe452d302b693d231ac455dcf24238a3a8219c",
     "lake-manifest.json": "005293d31347e363a7f46a7a2a2bfbfea3f18484d688d7b75d144ca1ad16e3cd",
@@ -118,21 +119,21 @@
       "samples": 17,
       "requiredMinimum": 12
     },
-    "inputSHA256": "4e4f09c65dc0c09f223d14e6285ea41c65ba92b9c283bb1b41f09dcee549c7e5",
+    "inputSHA256": "0f1e273ef5ae4af27165eb703cf5498388edf095c429478616dee81e699453a8",
     "scenes": [
       {
         "inputSHA256": "b17be10ff64f7605949d442d1a1115f2e8d5ab11a936d8aae0cda4782a5ae6d7",
         "layoutSHA256": "220ef9222adb0ce6d1392c0722d333a50c38bac327d166ce1d923e2adfb768c4",
         "nodes": 4,
         "edges": 0,
-        "milliseconds": 99.3780829999996
+        "milliseconds": 171.46654099999796
       }
     ],
     "svgSHA256": [
-      "c00267d8dddc70be65d00fccaff0949e31d5e69985b342fe64fa4b8ee5d65843",
+      "1df2f72c17cf3ebf565e3b544a306c3998dd558cda51410c3fd32c7f6290df15",
       "6b5e3c7c76f12616be1d28a45782d37c9e431484a4bafd9e0c3f5a29b51a6b2c"
     ],
-    "composedHTMLSHA256": "91675df8959f15eee016d359b3e36b6f5288781a663e633ae37a20c3899f98de",
+    "composedHTMLSHA256": "650a200564923e54c14f537d2005b3965cfb5e1139949b206a37e1ecb195b0d2",
     "dependencies": {
       "@fontsource/inter": "5.3.0",
       "@fontsource/kalam": "5.3.0",
@@ -145,12 +146,12 @@
       "web-worker": "1.5.0"
     },
     "regionSHA256": {},
-    "htmlSHA256": "9ee7833eed4ee98b048783bafb7b5485b6e26fd59a47d163d70c1af05680e34e",
+    "htmlSHA256": "1b9f2c37233342b11c6945f7d358c2139a92b8f4aa54993779a6d51f80844c51",
     "drawing": "roughjs@4.6.6",
     "routing": "elkjs@0.12.1",
     "assetSHA256": {
-      "@fontsource/kalam/files/kalam-latin-400-normal.woff2": "954410601a823f37e219f7930b7446f86afa15621326a7078d56fb9c910135cb",
-      "@fontsource/kalam/files/kalam-latin-700-normal.woff2": "252063af6ade8b9a744cde4ddad0fc21ea53b8ba711eed121a0c2e8610ea9c93"
+      "@fontsource/kalam/files/kalam-latin-700-normal.woff2": "252063af6ade8b9a744cde4ddad0fc21ea53b8ba711eed121a0c2e8610ea9c93",
+      "@fontsource/kalam/files/kalam-latin-400-normal.woff2": "954410601a823f37e219f7930b7446f86afa15621326a7078d56fb9c910135cb"
     },
     "pngSHA256": "873a72cc6884ff0ffc6ac29c3c7155e357cbed65e82b33d8620626f2beaf3c05",
     "browser": "156.0.8078.4",
@@ -232,7 +233,7 @@
   },
   "binaries": {
     "dev/vendor/render-d000902.tgz": "abd7bcba27ba23d0260c65534c897e902fd4c814c1e4fbf8704c87429804b44c",
-    ".lake/build/bin/caseManifestsNative": "038918d3292cc60fc4415948e4ab2df4e4c16db12d3473a9bfdab57a9c786f6c"
+    ".lake/build/bin/caseManifestsNative": "39c53fec2d23f19c449657b660f4588e179220f762502c5e1025636e752dc1e4"
   },
   "rendererArchiveSHA256": "abd7bcba27ba23d0260c65534c897e902fd4c814c1e4fbf8704c87429804b44c"
 }
