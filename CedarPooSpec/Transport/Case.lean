@@ -103,7 +103,8 @@ theorem EntitySlot.read_value (slot : EntitySlot) (store : Entities) :
 theorem EntitySlot.bound (slot : EntitySlot) : slot.retained.toList.length ≤ 1 := by
   cases slot.retained <;> simp
 
-/-- Common fields are generated once per case; source values stay separate. -/
+/-- Reference projection of the common fields; source values stay separate.
+The native publisher uses the proof-bound fixed-layout constructor. -/
 def Case.fields (input : Case) : Except String (List (String × Lean.Json)) := do
   let request ← (PolicyJson.request input.request).mapError reprStr
   let response := input.response.get

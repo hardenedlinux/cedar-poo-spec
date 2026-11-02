@@ -182,3 +182,18 @@ theorem arbitrary_record_key_admission (fields : List (String × α)) :
       throw (IO.userError "record key admission changed")
   IO.println "RECORD-KEY-ADMISSION-OK ordered/unordered/duplicate/empty/unicode"
 end CedarPooSpec.Transport.SourceTableTest
+
+-- The actual field constructor consumes this strict, duplicate-free inventory
+-- Contract. Value binding is independently proved against the original Case.
+#eval show IO Unit from do
+  let contract := CedarPooSpec.Transport.caseFieldInventory
+  let fields := contract.fields.map fun field => (field.name, Lean.Json.null)
+  unless (LeanPoo.Functional.ObjectContract.diagnose contract fields).isEmpty do
+    throw (IO.userError "valid Case field inventory refused")
+  unless (LeanPoo.Functional.ObjectContract.diagnose contract fields.reverse).isEmpty do
+    throw (IO.userError "Case field inventory incorrectly depends on input order")
+  for changed in [fields.drop 1, fields ++ fields.take 1, fields ++ [("unexpected", Lean.Json.null)]] do
+    unless !(LeanPoo.Functional.ObjectContract.diagnose contract changed).isEmpty do
+      throw (IO.userError "missing/duplicate/extra Case field inventory admitted")
+  IO.println "CASE-FIELDS-CONTRACT-OK complete/permuted/missing/duplicate/extra"
+#print axioms CedarPooSpec.Transport.Case.encodedFields_value
