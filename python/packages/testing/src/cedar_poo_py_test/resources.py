@@ -43,6 +43,14 @@ def _controlled_run(command, report, timeout_seconds):
             exited = os.waitid(os.P_PID, child.pid, os.WEXITED | os.WNOHANG | os.WNOWAIT)
             leftover = exited is not None and any(not state.startswith("Z") for state in group_states(child.pid))
             if interruption is not None or remaining <= 0 or leftover:
+                # Preserve the first termination cause; a later signal during
+                # the drain must not relabel a deadline or leftover writer.
+                if interruption is not None:
+                    reason, status = f"signal:{signal.Signals(interruption).name}", 128 + interruption
+                elif leftover:
+                    reason, status = "leftover_group", 125
+                else:
+                    reason, status = "deadline", 124
                 # Do not reap the session leader during the grace period: its
                 # reserved PID prevents a recycled PID/group from being signalled.
                 signal_events = []
@@ -63,12 +71,6 @@ def _controlled_run(command, report, timeout_seconds):
                     if sig == signal.SIGTERM:
                         time.sleep(3)
                 command_returncode = child.wait()
-                if interruption is not None:
-                    reason, status = f"signal:{signal.Signals(interruption).name}", 128 + interruption
-                elif leftover:
-                    reason, status = "leftover_group", 125
-                else:
-                    reason, status = "deadline", 124
                 return subprocess.CompletedProcess(command, status), {
                     "termination_reason": reason, "command_returncode": command_returncode,
                     "resource_observation_complete": False, "owned_group_quiesced": True,

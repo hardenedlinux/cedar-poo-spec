@@ -1296,8 +1296,8 @@ invalid evidence for the declared-toolchain cold gate; the raw failures remain
 preserved and are not silently relabeled. The standard
 =just bench-project-native-cold OUTPUT= entrypoint now resolves Lake through
 =lake env lean --print-prefix=, checks its version, records compiler identity,
-keeps the unchanged 120-second/default-job limit and restores the qualified
-build on success, error or interruption. It rejects an output directory inside
+keeps the unchanged 120-second/default-job limit. The closure audit below
+adds explicit child-group quiescence before restoring the qualified build. It rejects an output directory inside
 the build tree before moving anything. This negative control is executed.
 
 Two correct-toolchain attempts also fail and remain retained. Before the
@@ -1374,3 +1374,121 @@ Current full evidence is local/ignored in =../cedar-constructor-lifetime-2026110
 Both preceding constructor cohorts and all earlier rejected candidates remain
 preserved in their existing evidence directories. No CSV, archive, rendered HTML
 or vendor content is added. Follow-up changes remain local, unpushed and unmerged.
+
+
+*** Closure audit: direct cache recovery and cancellation ownership
+
+The next audit starts at =79b356e= and retains the previous complete correctness
+and performance evidence. Lean/Rust kernels and all four ordinary/diagnostic
+native images are unchanged by this audit's observer changes. LeanPoo's latest
+formal release is checked again: =v0.1.2= remains the pin. No per-domain changes,
+new answer cache or additional benchmark workload is introduced.
+
+A stronger official-cache control moves the exact CaseFields module artifacts
+aside, then runs =lake --no-build --rehash build= for the module and its native
+object facet. Both commands exit zero; restored artifacts match the original
+bytes. The original files are restored unconditionally. This establishes direct
+module/native-object recovery without allowing recompilation, independently
+of the preceding 100-second timing observation.
+
+The audit also finds a real ownership gap in the cold recipe: an exit trap could
+restore the qualified directory before an interrupted compiler subtree had been
+confirmed stopped. =45e0c0e= adds an optional bounded mode to the existing external
+resource observer and uses it for the cold recipe. The ordinary, unbounded
+measurement path remains intact. The controller owns a process session, handles
+catchable termination signals, and keeps the existing 120-second deadline plus
+fixed three-second TERM/KILL grace. It inspects exit without reaping the session
+leader, keeping its PID reserved until group checks/draining finish. The waitable
+state follows the [[https://docs.python.org/3.13/library/os.html#os.WNOWAIT][official waitid/WNOWAIT contract]]. Termination cause is fixed
+before draining, so a later signal cannot relabel an existing timeout. A natural
+parent exit with a live background writer is a failed observation, not completion.
+
+On Darwin, signalling an all-zombie group can return EPERM. The first regression
+exposes this case and is retained. The handler now checks the actual group states;
+it tolerates only an absent/all-zombie group, not a permission error with a live
+member. Cancelled/deadline observations remain nonzero and explicitly incomplete.
+Missing OS counters remain unknown. The cold trap waits for the observer's
+quiescence receipt before hashing/moving artifacts. Without such confirmation it
+keeps the qualified backup protected. An identity mismatch also fails after the
+qualified tree is restored.
+
+All 42 existing-plus-new Python process/protocol tests pass; the final resource
+subset passes 11 tests. Real subprocess controls cover natural exit, deadline,
+invalid deadline refusal, a TERM-resistant grandchild, and a parent that exits
+zero while leaving a writer. These are process/resource tests; no Cedar semantics
+or benchmark algorithm is implemented in Python.
+
+The actual four-target cold recipe is then cancelled after its owned native
+session starts. It returns 143, reports a quiesced group and incomplete resources,
+retains failed identities, has no live native group member, and restores all four
+qualified images exactly. A separate natural-completion control passes in
+1.457 seconds with complete resource evidence and all four cold/qualified hashes
+equal. Both use the original cache-preserving root-directory scope and default
+jobs. This is artifact recovery, not a claim about cache-empty source compilation
+or a new application runtime speedup. The cancellation control is not a discarded
+performance sample.
+
+*** What the existing memory observations actually establish
+
+All 12 previous diagnostic launches are re-read without running new application
+samples. Their native image UUIDs match the frozen executable, including the
+four first-file observations. Each first-file run contains a long observed window
+with 32768 resident bytes, unchanged raw task CPU/context-switch counters and zero
+running threads, ending before the native main timestamp and its observed arrival:
+
+| Materialization | Cohort | Stable observed span ms |
+|-----------------+--------+-------------------------|
+| Copy            |      1 |                1159.185 |
+| Copy            |      2 |                1421.693 |
+| Hardlink        |      1 |                1465.756 |
+| Hardlink        |      2 |                 739.951 |
+
+These are sampled observations, not a continuous kernel trace; raw task CPU units
+are not converted into nanoseconds. They do not identify a wait object, but they
+do not support assigning the entire long tail to Case construction/serialization.
+The recorded first-file main spans occupy only 3.22-9.45% of their corresponding
+whole process spans. If startup/exit stayed fixed, even eliminating that entire
+measured main span would have only that hypothetical ceiling. This is a budget
+explanation, not an observed or predicted speedup.
+
+The memory audit uses parent-owned stderr arrival boundaries and memory-read
+brackets, retaining their uncertainty. Arrivals can lag child writes, so these
+are observation windows rather than exact phase execution boundaries. At the
+unchanged 5-ms interval, 3 of 12 source-ready-to-serialized arrival windows and
+9 of 12 serialized-to-output-written windows have no fully enclosed sample.
+Consequently the existing traces cannot assign a short RSS peak to serialization
+or output-buffer lifetime. The sampling gap is not evidence of zero allocations,
+a heap leak, or an RSS improvement. All input report hashes and every trial are
+retained in the derived audit.
+
+The latest POO EntitySlot path is also inspected: ContextSlot.read already uses
+=withPtrEqDecEq= and lawful equality, including adoption of equal independent
+contexts. An additional pointer-identity cache would duplicate that mechanism.
+SourcePool hints continue to require complete-byte binding. Further algorithm
+work should target measured repeated preparation, rather than weaken either
+comparison or accumulate additional global caches.
+
+*** Integrated remaining gates
+
+| Boundary                    | Current acceptance                                         | Required closure                                              |
+|-----------------------------+------------------------------------------------------------+---------------------------------------------------------------|
+| Types/Contract/proofs/replay | Existing all-domain gate and native images remain unchanged | Keep all nine families/51 entries in every algorithm candidate |
+| Recovery and cancellation   | Direct no-build restore, real cancel and natural cold pass  | Run the current unpublished revision on Ubuntu CI              |
+| Whole-process performance   | Allocation/inner-loop improvement; mixed full-process wins  | Retain first-use/repeated losses and A/A controls               |
+| RSS                         | Short phase windows are under-sampled                      | Validate phase CPU/byte/lifetime evidence before attributing it |
+| Pre-main                    | Native-image low-progress windows; prior syspolicyd waker   | Obtain an actual readable wait stack before naming its object  |
+| Empty-all-cache compilation | Not passed                                                 | Keep separate from official-cache-preserving recovery          |
+
+The next implementation batch stays horizontal: use the existing native stages
+to rank shared producer/publication and public SDK preparation costs, with
+validated CPU-counter units and byte/lifetime observations where necessary.
+Choose changes in the existing shared owner, prove value/error binding, then run
+the entire catalog, nine families and independent Rust replay. No individual
+vertical receives a separate optimization path. Startup forensics and short-peak
+memory observations remain separate diagnostic evidence, never substitutes for
+the complete-process gate. Remote exact-head CI is still not claimed; no follow-up
+is pushed or merged here.
+
+The closure audit, direct cache controls, every failed observation and cancellation
+receipt are local/ignored in =../cedar-closure-audit-20261102/=. Existing complete
+performance cohorts remain untouched in their original directories.
