@@ -4,6 +4,7 @@
 import {test,expect} from 'bun:test';
 import {readFile,readdir} from 'node:fs/promises';
 import {connectWasm} from '@openmbee/opensysml';
+import {verifyFigure} from '../artifacts';
 import {readProofMap,leanProofCheck,type ProofMap} from '../proofs';
 const root=new URL('../../',import.meta.url),source='dev/sysml/zero-trust-proofs.sysml';
 async function observe(raw:string){
@@ -13,17 +14,24 @@ async function observe(raw:string){
 }
 function check(map:ProofMap){
  const checked=Bun.spawnSync(['lake','env','lean','-M','2048','-T','10000000','--stdin'],{cwd:root.pathname,stdin:Buffer.from(leanProofCheck(map))});
- return{code:checked.exitCode,stdout:new TextDecoder().decode(checked.stdout),stderr:new TextDecoder().decode(checked.stderr)};
+ return{code:checked.exitCode,signal:checked.signalCode,stdout:new TextDecoder().decode(checked.stdout),stderr:new TextDecoder().decode(checked.stderr)};
 }
 const raw=()=>readFile(new URL(source,root),'utf8');
-test('SDK declarations, roles and proof-use references drive native Lean validation',async()=>{
- const map=await observe(await raw());expect(map.cards.length).toBeGreaterThan(0);
+test('SDK declarations, roles and proof-use references bind emitted receipts',async()=>{
+ const started=performance.now(),map=await observe(await raw());expect(map.cards.length).toBeGreaterThan(0);
  for(const card of map.cards)expect((await readFile(new URL(card.source,root),'utf8')).length).toBeGreaterThan(0);
  for(const file of (await readdir(new URL('../d2/',import.meta.url))).filter(file=>file.endsWith('.json'))){
   const receipt:{sdk:{view:string};proofClaims?:ProofMap}=JSON.parse(await readFile(new URL('../d2/'+file,import.meta.url),'utf8'));
   if(receipt.sdk.view.startsWith('ZeroTrustProofs::'))expect(receipt.proofClaims).toEqual(map);
  }
- const result=check(map);expect(result).toMatchObject({code:0,stderr:''});expect(result.stdout).toContain('PROOF-FIGURES-LEAN-OK');
+ console.log('SDK-PROOF-OBSERVATION-MS',Math.round(performance.now()-started));
+},30000);
+test('native Lean validates the verified SDK proof capture within its own budget',async()=>{
+ const entry='dev/d2/zero-trust-model-proofs.d2';await verifyFigure(root.pathname,entry);
+ const receipt:{proofClaims:ProofMap}=JSON.parse(await readFile(new URL(entry.slice(0,-3)+'.json',root),'utf8'));
+ const started=performance.now(),result=check(receipt.proofClaims);
+ console.log('NATIVE-PROOF-CHECK',JSON.stringify({milliseconds:Math.round(performance.now()-started),code:result.code,signal:result.signal}));
+ expect(result).toMatchObject({code:0,stderr:''});expect(result.stdout).toContain('PROOF-FIGURES-LEAN-OK');
 },30000);
 test('SDK observation tolerates formatting and discovers added declarations without fixed counts',async()=>{
  const original=await raw(),baseline=await observe(original);

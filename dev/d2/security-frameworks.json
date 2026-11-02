@@ -1,29 +1,162 @@
 {
+  "entry": "dev/d2/security-frameworks.d2",
   "sources": {
-    "CedarPooSpec/Transport/SourceCatalog.lean": "6a558ed2d6191b9e0264a43d7fdf8c508102f475e01048c76fb9c541a9100c22",
     "CedarPooSpec/ZeroTrust/ProfileObject.lean": "5b78e3ea7c418c0dd44339f8c05dcad659a4f1763313be32768ee3a589c57580",
-    "dev/.generated/lean-catalog.json": "c6856fdb9e8b2d36407b8605756659e8a1c02fca09ce628bc41c845f0e376657",
     "dev/.generated/security-frameworks-sdk.json": "2021c0471e10263855ebf35a954c6c17720c84054c8dee7aaaa8140f19213a9f",
-    "dev/bun.lock": "24ae62404f675c395c3890562d805dcba2024b3dd54a6a7981d5a8e36c37f5d1",
-    "dev/catalog.ts": "6bff1f1e8f235f80a5fb7286d38cf81e46825fa64edf26d042174487037fe49a",
-    "dev/d2/architecture-overview.d2": "040b9de8acb2b8ef9780b231f4dd171f74f856ea21b0c0614597383c560c3c6f",
-    "dev/d2/lean-catalog.d2": "38a9447d8239d93a2f2cd00fbfc03731aad9dceec0c6b4d6dbe8ff048eb470a9",
-    "dev/d2/model-components.d2": "bd1f5e867012261c03c011e9f3f2f60ba5acfa112a27b2cc6354c4a16e0bd91f",
+    "dev/artifacts.ts": "ca1096947536fbdbd5da5cbf1ce5c6f57521bd4a7b135233285dfe8fcff9859d",
+    "dev/bun.lock": "ff7dfa5e83619b9ea614de09044a6ea84674934b8f284e440d253beeb6677663",
+    "dev/catalog.ts": "6d65a91afcddb11de668cc668aa3c6b9076435c02e73a90323c7bf28a991965e",
     "dev/d2/security-frameworks.d2": "901fd692144ac61c02293a965bde1deb95e38073ab7cdc8db9b4491d7689de1c",
-    "dev/d2/verticals-platforms.d2": "e81ccf945900c7a6fa0ffc08aca2119d8ea23245db03a2e576b08d27f2b10e03",
-    "dev/d2/zero-trust-model-proofs.d2": "7a387edd1f065146c33d8338b4d85feab6a4b396c8570e3aa52fa0a98150cd20",
-    "dev/d2/zero-trust-object-proofs.d2": "4cc1b2cea918c37cff09abd8206d4bba6d35fe455f7e3e92a0e8f19af583e511",
+    "dev/inputs.ts": "8ccc4bd7ceda2013d5fd86b37d2565beb60f1a8761004d67be77d0c2acd1265e",
     "dev/Justfile": "a13b2b6ef2cabfdd03841bbdc3da89fa70245071abf15f653c0095ae3defba7b",
-    "dev/package.json": "d861ed19512d396cec7a13b9b8e95b2d3400bbc6828ef7b0540784cf65a57df5",
+    "dev/package.json": "47082928b4f138c4fdabd4b1adfc75ee70873c188a0450bbce25810ec3eb40e0",
     "dev/projection.ts": "3fd049e50798aee9dce54af6cd6e6fccad45fec5ab24b994bb6a8a4b33d7252d",
     "dev/proofs.ts": "ec657848f47b8fa1724105df2aab6f25bb528f909ec9e7a996036d7fdc89184c",
-    "dev/render.ts": "73abbe90b7d5df0d5eb785eb5d38993aca456a207095632ff6c4d9f4dd734f05",
-    "dev/sources.ts": "c6d2ce6fc272c75380c680ed151e0b2f2e7e76abf75c4a55679ef0c7580400c4",
-    "dev/sysml/security-frameworks.sysml": "724460397a8f3194d5469cd66dc879578b8644bb5fa3f303b3dc28f514513e27",
-    "Examples/ManifestCatalog.lean": "7c1c1eb2d288dfc7d3601062f2fe452d302b693d231ac455dcf24238a3a8219c",
-    "lake-manifest.json": "005293d31347e363a7f46a7a2a2bfbfea3f18484d688d7b75d144ca1ad16e3cd",
-    "lakefile.toml": "017f19694164250b32c95ce483b1bfb9ed03290f6c39d2eb938a8f347e22f80c",
-    "lean-toolchain": "d5edba4e4b8faad9c1baeadb265716d20d03be4d1a2647dc5e35b0c0325bea7b"
+    "dev/render.ts": "1b07616b3a05602676ea0101546ab66f20fd73943326382fda0ebafef2735201",
+    "dev/sources.ts": "3cd11d095476ee65c9086172773813e6e37e88087c9d01ee962cec59369d7ed8",
+    "dev/sysml/security-frameworks.sysml": "724460397a8f3194d5469cd66dc879578b8644bb5fa3f303b3dc28f514513e27"
+  },
+  "binaries": {},
+  "sdk": {
+    "modelHash": "eb746d358e9c0e4c59f857a89f4697528909a1a1395945099c47d10e8dddfa62",
+    "view": "CedarFrameworks::overview",
+    "trace": {
+      "modelHash": "eb746d358e9c0e4c59f857a89f4697528909a1a1395945099c47d10e8dddfa62",
+      "requestedView": "CedarFrameworks::overview",
+      "resolvedView": "CedarFrameworks::overview",
+      "renderingSHA256": "2021c0471e10263855ebf35a954c6c17720c84054c8dee7aaaa8140f19213a9f",
+      "capturedRenderingJSON": "{\"modelHash\":\"eb746d358e9c0e4c59f857a89f4697528909a1a1395945099c47d10e8dddfa62\",\"requestedView\":\"CedarFrameworks::overview\",\"rendering\":{\"view\":\"CedarFrameworks::overview\",\"kind\":\"interconnection\",\"stated\":\"render asInterconnectionDiagram\",\"nodes\":[{\"id\":\"n0\",\"kind\":\"part\",\"name\":\"CedarFrameworks::core\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/security-frameworks.sysml\",\"startLine\":7,\"startCol\":2,\"endLine\":7,\"endCol\":24}},{\"id\":\"n1\",\"kind\":\"part\",\"name\":\"CedarFrameworks::authorization\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/security-frameworks.sysml\",\"startLine\":8,\"startCol\":2,\"endLine\":8,\"endCol\":33}},{\"id\":\"n2\",\"kind\":\"part\",\"name\":\"CedarFrameworks::poo\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/security-frameworks.sysml\",\"startLine\":9,\"startCol\":2,\"endLine\":9,\"endCol\":23}},{\"id\":\"n3\",\"kind\":\"part\",\"name\":\"CedarFrameworks::gateway\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/security-frameworks.sysml\",\"startLine\":10,\"startCol\":2,\"endLine\":10,\"endCol\":27}},{\"id\":\"n4\",\"kind\":\"part\",\"name\":\"CedarFrameworks::other\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/security-frameworks.sysml\",\"startLine\":11,\"startCol\":2,\"endLine\":11,\"endCol\":25}}],\"edges\":[{\"from\":\"n0\",\"to\":\"n2\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/security-frameworks.sysml\",\"startLine\":12,\"startCol\":2,\"endLine\":12,\"endCol\":56}},{\"from\":\"n2\",\"to\":\"n4\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/security-frameworks.sysml\",\"startLine\":13,\"startCol\":2,\"endLine\":13,\"endCol\":54}},{\"from\":\"n2\",\"to\":\"n3\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/security-frameworks.sysml\",\"startLine\":14,\"startCol\":2,\"endLine\":14,\"endCol\":53}},{\"from\":\"n1\",\"to\":\"n3\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/security-frameworks.sysml\",\"startLine\":15,\"startCol\":2,\"endLine\":15,\"endCol\":63}}],\"columns\":[],\"rows\":[],\"notes\":[],\"notices\":[],\"shown\":[\"port-symbols\",\"compartments\",\"keywords\"]}}",
+      "nodes": [
+        {
+          "id": "n0",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/security-frameworks.sysml",
+            "startLine": 7,
+            "startCol": 2,
+            "endLine": 7,
+            "endCol": 24
+          }
+        },
+        {
+          "id": "n1",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/security-frameworks.sysml",
+            "startLine": 8,
+            "startCol": 2,
+            "endLine": 8,
+            "endCol": 33
+          }
+        },
+        {
+          "id": "n2",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/security-frameworks.sysml",
+            "startLine": 9,
+            "startCol": 2,
+            "endLine": 9,
+            "endCol": 23
+          }
+        },
+        {
+          "id": "n3",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/security-frameworks.sysml",
+            "startLine": 10,
+            "startCol": 2,
+            "endLine": 10,
+            "endCol": 27
+          }
+        },
+        {
+          "id": "n4",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/security-frameworks.sysml",
+            "startLine": 11,
+            "startCol": 2,
+            "endLine": 11,
+            "endCol": 25
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "edge:0",
+          "index": 0,
+          "from": "n0",
+          "to": "n2",
+          "fromPort": "",
+          "toPort": "",
+          "kind": "connection",
+          "origin": {
+            "file": "dev/sysml/security-frameworks.sysml",
+            "startLine": 12,
+            "startCol": 2,
+            "endLine": 12,
+            "endCol": 56
+          }
+        },
+        {
+          "id": "edge:1",
+          "index": 1,
+          "from": "n2",
+          "to": "n4",
+          "fromPort": "",
+          "toPort": "",
+          "kind": "connection",
+          "origin": {
+            "file": "dev/sysml/security-frameworks.sysml",
+            "startLine": 13,
+            "startCol": 2,
+            "endLine": 13,
+            "endCol": 54
+          }
+        },
+        {
+          "id": "edge:2",
+          "index": 2,
+          "from": "n2",
+          "to": "n3",
+          "fromPort": "",
+          "toPort": "",
+          "kind": "connection",
+          "origin": {
+            "file": "dev/sysml/security-frameworks.sysml",
+            "startLine": 14,
+            "startCol": 2,
+            "endLine": 14,
+            "endCol": 53
+          }
+        },
+        {
+          "id": "edge:3",
+          "index": 3,
+          "from": "n1",
+          "to": "n3",
+          "fromPort": "",
+          "toPort": "",
+          "kind": "connection",
+          "origin": {
+            "file": "dev/sysml/security-frameworks.sysml",
+            "startLine": 15,
+            "startCol": 2,
+            "endLine": 15,
+            "endCol": 63
+          }
+        }
+      ]
+    },
+    "diagnostics": [],
+    "observations": []
+  },
+  "renderer": {
+    "specifier": "git+https://github.com/hardenedlinux/deterministic-engineering.git#6223c5c44cc368e6e5b6d597421b275c160f9064",
+    "name": "@deterministic-engineering/render",
+    "version": "1.0.1"
   },
   "receipt": {
     "attribution": {
@@ -184,21 +317,21 @@
       "samples": 30,
       "requiredMinimum": 12
     },
-    "inputSHA256": "2149a39e4a19464994367d5db06a89a18dafa8d610b04315fb3b38e2f6da5705",
+    "inputSHA256": "d24bfdbb6634bfda92f9c323ffdb2893e2e930cf593f97cf7203dd02c74e5151",
     "scenes": [
       {
         "inputSHA256": "75517e118c4c919af36c800fe94379b54024bdac668ba87a4c5d30d50935bacb",
         "layoutSHA256": "4a432db44828e657def2d85df373b3adedde9ad127445b9de43d034751d4dda0",
         "nodes": 5,
         "edges": 4,
-        "milliseconds": 453.62624999999935
+        "milliseconds": 199.17275000000154
       }
     ],
     "svgSHA256": [
-      "e65d6d40bd9ea014a62b28a7ee7db9b3d38fbde44999e823546c548cf50352c2",
+      "4c11ece7f824845b32cb410db496a80bbffe60afa4b8c95da1cd742319a07958",
       "814a2af3255f5a4cebda87bc26b2856855523b4ac308fdff73326a7249826f51"
     ],
-    "composedHTMLSHA256": "24174ec8004953dc78c28b5bbcd63b4bd2b169c94bb784457b0313203f27180b",
+    "composedHTMLSHA256": "21919e40583f2cebfb9bd4bd2e6c38b0db756aa9178883e01cecd9bab850f9ae",
     "dependencies": {
       "@fontsource/inter": "5.3.0",
       "@fontsource/kalam": "5.3.0",
@@ -211,12 +344,12 @@
       "web-worker": "1.5.0"
     },
     "regionSHA256": {},
-    "htmlSHA256": "4aa6606945dc12bcd1768b7b4208ae0f1762aa1a12d22a1f8e85437114ad82e4",
+    "htmlSHA256": "0d9f00d02b8e958eaf59c23e2a2f29a13e280f9f12097fd95e1a919ec688ad82",
     "drawing": "roughjs@4.6.6",
     "routing": "elkjs@0.12.1",
     "assetSHA256": {
-      "@fontsource/kalam/files/kalam-latin-400-normal.woff2": "954410601a823f37e219f7930b7446f86afa15621326a7078d56fb9c910135cb",
-      "@fontsource/kalam/files/kalam-latin-700-normal.woff2": "252063af6ade8b9a744cde4ddad0fc21ea53b8ba711eed121a0c2e8610ea9c93"
+      "@fontsource/kalam/files/kalam-latin-700-normal.woff2": "252063af6ade8b9a744cde4ddad0fc21ea53b8ba711eed121a0c2e8610ea9c93",
+      "@fontsource/kalam/files/kalam-latin-400-normal.woff2": "954410601a823f37e219f7930b7446f86afa15621326a7078d56fb9c910135cb"
     },
     "pngSHA256": "1021d88c2244b888d8cd819c10f0b2dd585c333cff3d453cb64866a4518756c2",
     "browser": "156.0.8078.4",
@@ -224,157 +357,5 @@
     "height": 1352,
     "scale": 1.5,
     "bounds": {}
-  },
-  "sdk": {
-    "modelHash": "eb746d358e9c0e4c59f857a89f4697528909a1a1395945099c47d10e8dddfa62",
-    "view": "CedarFrameworks::overview",
-    "trace": {
-      "modelHash": "eb746d358e9c0e4c59f857a89f4697528909a1a1395945099c47d10e8dddfa62",
-      "requestedView": "CedarFrameworks::overview",
-      "resolvedView": "CedarFrameworks::overview",
-      "renderingSHA256": "2021c0471e10263855ebf35a954c6c17720c84054c8dee7aaaa8140f19213a9f",
-      "capturedRenderingJSON": "{\"modelHash\":\"eb746d358e9c0e4c59f857a89f4697528909a1a1395945099c47d10e8dddfa62\",\"requestedView\":\"CedarFrameworks::overview\",\"rendering\":{\"view\":\"CedarFrameworks::overview\",\"kind\":\"interconnection\",\"stated\":\"render asInterconnectionDiagram\",\"nodes\":[{\"id\":\"n0\",\"kind\":\"part\",\"name\":\"CedarFrameworks::core\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/security-frameworks.sysml\",\"startLine\":7,\"startCol\":2,\"endLine\":7,\"endCol\":24}},{\"id\":\"n1\",\"kind\":\"part\",\"name\":\"CedarFrameworks::authorization\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/security-frameworks.sysml\",\"startLine\":8,\"startCol\":2,\"endLine\":8,\"endCol\":33}},{\"id\":\"n2\",\"kind\":\"part\",\"name\":\"CedarFrameworks::poo\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/security-frameworks.sysml\",\"startLine\":9,\"startCol\":2,\"endLine\":9,\"endCol\":23}},{\"id\":\"n3\",\"kind\":\"part\",\"name\":\"CedarFrameworks::gateway\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/security-frameworks.sysml\",\"startLine\":10,\"startCol\":2,\"endLine\":10,\"endCol\":27}},{\"id\":\"n4\",\"kind\":\"part\",\"name\":\"CedarFrameworks::other\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/security-frameworks.sysml\",\"startLine\":11,\"startCol\":2,\"endLine\":11,\"endCol\":25}}],\"edges\":[{\"from\":\"n0\",\"to\":\"n2\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/security-frameworks.sysml\",\"startLine\":12,\"startCol\":2,\"endLine\":12,\"endCol\":56}},{\"from\":\"n2\",\"to\":\"n4\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/security-frameworks.sysml\",\"startLine\":13,\"startCol\":2,\"endLine\":13,\"endCol\":54}},{\"from\":\"n2\",\"to\":\"n3\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/security-frameworks.sysml\",\"startLine\":14,\"startCol\":2,\"endLine\":14,\"endCol\":53}},{\"from\":\"n1\",\"to\":\"n3\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/security-frameworks.sysml\",\"startLine\":15,\"startCol\":2,\"endLine\":15,\"endCol\":63}}],\"columns\":[],\"rows\":[],\"notes\":[],\"notices\":[],\"shown\":[\"port-symbols\",\"compartments\",\"keywords\"]}}",
-      "nodes": [
-        {
-          "id": "n0",
-          "parent": "",
-          "origin": {
-            "file": "dev/sysml/security-frameworks.sysml",
-            "startLine": 7,
-            "startCol": 2,
-            "endLine": 7,
-            "endCol": 24
-          }
-        },
-        {
-          "id": "n1",
-          "parent": "",
-          "origin": {
-            "file": "dev/sysml/security-frameworks.sysml",
-            "startLine": 8,
-            "startCol": 2,
-            "endLine": 8,
-            "endCol": 33
-          }
-        },
-        {
-          "id": "n2",
-          "parent": "",
-          "origin": {
-            "file": "dev/sysml/security-frameworks.sysml",
-            "startLine": 9,
-            "startCol": 2,
-            "endLine": 9,
-            "endCol": 23
-          }
-        },
-        {
-          "id": "n3",
-          "parent": "",
-          "origin": {
-            "file": "dev/sysml/security-frameworks.sysml",
-            "startLine": 10,
-            "startCol": 2,
-            "endLine": 10,
-            "endCol": 27
-          }
-        },
-        {
-          "id": "n4",
-          "parent": "",
-          "origin": {
-            "file": "dev/sysml/security-frameworks.sysml",
-            "startLine": 11,
-            "startCol": 2,
-            "endLine": 11,
-            "endCol": 25
-          }
-        }
-      ],
-      "edges": [
-        {
-          "id": "edge:0",
-          "index": 0,
-          "from": "n0",
-          "to": "n2",
-          "fromPort": "",
-          "toPort": "",
-          "kind": "connection",
-          "origin": {
-            "file": "dev/sysml/security-frameworks.sysml",
-            "startLine": 12,
-            "startCol": 2,
-            "endLine": 12,
-            "endCol": 56
-          }
-        },
-        {
-          "id": "edge:1",
-          "index": 1,
-          "from": "n2",
-          "to": "n4",
-          "fromPort": "",
-          "toPort": "",
-          "kind": "connection",
-          "origin": {
-            "file": "dev/sysml/security-frameworks.sysml",
-            "startLine": 13,
-            "startCol": 2,
-            "endLine": 13,
-            "endCol": 54
-          }
-        },
-        {
-          "id": "edge:2",
-          "index": 2,
-          "from": "n2",
-          "to": "n3",
-          "fromPort": "",
-          "toPort": "",
-          "kind": "connection",
-          "origin": {
-            "file": "dev/sysml/security-frameworks.sysml",
-            "startLine": 14,
-            "startCol": 2,
-            "endLine": 14,
-            "endCol": 53
-          }
-        },
-        {
-          "id": "edge:3",
-          "index": 3,
-          "from": "n1",
-          "to": "n3",
-          "fromPort": "",
-          "toPort": "",
-          "kind": "connection",
-          "origin": {
-            "file": "dev/sysml/security-frameworks.sysml",
-            "startLine": 15,
-            "startCol": 2,
-            "endLine": 15,
-            "endCol": 63
-          }
-        }
-      ]
-    },
-    "diagnostics": [],
-    "observations": []
-  },
-  "lean": {
-    "path": "dev/.generated/lean-catalog.json",
-    "sha256": "c6856fdb9e8b2d36407b8605756659e8a1c02fca09ce628bc41c845f0e376657",
-    "formatVersion": 2,
-    "entries": 51,
-    "pools": {
-      "policies": 158,
-      "entities": 40,
-      "schemas": 22
-    }
-  },
-  "binaries": {
-    "dev/vendor/render-d000902.tgz": "abd7bcba27ba23d0260c65534c897e902fd4c814c1e4fbf8704c87429804b44c",
-    ".lake/build/bin/caseManifestsNative": "39c53fec2d23f19c449657b660f4588e179220f762502c5e1025636e752dc1e4"
-  },
-  "rendererArchiveSHA256": "abd7bcba27ba23d0260c65534c897e902fd4c814c1e4fbf8704c87429804b44c"
+  }
 }

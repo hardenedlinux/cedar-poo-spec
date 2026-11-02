@@ -88,7 +88,7 @@ this view neither replaces them nor modifies their resource limits.
 | =.generated/*-sdk.json= | Actual SDK capture, retained by model hash |
 | =d2/*.png= | Hand-drawn documentation images; no external font load needed |
 | =d2/*.svg= | Vector export with embedded font notices |
-| =d2/*.html= | Offline materialized rendering |
+| =../.cache/render/dev/d2/*.html= | Browser verification intermediate; ignored by Git |
 | =d2/*.json= | Input/output hashes, SDK spans/model hash, input counts and observations |
 
 The source =CedarPooSpec/ZeroTrust/architecture.d2= and its RAW SVG are migrated to
@@ -104,10 +104,10 @@ See the scoped views above. PNG, SVG, SysML and D2 sources live together under
 * Licensing
 Cedar remains Apache-2.0, with its existing Cedar and Faré / POOF credits unchanged.
 New development glue uses that license and HardenedLinux project attribution.
-The unmodified renderer archive remains LGPL-2.1-or-later; its complete source and
-license are included. OpenSysML packages retain their own Apache-2.0 license.
+The renderer is installed by Bun from its reviewed upstream Git revision and
+retains LGPL-2.1-or-later. No renderer source archive is committed here. OpenSysML packages retain their own Apache-2.0 license.
 Kalam's actual 2014 Indian Type Foundry notice and OFL-1.1 are retained in exports.
-JSON, PNG and package archives use standard REUSE sidecars; comment-capable sources
+JSON and PNG use standard REUSE sidecars; comment-capable sources
 carry in-file SPDX headers. =../LICENSES= contains the canonical licenses this development subtree uses.
 
 * Audit and invalidation boundary
@@ -126,16 +126,18 @@ becoming domain data. Catalog count expressions, categories and localized units 
 =sources.ts= is the host filesystem boundary: it restricts input references to
 the repository and compares captured content hashes before publication. It does
 not replace the Library's figure fingerprints. Changed or missing SysML, D2,
-JSON, adapter, renderer archive or actual Lean producer invalidates publication.
+JSON, imported host modules, dependency declarations or a consumed Lean producer
+invalidates that figure.
 Returning to identical bytes restores content identity; no mtime lease is invented.
-The receipt binds the actual producer executable and renderer archive separately
-from text inputs. Source records are observations, not a signed compiler
+Catalog receipts bind the actual producer executable separately from text
+inputs. All receipts capture the Git dependency declaration and Bun lockfile. Source records are observations, not a signed compiler
 attestation that a particular binary was derived from all transitive sources.
 
 A changed source invalidates an old receipt; it does not erase historical images.
 Run =just render= then =just test= to re-observe and validate current artifacts.
-Multi-file export is not an atomic delivery protocol. Source checks cannot prevent
-a later write after publication; consumers must recheck receipts before reuse.
+Native file renames are atomic per file, not across the whole bundle. The
+receipt-last protocol makes partial bundles inadmissible: consumers must use
+=verifyFigure= and recheck current sources before reuse.
 
 * Platform verification
 
@@ -186,7 +188,78 @@ are negative controls, not rendered proof evidence.
 captions. It imports no catalog schema, category or English count formatter.
 =catalog.ts= owns native catalog observation and =catalog.counts= validation.
 D2 supplies singular/plural units; generic captions may use any source language.
-The host reads the renderer archive location from the existing =package.json=
-dependency declaration. Source guards restrict it to the declared local archive;
-there is no second revision pin or custom dependency installer. Bun's frozen lock
+The host reads the renderer Git specifier from the existing =package.json=
+dependency declaration. Bun resolves and installs it; no archive locator,
+second revision pin or custom dependency installer remains. Bun's frozen lock
 continues to own dependency installation and transitive versions.
+
+* Per-figure closure and interrupted exports
+
+=inputs.ts= asks Bun's native bundler metafile for imported local host modules.
+Adding an unimported TS file does not alter the footprint. Runtime dependency
+identity remains in the existing package declaration and frozen Bun lockfile;
+the installed package exports its own version metadata.
+
+D2's existing =references= declare file dependencies, including imported D2
+fragments. A provisional native compile reads the declaration; the final native
+compile receives only the entry and referenced D2 files. Undeclared direct or
+transitive imports therefore fail in D2 itself. There is no import parser,
+parallel dependency manifest or custom resolver. Referenced SysML documents are
+parsed together through =parseSources=; unresolved model references refuse.
+Explicitly cited Org/Lean files are captured as bytes. This does not claim a
+recursive semantic audit of every hyperlink in a cited document.
+
+Each receipt contains common execution inputs, the selected D2/reference closure,
+selected model sources, SDK capture and declared proof sources. Only views that
+consume catalog data or its generated model capture native catalog JSON, producer
+binary and its build declarations. Unrelated D2 changes and producer changes do
+not invalidate an architecture-only view. A change inside a shared referenced
+file still invalidates its consumers; granularity is per file, not per AST span.
+
+=artifacts.ts= is a filesystem adapter over the existing renderer receipt. It
+removes the old active receipt before invoking the exporter, stages complete
+bytes in a temporary directory, checks current sources, renames outputs and
+commits the receipt last. Browser interruption or a mid-write filesystem error
+leaves no acceptable active receipt. Existing image files may remain for diagnosis;
+their presence is not success. No publisher service or transaction framework is
+introduced, and failures are propagated.
+
+=verifyFigure= checks the requested entry, current source/binary hashes, every
+PNG/SVG/HTML hash and native HTML provenance using parse5. HTML input identity and
+source hashes must match the receipt. Missing files, malformed receipts, mixed
+generations and even a complete bundle copied from a different entry refuse.
+The host writes the native combined SVG and every scene SVG (=.scene-N.svg=),
+checks the complete hash list, and rejects unlisted leftover scenes.
+Receipt checks prove content consistency under the existing trusted-host boundary,
+not a signed execution attestation or proof of image aesthetics.
+
+For a single entry, after the standard installation:
+#+begin_src sh
+cd dev
+bun run render .generated/lean-catalog.json dev/d2/architecture-overview.d2
+#+end_src
+An architecture-only entry does not read the supplied catalog path. Full
+=just render= still prepares native catalog input for the inventory view.
+
+Git installation is native:
+#+begin_src sh
+bun install --frozen-lockfile
+#+end_src
+The root manifest in the upstream repository exposes the package's sources under
+=packages/render=. =vendor/= is ignored and absent from Git; Release archives are
+not a development dependency.
+
+
+* Browser intermediate cleanup and verification budgets
+Generated HTML is not a source or documentation deliverable. It is absent from
+=dev/= and Git. The filesystem adapter removes legacy adjacent HTML and writes
+new browser intermediates only under the root =.cache/render/= directory. Native
+HTML hash/provenance validation remains active; CI uploads this ignored cache as
+build diagnostics. PNG/SVG are the documentation outputs.
+
+The SDK declaration/receipt comparison and native Lean validation are independent
+checks. Each retains the existing 30-second per-test bound; native Lean keeps its
+2048 MiB / 10000000-heartbeat arguments. The native check consumes the emitted SDK
+capture only after receipt validation, rather than charging SDK discovery and
+compiler startup to one combined test. Stage timing and child termination signal
+are recorded. This is not a retry policy or an extension of either method budget.

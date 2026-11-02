@@ -1,4 +1,5 @@
 {
+  "entry": "dev/d2/model-components.d2",
   "sources": {
     "CedarPooSpec.lean": "d4fc5b573fdc7050fbb62074eeb59f364d4a782f152853e3efc2a103ba1951eb",
     "CedarPooSpec/Admission/README.org": "75cbfec1b550681a96539a2a789d4cde9433cfe0d247dbb20534a94c951e5fa5",
@@ -10,30 +11,152 @@
     "CedarPooSpec/Gateway/README.org": "71edad34cfd0c2e40df59c00bd74c033b56cca9ae454f3e4a0abe7c2637ea5ac",
     "CedarPooSpec/Governance/README.org": "7198754819ff70820dc4c0c1394957d506bdb305ebfd881ae526d901256872c1",
     "CedarPooSpec/Pseudonymization/README.org": "389ef357ad2d9efd79da03148883fe5ee35a5da832ed012b265c98ea32c0b4f2",
-    "CedarPooSpec/Transport/SourceCatalog.lean": "6a558ed2d6191b9e0264a43d7fdf8c508102f475e01048c76fb9c541a9100c22",
     "CedarPooSpec/ZeroTrust/README.org": "6c6608f6b783249fb7e0b299e756dc1df82f0e215af453774d1df731fdfb9b87",
-    "dev/.generated/lean-catalog.json": "c6856fdb9e8b2d36407b8605756659e8a1c02fca09ce628bc41c845f0e376657",
     "dev/.generated/model-components-sdk.json": "c6ce5891a562db16dfeb81066d31f6970341215b59d80e6872edc7911b84059b",
-    "dev/bun.lock": "24ae62404f675c395c3890562d805dcba2024b3dd54a6a7981d5a8e36c37f5d1",
-    "dev/catalog.ts": "6bff1f1e8f235f80a5fb7286d38cf81e46825fa64edf26d042174487037fe49a",
-    "dev/d2/architecture-overview.d2": "040b9de8acb2b8ef9780b231f4dd171f74f856ea21b0c0614597383c560c3c6f",
-    "dev/d2/lean-catalog.d2": "38a9447d8239d93a2f2cd00fbfc03731aad9dceec0c6b4d6dbe8ff048eb470a9",
+    "dev/artifacts.ts": "ca1096947536fbdbd5da5cbf1ce5c6f57521bd4a7b135233285dfe8fcff9859d",
+    "dev/bun.lock": "ff7dfa5e83619b9ea614de09044a6ea84674934b8f284e440d253beeb6677663",
+    "dev/catalog.ts": "6d65a91afcddb11de668cc668aa3c6b9076435c02e73a90323c7bf28a991965e",
     "dev/d2/model-components.d2": "bd1f5e867012261c03c011e9f3f2f60ba5acfa112a27b2cc6354c4a16e0bd91f",
-    "dev/d2/security-frameworks.d2": "901fd692144ac61c02293a965bde1deb95e38073ab7cdc8db9b4491d7689de1c",
-    "dev/d2/verticals-platforms.d2": "e81ccf945900c7a6fa0ffc08aca2119d8ea23245db03a2e576b08d27f2b10e03",
-    "dev/d2/zero-trust-model-proofs.d2": "7a387edd1f065146c33d8338b4d85feab6a4b396c8570e3aa52fa0a98150cd20",
-    "dev/d2/zero-trust-object-proofs.d2": "4cc1b2cea918c37cff09abd8206d4bba6d35fe455f7e3e92a0e8f19af583e511",
+    "dev/inputs.ts": "8ccc4bd7ceda2013d5fd86b37d2565beb60f1a8761004d67be77d0c2acd1265e",
     "dev/Justfile": "a13b2b6ef2cabfdd03841bbdc3da89fa70245071abf15f653c0095ae3defba7b",
-    "dev/package.json": "d861ed19512d396cec7a13b9b8e95b2d3400bbc6828ef7b0540784cf65a57df5",
+    "dev/package.json": "47082928b4f138c4fdabd4b1adfc75ee70873c188a0450bbce25810ec3eb40e0",
     "dev/projection.ts": "3fd049e50798aee9dce54af6cd6e6fccad45fec5ab24b994bb6a8a4b33d7252d",
     "dev/proofs.ts": "ec657848f47b8fa1724105df2aab6f25bb528f909ec9e7a996036d7fdc89184c",
-    "dev/render.ts": "73abbe90b7d5df0d5eb785eb5d38993aca456a207095632ff6c4d9f4dd734f05",
-    "dev/sources.ts": "c6d2ce6fc272c75380c680ed151e0b2f2e7e76abf75c4a55679ef0c7580400c4",
-    "dev/sysml/architecture.sysml": "8a526add85cfc800df512e08a18eeed84591daaf944fdb350a90a4cd1576efb8",
-    "Examples/ManifestCatalog.lean": "7c1c1eb2d288dfc7d3601062f2fe452d302b693d231ac455dcf24238a3a8219c",
-    "lake-manifest.json": "005293d31347e363a7f46a7a2a2bfbfea3f18484d688d7b75d144ca1ad16e3cd",
-    "lakefile.toml": "017f19694164250b32c95ce483b1bfb9ed03290f6c39d2eb938a8f347e22f80c",
-    "lean-toolchain": "d5edba4e4b8faad9c1baeadb265716d20d03be4d1a2647dc5e35b0c0325bea7b"
+    "dev/render.ts": "1b07616b3a05602676ea0101546ab66f20fd73943326382fda0ebafef2735201",
+    "dev/sources.ts": "3cd11d095476ee65c9086172773813e6e37e88087c9d01ee962cec59369d7ed8",
+    "dev/sysml/architecture.sysml": "8a526add85cfc800df512e08a18eeed84591daaf944fdb350a90a4cd1576efb8"
+  },
+  "binaries": {},
+  "sdk": {
+    "modelHash": "c0caa900738a7434f40ca59c3cc73c0b67c8598806a5281773243bb12f60aadc",
+    "view": "CedarArchitecture::components",
+    "trace": {
+      "modelHash": "c0caa900738a7434f40ca59c3cc73c0b67c8598806a5281773243bb12f60aadc",
+      "requestedView": "CedarArchitecture::components",
+      "resolvedView": "CedarArchitecture::components",
+      "renderingSHA256": "c6ce5891a562db16dfeb81066d31f6970341215b59d80e6872edc7911b84059b",
+      "capturedRenderingJSON": "{\"modelHash\":\"c0caa900738a7434f40ca59c3cc73c0b67c8598806a5281773243bb12f60aadc\",\"requestedView\":\"CedarArchitecture::components\",\"rendering\":{\"view\":\"CedarArchitecture::components\",\"kind\":\"interconnection\",\"stated\":\"render asInterconnectionDiagram\",\"nodes\":[{\"id\":\"n0\",\"kind\":\"part\",\"name\":\"CedarArchitecture::functional\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/architecture.sysml\",\"startLine\":17,\"startCol\":2,\"endLine\":17,\"endCol\":30}},{\"id\":\"n1\",\"kind\":\"part\",\"name\":\"CedarArchitecture::zeroTrust\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/architecture.sysml\",\"startLine\":10,\"startCol\":2,\"endLine\":10,\"endCol\":29}},{\"id\":\"n2\",\"kind\":\"part\",\"name\":\"CedarArchitecture::authorization\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/architecture.sysml\",\"startLine\":18,\"startCol\":2,\"endLine\":18,\"endCol\":33}},{\"id\":\"n3\",\"kind\":\"part\",\"name\":\"CedarArchitecture::pseudonymization\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/architecture.sysml\",\"startLine\":19,\"startCol\":2,\"endLine\":19,\"endCol\":36}},{\"id\":\"n4\",\"kind\":\"part\",\"name\":\"CedarArchitecture::admission\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/architecture.sysml\",\"startLine\":20,\"startCol\":2,\"endLine\":20,\"endCol\":29}},{\"id\":\"n5\",\"kind\":\"part\",\"name\":\"CedarArchitecture::governance\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/architecture.sysml\",\"startLine\":21,\"startCol\":2,\"endLine\":21,\"endCol\":30}},{\"id\":\"n6\",\"kind\":\"part\",\"name\":\"CedarArchitecture::gateway\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/architecture.sysml\",\"startLine\":22,\"startCol\":2,\"endLine\":22,\"endCol\":27}},{\"id\":\"n7\",\"kind\":\"part\",\"name\":\"CedarArchitecture::data\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/architecture.sysml\",\"startLine\":23,\"startCol\":2,\"endLine\":23,\"endCol\":24}},{\"id\":\"n8\",\"kind\":\"part\",\"name\":\"CedarArchitecture::cloud\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/architecture.sysml\",\"startLine\":24,\"startCol\":2,\"endLine\":24,\"endCol\":25}},{\"id\":\"n9\",\"kind\":\"part\",\"name\":\"CedarArchitecture::agenticAI\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/architecture.sysml\",\"startLine\":25,\"startCol\":2,\"endLine\":25,\"endCol\":29}}],\"edges\":[],\"columns\":[],\"rows\":[],\"notes\":[],\"notices\":[],\"shown\":[\"port-symbols\",\"compartments\",\"keywords\"]}}",
+      "nodes": [
+        {
+          "id": "n0",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/architecture.sysml",
+            "startLine": 17,
+            "startCol": 2,
+            "endLine": 17,
+            "endCol": 30
+          }
+        },
+        {
+          "id": "n1",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/architecture.sysml",
+            "startLine": 10,
+            "startCol": 2,
+            "endLine": 10,
+            "endCol": 29
+          }
+        },
+        {
+          "id": "n2",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/architecture.sysml",
+            "startLine": 18,
+            "startCol": 2,
+            "endLine": 18,
+            "endCol": 33
+          }
+        },
+        {
+          "id": "n3",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/architecture.sysml",
+            "startLine": 19,
+            "startCol": 2,
+            "endLine": 19,
+            "endCol": 36
+          }
+        },
+        {
+          "id": "n4",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/architecture.sysml",
+            "startLine": 20,
+            "startCol": 2,
+            "endLine": 20,
+            "endCol": 29
+          }
+        },
+        {
+          "id": "n5",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/architecture.sysml",
+            "startLine": 21,
+            "startCol": 2,
+            "endLine": 21,
+            "endCol": 30
+          }
+        },
+        {
+          "id": "n6",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/architecture.sysml",
+            "startLine": 22,
+            "startCol": 2,
+            "endLine": 22,
+            "endCol": 27
+          }
+        },
+        {
+          "id": "n7",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/architecture.sysml",
+            "startLine": 23,
+            "startCol": 2,
+            "endLine": 23,
+            "endCol": 24
+          }
+        },
+        {
+          "id": "n8",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/architecture.sysml",
+            "startLine": 24,
+            "startCol": 2,
+            "endLine": 24,
+            "endCol": 25
+          }
+        },
+        {
+          "id": "n9",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/architecture.sysml",
+            "startLine": 25,
+            "startCol": 2,
+            "endLine": 25,
+            "endCol": 29
+          }
+        }
+      ],
+      "edges": []
+    },
+    "diagnostics": [],
+    "observations": []
+  },
+  "renderer": {
+    "specifier": "git+https://github.com/hardenedlinux/deterministic-engineering.git#6223c5c44cc368e6e5b6d597421b275c160f9064",
+    "name": "@deterministic-engineering/render",
+    "version": "1.0.1"
   },
   "receipt": {
     "attribution": {
@@ -173,21 +296,21 @@
       "samples": 35,
       "requiredMinimum": 12
     },
-    "inputSHA256": "d166614fd8c3376dbd3477c9051983716cd2aa212ed90c0ee403975c5812b7a2",
+    "inputSHA256": "7893028b1d4bbbb90993dbc6c151b44036373d39775f821ed5969b752aa1d9b2",
     "scenes": [
       {
         "inputSHA256": "b371b5b26dcbcba234f8bbdcfd7a35ec56b8e29e9569178e7062765811be850e",
         "layoutSHA256": "247803d29825952be1f5a1c64dd0d2fa8e118580d7765225cf5e4f55ddd73a57",
         "nodes": 10,
         "edges": 0,
-        "milliseconds": 280.1037500000002
+        "milliseconds": 364.1492909999997
       }
     ],
     "svgSHA256": [
-      "12efa495f6df53b555e74e4371269d8d2105b4121c7a3eb3d040ee00fb378551",
+      "9efddb1eeb477fe7b03be723c45afcd91d74f3749424d51e9a25ed95204366e1",
       "4dbbdd37dd28ee2307b642190a55105116f079e05b886a21f639f968dd51c21b"
     ],
-    "composedHTMLSHA256": "5956efaba3d1f2b55f9d83617c0ac19d69e269accae52cf03baab8a5776f963f",
+    "composedHTMLSHA256": "4857ff92b2ee9fee38bd96c9f615dfe76b94cf0f557819087c4c7317b2209825",
     "dependencies": {
       "@fontsource/inter": "5.3.0",
       "@fontsource/kalam": "5.3.0",
@@ -200,7 +323,7 @@
       "web-worker": "1.5.0"
     },
     "regionSHA256": {},
-    "htmlSHA256": "98ad687ec18613d9fcb6c61b4f8a03cbed8e8f81624e7d9be4bf84516020e753",
+    "htmlSHA256": "1c45233ed6bf0c1279468c6d535e2e121cfea7f87f65906f752a8733ff7dde67",
     "drawing": "roughjs@4.6.6",
     "routing": "elkjs@0.12.1",
     "assetSHA256": {
@@ -213,147 +336,5 @@
     "height": 1406,
     "scale": 1.5,
     "bounds": {}
-  },
-  "sdk": {
-    "modelHash": "c0caa900738a7434f40ca59c3cc73c0b67c8598806a5281773243bb12f60aadc",
-    "view": "CedarArchitecture::components",
-    "trace": {
-      "modelHash": "c0caa900738a7434f40ca59c3cc73c0b67c8598806a5281773243bb12f60aadc",
-      "requestedView": "CedarArchitecture::components",
-      "resolvedView": "CedarArchitecture::components",
-      "renderingSHA256": "c6ce5891a562db16dfeb81066d31f6970341215b59d80e6872edc7911b84059b",
-      "capturedRenderingJSON": "{\"modelHash\":\"c0caa900738a7434f40ca59c3cc73c0b67c8598806a5281773243bb12f60aadc\",\"requestedView\":\"CedarArchitecture::components\",\"rendering\":{\"view\":\"CedarArchitecture::components\",\"kind\":\"interconnection\",\"stated\":\"render asInterconnectionDiagram\",\"nodes\":[{\"id\":\"n0\",\"kind\":\"part\",\"name\":\"CedarArchitecture::functional\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/architecture.sysml\",\"startLine\":17,\"startCol\":2,\"endLine\":17,\"endCol\":30}},{\"id\":\"n1\",\"kind\":\"part\",\"name\":\"CedarArchitecture::zeroTrust\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/architecture.sysml\",\"startLine\":10,\"startCol\":2,\"endLine\":10,\"endCol\":29}},{\"id\":\"n2\",\"kind\":\"part\",\"name\":\"CedarArchitecture::authorization\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/architecture.sysml\",\"startLine\":18,\"startCol\":2,\"endLine\":18,\"endCol\":33}},{\"id\":\"n3\",\"kind\":\"part\",\"name\":\"CedarArchitecture::pseudonymization\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/architecture.sysml\",\"startLine\":19,\"startCol\":2,\"endLine\":19,\"endCol\":36}},{\"id\":\"n4\",\"kind\":\"part\",\"name\":\"CedarArchitecture::admission\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/architecture.sysml\",\"startLine\":20,\"startCol\":2,\"endLine\":20,\"endCol\":29}},{\"id\":\"n5\",\"kind\":\"part\",\"name\":\"CedarArchitecture::governance\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/architecture.sysml\",\"startLine\":21,\"startCol\":2,\"endLine\":21,\"endCol\":30}},{\"id\":\"n6\",\"kind\":\"part\",\"name\":\"CedarArchitecture::gateway\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/architecture.sysml\",\"startLine\":22,\"startCol\":2,\"endLine\":22,\"endCol\":27}},{\"id\":\"n7\",\"kind\":\"part\",\"name\":\"CedarArchitecture::data\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/architecture.sysml\",\"startLine\":23,\"startCol\":2,\"endLine\":23,\"endCol\":24}},{\"id\":\"n8\",\"kind\":\"part\",\"name\":\"CedarArchitecture::cloud\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/architecture.sysml\",\"startLine\":24,\"startCol\":2,\"endLine\":24,\"endCol\":25}},{\"id\":\"n9\",\"kind\":\"part\",\"name\":\"CedarArchitecture::agenticAI\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/architecture.sysml\",\"startLine\":25,\"startCol\":2,\"endLine\":25,\"endCol\":29}}],\"edges\":[],\"columns\":[],\"rows\":[],\"notes\":[],\"notices\":[],\"shown\":[\"port-symbols\",\"compartments\",\"keywords\"]}}",
-      "nodes": [
-        {
-          "id": "n0",
-          "parent": "",
-          "origin": {
-            "file": "dev/sysml/architecture.sysml",
-            "startLine": 17,
-            "startCol": 2,
-            "endLine": 17,
-            "endCol": 30
-          }
-        },
-        {
-          "id": "n1",
-          "parent": "",
-          "origin": {
-            "file": "dev/sysml/architecture.sysml",
-            "startLine": 10,
-            "startCol": 2,
-            "endLine": 10,
-            "endCol": 29
-          }
-        },
-        {
-          "id": "n2",
-          "parent": "",
-          "origin": {
-            "file": "dev/sysml/architecture.sysml",
-            "startLine": 18,
-            "startCol": 2,
-            "endLine": 18,
-            "endCol": 33
-          }
-        },
-        {
-          "id": "n3",
-          "parent": "",
-          "origin": {
-            "file": "dev/sysml/architecture.sysml",
-            "startLine": 19,
-            "startCol": 2,
-            "endLine": 19,
-            "endCol": 36
-          }
-        },
-        {
-          "id": "n4",
-          "parent": "",
-          "origin": {
-            "file": "dev/sysml/architecture.sysml",
-            "startLine": 20,
-            "startCol": 2,
-            "endLine": 20,
-            "endCol": 29
-          }
-        },
-        {
-          "id": "n5",
-          "parent": "",
-          "origin": {
-            "file": "dev/sysml/architecture.sysml",
-            "startLine": 21,
-            "startCol": 2,
-            "endLine": 21,
-            "endCol": 30
-          }
-        },
-        {
-          "id": "n6",
-          "parent": "",
-          "origin": {
-            "file": "dev/sysml/architecture.sysml",
-            "startLine": 22,
-            "startCol": 2,
-            "endLine": 22,
-            "endCol": 27
-          }
-        },
-        {
-          "id": "n7",
-          "parent": "",
-          "origin": {
-            "file": "dev/sysml/architecture.sysml",
-            "startLine": 23,
-            "startCol": 2,
-            "endLine": 23,
-            "endCol": 24
-          }
-        },
-        {
-          "id": "n8",
-          "parent": "",
-          "origin": {
-            "file": "dev/sysml/architecture.sysml",
-            "startLine": 24,
-            "startCol": 2,
-            "endLine": 24,
-            "endCol": 25
-          }
-        },
-        {
-          "id": "n9",
-          "parent": "",
-          "origin": {
-            "file": "dev/sysml/architecture.sysml",
-            "startLine": 25,
-            "startCol": 2,
-            "endLine": 25,
-            "endCol": 29
-          }
-        }
-      ],
-      "edges": []
-    },
-    "diagnostics": [],
-    "observations": []
-  },
-  "lean": {
-    "path": "dev/.generated/lean-catalog.json",
-    "sha256": "c6856fdb9e8b2d36407b8605756659e8a1c02fca09ce628bc41c845f0e376657",
-    "formatVersion": 2,
-    "entries": 51,
-    "pools": {
-      "policies": 158,
-      "entities": 40,
-      "schemas": 22
-    }
-  },
-  "binaries": {
-    "dev/vendor/render-d000902.tgz": "abd7bcba27ba23d0260c65534c897e902fd4c814c1e4fbf8704c87429804b44c",
-    ".lake/build/bin/caseManifestsNative": "39c53fec2d23f19c449657b660f4588e179220f762502c5e1025636e752dc1e4"
-  },
-  "rendererArchiveSHA256": "abd7bcba27ba23d0260c65534c897e902fd4c814c1e4fbf8704c87429804b44c"
+  }
 }

@@ -29,6 +29,9 @@ LeanPoo, Cedar semantics or the vertical libraries.
 Proof maps read declarations and roles through the OpenSysML SDK; Lean checks
 source modules, theorem kinds and declared lemma uses. D2 owns localized catalog
 captions, while the shared projection preserves model identities and topology.
+Per-figure source closures and receipt-last exports reject missing or mixed
+artifacts. Bun installs the Render Library from its reviewed Git revision; no
+vendor archive is tracked.
 
 * Architecture and ownership
 

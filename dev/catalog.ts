@@ -58,9 +58,10 @@ package LeanCatalog {
 
 /** Catalog-specific annotations; generic SDK projection knows neither categories nor units. */
 export const CatalogViewSchema=v.object({catalog:v.optional(v.strictObject({counts:v.record(text,v.strictObject({expression:text,category:v.picklist(categories),one:text,other:text}))}))});
-export async function catalogCaptions(model:Pick<Model,'eval'>,author:Pick<FigureInput,'model'>,catalog:CatalogSummary,metadata:unknown){
+export async function catalogCaptions(model:Pick<Model,'eval'>,author:Pick<FigureInput,'model'>,catalog:CatalogSummary|undefined,metadata:unknown){
  const counts=v.parse(CatalogViewSchema,metadata).catalog?.counts??{};
  const captions:Record<string,string>={},observations:{expression:string;value:string}[]=[];
+ if(!catalog){if(Object.keys(counts).length)throw new Error('Catalog annotation requires captured native input');return{captions,observations};}
  for(const[id,binding]of Object.entries(counts)){
   const subject=author.model?.subjects.find(subject=>subject.id===id);
   if(!subject)throw new Error('Unbound catalog subject: '+id);

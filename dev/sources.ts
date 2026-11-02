@@ -26,12 +26,8 @@ export async function assertCurrent(root:string,hashes:Readonly<Record<string,st
  }
 }
 
-/** Read the existing package pin; do not maintain a second archive revision. */
-export function rendererArchive(manifest:unknown):string{
- const {dependencies}=v.parse(v.object({dependencies:v.object({'@deterministic-engineering/render':v.string()})}),manifest);
- const spec=dependencies['@deterministic-engineering/render'];
- if(!spec.startsWith('file:')||!spec.endsWith('.tgz'))throw new Error('Expected the declared local renderer package archive');
- const path=spec.slice(5);
- if(!path||path.includes('\\')||isAbsolute(path)||path.split('/').includes('..'))throw new Error('Renderer archive must be package-relative');
- return 'dev/'+path;
+/** Bun owns specifier resolution; the existing manifest remains its sole declaration. */
+export function rendererDependency(manifest:unknown):string{
+ const {dependencies}=v.parse(v.object({dependencies:v.object({'@deterministic-engineering/render':v.pipe(v.string(),v.minLength(1))})}),manifest);
+ return dependencies['@deterministic-engineering/render'];
 }
