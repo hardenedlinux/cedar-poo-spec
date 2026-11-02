@@ -119,7 +119,6 @@ bench-project-native-cold output:
     python3 -c 'from pathlib import Path; import hashlib,json,sys; p=Path(sys.argv[1]).resolve(); print(json.dumps({"lake_executable":str(p),"lake_sha256":hashlib.sha256(p.read_bytes()).hexdigest(),"declared_toolchain":Path("lean-toolchain").read_text().strip()}))' "$lake_executable" > "$output/toolchain.json"
     expected=$(sed 's/.*:v//' lean-toolchain)
     "$lake_executable" --version | tail -n 1 | rg -F "Lean version $expected)" > /dev/null
-    mv .lake/build "$output/qualified-build"
     restore() {
         if test -d "$output/qualified-build"; then
             if test -e .lake/build; then mv .lake/build "$output/cold-build"; fi
@@ -130,6 +129,7 @@ bench-project-native-cold output:
     trap 'exit 129' HUP
     trap 'exit 130' INT
     trap 'exit 143' TERM
+    mv .lake/build "$output/qualified-build"
     status=0
     uv run --project python --package cedar-poo-py-test --locked python -m cedar_poo_py_test.resources --output "$output/resource.json" /bin/sh -c 'exec timeout --signal=TERM --kill-after=3s 120s "$@"' native-project-cold "$lake_executable" build caseManifestsNative objectProfilesNative functionalReuseNative manifestLifecycleNative > "$output/build.log" 2>&1 || status=$?
     printf '%s\n' "$status" > "$output/exit-status"
