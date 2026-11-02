@@ -52,7 +52,7 @@ jobs:
           rm -rf node_modules
           bun install --frozen-lockfile --cache-dir "$RUNNER_TEMP/cedar-render-bun-cache"
           bun run typecheck
-          bun test ./test/sources.test.ts ./test/artifacts.test.ts
+          bun test ./test/sources.test.ts ./test/inputs.test.ts ./test/artifacts.test.ts
           git diff --exit-code -- package.json bun.lock
       - name: Upload actual platform outputs and captured inputs
         if: ${{ always() }}

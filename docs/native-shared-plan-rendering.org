@@ -633,3 +633,7 @@ All six changed files pass =reuse lint-file=. A full repository REUSE audit is
 still not compliant: 94/895 files have copyright information and 93/895 have
 license information. Existing Lean/Rust and other repository headers are outside
 this rendering-only change; no repository-wide compliance claim is made.
+
+Recovery runs the existing native D2 input-closure controls after reinstall, in
+addition to imported-package and real-output checks. This exercises the restored
+Render/D2 worker, rather than qualifying recovery from metadata imports alone.

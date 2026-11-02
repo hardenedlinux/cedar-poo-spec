@@ -276,7 +276,8 @@ The engineering-views CI uses a job-local empty Bun cache for its first frozen
 install, then runs the existing producer/render/typecheck/test entries. A later
 step deletes only =dev/node_modules/= and installs again from the same lockfile,
 then starts a new Bun process to verify the existing real SDK/browser exports.
-It does not regenerate outputs or reissue their receipts to make recovery pass.
+Recovery also exercises the installed Render/D2 worker through the existing input
+closure tests. It does not regenerate outputs or reissue their receipts to pass.
 The lockfile and manifest must remain unchanged. This qualifies Render dependency
 and view recovery; it is not a claim of a fully uncached Lean/toolchain build.
 
@@ -299,7 +300,7 @@ just test
 rm -rf node_modules
 bun install --frozen-lockfile
 bun run typecheck
-bun test ./test/artifacts.test.ts
+bun test ./test/sources.test.ts ./test/inputs.test.ts ./test/artifacts.test.ts
 #+end_src
 If the ignored HTML cache was lost, verification must fail. Use =just render= to
 produce a fresh complete bundle rather than editing hashes or accepting surviving
