@@ -34,6 +34,10 @@ jobs:
           test: false
           lint: false
       - uses: taiki-e/install-action@b6a061addd82b81aaeca51bdf2c53cd707996e5a # just
+      - name: Install recipe search dependency
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends ripgrep
       - name: Restore compatible Lean artifacts
         uses: ./.github/actions/lean-cache
       - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
@@ -204,6 +208,10 @@ jobs:
           lint: false
       - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
       - uses: taiki-e/install-action@b6a061addd82b81aaeca51bdf2c53cd707996e5a # just
+      - name: Install recipe search dependency
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends ripgrep
       - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
         with:
           version: "0.11.3"

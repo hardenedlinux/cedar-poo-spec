@@ -1617,3 +1617,13 @@ actual submission head; local acceptance is not substituted for Ubuntu results.
 All previous negative controls, timing non-wins and failed observations stay in
 their original evidence directories. Publication does not turn the mixed native
 wall/RSS results into a stable whole-process acceleration claim.
+
+
+The first exact-head Ubuntu run (=4719381=, run =41447537312=) failed before
+the cold observation: its four-target warm build passed, but the recipe's
+version check could not find =rg= (exit 127). This is not a 120-second recovery
+result. Lean and authorization-delta jobs now explicitly install ripgrep,
+which their existing recipes require. Consumer exclusion searches accept only
+status 1 (no match); a missing executable or search error must fail rather
+than silently pass a negative check. The failed log remains retained and the
+fixed timeout, workload, source checks and image comparison are unchanged.

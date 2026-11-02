@@ -164,9 +164,9 @@ check-functional-catalog: check-native-catalog
 
 # Consumer migration is an enforced boundary; primitives retain compatibility APIs.
 check-functional-consumers:
-    if rg -U -n 'def (policy\?|owner\?|control\?|channel\?|boundary\?|intent\?|scope\?|artifact\?)[^\n]*\n[ \t]+profile\.read' CedarPooSpec --glob '*.lean'; then exit 1; fi
-    if rg -n 'PolicyJson\.(authorizationCase|publish|compiled)\b|CompoundAuthorization\.authorize(All|Layers)\b' Examples Productions --glob '*.lean'; then exit 1; fi
-    if rg -n 'PolicyJson\.authorizationCase\b|CompoundAuthorization\.authorize(All|Layers)\b' CedarPooSpec --glob '*.lean' --glob '!Compilation.lean' --glob '!CompilationJson.lean'; then exit 1; fi
+    status=0; rg -U -n 'def (policy\?|owner\?|control\?|channel\?|boundary\?|intent\?|scope\?|artifact\?)[^\n]*\n[ \t]+profile\.read' CedarPooSpec --glob '*.lean' || status=$?; test "$status" -eq 1
+    status=0; rg -n 'PolicyJson\.(authorizationCase|publish|compiled)\b|CompoundAuthorization\.authorize(All|Layers)\b' Examples Productions --glob '*.lean' || status=$?; test "$status" -eq 1
+    status=0; rg -n 'PolicyJson\.authorizationCase\b|CompoundAuthorization\.authorize(All|Layers)\b' CedarPooSpec --glob '*.lean' --glob '!Compilation.lean' --glob '!CompilationJson.lean' || status=$?; test "$status" -eq 1
 
 check-claim-settlement-replay: build-examples
     timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 --run Examples/Manifests.lean catalog claim-settlement-claims claim-settlement-banking claim-settlement-handoff > .lake/build/claim-settlement-catalog.json
