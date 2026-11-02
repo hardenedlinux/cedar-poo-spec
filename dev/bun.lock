@@ -8,7 +8,7 @@
     "": {
       "name": "cedar-poo-spec-dev",
       "dependencies": {
-        "@deterministic-engineering/render": "git+https://github.com/hardenedlinux/deterministic-engineering.git#6223c5c44cc368e6e5b6d597421b275c160f9064",
+        "@deterministic-engineering/render": "git+https://github.com/hardenedlinux/deterministic-engineering.git#1fe20380441a0cd85055695c2adcc55ce699a369",
         "@openmbee/opensysml": "0.11.0",
         "@openmbee/opensysml-wasm": "0.11.0",
         "parse5": "8.0.1",
@@ -30,7 +30,7 @@
 
     "@connectrpc/connect-web": ["@connectrpc/connect-web@2.1.2", "", { "peerDependencies": { "@bufbuild/protobuf": "^2.7.0", "@connectrpc/connect": "2.1.2" } }, "sha512-1tfaK85MU+gJjwwmL31d2rzdf0XCYX99chZf63uG89SGBUd4XuZ4ZzhGo2u79TPXOE6nLIZQ2okrpyey42PYdg=="],
 
-    "@deterministic-engineering/render": ["@deterministic-engineering/render@github:hardenedlinux/deterministic-engineering#6223c5c", { "dependencies": { "@fontsource/inter": "5.3.0", "@fontsource/kalam": "5.3.0", "@terrastruct/d2": "0.1.33", "@xyflow/system": "0.0.83", "elkjs": "0.12.1", "parse5": "8.0.1", "roughjs": "4.6.6", "valibot": "1.2.0", "web-worker": "1.5.0" }, "peerDependencies": { "@openmbee/opensysml": "0.11.0", "playwright": "1.64.1" }, "optionalPeers": ["@openmbee/opensysml", "playwright"] }, "hardenedlinux-deterministic-engineering-6223c5c", "sha512-ECl1flAstw7bSro9XykUKnwPCHVzslJLvyI8CIGwl+YygL1S8mzsf04WVgBUWXM/VrZbyw+Vv32oulqZXW+fDQ=="],
+    "@deterministic-engineering/render": ["@deterministic-engineering/render@github:hardenedlinux/deterministic-engineering#1fe2038", { "dependencies": { "@fontsource/inter": "5.3.0", "@fontsource/kalam": "5.3.0", "@terrastruct/d2": "0.1.33", "@xyflow/system": "0.0.83", "elkjs": "0.12.1", "parse5": "8.0.1", "roughjs": "4.6.6", "valibot": "1.2.0", "web-worker": "1.5.0" }, "peerDependencies": { "@openmbee/opensysml": "0.11.0", "playwright": "1.64.1" }, "optionalPeers": ["@openmbee/opensysml", "playwright"] }, "hardenedlinux-deterministic-engineering-1fe2038", "sha512-5UIhgvL/TO1wf+DhrZunpc0tYhjDnIpmPcWKOaXz4SCc0h+D3aZFsPtjQjx0bgOl46nELjAkDyfe1Jaxd7Bvdw=="],
 
     "@fontsource/inter": ["@fontsource/inter@5.3.0", "", {}, "sha512-RofMylZmjlJEfELXeNHFWBRcSs75rGU/6bV2S2jfnvv/3rPXPGe0LgUJTklcHZ9lM4OZmAVFhcJPnACfb91A3g=="],
 

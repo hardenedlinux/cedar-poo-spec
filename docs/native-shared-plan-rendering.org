@@ -663,3 +663,30 @@ failed CI job. Both platforms must qualify the resulting source revision anew.
 Changing the adapter correctly invalidated previous receipts. The seven views
 were regenerated through =just render=; PNG/scene images were unchanged, while
 combined SVG provenance and JSON receipts bind the new source bytes.
+
+
+*** Released Render compiler lifecycle adoption
+
+The compiler allocation fix is owned by deterministic-engineering PR #5, rebased
+onto its Git-installable main, qualified on Linux/macOS plus full REUSE, and
+squash-merged as =1fe20380441a0cd85055695c2adcc55ce699a369=. The Release tag
+=render-v1.0.2= binds that source; version ownership remains its root package.json.
+Cedar's existing manifest/lock now select this exact Git commit, not a PR branch,
+vendor tree or Release asset. No other dependency revision or algorithm is changed.
+
+The Library joins its existing SDK worker and waits for native process close on
+success and failure. Its original branch rejected some IPC errors prematurely;
+upstream now covers spawn failure, sync/async IPC failure, missing/duplicate result
+and abnormal exit, retaining the original RSS guard and resource limits. This is
+not duplicated in Cedar: projection and publication still consume the public API.
+
+Before revision change the existing real architecture receipt verified. Updating
+the manifest and native Bun lock made that same receipt fail on =dev/bun.lock=.
+The preserved refusal establishes actual source-change invalidation rather than
+a fabricated transport example. New receipts must bind the installed metadata and
+re-rendered SDK/D2 captures. Cold qualification removes node_modules, installs with
+an empty Bun package cache and frozen lock, then invokes the existing render/test
+entries. Recovery reinstalls the same locked source and checks the existing exports
+plus native D2 worker in a new process, without regenerating receipts to pass.
+Lean source/proof methods and memory/time budgets remain unchanged. This qualifies
+this consumer/source cohort; the upstream and downstream acceptances are separate.

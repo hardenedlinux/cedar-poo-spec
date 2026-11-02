@@ -4,12 +4,12 @@
     "CedarPooSpec/ZeroTrust/ProfileObject.lean": "5b78e3ea7c418c0dd44339f8c05dcad659a4f1763313be32768ee3a589c57580",
     "dev/.generated/security-frameworks-sdk.json": "2021c0471e10263855ebf35a954c6c17720c84054c8dee7aaaa8140f19213a9f",
     "dev/artifacts.ts": "ca1096947536fbdbd5da5cbf1ce5c6f57521bd4a7b135233285dfe8fcff9859d",
-    "dev/bun.lock": "ff7dfa5e83619b9ea614de09044a6ea84674934b8f284e440d253beeb6677663",
+    "dev/bun.lock": "2b7060a881aad9312d122f6d01146ef78c207b3c95254aa66b7b57a9eede5acd",
     "dev/catalog.ts": "6d65a91afcddb11de668cc668aa3c6b9076435c02e73a90323c7bf28a991965e",
     "dev/d2/security-frameworks.d2": "901fd692144ac61c02293a965bde1deb95e38073ab7cdc8db9b4491d7689de1c",
     "dev/inputs.ts": "8ccc4bd7ceda2013d5fd86b37d2565beb60f1a8761004d67be77d0c2acd1265e",
     "dev/Justfile": "a13b2b6ef2cabfdd03841bbdc3da89fa70245071abf15f653c0095ae3defba7b",
-    "dev/package.json": "47082928b4f138c4fdabd4b1adfc75ee70873c188a0450bbce25810ec3eb40e0",
+    "dev/package.json": "4597c8e94f87afcc8655b9be5197b5835e620ed5610f8182b20ee386194f6a5f",
     "dev/projection.ts": "3fd049e50798aee9dce54af6cd6e6fccad45fec5ab24b994bb6a8a4b33d7252d",
     "dev/proofs.ts": "7ecca5b114869cbf7ea212bfeb7982c04a3015ea47d0e34a136b022d097d8d2f",
     "dev/render.ts": "1b07616b3a05602676ea0101546ab66f20fd73943326382fda0ebafef2735201",
@@ -154,9 +154,9 @@
     "observations": []
   },
   "renderer": {
-    "specifier": "git+https://github.com/hardenedlinux/deterministic-engineering.git#6223c5c44cc368e6e5b6d597421b275c160f9064",
+    "specifier": "git+https://github.com/hardenedlinux/deterministic-engineering.git#1fe20380441a0cd85055695c2adcc55ce699a369",
     "name": "@deterministic-engineering/render",
-    "version": "1.0.1"
+    "version": "1.0.2"
   },
   "receipt": {
     "attribution": {
@@ -317,21 +317,21 @@
       "samples": 30,
       "requiredMinimum": 12
     },
-    "inputSHA256": "61be52ff50006036d17ab3bcf141523ae1c83ab3aa2c5700272d8cc01f9f4267",
+    "inputSHA256": "d16c86f58947d116dfed3c28eb51314bd7d3d997d854740bb6fb26de1c661369",
     "scenes": [
       {
         "inputSHA256": "75517e118c4c919af36c800fe94379b54024bdac668ba87a4c5d30d50935bacb",
         "layoutSHA256": "4a432db44828e657def2d85df373b3adedde9ad127445b9de43d034751d4dda0",
         "nodes": 5,
         "edges": 4,
-        "milliseconds": 301.2694159999992
+        "milliseconds": 119.76333299999897
       }
     ],
     "svgSHA256": [
-      "468c1bd6a98fa659bb2d051d41ea6e4d71e0c7e66783337c2167cff78a625350",
+      "1c1845aa542dcc8be9cdfe358daa5354a5338a8029bcdfa8a78f4b8b992960f2",
       "814a2af3255f5a4cebda87bc26b2856855523b4ac308fdff73326a7249826f51"
     ],
-    "composedHTMLSHA256": "5c1a269705673070626a281274c778f6526e0a9400730e04883e98afd9cc97e7",
+    "composedHTMLSHA256": "415ffa3d958a1e4a418b472029e3929ce653229caf8b651c748fdbae0d1b88f2",
     "dependencies": {
       "@fontsource/inter": "5.3.0",
       "@fontsource/kalam": "5.3.0",
@@ -344,12 +344,12 @@
       "web-worker": "1.5.0"
     },
     "regionSHA256": {},
-    "htmlSHA256": "9c08c63ad415e439181c8fc5462efa4aaa7b35eb8fff739e494ab3721850b7c0",
+    "htmlSHA256": "db78a4b9d1aa4674cf160d10e3d750237ce5b81b8412a945f85368639eca5211",
     "drawing": "roughjs@4.6.6",
     "routing": "elkjs@0.12.1",
     "assetSHA256": {
-      "@fontsource/kalam/files/kalam-latin-400-normal.woff2": "954410601a823f37e219f7930b7446f86afa15621326a7078d56fb9c910135cb",
-      "@fontsource/kalam/files/kalam-latin-700-normal.woff2": "252063af6ade8b9a744cde4ddad0fc21ea53b8ba711eed121a0c2e8610ea9c93"
+      "@fontsource/kalam/files/kalam-latin-700-normal.woff2": "252063af6ade8b9a744cde4ddad0fc21ea53b8ba711eed121a0c2e8610ea9c93",
+      "@fontsource/kalam/files/kalam-latin-400-normal.woff2": "954410601a823f37e219f7930b7446f86afa15621326a7078d56fb9c910135cb"
     },
     "pngSHA256": "1021d88c2244b888d8cd819c10f0b2dd585c333cff3d453cb64866a4518756c2",
     "browser": "156.0.8078.4",
