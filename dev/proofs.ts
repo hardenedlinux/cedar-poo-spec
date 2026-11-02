@@ -54,7 +54,8 @@ export async function readProofMap(model:Model,namespace:string):Promise<ProofMa
 export function leanProofCheck(map:ProofMap):string{
  const name=(value:string)=>'`'+value;
  const origins=map.cards.map(card=>[card.symbol,card.source.slice(0,-5).split('/').join('.')] as const);
- return `import Lean
+ return `import Lean.Elab.BuiltinEvalCommand
+import Lean.Util.FoldConsts
 ${[...new Set(origins.map(([,module])=>module))].sort().map(module=>'import '+module).join('\n')}
 run_cmd do
   let env ← Lean.getEnv

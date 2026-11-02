@@ -263,3 +263,58 @@ checks. Each retains the existing 30-second per-test bound; native Lean keeps it
 capture only after receipt validation, rather than charging SDK discovery and
 compiler startup to one combined test. Stage timing and child termination signal
 are recorded. This is not a retry policy or an extension of either method budget.
+
+
+* Downstream Git installation, cold start and recovery
+
+=package.json= declares the reviewed Render Git commit and =bun.lock= records
+Bun's resolution/integrity data. The installed upstream =package.json= remains
+the version source. Neither =dev/vendor/= nor a GitHub Release asset participates
+in installation. Do not copy a tarball or create a second package manifest.
+
+The engineering-views CI uses a job-local empty Bun cache for its first frozen
+install, then runs the existing producer/render/typecheck/test entries. A later
+step deletes only =dev/node_modules/= and installs again from the same lockfile,
+then starts a new Bun process to verify the existing real SDK/browser exports.
+Recovery also exercises the installed Render/D2 worker through the existing input
+closure tests. It does not regenerate outputs or reissue their receipts to pass.
+The lockfile and manifest must remain unchanged. This qualifies Render dependency
+and view recovery; it is not a claim of a fully uncached Lean/toolchain build.
+
+The real architecture-overview bundle is copied to a new temporary repository root
+with only its captured inputs. Recovery fails without its HTML cache, then passes
+after the original cache is restored. Changes to actual D2, referenced SysML,
+adapter, package manifest or Bun lock invalidate the old receipt; restoring exact
+bytes makes it current again. Missing HTML is rejected again. The view restores
+without a catalog binary, vendor tree or Release asset. Existing interrupted and
+mixed-output controls remain. Tests never launch installers or nested test runners.
+
+After a normal Git checkout, use the existing entries:
+#+begin_src sh
+cd dev
+bun install --frozen-lockfile
+bunx playwright install chromium
+just render
+just test
+# Dependency recovery; retain sources and existing exports.
+rm -rf node_modules
+bun install --frozen-lockfile
+bun run typecheck
+bun test ./test/sources.test.ts ./test/inputs.test.ts ./test/artifacts.test.ts
+#+end_src
+If the ignored HTML cache was lost, verification must fail. Use =just render= to
+produce a fresh complete bundle rather than editing hashes or accepting surviving
+PNG/SVG. Browser/dependency assets inside =node_modules/= belong to their packages;
+they are not project HTML outputs.
+
+Local qualification on 2026-11-02 used an independent checkout and empty Bun cache:
+94 packages installed in 13.14 s; native architecture rendering and receipt
+verification passed with 21 source files and no producer binary. Removing the
+installation and reinstalling the same lockfile restored 94 packages in 436 ms;
+a new process accepted the unchanged original export. These are recorded local
+observations, not cross-platform performance guarantees.
+
+The native proof checker imports only the Lean command-evaluation and constant-use
+inspection modules it consumes. It still checks the entire SDK capture and all
+existing negative controls within the same per-test memory/heartbeat/time bounds.
+See the shared-plan Org audit for the preserved macOS failure and import profile.

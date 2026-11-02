@@ -14,7 +14,7 @@
     "dev/Justfile": "a13b2b6ef2cabfdd03841bbdc3da89fa70245071abf15f653c0095ae3defba7b",
     "dev/package.json": "47082928b4f138c4fdabd4b1adfc75ee70873c188a0450bbce25810ec3eb40e0",
     "dev/projection.ts": "3fd049e50798aee9dce54af6cd6e6fccad45fec5ab24b994bb6a8a4b33d7252d",
-    "dev/proofs.ts": "ec657848f47b8fa1724105df2aab6f25bb528f909ec9e7a996036d7fdc89184c",
+    "dev/proofs.ts": "7ecca5b114869cbf7ea212bfeb7982c04a3015ea47d0e34a136b022d097d8d2f",
     "dev/render.ts": "1b07616b3a05602676ea0101546ab66f20fd73943326382fda0ebafef2735201",
     "dev/sources.ts": "3cd11d095476ee65c9086172773813e6e37e88087c9d01ee962cec59369d7ed8",
     "dev/sysml/architecture.sysml": "8a526add85cfc800df512e08a18eeed84591daaf944fdb350a90a4cd1576efb8",
@@ -729,21 +729,21 @@
       "samples": 63,
       "requiredMinimum": 12
     },
-    "inputSHA256": "b4f958be4d88992de852eb0df765aee092ce68b41eef82eb593682a926b6cd93",
+    "inputSHA256": "c4cb81341f58bfecbf1e00c8387cc59a6c38cfc3f12414bad05382f1e590faf6",
     "scenes": [
       {
         "inputSHA256": "e37712d455e547bad725dabd5b84f2c459f5477c15e4f5350e5ef58d5546586a",
         "layoutSHA256": "e3a006d7aedb8c3ed9f03375fdc88ec9edf699022226cf9f75a26b9dd3d7faed",
         "nodes": 10,
         "edges": 14,
-        "milliseconds": 326.6011669999998
+        "milliseconds": 405.7746670000006
       }
     ],
     "svgSHA256": [
-      "3e58859530db29864e08eb541a354c8509018bbd87c79fc53dd89d621e2f8cba",
+      "ad477d7646d2340add94cfc7f15264953022e23f48b810d00bc1e33a3890f179",
       "1c1c8324c7774e2d1ab76e8273ca28604a281b8df09c4b09660f7c97bcac4449"
     ],
-    "composedHTMLSHA256": "197bf988301c562ab9f3c1b69329df6b275d0044c2f96bb9b6752bf93fa34115",
+    "composedHTMLSHA256": "bd393187c20297212abb9855f44c8ab61f515535b5db5db29aac9a2a1c637e5f",
     "dependencies": {
       "@fontsource/inter": "5.3.0",
       "@fontsource/kalam": "5.3.0",
@@ -756,12 +756,12 @@
       "web-worker": "1.5.0"
     },
     "regionSHA256": {},
-    "htmlSHA256": "6f92547388f8c163a240269a0417d36a4bcdd3e682648fffc6295d5075373e27",
+    "htmlSHA256": "16d94a93a9400272be3948e5da1175cffccd20d13936d08ec8ece470844b0992",
     "drawing": "roughjs@4.6.6",
     "routing": "elkjs@0.12.1",
     "assetSHA256": {
-      "@fontsource/kalam/files/kalam-latin-700-normal.woff2": "252063af6ade8b9a744cde4ddad0fc21ea53b8ba711eed121a0c2e8610ea9c93",
-      "@fontsource/kalam/files/kalam-latin-400-normal.woff2": "954410601a823f37e219f7930b7446f86afa15621326a7078d56fb9c910135cb"
+      "@fontsource/kalam/files/kalam-latin-400-normal.woff2": "954410601a823f37e219f7930b7446f86afa15621326a7078d56fb9c910135cb",
+      "@fontsource/kalam/files/kalam-latin-700-normal.woff2": "252063af6ade8b9a744cde4ddad0fc21ea53b8ba711eed121a0c2e8610ea9c93"
     },
     "pngSHA256": "7c4d74d9191fc43c579820bbc74f764c124b89cd423c1fb0e533eb30b832589f",
     "browser": "156.0.8078.4",
