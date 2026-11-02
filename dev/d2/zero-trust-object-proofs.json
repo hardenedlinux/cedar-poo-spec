@@ -3,11 +3,11 @@
   "sources": {
     "CedarPooSpec/Gateway/ZeroTrust.lean": "6ef9abbec130ae27ac17f7fb3b2b4426193e6dcb862b11847abeb370612b69a0",
     "CedarPooSpec/ZeroTrust/Composition.lean": "ebab914cf26a6d08662fb58dea452985673e3ab3e7f6ee3c97abb572b840984e",
-    "CedarPooSpec/ZeroTrust/Continuous.lean": "e7498c26f53d71bea19a671bec342e9de19f731cfe1cac6f00f83790fd1693d4",
+    "CedarPooSpec/ZeroTrust/Continuous.lean": "42c1453d6de90b4e09ae3c3270de4ddf4bb5b6509055761a6c5574fe8755a89f",
     "CedarPooSpec/ZeroTrust/Model.lean": "bf9827dc36c52cfc41f63fd1ee9ff83b325972c41504b41444e2134d635519a2",
     "CedarPooSpec/ZeroTrust/ProfileObject.lean": "5b78e3ea7c418c0dd44339f8c05dcad659a4f1763313be32768ee3a589c57580",
     "CedarPooSpec/ZeroTrust/UsageControl.lean": "e8198fb65cd7be9ca9fbaf9260857054c7480ed22e0766b8103dc6c60d67c27d",
-    "dev/.generated/zero-trust-object-proofs-sdk.json": "82953e376e1e0b6634884044940f514d3cbced1c6dfa55560946c5120ad919bd",
+    "dev/.generated/zero-trust-object-proofs-sdk.json": "6e4d344026c742b81f268d26a3d6028440fc59cb94e18676c11543452b9d8d59",
     "dev/artifacts.ts": "ca1096947536fbdbd5da5cbf1ce5c6f57521bd4a7b135233285dfe8fcff9859d",
     "dev/bun.lock": "2b7060a881aad9312d122f6d01146ef78c207b3c95254aa66b7b57a9eede5acd",
     "dev/catalog.ts": "6d65a91afcddb11de668cc668aa3c6b9076435c02e73a90323c7bf28a991965e",
@@ -19,28 +19,29 @@
     "dev/proofs.ts": "7ecca5b114869cbf7ea212bfeb7982c04a3015ea47d0e34a136b022d097d8d2f",
     "dev/render.ts": "1b07616b3a05602676ea0101546ab66f20fd73943326382fda0ebafef2735201",
     "dev/sources.ts": "3cd11d095476ee65c9086172773813e6e37e88087c9d01ee962cec59369d7ed8",
-    "dev/sysml/zero-trust-proofs.sysml": "0b85a38957e0a94e1e9b3ddfa5f8681e11596b865f3efc9a6fde4ad1a7868eab",
+    "dev/sysml/zero-trust-proofs.sysml": "3f2700293031473da7118ff382402badc8beba9a90b4715170e18d65c08fb814",
+    "Tests/ZeroTrust/Functional.lean": "9c582d2438fa1b0f01d7c5c31f590487e37fc01588b32829d2e732187c349494",
     "Tests/ZeroTrust/ProfileObject.lean": "afc35d973cc630dc87228e8117d3c99f377c9cc117bd0402d1bc95c928838615"
   },
   "binaries": {},
   "sdk": {
-    "modelHash": "9cdc356acb74095fe0a5f8aa8683a80bd2a3e54f606374def35f4f35adaef578",
+    "modelHash": "6a9c913577b89f0f8a3b37a2d480ed38bb40a67f9c393f2c7fdda9272c73d54a",
     "view": "ZeroTrustProofs::objects",
     "trace": {
-      "modelHash": "9cdc356acb74095fe0a5f8aa8683a80bd2a3e54f606374def35f4f35adaef578",
+      "modelHash": "6a9c913577b89f0f8a3b37a2d480ed38bb40a67f9c393f2c7fdda9272c73d54a",
       "requestedView": "ZeroTrustProofs::objects",
       "resolvedView": "ZeroTrustProofs::objects",
-      "renderingSHA256": "82953e376e1e0b6634884044940f514d3cbced1c6dfa55560946c5120ad919bd",
-      "capturedRenderingJSON": "{\"modelHash\":\"9cdc356acb74095fe0a5f8aa8683a80bd2a3e54f606374def35f4f35adaef578\",\"requestedView\":\"ZeroTrustProofs::objects\",\"rendering\":{\"view\":\"ZeroTrustProofs::objects\",\"kind\":\"interconnection\",\"stated\":\"render asInterconnectionDiagram\",\"nodes\":[{\"id\":\"n0\",\"kind\":\"part\",\"name\":\"ZeroTrustProofs::profile\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":30,\"startCol\":2,\"endLine\":30,\"endCol\":28}},{\"id\":\"n1\",\"kind\":\"part\",\"name\":\"ZeroTrustProofs::session\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":33,\"startCol\":2,\"endLine\":33,\"endCol\":28}},{\"id\":\"n2\",\"kind\":\"part\",\"name\":\"ZeroTrustProofs::counter\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":36,\"startCol\":2,\"endLine\":36,\"endCol\":38}},{\"id\":\"n3\",\"kind\":\"part\",\"name\":\"ZeroTrustProofs::joined\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":39,\"startCol\":2,\"endLine\":39,\"endCol\":27}},{\"id\":\"n4\",\"kind\":\"part\",\"name\":\"ZeroTrustProofs::preserved\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":42,\"startCol\":2,\"endLine\":42,\"endCol\":29}},{\"id\":\"n5\",\"kind\":\"part\",\"name\":\"ZeroTrustProofs::prefix\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":45,\"startCol\":2,\"endLine\":45,\"endCol\":28}},{\"id\":\"n6\",\"kind\":\"part\",\"name\":\"ZeroTrustProofs::continuing\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":48,\"startCol\":2,\"endLine\":48,\"endCol\":30}}],\"edges\":[{\"from\":\"n0\",\"to\":\"n1\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":74,\"startCol\":2,\"endLine\":74,\"endCol\":53}},{\"from\":\"n0\",\"to\":\"n2\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":75,\"startCol\":2,\"endLine\":75,\"endCol\":53}},{\"from\":\"n1\",\"to\":\"n3\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":76,\"startCol\":2,\"endLine\":76,\"endCol\":52}},{\"from\":\"n2\",\"to\":\"n3\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":77,\"startCol\":2,\"endLine\":77,\"endCol\":52}},{\"from\":\"n3\",\"to\":\"n4\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":78,\"startCol\":2,\"endLine\":78,\"endCol\":54}},{\"from\":\"n4\",\"to\":\"n6\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":79,\"startCol\":2,\"endLine\":79,\"endCol\":58}},{\"from\":\"n5\",\"to\":\"n6\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":80,\"startCol\":2,\"endLine\":80,\"endCol\":55}}],\"columns\":[],\"rows\":[],\"notes\":[],\"notices\":[],\"shown\":[\"port-symbols\",\"compartments\",\"keywords\"]}}",
+      "renderingSHA256": "6e4d344026c742b81f268d26a3d6028440fc59cb94e18676c11543452b9d8d59",
+      "capturedRenderingJSON": "{\"modelHash\":\"6a9c913577b89f0f8a3b37a2d480ed38bb40a67f9c393f2c7fdda9272c73d54a\",\"requestedView\":\"ZeroTrustProofs::objects\",\"rendering\":{\"view\":\"ZeroTrustProofs::objects\",\"kind\":\"interconnection\",\"stated\":\"render asInterconnectionDiagram\",\"nodes\":[{\"id\":\"n0\",\"kind\":\"part\",\"name\":\"ZeroTrustProofs::profile\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":40,\"startCol\":2,\"endLine\":40,\"endCol\":28}},{\"id\":\"n1\",\"kind\":\"part\",\"name\":\"ZeroTrustProofs::session\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":43,\"startCol\":2,\"endLine\":43,\"endCol\":28}},{\"id\":\"n2\",\"kind\":\"part\",\"name\":\"ZeroTrustProofs::counter\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":46,\"startCol\":2,\"endLine\":46,\"endCol\":38}},{\"id\":\"n3\",\"kind\":\"part\",\"name\":\"ZeroTrustProofs::joined\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":49,\"startCol\":2,\"endLine\":49,\"endCol\":27}},{\"id\":\"n4\",\"kind\":\"part\",\"name\":\"ZeroTrustProofs::preserved\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":52,\"startCol\":2,\"endLine\":52,\"endCol\":29}},{\"id\":\"n5\",\"kind\":\"part\",\"name\":\"ZeroTrustProofs::prefix\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":55,\"startCol\":2,\"endLine\":55,\"endCol\":28}},{\"id\":\"n6\",\"kind\":\"part\",\"name\":\"ZeroTrustProofs::continuing\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":58,\"startCol\":2,\"endLine\":58,\"endCol\":30}}],\"edges\":[{\"from\":\"n0\",\"to\":\"n1\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":93,\"startCol\":2,\"endLine\":93,\"endCol\":53}},{\"from\":\"n0\",\"to\":\"n2\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":94,\"startCol\":2,\"endLine\":94,\"endCol\":53}},{\"from\":\"n1\",\"to\":\"n3\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":95,\"startCol\":2,\"endLine\":95,\"endCol\":52}},{\"from\":\"n2\",\"to\":\"n3\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":96,\"startCol\":2,\"endLine\":96,\"endCol\":52}},{\"from\":\"n3\",\"to\":\"n4\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":97,\"startCol\":2,\"endLine\":97,\"endCol\":54}},{\"from\":\"n4\",\"to\":\"n6\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":98,\"startCol\":2,\"endLine\":98,\"endCol\":58}},{\"from\":\"n5\",\"to\":\"n6\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":99,\"startCol\":2,\"endLine\":99,\"endCol\":55}}],\"columns\":[],\"rows\":[],\"notes\":[],\"notices\":[],\"shown\":[\"port-symbols\",\"compartments\",\"keywords\"]}}",
       "nodes": [
         {
           "id": "n0",
           "parent": "",
           "origin": {
             "file": "dev/sysml/zero-trust-proofs.sysml",
-            "startLine": 30,
+            "startLine": 40,
             "startCol": 2,
-            "endLine": 30,
+            "endLine": 40,
             "endCol": 28
           }
         },
@@ -49,9 +50,9 @@
           "parent": "",
           "origin": {
             "file": "dev/sysml/zero-trust-proofs.sysml",
-            "startLine": 33,
+            "startLine": 43,
             "startCol": 2,
-            "endLine": 33,
+            "endLine": 43,
             "endCol": 28
           }
         },
@@ -60,9 +61,9 @@
           "parent": "",
           "origin": {
             "file": "dev/sysml/zero-trust-proofs.sysml",
-            "startLine": 36,
+            "startLine": 46,
             "startCol": 2,
-            "endLine": 36,
+            "endLine": 46,
             "endCol": 38
           }
         },
@@ -71,9 +72,9 @@
           "parent": "",
           "origin": {
             "file": "dev/sysml/zero-trust-proofs.sysml",
-            "startLine": 39,
+            "startLine": 49,
             "startCol": 2,
-            "endLine": 39,
+            "endLine": 49,
             "endCol": 27
           }
         },
@@ -82,9 +83,9 @@
           "parent": "",
           "origin": {
             "file": "dev/sysml/zero-trust-proofs.sysml",
-            "startLine": 42,
+            "startLine": 52,
             "startCol": 2,
-            "endLine": 42,
+            "endLine": 52,
             "endCol": 29
           }
         },
@@ -93,9 +94,9 @@
           "parent": "",
           "origin": {
             "file": "dev/sysml/zero-trust-proofs.sysml",
-            "startLine": 45,
+            "startLine": 55,
             "startCol": 2,
-            "endLine": 45,
+            "endLine": 55,
             "endCol": 28
           }
         },
@@ -104,9 +105,9 @@
           "parent": "",
           "origin": {
             "file": "dev/sysml/zero-trust-proofs.sysml",
-            "startLine": 48,
+            "startLine": 58,
             "startCol": 2,
-            "endLine": 48,
+            "endLine": 58,
             "endCol": 30
           }
         }
@@ -122,9 +123,9 @@
           "kind": "connection",
           "origin": {
             "file": "dev/sysml/zero-trust-proofs.sysml",
-            "startLine": 74,
+            "startLine": 93,
             "startCol": 2,
-            "endLine": 74,
+            "endLine": 93,
             "endCol": 53
           }
         },
@@ -138,9 +139,9 @@
           "kind": "connection",
           "origin": {
             "file": "dev/sysml/zero-trust-proofs.sysml",
-            "startLine": 75,
+            "startLine": 94,
             "startCol": 2,
-            "endLine": 75,
+            "endLine": 94,
             "endCol": 53
           }
         },
@@ -154,9 +155,9 @@
           "kind": "connection",
           "origin": {
             "file": "dev/sysml/zero-trust-proofs.sysml",
-            "startLine": 76,
+            "startLine": 95,
             "startCol": 2,
-            "endLine": 76,
+            "endLine": 95,
             "endCol": 52
           }
         },
@@ -170,9 +171,9 @@
           "kind": "connection",
           "origin": {
             "file": "dev/sysml/zero-trust-proofs.sysml",
-            "startLine": 77,
+            "startLine": 96,
             "startCol": 2,
-            "endLine": 77,
+            "endLine": 96,
             "endCol": 52
           }
         },
@@ -186,9 +187,9 @@
           "kind": "connection",
           "origin": {
             "file": "dev/sysml/zero-trust-proofs.sysml",
-            "startLine": 78,
+            "startLine": 97,
             "startCol": 2,
-            "endLine": 78,
+            "endLine": 97,
             "endCol": 54
           }
         },
@@ -202,9 +203,9 @@
           "kind": "connection",
           "origin": {
             "file": "dev/sysml/zero-trust-proofs.sysml",
-            "startLine": 79,
+            "startLine": 98,
             "startCol": 2,
-            "endLine": 79,
+            "endLine": 98,
             "endCol": 58
           }
         },
@@ -218,9 +219,9 @@
           "kind": "connection",
           "origin": {
             "file": "dev/sysml/zero-trust-proofs.sysml",
-            "startLine": 80,
+            "startLine": 99,
             "startCol": 2,
-            "endLine": 80,
+            "endLine": 99,
             "endCol": 55
           }
         }
@@ -230,7 +231,7 @@
     "observations": []
   },
   "proofClaims": {
-    "modelHash": "9cdc356acb74095fe0a5f8aa8683a80bd2a3e54f606374def35f4f35adaef578",
+    "modelHash": "6a9c913577b89f0f8a3b37a2d480ed38bb40a67f9c393f2c7fdda9272c73d54a",
     "cards": [
       {
         "id": "ZeroTrustProofs::required",
@@ -267,6 +268,24 @@
         "role": "KernelLaw",
         "symbol": "CedarPooSpec.ZeroTrust.usage_rechecks_after_recovery",
         "source": "CedarPooSpec/ZeroTrust/UsageControl.lean"
+      },
+      {
+        "id": "ZeroTrustProofs::monotone",
+        "role": "KernelLaw",
+        "symbol": "CedarPooSpec.ZeroTrust.run_generation_monotone",
+        "source": "CedarPooSpec/ZeroTrust/Continuous.lean"
+      },
+      {
+        "id": "ZeroTrustProofs::retired",
+        "role": "KernelLaw",
+        "symbol": "CedarPooSpec.ZeroTrust.Observation.retired_cut_refuses_after_run",
+        "source": "CedarPooSpec/ZeroTrust/Continuous.lean"
+      },
+      {
+        "id": "ZeroTrustProofs::rollback",
+        "role": "KernelCounterexample",
+        "symbol": "CedarPooSpec.ZeroTrustTest.authority_rollback_revives_cut_counterexample",
+        "source": "Tests/ZeroTrust/Functional.lean"
       },
       {
         "id": "ZeroTrustProofs::meanings",
@@ -321,6 +340,10 @@
       {
         "dependency": "CedarPooSpec.ZeroTrust.usage_retains_core",
         "target": "CedarPooSpec.ZeroTrust.usage_rechecks_after_recovery"
+      },
+      {
+        "dependency": "CedarPooSpec.ZeroTrust.run_generation_monotone",
+        "target": "CedarPooSpec.ZeroTrust.Observation.retired_cut_refuses_after_run"
       },
       {
         "dependency": "CedarPooSpec.ZeroTrust.ProfileObject.composed_preserves_actual_parent_and_original",
@@ -553,21 +576,21 @@
       "samples": 55,
       "requiredMinimum": 12
     },
-    "inputSHA256": "c31cfe4b2327d2f559738e16afbff0c9c0c8261e9e93fbe6eba94cb83a14fa9e",
+    "inputSHA256": "cf40934fc24be3746517036322d071faf26a643611f87ebb40604021a7d4b3d0",
     "scenes": [
       {
         "inputSHA256": "95042781c56cf061e6e24692d229b9b803f8f105cd7589ecf382872e43e67564",
         "layoutSHA256": "44c74cde850c0814de853925b0a9ac92d2ac6d21f8e77d1ede01a86c4404cda7",
         "nodes": 7,
         "edges": 7,
-        "milliseconds": 264.7026249999981
+        "milliseconds": 312.208458000001
       }
     ],
     "svgSHA256": [
-      "a5873dba229de93d8b918eb246d8bece09c9b59082b6c157ca63f15dcdf6f5cb",
+      "e3c18c27dcf6e2b525671f2fed6fddc3ec58e837f0e924586dae9ffe0883b772",
       "2d48780605cb63ba88423abd05f3862549f3652c8324326bfb22c3bf3b6e8d0d"
     ],
-    "composedHTMLSHA256": "e4f070abe0315045005fc5ad911b6c60d01da7be8d98bad7ab024224be11a65a",
+    "composedHTMLSHA256": "34a2fe664da292e6f5313d665fd1f9a066e507f7803336529d71148ba93c05a4",
     "dependencies": {
       "@fontsource/inter": "5.3.0",
       "@fontsource/kalam": "5.3.0",
@@ -580,7 +603,7 @@
       "web-worker": "1.5.0"
     },
     "regionSHA256": {},
-    "htmlSHA256": "4a988d95f3a7a1f573d03d7af95064d3f5107e8547a2008b014c77b4cc723a8c",
+    "htmlSHA256": "7f67e7e1aede6ebc9824a191e8466dcde267779662feb1540b4f1a56f96ac341",
     "drawing": "roughjs@4.6.6",
     "routing": "elkjs@0.12.1",
     "assetSHA256": {

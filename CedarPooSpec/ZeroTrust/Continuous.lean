@@ -129,4 +129,29 @@ theorem Observation.compareAndAdvance_retains_framework
   have mediated := checked _ _ _ current
   exact ⟨mediated.2 effect rfl, mediated.1⟩
 
+/-- Reuse the application's existing run, including non-effect controls and
+recovery. Monotonicity must hold for every actual writer, not only publication. -/
+theorem run_generation_monotone (read : V → Observation A)
+    (monotone : ∀ before effect after, step before effect after →
+      (read before).generation ≤ (read after).generation)
+    (run : Run framework step first last) :
+    (read first).generation ≤ (read last).generation := by
+  exact run_preserves (fun view => (read first).generation ≤ (read view).generation)
+    (fun before effect after event prior => Nat.le_trans prior (monotone before effect after event))
+    (Nat.le_refl _) run
+
+/-- Retirement survives any finite forward run, with arbitrary callbacks and
+restored attributes. This does not infer monotonic recovery from a mutex. -/
+theorem Observation.retired_cut_refuses_after_run (read : V → Observation A)
+    (generation : Nat)
+    (monotone : ∀ before effect after, step before effect after →
+      (read before).generation ≤ (read after).generation)
+    (run : Run framework step first last)
+    (retired : generation < (read first).generation)
+    (stale : Error) (transition : A → Except Error (Result × A)) :
+    compareAndAdvance generation (read last) stale transition = .error stale := by
+  have forward := run_generation_monotone read monotone run
+  apply compareAndAdvance_stale
+  omega
+
 end CedarPooSpec.ZeroTrust

@@ -582,3 +582,32 @@ Host implementations may use a transactional CAS with the same ordering; the
 source reader, all relevant writers and the final use boundary must participate.
 Generated CAS fixtures stay in the ignored Lake build directory. Lean/Rust own
 all semantic assertions; Python remains unchanged process/artifact glue.
+
+** Prepared-history induction and persistent retirement
+
+The finite interleaving corpus is accompanied by kernel induction over the
+actual =publicationScheduleStep= function and the released POO
+=traceObservations= projection. For every finite command list, with arbitrary
+initial schedule, captured tickets and fixed reviewed artifact/approval/fault
+choice, the proofs establish at most one successful publication and retention of
+an already unknown result. Preparation, missing/stale/denied commits, recovery,
+live-image rollback and mode changes all participate in the proof. There is no
+five-command horizon or legal actor-order premise; the model still has its two
+caller slots and one fixed review. This does not prove arbitrary artifact
+replacement or unbounded native machine-word refinement.
+
+The step proof derives generation/floor monotonicity from the actual
+compare-and-advance and release postconditions. Induction proves that a retired
+cut remains refused at every later observation, for arbitrary checked callbacks,
+even after equal attributes are restored. Independently, the public
+=run_generation_monotone= and =Observation.retired_cut_refuses_after_run= laws
+reuse the existing application =Run= relation. Their premise explicitly covers
+every writer, including no-effect recovery edges; mediation alone does not
+imply monotonic recovery. A Lean counterexample retains a mediated rollback edge
+that revives the cut when that premise is removed.
+
+The native fixture interpreter checks monotone generations/floors, unknown
+retention and stale-ticket state/observer preservation against its actual shared
+authority, separately from complete Lean JSON equality. The original fixtures,
+counts and negative controls remain intact. These are functional safety proofs
+and conformance checks, not fairness, persistence or performance claims.

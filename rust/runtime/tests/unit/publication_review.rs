@@ -392,6 +392,16 @@ fn prepared_publication_interleavings_match_lean() {
             assert!((4..=5).contains(&commands.len()));
             for (index, (command, expected)) in commands.iter().zip(observations).enumerate() {
                 let command = command.as_u64().unwrap();
+                let (before_generation, before_image) = {
+                    let before = authority.current.lock().unwrap();
+                    (before.generation, before.image.clone())
+                };
+                let before_effects = effects.load(Ordering::SeqCst);
+                let attempted_generation = match command {
+                    2 => first.as_ref().map(|ticket| ticket.generation),
+                    3 => second.as_ref().map(|ticket| ticket.generation),
+                    _ => None,
+                };
                 let reply = match command {
                     0 => {
                         first = Some(authority.capture());
@@ -431,6 +441,17 @@ fn prepared_publication_interleavings_match_lean() {
                     _ => panic!("undeclared prepared-publication command"),
                 };
                 let current = authority.current.lock().unwrap();
+                // Check the history laws against the actual shared authority,
+                // separately from agreement with the serialized Lean fixture.
+                assert!(before_generation <= current.generation);
+                assert!(before_image.floor <= current.image.floor);
+                assert!(!before_image.unknown || current.image.unknown);
+                if attempted_generation.is_some_and(|cut| cut < before_generation) {
+                    assert_eq!(reply, Attempt::Stale.code());
+                    assert_eq!(current.generation, before_generation);
+                    assert_eq!(current.image, before_image);
+                    assert_eq!(effects.load(Ordering::SeqCst), before_effects);
+                }
                 let observed = serde_json::json!({"generation":current.generation, "image":current.image,
                     "first":first.as_ref().map(|ticket| ticket.generation),
                     "second":second.as_ref().map(|ticket| ticket.generation)});

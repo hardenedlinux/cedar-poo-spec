@@ -128,3 +128,9 @@ original error and successor generation, and refuse reuse after success. All
 relevant writers must advance a scoped, non-reused cut. The Host must implement
 read/check/install atomically; the function is pure and grants no authorization.
 The existing MediatedStep law supplies current framework requirements.
+
+The existing =Run= relation also supports =run_generation_monotone= and
+=Observation.retired_cut_refuses_after_run=. With an explicit monotonicity law
+for every actual writer, including recovery, a retired cut is refused after any
+finite forward run under arbitrary checked callbacks. Mediation alone does not
+establish this premise; the tests retain a whole-authority rollback counterexample.

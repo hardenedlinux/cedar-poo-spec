@@ -24,6 +24,16 @@ package ZeroTrustProofs {
  attribute recoverySource : String = "CedarPooSpec/ZeroTrust/UsageControl.lean";
  // Proof-term claims reference existing model declarations, not a second edge graph.
  attribute recoveryUses : String[0..*] = ("ZeroTrustProofs::usage");
+ part monotone : KernelLaw;
+ attribute monotoneSymbol : String = "CedarPooSpec.ZeroTrust.run_generation_monotone";
+ attribute monotoneSource : String = "CedarPooSpec/ZeroTrust/Continuous.lean";
+ part retired : KernelLaw;
+ attribute retiredSymbol : String = "CedarPooSpec.ZeroTrust.Observation.retired_cut_refuses_after_run";
+ attribute retiredSource : String = "CedarPooSpec/ZeroTrust/Continuous.lean";
+ attribute retiredUses : String[0..*] = ("ZeroTrustProofs::monotone");
+ part rollback : KernelCounterexample;
+ attribute rollbackSymbol : String = "CedarPooSpec.ZeroTrustTest.authority_rollback_revives_cut_counterexample";
+ attribute rollbackSource : String = "Tests/ZeroTrust/Functional.lean";
  part meanings : HostPremise;
  attribute meaningsSymbol : String = "CedarPooSpec.ZeroTrust.Framework";
  attribute meaningsSource : String = "CedarPooSpec/ZeroTrust/Model.lean";
@@ -55,6 +65,9 @@ package ZeroTrustProofs {
  connection modelEdge3 connect mediated to usage;
  connection modelEdge4 connect usage to recovery;
  connection modelEdge5 connect meanings to required;
+ connection modelEdge6 connect meanings to monotone;
+ connection modelEdge7 connect monotone to retired;
+ connection modelEdge8 connect rollback to retired;
  view model {
   expose required;
   expose refinement;
@@ -63,12 +76,18 @@ package ZeroTrustProofs {
   expose usage;
   expose recovery;
   expose meanings;
+  expose monotone;
+  expose retired;
+  expose rollback;
   expose modelEdge0;
   expose modelEdge1;
   expose modelEdge2;
   expose modelEdge3;
   expose modelEdge4;
   expose modelEdge5;
+  expose modelEdge6;
+  expose modelEdge7;
+  expose modelEdge8;
   render asInterconnectionDiagram;
  }
  connection objectsEdge0 connect profile to session;

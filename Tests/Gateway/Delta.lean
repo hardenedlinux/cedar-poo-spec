@@ -228,6 +228,185 @@ private def publicationScheduleStep (reviewed : Authorization.Delta.ReviewedInte
     | .error cause => (schedule, cause)
     | .ok (reply, next) => ({schedule with current := next}, reply)
 
+-- The prepared scheduler inherits the release invariant through the actual
+-- compare-and-advance function. Preparations and refusals leave the cut intact;
+-- controls and successful publications advance it, including equal-data ABA.
+private theorem publicationScheduleStep_invariant
+    (reviewed : Authorization.Delta.ReviewedInteraction) (approved : Bool)
+    (initial : Authorization.Delta.ReleaseState) (faults : Nat)
+    (schedule : PublicationSchedule) (command : Nat) :
+    let result := publicationScheduleStep reviewed approved initial faults schedule command
+    schedule.current.generation ≤ result.1.current.generation ∧
+      schedule.current.attributes.floor ≤ result.1.current.attributes.floor ∧
+      (schedule.current.attributes.unknown = true → result.1.current.attributes.unknown = true) ∧
+      (result.2 = 1 ∨ result.2 = 2 →
+        schedule.current.attributes.floor = reviewed.snapshot.epoch ∧
+        result.1.current.attributes.floor = reviewed.snapshot.epoch + 1) := by
+  unfold publicationScheduleStep
+  split
+  · simp
+  · split
+    · simp
+    · split
+      · generalize captured : (if command == 2 then schedule.first else schedule.second) = ticket
+        cases ticket with
+        | none => simp
+        | some generation =>
+          cases accepted : ZeroTrust.Observation.compareAndAdvance generation schedule.current 3
+              (fun image =>
+                let (next, reply) := publicationStep reviewed approved initial image
+                  (if (if command == 2 then faults % 2 == 1 else faults / 2 % 2 == 1) then 6 else 0)
+                if reply == 0 then .error 4 else .ok (reply, next)) with
+          | error cause =>
+            simp only [accepted]
+            by_cases stale : (schedule.current.generation != generation) = true
+            · simp [ZeroTrust.Observation.compareAndAdvance, stale] at accepted
+              subst cause; simp
+            · cases underlying : publicationStep reviewed approved initial schedule.current.attributes
+                  (if (if command == 2 then faults % 2 == 1 else faults / 2 % 2 == 1) then 6 else 0) with
+              | mk image reply =>
+                simp only [ZeroTrust.Observation.compareAndAdvance, stale, underlying] at accepted
+                by_cases denied : reply = 0
+                · simp [denied] at accepted
+                  subst cause; simp
+                · simp [denied] at accepted
+          | ok pair =>
+            obtain ⟨reply, next⟩ := pair
+            simp only [accepted]
+            have post := ZeroTrust.Observation.compareAndAdvance_postcondition _ _ _ _ _ _ accepted
+            cases underlying : publicationStep reviewed approved initial schedule.current.attributes
+                (if (if command == 2 then faults % 2 == 1 else faults / 2 % 2 == 1) then 6 else 0) with
+            | mk image output =>
+              have invariant := publicationStep_invariant reviewed approved initial schedule.current.attributes
+                (if (if command == 2 then faults % 2 == 1 else faults / 2 % 2 == 1) then 6 else 0)
+              simp only [underlying] at invariant post
+              split at post
+              · simp_all
+              · simp only [Except.ok.injEq, Prod.mk.injEq] at post
+                obtain ⟨_, ⟨rfl, imageEq⟩, generationEq⟩ := post
+                exact ⟨by omega, imageEq ▸ invariant.1, imageEq ▸ invariant.2.1,
+                  fun committed => imageEq ▸ invariant.2.2 (by omega)⟩
+      · simp only [ZeroTrust.Observation.compareAndAdvance, bne_self_eq_false, Bool.false_eq_true,
+          ↓reduceIte]
+        have invariant := publicationStep_invariant reviewed approved initial schedule.current.attributes
+          (if command == 4 then 3 else if command == 5 then 4 else if command == 6 then 1
+            else if command == 7 then 5 else 2)
+        exact ⟨by omega, invariant.1, invariant.2.1,
+          fun committed => invariant.2.2 (by omega)⟩
+
+-- No horizon, actor-order, generation, initial-state or approval restriction.
+-- The finite native corpus checks conformance, not these universal claims.
+private theorem publicationScheduleHistory_retired
+    (reviewed : Authorization.Delta.ReviewedInteraction) (approved : Bool)
+    (initial : Authorization.Delta.ReleaseState) (faults : Nat) (commands : List Nat)
+    (schedule : PublicationSchedule) (retired : reviewed.snapshot.epoch < schedule.current.attributes.floor) :
+    (LeanPoo.Functional.PropertyTesting.traceObservations
+      (publicationScheduleStep reviewed approved initial faults) id schedule commands).countP
+        (fun row => row.1 == 1 || row.1 == 2) = 0 := by
+  induction commands generalizing schedule with
+  | nil => rfl
+  | cons command rest ih =>
+    cases transition : publicationScheduleStep reviewed approved initial faults schedule command with
+    | mk after reply =>
+      have invariant := publicationScheduleStep_invariant reviewed approved initial faults schedule command
+      simp only [transition] at invariant
+      have absent : ¬ (reply = 1 ∨ reply = 2) := by
+        intro committed
+        have bound := invariant.2.2.2 committed
+        omega
+      have nextRetired : reviewed.snapshot.epoch < after.current.attributes.floor := by omega
+      simpa [LeanPoo.Functional.PropertyTesting.traceObservations, transition, absent] using
+        ih after nextRetired
+
+private theorem publicationScheduleHistory_at_most_one_commit
+    (reviewed : Authorization.Delta.ReviewedInteraction) (approved : Bool)
+    (initial : Authorization.Delta.ReleaseState) (faults : Nat) (commands : List Nat)
+    (schedule : PublicationSchedule) :
+    (LeanPoo.Functional.PropertyTesting.traceObservations
+      (publicationScheduleStep reviewed approved initial faults) id schedule commands).countP
+        (fun row => row.1 == 1 || row.1 == 2) ≤ 1 := by
+  induction commands generalizing schedule with
+  | nil => simp [LeanPoo.Functional.PropertyTesting.traceObservations]
+  | cons command rest ih =>
+    cases transition : publicationScheduleStep reviewed approved initial faults schedule command with
+    | mk after reply =>
+      by_cases committed : reply = 1 ∨ reply = 2
+      · have invariant := publicationScheduleStep_invariant reviewed approved initial faults schedule command
+        simp only [transition] at invariant
+        have retired : reviewed.snapshot.epoch < after.current.attributes.floor := by
+          have bound := invariant.2.2.2 committed
+          omega
+        have noMore := publicationScheduleHistory_retired reviewed approved initial faults rest after retired
+        simp [LeanPoo.Functional.PropertyTesting.traceObservations, transition, committed, noMore]
+      · simpa [LeanPoo.Functional.PropertyTesting.traceObservations, transition, committed] using ih after
+
+private theorem publicationScheduleHistory_retains_unknown
+    (reviewed : Authorization.Delta.ReviewedInteraction) (approved : Bool)
+    (initial : Authorization.Delta.ReleaseState) (faults : Nat) (commands : List Nat)
+    (schedule : PublicationSchedule) (held : schedule.current.attributes.unknown = true) :
+    ∀ observation ∈ LeanPoo.Functional.PropertyTesting.traceObservations
+      (publicationScheduleStep reviewed approved initial faults) id schedule commands,
+      observation.2.current.attributes.unknown = true := by
+  induction commands generalizing schedule with
+  | nil => simp [LeanPoo.Functional.PropertyTesting.traceObservations]
+  | cons command rest ih =>
+    cases transition : publicationScheduleStep reviewed approved initial faults schedule command with
+    | mk after reply =>
+      have invariant := publicationScheduleStep_invariant reviewed approved initial faults schedule command
+      simp only [transition] at invariant
+      have nextHeld := invariant.2.2.1 held
+      intro observation member
+      have located : observation = (reply, after) ∨ observation ∈
+          LeanPoo.Functional.PropertyTesting.traceObservations
+            (publicationScheduleStep reviewed approved initial faults) id after rest := by
+        simpa [LeanPoo.Functional.PropertyTesting.traceObservations, transition] using member
+      rcases located with rfl | later
+      · exact nextHeld
+      · exact ih after nextHeld observation later
+
+private theorem publicationScheduleHistory_generation_monotone
+    (reviewed : Authorization.Delta.ReviewedInteraction) (approved : Bool)
+    (initial : Authorization.Delta.ReleaseState) (faults : Nat) (commands : List Nat)
+    (schedule : PublicationSchedule) :
+    ∀ observation ∈ LeanPoo.Functional.PropertyTesting.traceObservations
+      (publicationScheduleStep reviewed approved initial faults) id schedule commands,
+      schedule.current.generation ≤ observation.2.current.generation := by
+  induction commands generalizing schedule with
+  | nil => simp [LeanPoo.Functional.PropertyTesting.traceObservations]
+  | cons command rest ih =>
+    cases transition : publicationScheduleStep reviewed approved initial faults schedule command with
+    | mk after reply =>
+      have invariant := publicationScheduleStep_invariant reviewed approved initial faults schedule command
+      simp only [transition] at invariant
+      intro observation member
+      have located : observation = (reply, after) ∨ observation ∈
+          LeanPoo.Functional.PropertyTesting.traceObservations
+            (publicationScheduleStep reviewed approved initial faults) id after rest := by
+        simpa [LeanPoo.Functional.PropertyTesting.traceObservations, transition] using member
+      rcases located with rfl | later
+      · exact invariant.1
+      · exact Nat.le_trans invariant.1 (ih after observation later)
+
+private theorem publicationScheduleHistory_refuses_retired_cut
+    (reviewed : Authorization.Delta.ReviewedInteraction) (approved : Bool)
+    (initial : Authorization.Delta.ReleaseState) (faults : Nat) (commands : List Nat)
+    (schedule : PublicationSchedule) (retired : generation < schedule.current.generation)
+    (observation : Nat × PublicationSchedule)
+    (member : observation ∈ LeanPoo.Functional.PropertyTesting.traceObservations
+      (publicationScheduleStep reviewed approved initial faults) id schedule commands)
+    (stale : Error) (transition : PublicationState → Except Error (Result × PublicationState)) :
+    ZeroTrust.Observation.compareAndAdvance generation observation.2.current stale transition = .error stale := by
+  have forward := publicationScheduleHistory_generation_monotone reviewed approved initial faults commands
+    schedule observation member
+  apply ZeroTrust.Observation.compareAndAdvance_stale
+  omega
+
+#print axioms publicationScheduleStep_invariant
+#print axioms publicationScheduleHistory_at_most_one_commit
+#print axioms publicationScheduleHistory_retains_unknown
+#print axioms publicationScheduleHistory_generation_monotone
+#print axioms publicationScheduleHistory_refuses_retired_cut
+
 private def scheduleObservation (schedule : PublicationSchedule) : Lean.Json :=
   Lean.Json.mkObj [("generation", Lean.toJson schedule.current.generation),
     ("image", publicationObservation schedule.current.attributes),
@@ -258,13 +437,16 @@ private def publicationCasTraces (reviewed : Authorization.Delta.ReviewedInterac
     let observed := LeanPoo.Functional.PropertyTesting.traceObservations
       (publicationScheduleStep reviewed approved initial faults) id start commands
     let mut commits := 0
-    let mut held := false
+    let mut previous := start.current
     let mut observations : Array Lean.Json := #[]
     for (reply, next) in observed do
       if reply == 1 || reply == 2 then commits := commits + 1
-      unless decide (commits ≤ 1) && (!held || next.current.attributes.unknown) do
+      unless decide (commits ≤ 1) &&
+          decide (previous.generation ≤ next.current.generation) &&
+          decide (previous.attributes.floor ≤ next.current.attributes.floor) &&
+          (!previous.attributes.unknown || next.current.attributes.unknown) do
         throw (IO.userError s!"prepared-publication invariant failed: {faults}/{commands}")
-      held := next.current.attributes.unknown
+      previous := next.current
       observations := observations.push (Lean.Json.mkObj [("reply", Lean.toJson reply),
         ("state", scheduleObservation next), ("commits", Lean.toJson commits)])
     traces := traces.push (Lean.Json.mkObj [("faults", Lean.toJson faults),

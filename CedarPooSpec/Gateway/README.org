@@ -279,3 +279,10 @@ thread races, a competing control writer, ABA, foreign tickets and finite-counte
 exhaustion have explicit controls. Whole-authority rollback remains a retained
 counterexample. These tests add native arbitration evidence without introducing
 a production Gateway backend or claiming physical durability.
+
+Kernel induction now covers the actual staged scheduler over arbitrary finite
+command lists, with one fixed review: at-most-one commit, unknown retention,
+monotone observation generations and persistent refusal of retired cuts.
+The 2,528 native histories separately check these invariants against the actual
+authority and preserve complete Lean/Rust state equality. Finite conformance
+does not replace the induction or establish physical anti-rollback.

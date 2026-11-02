@@ -5,7 +5,7 @@ vars: {d2-config: {data: {figure: |json
 {
   "purpose": "architecture",
   "language": "en",
-  "width": 1280,
+  "width": 1920,
   "primary": "purpose",
   "themes": [
     "sketchbook",
@@ -42,7 +42,10 @@ vars: {d2-config: {data: {figure: |json
     "mediatedSource": "CedarPooSpec/ZeroTrust/Continuous.lean",
     "usageSource": "CedarPooSpec/ZeroTrust/UsageControl.lean",
     "recoverySource": "CedarPooSpec/ZeroTrust/UsageControl.lean",
-    "meaningsSource": "CedarPooSpec/ZeroTrust/Model.lean"
+    "meaningsSource": "CedarPooSpec/ZeroTrust/Model.lean",
+    "monotoneSource": "CedarPooSpec/ZeroTrust/Continuous.lean",
+    "retiredSource": "CedarPooSpec/ZeroTrust/Continuous.lean",
+    "rollbackSource": "Tests/ZeroTrust/Functional.lean"
   },
   "copy": {
     "description": "Definitions, premises, kernel laws and counterexamples are distinct. Each card names its actual Lean declaration.",
@@ -87,6 +90,18 @@ vars: {d2-config: {data: {figure: |json
       "meanings": {
         "name": "ZeroTrustProofs::meanings",
         "icon": "obligation"
+      },
+      "monotone": {
+        "name": "ZeroTrustProofs::monotone",
+        "icon": "evidence"
+      },
+      "retired": {
+        "name": "ZeroTrustProofs::retired",
+        "icon": "evidence"
+      },
+      "rollback": {
+        "name": "ZeroTrustProofs::rollback",
+        "icon": "evidence"
       }
     }
   },
@@ -109,3 +124,9 @@ required -> mediated: "MediatedStep requires the core"
 mediated -> usage: "UsageControl.step includes MediatedStep"
 usage -> recovery: "usage_retains_core is used in this proof"
 meanings -> required: "Application supplies predicate meanings"
+monotone: "Forward history [kernel law]\nrun_generation_monotone\ngiven every writer retains or advances cut\nthen: finite Run retains generation order"
+retired: "Persistent retirement [kernel law]\nretired_cut_refuses_after_run\ngiven an old cut and monotone Run\nthen: every later callback refuses old cut"
+rollback: "Authority rollback [counterexample]\nauthority_rollback_revives_cut_\ncounterexample\na mediated no-effect edge rewinds cut\nthen: the old cut can pass again"
+meanings -> monotone: "Every writer, including recovery"
+monotone -> retired: "Uses run_generation_monotone"
+rollback -> retired: "Shows why monotone recovery is required"
