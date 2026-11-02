@@ -994,3 +994,192 @@ All current raw receipts, samples and scripts remain local and ignored under
 =../cedar-typed-sdk-20261102/=. No CSV, archive, rendered HTML or vendor directory
 is added. These are local exact-source results; no remote CI result is claimed
 for the unpushed follow-up. No push, new PR or merge is performed.
+
+** Schema/Request preparation and rejected Lean cache experiments (2026-11-02)
+
+The final retained implementation is Rust preparation from =c714d43=, the
+clock-observer fix =54885f3= and the standalone inode-recipe prerequisites from
+=97396b8=. Commit =d94c82d= restores the three Lean publisher/encoder/test files
+exactly to =5ccefe8=. Both experimental Lean representations remain in local
+history and their complete negative evidence remains available. Neither is
+accepted as a performance improvement or left in the final runtime.
+
+*** Retained algorithms and controls
+
+Schema digest preparation reuses the immutable source owner's existing complete
+wire after recursively checking canonical object order. Unordered objects use
+the original canonical writer. A caller cannot pair arbitrary bytes with another
+source value. Differential tests cover nested objects/arrays, Unicode/escaping,
+signed zero and numeric representation. The public SDK Schema/Validator lifetime,
+strict validation, full-source identity and last-use retirement remain unchanged.
+
+Prepared raw requests construct a fresh literal Context through public SDK
+=RestrictedExpression= constructors and =Context::from_pairs= / =Context::empty=.
+This avoids a cloned JSON tree and its JSON-to-Cedar intermediate conversion.
+The fast subset is bool, i64, string, set and record values without a schema.
+Schema hints, null/float/oversized numbers, reserved escapes, unknown forms and
+construction failures retain the original SDK parser and diagnostics. The
+independent uncached workflows and direct-source checks continue to use the old
+JSON route. Requests and contexts are not cached, and schema/action validation,
+error precedence and both authorizers remain fresh.
+
+All three code states pass =lake build Examples Tests= and the complete
+=just check=. Runtime tests pass 66 with one original artifact-dependent test
+excluded from the default invocation; both artifact-dependent original-workflow
+and tamper gates run explicitly and pass. Existing Python process/clock/layer
+observation tests pass 37. Types, Functional Contracts, proof/axiom checks, all
+applicable raw/schema/evolution/artifact/handoff cases and four Production
+fixtures retain their existing controls. No private SDK AST interface is used.
+
+*** Two Lean candidates rejected by the primary native benchmark
+
+The first candidate adds a separate fingerprint thunk and manual collision
+buckets to SourceSnapshot/SourcePool. The second carries a certified wire/hash
+key inside the existing encoding thunk and delegates collisions to Std.HashMap
+with lawful complete-wire equality. Its hash-equality theorem uses no axioms;
+publication bound/frame/value/Contract and stale/missing/independent-source
+controls also pass. Those semantic results do not establish performance benefit.
+
+| Fixed Lean observation | Original | Separate thunk/buckets | Fused prepared key |
+|------------------------+----------+------------------------+--------------------|
+| Warm factory small allocations | 172678 | 172733 | 172678 |
+| Warm publication small allocations | 720593 | 721474 | 720691 |
+| Warm finish small allocations | 1228 | 1296 | 1228 |
+| Native preparation median, cohort 1 | 28.943 ms | 33.275 ms | not run |
+| Native preparation median, cohort 2 | 25.536 ms | not run | 28.784 ms |
+
+Allocation counts come from the same Lean-native stage workload; each warm count
+repeats in all three samples. Timing rows are separate paired cohorts and must
+not be pooled or compared across hosts/load periods. The fused version removes
+783 of the first candidate's 881 extra publication allocations and restores
+factory/finish counts, but still adds 98 publication allocations and does not
+win the nine-sample primary native median. Its 74.007-ms sample is retained.
+The original implementation remains the admitted baseline because neither
+candidate establishes a compensating whole-workload gain. This is an admission
+decision, not proof that caching intrinsically slows every workload.
+
+The two experimental pipelines retain their non-wins: cohort 1 pairs are
+2092.970/2204.771, 291.522/300.145 and 289.042/279.483 ms (before/after);
+cohort 2 pairs are 2550.747/2061.644, 273.228/264.702 and
+249.945/324.182 ms. Both cohorts record other host compiler activity at startup.
+Neither is replaced by a favorable rerun of the same implementation.
+
+*** Final-code complete process and resource qualification
+
+The final state has its own fixed cohort after the rollback, with the original
+=5ccefe8= baseline. All four Lean executable roles exactly reproduce their
+original SHA identities, including diagnostic image =6e3c68286d7eb71a42f52745bea8e028c19632d1a4ef5908564277d9a61702fd=.
+The retained ordinary Rust image is =efc3058f2db225f4abcba2da52e20deae1cdc842db2d4f0af63a8a3ebf174ef5=;
+the separate allocation image is =c7f9018a8b838acb3739921415fe460dfccdb3a0eec48e13da04bfb66da6cce1=.
+Rust source/configuration and these images remain unchanged after =c714d43=.
+Its recorded explicit core/runtime/bridge release-clean build passes in 6.752 s,
+with identical hot/cold image and compiler high-water RSS 514981888 bytes. That
+receipt reuses dependency artifacts and is reused by exact identity here; no
+additional dependency-empty or Lean cold build is claimed. Cargo jobs, the
+120-second process supervision, heap/heartbeat controls and all negative inputs
+remain unchanged.
+
+Each of the three code-state cohorts completes 48 native children and 15 full-wire
+comparisons, plus 22 separate native benchmark/stage/allocation processes and
+12 producer launch diagnostics. Final acceptance preserves all 51 entries,
+1280 main rows / 2560 authorizations and unchanged complete receipt bytes.
+Per variant, stage attribution retains 832 measurements; authorization-separated
+attribution retains 1240 measurements / 204 records and 1292 rows per pass,
+including evolution projections. Workloads and semantic checks stay in Lean/Rust;
+Python observes only processes, resources, clocks and artifact bytes.
+
+| Final-code observation | Before | After |
+|------------------------+--------+-------|
+| Rust replay median, 18 lifecycle-native samples | 139.340 ms | 133.974 ms |
+| Request preparation median, same samples | 27.324 ms | 24.449 ms |
+| Schema preparation median, same samples | 27.631 ms | 27.055 ms |
+| Separate Rust-native replay median, nine samples | 139.114 ms | 134.357 ms |
+| Allocation requests median, nine separate samples | 1524364 | 1480162 |
+| Requested bytes median, same samples | 302412158 | 298121912 |
+| Process requested peak bytes median | 17078567 | 17078567 |
+| Process requested live bytes median | 8991899 | 8991899 |
+
+The final sampled allocation change is -44202 requests (-2.8997%) and
+-4290246 requested bytes (-1.4187%). Requested peak/live are unchanged; these
+are allocator observations, not RSS, foreign-allocation coverage or heap bounds.
+All sample values remain available, including small cross-process variation.
+
+| Pair | Ordinary Rust process wall, before / after | Pipeline wall, before / after |
+|------+--------------------------------------------+-------------------------------|
+| 1 | 656.867 / 538.519 ms | 2016.653 / 1717.304 ms |
+| 2 | 153.559 / 146.363 ms | 242.621 / 239.108 ms |
+| 3 | 147.637 / 146.984 ms | 236.023 / 237.813 ms |
+
+Ordinary Rust CPU is 140/140/130 ms versus 130/130/130 ms at the OS's reported
+10-ms precision. The last pipeline remains a non-win: byte-identical Lean
+producer wall increases by 2.443 ms while Rust improves by 0.653 ms. Ordinary
+Rust RSS changes in both directions. The final startup process snapshot has no
+matching compiler process, but is not continuous host isolation evidence.
+No stable end-to-end or OS RSS improvement is admitted. The identical Lean
+images also give an A/A control: nine-sample preparation medians differ
+25.851/25.511 ms without any algorithm change; every A/A sample is retained.
+
+*** Correct clock domains and native build ownership
+
+An early preflight catches a stale lifecycle diagnostic image after standard
+checks rebuilt the ordinary producer. It is rejected before measurements;
+all four native roles are then built explicitly. The standalone
+=bench-catalog-inode= recipe now prepares its catalog and builds both Lean
+roles and Rust launch_probe. Its actual execution passes six Lean and six Rust
+launches and complete output comparisons, separately from ordinary latency.
+
+New exact-PID system-policy logs expose another observation failure: formatted
+log wall timestamps place some notices before parent spawn. That naive join is
+explicitly rejected. A separate native OS-observation marker uses public
+=os_log_with_type= and Mach APIs. Its raw timestamp fits both measured Mach-clock
+brackets on the same boot at timebase 125/3. The existing clock observer now
+requires an explicit domain, retains bracket uncertainty and rounds intervals
+outward; malformed scales/anchors/domains have negative tests. When both domains
+fit the probe, their interval union is retained rather than guessing one.
+This marker is clock calibration, not a benchmark workload.
+
+Raw-Mach joins put the observed PID notices inside their owned child lifetimes.
+In the fused-key diagnostic, repeated launches still spend approximately
+38-44 ms from the provenance/skip notice to main, including 17-18 ms of import
+initialization. The preceding candidate gives 49-63 ms including 19-25 ms of
+imports. Such notices are not wakeup/completion signals. They do not account
+for every first-file tail or the residual post-notice interval.
+
+The final-code log query succeeds with 278 events but supplies no exact-PID
+provenance notices for its 12 diagnostic children. This negative observation is
+retained; the earlier notices are not silently reused as final-code wake evidence.
+Six AMFI events do match owned execution paths and calibrated first-launch time
+intervals, across three materializations: approximately 1.8-3.3 ms after spawn,
+still 1121-1296 ms before main. They mention missing CMS/CoreTrust assessment. Read-only =codesign= inspection shows linker-signed ad-hoc CodeDirectory
+signatures, and on-disk verification succeeds for both retained Lean and Rust
+images. The log text does not establish corrupted artifacts, execution failure,
+the duration of a wait or its completion. No re-signing is performed.
+
+The earlier captured 2731.498-ms blocked event still has a recorded =syspolicyd=
+wakeup execution context, but not an identified kernel object/subroutine.
+Apple's [[https://raw.githubusercontent.com/apple-oss-distributions/xnu/main/osfmk/kern/sched_prim.c][public scheduler source]] records a transformed event key for =MACH_WAIT=
+and target TID/priority/wait result for =MACH_MAKE_RUNNABLE=. It explains the
+interpretation limit; installed-kernel byte identity is not established.
+No security, signature, priority or logging-privacy setting changes are made.
+
+*** Next integrated boundary and publication state
+
+The next Lean candidate should reduce demonstrated Case-field/object construction
+and certified publication work, with one shared implementation for every domain,
+rather than retain a cache whose native workload does not win. SDK preparation
+still needs separation of unique schema/text parsing, request construction and
+source/DTO lifetime costs through supported public types. Preserve schema hints,
+independent parsing, error/refusal precedence and both authorization paths.
+
+Any further candidate needs the same full type/Contract/proof/replay gate,
+source-bound native build identities, original-workflow controls, all process
+samples and resource receipts. Startup diagnosis must keep raw-clock intervals,
+module import, source publication and actual kernel waits separate. A readable
+target stack would be needed to name the opaque kernel object; a service log
+notice is not a substitute. Whole-chain performance remains an open acceptance
+item despite the measured Rust savings.
+
+Raw evidence stays local and ignored in =../cedar-schema-request-20261102/=,
+=../cedar-prepared-source-key-20261102/= and =../cedar-schema-request-final-20261102/=.
+No CSV, archive, rendered HTML or vendor directory is added. Changes remain local,
+unpushed and unmerged; remote exact-head CI is not claimed for this follow-up.
