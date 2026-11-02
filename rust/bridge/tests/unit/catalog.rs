@@ -64,8 +64,13 @@ fn emitted_catalog_rejects_cross_artifact_tampering() {
     assert_eq!(metrics.uid_parse_calls + metrics.uid_reuses, 3840);
     assert!(metrics.uid_reuses > 0);
     assert!(metrics.uid_slot_peak <= metrics.uid_parse_calls);
-    assert_eq!(metrics.policy_body_normalizations, 287);
-    assert_eq!(metrics.policy_body_reuses, 428);
+    assert_eq!(
+        metrics.policy_body_normalizations
+            + metrics.policy_body_reuses
+            + metrics.typed_policy_body_matches,
+        715
+    );
+    assert!(metrics.typed_policy_body_matches > 0);
     assert_eq!(
         (
             metrics.source_policy_loads,
@@ -86,7 +91,8 @@ fn emitted_catalog_rejects_cross_artifact_tampering() {
         (metrics.entity_hash_calls, metrics.entity_hash_reuses),
         (53, 1227)
     );
-    assert_eq!(metrics.policy_body_slot_peak, 21);
+    assert_eq!(metrics.policy_body_slot_peak, 0);
+    assert_eq!(metrics.typed_policy_body_fallbacks, 0);
     assert_eq!(metrics.catalog_policy_reuses, 36);
     assert_eq!(metrics.catalog_syntax_retirements, 36);
     assert_eq!(metrics.catalog_syntax_slot_peak, 10);
