@@ -6,7 +6,7 @@
   "scripts": {
     "render": "bun render.ts",
     "typecheck": "tsc --noEmit",
-    "test": "bun test ./test"
+    "test": "just test"
   },
   "dependencies": {
     "@deterministic-engineering/render": "git+https://github.com/hardenedlinux/deterministic-engineering.git#6223c5c44cc368e6e5b6d597421b275c160f9064",

@@ -593,3 +593,33 @@ or isolate a compiler-startup cause. SDK/receipt observation and native validati
 now have separate, existing 30-second method budgets and phase timing/signal
 observations. Native memory/heartbeat arguments are unchanged. Final qualification
 uses both positive stages and all existing negative controls without retries.
+
+** Local verification closure: build prerequisites and SDK lifetime (2026-11-02)
+
+The direct Bun invocation skipped the standard Lean test-module build: six
+initial failures referenced a missing Gateway ZeroTrust olean, while two SDK/D2
+tests exceeded their existing deadlines. After building the four existing
+ZeroTrust/Gateway test targets, the unchanged standard entry still failed
+(32 pass, 6 fail, 4 asynchronous errors). It overlapped unrelated host Lean and
+Bun checks; these failures are retained, not discarded as statistical outliers.
+
+The package's =bun run test= now delegates to the existing =just test= entry,
+which builds those Lean prerequisites. The proof suite owns one WASM connection
+and closes it at suite completion. Every changed source is independently parsed
+and its proof map checked through the public SDK; no ProofMap, rejection or Lean
+result is cached. Source hashes and connect/parse/observe durations are emitted.
+No 5-second/30-second test deadline, Lean memory or heartbeat limit was raised.
+
+One diagnostic connection cost 1487.673 ms to start; its first source parse took
+835.225 ms. Subsequent identical-source parses used the SDK's own model store
+(1.855/1.848 ms), while proof observations still ran (204.683/218.813 ms). These
+are development-SDK observations, not Rust Cedar performance measurements. The
+modified six-source negative test took 839.78 ms, the native positive proof
+check 10469 ms, and the complete standard entry passed 38 tests / 221 assertions
+in 43.00 s. All seven outputs were regenerated and verified; HTML remains ignored.
+Historical failures and complete local logs remain in ignored evidence storage.
+
+Remote PR #9 was merged externally by GTrunSec at 2026-11-02T03:49:59Z, despite
+the requested hold; this run did not merge it. The current follow-up is local on
+=fix/native-lifecycle-diagnostics=, with no main push or further merge. The six
+remote green checks on 6072b5d are baseline evidence, not CI for this follow-up.

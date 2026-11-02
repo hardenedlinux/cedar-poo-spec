@@ -10,7 +10,7 @@
     "dev/d2/lean-catalog.d2": "38a9447d8239d93a2f2cd00fbfc03731aad9dceec0c6b4d6dbe8ff048eb470a9",
     "dev/inputs.ts": "8ccc4bd7ceda2013d5fd86b37d2565beb60f1a8761004d67be77d0c2acd1265e",
     "dev/Justfile": "a13b2b6ef2cabfdd03841bbdc3da89fa70245071abf15f653c0095ae3defba7b",
-    "dev/package.json": "47082928b4f138c4fdabd4b1adfc75ee70873c188a0450bbce25810ec3eb40e0",
+    "dev/package.json": "12b30695d6155fbd6652264c866f3d34be2f714d2c6cbb6bc18f767ed1ff9027",
     "dev/projection.ts": "3fd049e50798aee9dce54af6cd6e6fccad45fec5ab24b994bb6a8a4b33d7252d",
     "dev/proofs.ts": "ec657848f47b8fa1724105df2aab6f25bb528f909ec9e7a996036d7fdc89184c",
     "dev/render.ts": "1b07616b3a05602676ea0101546ab66f20fd73943326382fda0ebafef2735201",
@@ -230,21 +230,21 @@
       "samples": 15,
       "requiredMinimum": 12
     },
-    "inputSHA256": "19a6ee3acad7f4de79aec7c308912f076199999b6b325c4446c24d2479418b7a",
+    "inputSHA256": "85d4678f38ef9a20188812235fde69837f20c7c6696918acbb5c1dcc0be8a5eb",
     "scenes": [
       {
         "inputSHA256": "b82c75dbd14a51b3f16fca7a2f47aa2d4b03f7dfeabd7a73dd998da2b0bd5780",
         "layoutSHA256": "a221a5e4f7349068f8701046972ce793ab445e84da6753666a375097cdd42d80",
         "nodes": 5,
         "edges": 0,
-        "milliseconds": 296.4874999999993
+        "milliseconds": 174.3749169999992
       }
     ],
     "svgSHA256": [
-      "fc9f0ff9f6d06e31514a4feb3a61e7f774fe50cd13192e5b683ce84037f631a7",
+      "0a1a3eb3dece0d4fd9db3b36c7bddf8bddade28617762aa0c188a0047853b77e",
       "2bba8ad7741dd2f690377128044235869511e92e8aa3ae5e0a648562ac01dbc0"
     ],
-    "composedHTMLSHA256": "95ffdee4ac079e3f56f8f7ff14d933c026df507e19cdb09c4810b817dc3d7065",
+    "composedHTMLSHA256": "e0943d260d93b281bbb2cc7845b9197fe919082e9f9ad190c39290d02a4a3267",
     "dependencies": {
       "@fontsource/inter": "5.3.0",
       "@fontsource/kalam": "5.3.0",
@@ -257,7 +257,7 @@
       "web-worker": "1.5.0"
     },
     "regionSHA256": {},
-    "htmlSHA256": "654302f9161efca6ccaadad7ee62c8d2c9a6f2dba22267265f6e7e23c4ea5477",
+    "htmlSHA256": "262a34d6802366afe616e11872b57fed3576987c4b118c38123211ce1436338f",
     "drawing": "roughjs@4.6.6",
     "routing": "elkjs@0.12.1",
     "assetSHA256": {

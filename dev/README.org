@@ -70,6 +70,12 @@ just render
 just test
 #+end_src
 
+=bun run test= delegates to =just test=, which builds the required Lean test
+modules before running Bun. Direct =bun test= skips that prerequisite and is
+only appropriate after the standard build has completed. The proof suite reuses
+one SDK-owned WASM worker; every source mutation is still parsed and checked
+independently, with the original test deadlines unchanged.
+
 =just build= uses the existing Lake target. =just prepare= directly executes the
 existing compiled Lean producer; it does not start a benchmark or another test
 runner. =just render= builds that existing target first and consumes those original bytes. Call =bun run render path=
