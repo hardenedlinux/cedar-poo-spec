@@ -49,8 +49,8 @@ root = "Examples.Manifests"
 # Only the diagnostic executable imports this initialization observer.
 [[lean_lib]]
 name = "Benchmarks"
-roots = ["Benchmarks.ManifestInitialization"]
-globs = ["Benchmarks.ManifestInitialization"]
+roots = ["Benchmarks.ManifestInitialization", "Benchmarks.CatalogLifecycle"]
+globs = ["Benchmarks.ManifestInitialization", "Benchmarks.CatalogLifecycle"]
 
 [[lean_exe]]
 name = "manifestLifecycleNative"
