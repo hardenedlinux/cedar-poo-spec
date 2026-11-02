@@ -119,10 +119,29 @@ bench-project-native-cold output:
     python3 -c 'from pathlib import Path; import hashlib,json,sys; p=Path(sys.argv[1]).resolve(); print(json.dumps({"lake_executable":str(p),"lake_sha256":hashlib.sha256(p.read_bytes()).hexdigest(),"declared_toolchain":Path("lean-toolchain").read_text().strip()}))' "$lake_executable" > "$output/toolchain.json"
     expected=$(sed 's/.*:v//' lean-toolchain)
     "$lake_executable" --version | tail -n 1 | rg -F "Lean version $expected)" > /dev/null
+    python_executable=$(uv run --project python --package cedar-poo-py-test --locked python -c 'import sys; print(sys.executable)')
+    observer_pid=""
     restore() {
+        local final_status=$?
         if test -d "$output/qualified-build"; then
+            if test -n "$observer_pid"; then
+                if jobs -pr | rg -qx "$observer_pid"; then kill -TERM "$observer_pid" || true; fi
+                wait "$observer_pid" || true
+                observer_pid=""
+            fi
+            # A missing quiescence receipt leaves the qualified build protected
+            # at its backup path instead of exposing it to a surviving writer.
+            if ! "$python_executable" -c 'import json,sys; assert json.load(open(sys.argv[1])).get("owned_group_quiesced") is True' "$output/resource.json"; then
+                echo "Cannot confirm compiler group exit; qualified build retained at $output/qualified-build" >&2
+                return 1
+            fi
+            printf '%s\n' "$final_status" > "$output/exit-status"
+            "$python_executable" -c 'from pathlib import Path; import hashlib,json,sys; r=Path(sys.argv[1]); h=lambda p:hashlib.sha256(p.read_bytes()).hexdigest() if p.is_file() else None; names=["caseManifestsNative","objectProfilesNative","functionalReuseNative","manifestLifecycleNative"]; rows={n:{"qualified":h(r/"qualified-build/bin"/n),"cold":h(Path(".lake/build/bin")/n)} for n in names}; status=int(sys.argv[2]); print(json.dumps({"scope":"Root build initially absent; dependency directories and official Lake cache preserved; not an all-cache-empty source build; fixed120s/defaultjobs", "returncode":status,"executables":rows,"accepted":status==0 and all(v["cold"] is not None and v["cold"]==v["qualified"] for v in rows.values())},indent=2))' "$output" "$final_status" > "$output/identities.json"
             if test -e .lake/build; then mv .lake/build "$output/cold-build"; fi
             mv "$output/qualified-build" .lake/build
+            if test "$final_status" -eq 0; then
+                "$python_executable" -c 'import json,sys; assert json.load(open(sys.argv[1]))["accepted"] is True' "$output/identities.json"
+            fi
         fi
     }
     trap restore EXIT
@@ -131,7 +150,9 @@ bench-project-native-cold output:
     trap 'exit 143' TERM
     mv .lake/build "$output/qualified-build"
     status=0
-    uv run --project python --package cedar-poo-py-test --locked python -m cedar_poo_py_test.resources --output "$output/resource.json" /bin/sh -c 'exec timeout --signal=TERM --kill-after=3s 120s "$@"' native-project-cold "$lake_executable" build caseManifestsNative objectProfilesNative functionalReuseNative manifestLifecycleNative > "$output/build.log" 2>&1 || status=$?
-    printf '%s\n' "$status" > "$output/exit-status"
-    python3 -c 'from pathlib import Path; import hashlib,json,sys; r=Path(sys.argv[1]); h=lambda p:hashlib.sha256(p.read_bytes()).hexdigest() if p.is_file() else None; names=["caseManifestsNative","objectProfilesNative","functionalReuseNative","manifestLifecycleNative"]; rows={n:{"qualified":h(r/"qualified-build/bin"/n),"cold":h(Path(".lake/build/bin")/n)} for n in names}; status=int(sys.argv[2]); accepted=status==0 and all(v["cold"] is not None and v["cold"]==v["qualified"] for v in rows.values()); print(json.dumps({"scope":"Root build initially absent; dependency directories and official Lake cache preserved; not an all-cache-empty source build; fixed120s/defaultjobs", "returncode":status,"executables":rows,"accepted":accepted},indent=2)); sys.exit(0 if status or accepted else 1)' "$output" "$status" > "$output/identities.json"
+    "$python_executable" -m cedar_poo_py_test.resources --output "$output/resource.json" --timeout-seconds 120 "$lake_executable" build caseManifestsNative objectProfilesNative functionalReuseNative manifestLifecycleNative > "$output/build.log" 2>&1 &
+    observer_pid=$!
+    wait "$observer_pid" || status=$?
+    observer_pid=""
+    "$python_executable" -c 'import json,sys; j=json.load(open(sys.argv[1])); assert j.get("resource_observation_complete") is True or j["returncode"] != 0' "$output/resource.json"
     exit "$status"
