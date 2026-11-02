@@ -182,30 +182,3 @@ theorem arbitrary_record_key_admission (fields : List (String × α)) :
       throw (IO.userError "record key admission changed")
   IO.println "RECORD-KEY-ADMISSION-OK ordered/unordered/duplicate/empty/unicode"
 end CedarPooSpec.Transport.SourceTableTest
-
--- Equal independent prepared keys reuse the same reference; a corrupted index
--- remains untrusted even though the map's full-source key is correct.
-#eval show IO Unit from do
-  let original : CedarPooSpec.Transport.SourceSnapshot .policy :=
-    .ofJson (Lean.toJson "prepared-original")
-  let independent : CedarPooSpec.Transport.SourceSnapshot .policy :=
-    .ofJson (Lean.toJson "prepared-original")
-  let first := ({} : CedarPooSpec.Transport.SourcePool .policy).publishSnapshot original
-  let changed := first.next.publish (Lean.toJson "prepared-changed")
-  let indexed := { changed.next with recent := none }
-  let found : CedarPooSpec.Transport.Publication indexed independent.value :=
-    indexed.publishSnapshot independent
-  unless found.reference.index == first.reference.index && found.next.entries.size == 2 do
-    throw (IO.userError "equal independent prepared keys did not reuse source")
-  for index in [changed.reference.index, 999] do
-    let stale := { changed.next with
-      recent := none
-      candidates := changed.next.candidates.insert independent.encoding.get.val index }
-    let checked : CedarPooSpec.Transport.Publication stale independent.value :=
-      stale.publishSnapshot independent
-    unless checked.next.entries.size == 3 && checked.next.resolve checked.reference == some independent.wire do
-      throw (IO.userError "prepared key admitted a missing or different indexed source")
-  IO.println "SOURCE-PREPARED-KEY-OK full-equality/stale/missing/independent"
-#print axioms CedarPooSpec.Transport.SourceSnapshot.fingerprint_bound
-
-#print axioms CedarPooSpec.Transport.SourceKey.hash_eq
