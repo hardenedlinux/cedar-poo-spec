@@ -96,11 +96,15 @@ def entity (uid : EntityUID) : Lean.Json :=
 
 -- Fixed field inventories are built once. Public logical projections stay the
 -- original reference; compiler rewrites require their exact equality proofs.
-private def entityLayout : Std.TreeMap.Raw String (EntityUID → Lean.Json) :=
-  .ofList [("type", fun (uid : EntityUID) => Lean.toJson (toString uid.ty)),
-    ("id", fun (uid : EntityUID) => Lean.toJson uid.eid)]
+private inductive EntityField where
+  | type | id
+private def entityField (uid : EntityUID) : EntityField → Lean.Json
+  | .type => Lean.toJson (toString uid.ty)
+  | .id => Lean.toJson uid.eid
+private def entityLayout : Std.TreeMap.Raw String EntityField :=
+  .ofList [("type", EntityField.type), ("id", EntityField.id)]
 private def entityWithLayout (uid : EntityUID) : Lean.Json :=
-  .obj (entityLayout.map fun _ project => project uid)
+  .obj (entityLayout.map fun _ field => entityField uid field)
 @[csimp] theorem entity_eq_layout : entity = entityWithLayout := by
   funext uid
   rfl
@@ -381,11 +385,18 @@ private structure EntityObjectFields where
   attributes : Lean.Json
   parents : Lean.Json
   tags : Lean.Json
-private def entityObjectLayout : Std.TreeMap.Raw String (EntityObjectFields → Lean.Json) :=
-  .ofList [("uid", fun fields => entity fields.uid), ("attrs", EntityObjectFields.attributes),
-    ("parents", EntityObjectFields.parents), ("tags", EntityObjectFields.tags)]
+private inductive EntityObjectField where
+  | uid | attributes | parents | tags
+private def entityObjectField (fields : EntityObjectFields) : EntityObjectField → Lean.Json
+  | .uid => entity fields.uid
+  | .attributes => fields.attributes
+  | .parents => fields.parents
+  | .tags => fields.tags
+private def entityObjectLayout : Std.TreeMap.Raw String EntityObjectField :=
+  .ofList [("uid", EntityObjectField.uid), ("attrs", EntityObjectField.attributes),
+    ("parents", EntityObjectField.parents), ("tags", EntityObjectField.tags)]
 private def entityObjectWithLayout (uid : EntityUID) (attributes parents tags : Lean.Json) : Lean.Json :=
-  .obj (entityObjectLayout.map fun _ project => project ⟨uid, attributes, parents, tags⟩)
+  .obj (entityObjectLayout.map fun _ field => entityObjectField ⟨uid, attributes, parents, tags⟩ field)
 @[csimp] theorem entityObject_eq_layout : entityObject = entityObjectWithLayout := by
   funext uid attributes parents tags
   rfl
@@ -414,14 +425,19 @@ def request (req : Cedar.Spec.Request) : Except Error Lean.Json := do
 private structure RequestObjectFields where
   request : Cedar.Spec.Request
   context : Lean.Json
-private def requestLayout : Std.TreeMap.Raw String (RequestObjectFields → Lean.Json) :=
-  .ofList [("principal", fun fields => Lean.toJson (toString fields.request.principal)),
-    ("action", fun fields => Lean.toJson (toString fields.request.action)),
-    ("resource", fun fields => Lean.toJson (toString fields.request.resource)),
-    ("context", RequestObjectFields.context)]
+private inductive RequestObjectField where
+  | principal | action | resource | context
+private def requestObjectField (fields : RequestObjectFields) : RequestObjectField → Lean.Json
+  | .principal => Lean.toJson (toString fields.request.principal)
+  | .action => Lean.toJson (toString fields.request.action)
+  | .resource => Lean.toJson (toString fields.request.resource)
+  | .context => fields.context
+private def requestLayout : Std.TreeMap.Raw String RequestObjectField :=
+  .ofList [("principal", RequestObjectField.principal), ("action", RequestObjectField.action),
+    ("resource", RequestObjectField.resource), ("context", RequestObjectField.context)]
 private def requestWithLayout (req : Cedar.Spec.Request) : Except Error Lean.Json := do
   let context ← attrs req.context
-  return .obj (requestLayout.map fun _ project => project ⟨req, context⟩)
+  return .obj (requestLayout.map fun _ field => requestObjectField ⟨req, context⟩ field)
 @[csimp] theorem request_eq_layout : request = requestWithLayout := by
   funext req
   unfold request requestWithLayout

@@ -17,15 +17,28 @@ private def expected (fields : RefFields) : Lean.Json :=
   Lean.toJson (match fields.response.decision with | .allow => "allow" | .deny => "deny")
 private def reasons (fields : RefFields) : Lean.Json := Lean.toJson fields.response.determiningPolicies.toList
 private def errors (fields : RefFields) : Lean.Json := Lean.toJson fields.response.erroringPolicies.toList
-private def projections : List (String × (RefFields → Lean.Json)) :=
-  [("name", fun f => Lean.toJson f.name), ("revision", fun f => Lean.toJson f.revision),
-    ("policy_ids", RefFields.identifiers), ("request", RefFields.request), ("expected", expected),
-    ("expected_reasons", reasons), ("expected_error_policies", errors),
-    ("policy_ref", fun f => Lean.toJson f.policy.index), ("entities_ref", fun f => Lean.toJson f.entities.index)]
-private def layout : Std.TreeMap.Raw String (RefFields → Lean.Json) := .ofList projections
+-- Scalar selectors avoid an indirect closure call and closure reference traffic
+-- at every mapped node while retaining one typed, proof-bound field inventory.
+private inductive Field where
+  | name | revision | identifiers | request | expected | reasons | errors | policy | entities
+private def project (f : RefFields) : Field → Lean.Json
+  | .name => Lean.toJson f.name
+  | .revision => Lean.toJson f.revision
+  | .identifiers => f.identifiers
+  | .request => f.request
+  | .expected => expected f
+  | .reasons => reasons f
+  | .errors => errors f
+  | .policy => Lean.toJson f.policy.index
+  | .entities => Lean.toJson f.entities.index
+private def projections : List (String × Field) :=
+  [("name", .name), ("revision", .revision), ("policy_ids", .identifiers),
+    ("request", .request), ("expected", .expected), ("expected_reasons", .reasons),
+    ("expected_error_policies", .errors), ("policy_ref", .policy), ("entities_ref", .entities)]
+private def layout : Std.TreeMap.Raw String Field := .ofList projections
 private def reference (fields : RefFields) : List (String × Lean.Json) :=
-  projections.map fun (name, project) => (name, project fields)
-private def fast (f : RefFields) : Lean.Json := .obj (layout.map fun _ project => project f)
+  projections.map fun (name, field) => (name, project fields field)
+private def fast (f : RefFields) : Lean.Json := .obj (layout.map fun _ field => project f field)
 private theorem exact_reference (f : RefFields) : fast f = Lean.Json.mkObj (reference f) := by rfl
 open LeanPoo.Functional.ObjectContract
 private def names : List String := projections.map Prod.fst
