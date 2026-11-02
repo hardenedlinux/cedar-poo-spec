@@ -554,7 +554,7 @@ graph extraction or deployed authorization evidence.
 
 D2 separates =catalog.counts= from generic =sysml.bindings=. Catalog-specific
 counts and localized units are projected before the generic SDK/D2 identity
-binding. The renderer archive path is read from the existing package declaration;
+binding. The renderer Git specifier is read from the existing package declaration;
 Bun retains installation/version ownership. This change modifies the development
 rendering/verification chain only; Lean/Rust algorithms and performance claims
 remain with their existing owners and evidence.
@@ -593,3 +593,22 @@ or isolate a compiler-startup cause. SDK/receipt observation and native validati
 now have separate, existing 30-second method budgets and phase timing/signal
 observations. Native memory/heartbeat arguments are unchanged. Final qualification
 uses both positive stages and all existing negative controls without retries.
+
+
+** Post-release downstream audit: Git install and view recovery
+
+The release is optional distribution. Cedar's normal dependency remains the Git
+commit selected by its sole development manifest and frozen Bun lockfile.
+An independent fresh checkout with no =node_modules/=, vendor tree or Render
+archive installed 94 packages with Bun 1.3.11 and an empty separate package cache
+in 13.14 seconds. This is installation evidence, not a rendering speed claim.
+
+The dual-platform views job separates initial installation/rendering from
+reinstallation and verification of existing exports in a new process. A real
+SDK/browser recovery control relocates captured architecture-view sources and
+all outputs to a new root. Missing browser cache and modified D2/SysML/adapter/
+manifest/lock bytes refuse verification; restoring exact bytes passes.
+Catalog-free views need no catalog producer during recovery. Bun owns Git
+resolution and integrity; no dependency admission layer, installer wrapper,
+version registry or publication framework is added. Lean/Rust algorithms and
+existing proof/resource limits remain outside this change.

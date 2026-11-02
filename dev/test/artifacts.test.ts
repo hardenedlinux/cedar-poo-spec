@@ -38,3 +38,34 @@ test('real SDK view, renderer and catalog metadata cannot be mixed into another 
   const mixedCatalog=structuredClone(original);mixedCatalog.lean=catalog.lean;await writeFile(receiptPath,JSON.stringify(mixedCatalog));await expect(verifyFigure(temporary,entry)).rejects.toThrow('not captured');
  }finally{await rm(temporary,{recursive:true,force:true});}
 },30000);
+
+// Restore actual SDK/browser outputs into a different root; never reissue a receipt.
+test('restored real exports require their cache and exact captured sources',async()=>{
+ const {mkdtemp,mkdir,writeFile,rm,unlink,lstat}=await import('node:fs/promises');
+ const {tmpdir}=await import('node:os'),{join,dirname}=await import('node:path');
+ const entry='dev/d2/architecture-overview.d2',stem=entry.slice(0,-3);
+ const receipt:Receipt=JSON.parse(await readFile(new URL(stem+'.json',root),'utf8'));
+ const temporary=await mkdtemp(join(tmpdir(),'cedar-restored-view-'));
+ const copy=async(path:string)=>{await mkdir(dirname(join(temporary,path)),{recursive:true});await writeFile(join(temporary,path),await readFile(new URL(path,root)));};
+ try{
+  // This non-catalog view must restore without any native producer or vendor tree.
+  expect(receipt.binaries).toEqual({});
+  for(const path of Object.keys(receipt.sources))await copy(path);
+  for(const path of [stem+'.json',stem+'.png',stem+'.svg',...receipt.receipt.svgSHA256.slice(1).map((_,index)=>stem+'.scene-'+(index+1)+'.svg')])await copy(path);
+  await expect(verifyFigure(temporary,entry)).rejects.toThrow(); // HTML not restored yet.
+  await copy(htmlArtifact(entry));await verifyFigure(temporary,entry);
+  const mutations=[entry,...Object.keys(receipt.sources).filter(path=>path.endsWith('.sysml')),'dev/render.ts','dev/package.json','dev/bun.lock'];
+  expect(mutations.some(path=>path.endsWith('.sysml'))).toBe(true);
+  for(const path of mutations){
+   expect(Object.hasOwn(receipt.sources,path)).toBe(true);
+   await writeFile(join(temporary,path),new Uint8Array([0]));
+   await expect(verifyFigure(temporary,entry)).rejects.toThrow('changed');
+   await copy(path);await verifyFigure(temporary,entry);
+  }
+  await unlink(join(temporary,htmlArtifact(entry)));
+  await expect(verifyFigure(temporary,entry)).rejects.toThrow();
+  await copy(htmlArtifact(entry));await verifyFigure(temporary,entry);
+  expect(await Bun.file(join(temporary,stem+'.html')).exists()).toBe(false);
+  await expect(lstat(join(temporary,'dev/vendor'))).rejects.toMatchObject({code:'ENOENT'});
+ }finally{await rm(temporary,{recursive:true,force:true});}
+},30000);

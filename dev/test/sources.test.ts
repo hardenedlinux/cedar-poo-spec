@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import {test,expect} from 'bun:test';
-import {mkdtemp,mkdir,writeFile,unlink,rm,symlink} from 'node:fs/promises';
+import {mkdtemp,mkdir,writeFile,unlink,rm,symlink,readFile,realpath,lstat} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {assertCurrent,captureFiles,repositoryPath,rendererDependency,sha} from '../sources';
@@ -36,4 +36,19 @@ test('renderer dependency follows package.json; Bun owns specifier resolution',(
  for(const spec of ['git+https://github.com/example/render.git#reviewed','github:example/render#reviewed','1.0.1'])expect(rendererDependency(manifest(spec))).toBe(spec);
  for(const spec of [undefined,42,''])expect(()=>rendererDependency(manifest(spec))).toThrow();
  expect(()=>rendererDependency({})).toThrow();
+});
+
+// Installation belongs to the CI/developer entry, never a nested test runner.
+test('downstream imports the declared Git package without vendor or Release input',async()=>{
+ const manifest=JSON.parse(await readFile(new URL('../package.json',import.meta.url),'utf8'));
+ const source=new URL(rendererDependency(manifest));
+ expect(source.protocol).toBe('git+https:');
+ expect(source.hash.slice(1)).toMatch(/^[0-9a-f]{40}$/);
+ const packagePath=import.meta.resolve('@deterministic-engineering/render/package.json');
+ const installed=await Bun.file(new URL(packagePath)).json();
+ expect(installed.name).toBe('@deterministic-engineering/render');
+ expect(installed.version.length).toBeGreaterThan(0);
+ const location=await realpath(new URL(packagePath));
+ expect(location).toContain('/node_modules/');expect(location).not.toContain('/vendor/');
+ await expect(lstat(new URL('../vendor',import.meta.url))).rejects.toMatchObject({code:'ENOENT'});
 });
