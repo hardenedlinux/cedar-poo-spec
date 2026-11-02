@@ -707,3 +707,132 @@ with the existing native counters before altering preparation or source
 representation. A new cache or timeout increase is not justified by these data.
 Raw logs, XML, trace and resource receipts remain local and ignored; no CSV or
 archive evidence bundle is added to Git.
+
+** Source-owned SDK parsing and preparation (2026-11-02, d814329)
+
+Two implementation changes share the existing immutable-source boundary.
+=load_policy_set= decodes the already owned canonical wire through Cedar's public
+=PolicySet::from_json_str=, avoiding a transient cloned JSON tree. Rejection
+falls back to the original Value parser to preserve exact diagnostics; malformed
+inputs can therefore require two parser attempts. One local source slot now owns
+compiled syntax and both checked receipt modes, eliminating duplicate full-source
+keys. Catalog retirement, independent rendered-text parsing, strict validation,
+fresh requests, both authorizers and complete source comparison remain active.
+No new cache layer or private SDK API is introduced.
+
+Qualification passes =lake build Examples Tests=, =just check= and the complete
+=just check-rust= matrix. Focused runtime tests pass 59 with one original ignored
+case; the standard gate separately executes that complete-catalog differential
+oracle and cross-artifact tampering test. All applicable domains remain in the
+51-entry catalog: 1280 primary rows / 2560 authorizations per Rust sample; Lean's
+authorized stage traverses 1292 typed rows including the separate evolution cases.
+The existing type/Contract/proof modules are unchanged and compile successfully.
+
+*** Reproducibility and retained rejected artifacts
+
+A baseline build accidentally used the current checkout's Cargo configuration
+because it was invoked with =--manifest-path= from that working directory. An
+initial project clean omitted =--release=; its alleged cold image equalled the
+baseline rather than the frozen candidate. That identity check failed. A
+mislabelled allocation image also has exactly the baseline SHA and is rejected
+before any allocation measurements. All failed receipts remain retained.
+
+The baseline now builds in its own checkout and target directory. Explicit
+=clean --release= for core/runtime/bridge forces actual project recompilation.
+The corrected default build passes in 10.515 s under the unchanged 120-second,
+default-job boundary; maximum-child compiler RSS is 507822080 bytes. Hot and cold
+images both hash to =fb94784dcf4eb148b35a0a3e861ab80fa61eb6ee80e36637ff2a3e4b26bbde94=.
+Third-party SDK/toolchain caches remain: this is project-clean evidence, not a
+claim of a dependency-cold build. No baseline/candidate build shares a target.
+
+*** Whole-process and allocation evidence
+
+All builds/tests stop before the fixed 48-child, three-pair coordinator. All 15
+complete wire comparisons pass; replay SHA remains
+=f2de8a782d2ebeb4acf294e40e96dad8c9dce55391d2c536e07d60fa4c017293=.
+All unchanged Lean image SHAs are verified before pairing. In this table each
+cell gives baseline / candidate; wall and CPU values are milliseconds.
+
+| Pair | Lean producer wall | Rust replay wall | Rust replay CPU | Complete pipeline wall |
+|------+--------------------+------------------+-----------------+------------------------|
+| 1 | 1456.856 / 1797.346 | 1179.956 / 921.672 | 170 / 150 | 2636.811 / 2719.018 |
+| 2 | 96.622 / 93.930 | 250.591 / 191.202 | 200 / 170 | 347.214 / 285.132 |
+| 3 | 114.256 / 168.850 | 240.803 / 208.173 | 190 / 170 | 355.059 / 377.024 |
+
+All three ordinary replay children are faster in this cohort. In pairs 1 and 3,
+the unchanged Lean producer's extra wall time exceeds that replay saving. This
+locates the arithmetic source of those pipeline losses; it does not identify
+which startup/scheduling/output event caused the producer delay. Pipeline RSS
+increases twice and decreases once. No stable end-to-end or OS RSS gain is claimed.
+
+The separate fixed native benchmark pairs retain every Lean total below, with
+one warmup and three measured samples inside each process. The images are
+identical; the differences are not Lean algorithm gains. All values are ms.
+
+| Pair | Baseline Lean totals | Candidate Lean totals |
+|------+----------------------+-----------------------|
+| 1 | 27.983 / 221.649 / 135.824 | 175.541 / 263.230 / 97.097 |
+| 2 | 28.695 / 329.877 / 336.095 | 91.119 / 95.740 / 164.149 |
+| 3 | 29.379 / 150.936 / 28.123 | 70.301 / 111.089 / 118.125 |
+
+Each variant also passes 832 native stage measurements, and 1240 authorized
+stage measurements / 204 authorization records, with complete production-wire
+equality. The interleaved Rust benchmark process walls are 4692.857 / 4041.318,
+3885.900 / 4161.327, and 2652.456 / 2993.395 ms. Its latter two candidate processes
+lose; this separate workload does not establish uniform SDK speedup either.
+
+Allocation observation uses separate images, three pairs / nine samples per
+variant, and the same native semantic gate. All original samples are retained.
+
+| Per-replay allocator metric | Baseline median | Candidate median | Change |
+|----------------------------+-----------------+------------------+--------|
+| Allocation requests | 1667315 | 1604423 | -62892 (-3.7721%) |
+| Requested bytes | 376013563 | 371258658 | -4754905 (-1.2646%) |
+| Process requested peak bytes | 17097217 | 17083503 | -13714 (-0.0802%) |
+
+These are allocator requests, not foreign allocation, retained SDK heap or RSS.
+Requested live bytes are identical between variants and grow by 109930 bytes
+between samples. The benchmark retains prior observation records in =results=;
+these process-wide snapshots cannot be labelled SDK retention. No allocator
+instrumentation is used to qualify ordinary latency.
+
+*** Pre-main: actual wait event, unresolved object type
+
+A stopped owned Python stub permits System Trace attachment before exec. A
+second diagnostic adds a fixed 50-ms pre-exec pulse to establish trace coverage.
+Both native children exit zero and preserve the complete catalog. This changes
+launch conditions; its event identity is not automatically an explanation of
+all ordinary launches.
+
+In the pulse capture PID 47432 / TID 2460240 asserts Darwin =MACH_WAIT= (installed
+SDK code 0x10) at trace time 1428.044583 ms for event/lock ID
+=0x42d43ca7db63f02f=. It is blocked from 1428.047708 to 4159.545791 ms:
+2731.498083 ms. After becoming runnable it waits only 0.651125 ms to run. This
+separates event blocking from that subsequent scheduling delay. The ID is opaque
+and useful only within this capture; it is not an identified mutex, VM page,
+security service or stable cross-run identity. Decoded VM records do not explain
+the entire interval. Object type and waker remain unresolved.
+
+Both 30-second and separate 120-second artifact-analysis exports of the global
+scheduler table time out; partial XML and recovered complete rows are retained,
+not admitted as complete exports. A row-filter query returns empty and is not
+absence evidence. =ps= reports unavailable symbolic/numeric wait channels. GUI
+fallback cannot start its tool runtime. The targeted kernel-stack capability
+check =sudo -n -l /usr/sbin/spindump= requires a local password; none is requested
+or supplied. No security, signing, priority, heap or native watchdog setting changes.
+
+*** Next complete tranche
+
+Resolve this event's object/waker with an authorized target kernel stack or a
+filtered scheduler view, retaining instrumented and ordinary controls separately.
+For the remaining SDK normalization cost, evaluate the public =Policy::new_id=
+and =Policy::eq= path against the original canonical-body oracle before replacing
+PST reconstruction. IDs, annotations, duplicate bodies, ordering, source changes
+and both diagnostic reason/error multisets need differential controls. Independent
+text parsing, schema admission and both authorizers remain mandatory. The next
+candidate must repeat the full-domain native/replay/proof gates, ordinary pairs
+and resource evidence; current non-wins are frozen references, not discarded.
+
+Raw native outputs, resource receipts and traces remain local and ignored under
+=../cedar-native-sdk-20261102/=; no CSV or evidence archive enters Git. These are
+local qualification receipts, not remote CI for this follow-up. No merge or push.
