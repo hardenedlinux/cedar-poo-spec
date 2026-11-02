@@ -1386,8 +1386,10 @@ new answer cache or additional benchmark workload is introduced.
 
 A stronger official-cache control moves the exact CaseFields module artifacts
 aside, then runs =lake --no-build --rehash build= for the module and its native
-object facet. Both commands exit zero; restored artifacts match the original
-bytes. The original files are restored unconditionally. This establishes direct
+object facet. Both commands exit zero; the module/IR, generated C and native object payloads
+match the original bytes. Lake refreshes the trace metadata during recovery;
+those trace files are retained as different, not asserted byte-identical. The
+original working-tree files, including their metadata, are restored unconditionally. This establishes direct
 module/native-object recovery without allowing recompilation, independently
 of the preceding 100-second timing observation.
 
