@@ -637,3 +637,29 @@ this rendering-only change; no repository-wide compliance claim is made.
 Recovery runs the existing native D2 input-closure controls after reinstall, in
 addition to imported-package and real-output checks. This exercises the restored
 Render/D2 worker, rather than qualifying recovery from metadata imports alone.
+
+
+*** macOS native checker failure and scoped imports
+
+Run 41386815048 at da3349b passed Linux (40 full tests and 17 recovery controls),
+but macOS failed its existing native positive check at 30003.03 ms. The child
+reported null exit, SIGTERM and empty output; recovery was skipped. Artifact
+upload ran under =always()=, so reaching upload did not establish a passing test.
+The failing job log remains attached to that run and preserved locally.
+
+The generated checker unnecessarily imported the entire =Lean= umbrella. Native
+=lean --profile= on the same 14-declaration / 2-use capture attributed 5.28 s to
+imports and less than 0.1 s to the checking body locally. The adapter now imports
+the owners of =run_cmd= (=Lean.Elab.BuiltinEvalCommand=) and =getUsedConstants=
+(=Lean.Util.FoldConsts=). Native environment inspection of the unchanged capture
+found 2731 imported modules before and 1993 after: 738 unused Lean modules removed,
+no application module removed or added, and both complete checks succeeded.
+These ordered local observations are not an uncached timing A/B comparison and
+do not establish an exact cause for all macOS startup variation. They establish
+an unnecessary import boundary and a concrete reduction without splitting or
+omitting obligations, widening 30-second/2048-MiB/heartbeat limits, or retrying a
+failed CI job. Both platforms must qualify the resulting source revision anew.
+
+Changing the adapter correctly invalidated previous receipts. The seven views
+were regenerated through =just render=; PNG/scene images were unchanged, while
+combined SVG provenance and JSON receipts bind the new source bytes.

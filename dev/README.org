@@ -313,3 +313,8 @@ verification passed with 21 source files and no producer binary. Removing the
 installation and reinstalling the same lockfile restored 94 packages in 436 ms;
 a new process accepted the unchanged original export. These are recorded local
 observations, not cross-platform performance guarantees.
+
+The native proof checker imports only the Lean command-evaluation and constant-use
+inspection modules it consumes. It still checks the entire SDK capture and all
+existing negative controls within the same per-test memory/heartbeat/time bounds.
+See the shared-plan Org audit for the preserved macOS failure and import profile.
