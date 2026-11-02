@@ -3,9 +3,11 @@ import Examples.Governance.CountryApprovalExport
 
 namespace CedarPooSpec.CountryApprovalValidatedExport
 
-def manifest : Except String Lean.Json := do
-  let rows ← CedarPooSpec.CountryApprovalExport.rows
-  CedarPooSpec.SchemaJson.validatedManifest
+def manifest
+    (owner : CedarPooSpec.Functional.Program CedarPooSpec.CountryApprovalExample.model CedarPooSpec.CountryApprovalExample.schema :=
+      CedarPooSpec.CountryApprovalExample.program) : Except String CedarPooSpec.Transport.Manifest := do
+  let rows ← (CedarPooSpec.CountryApprovalExport.rows (owner := owner))
+  CedarPooSpec.SchemaJson.manifest
     CedarPooSpec.CountryApprovalExample.schema rows
 
 end CedarPooSpec.CountryApprovalValidatedExport

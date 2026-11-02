@@ -1,7 +1,6 @@
 import CedarPooSpec.Evaluation
 import CedarPooSpec.Validation
 import LeanPoo.Proof.Product
-import LeanPoo.Object.Debug
 
 /-!
 Compose the independent Cedar evaluation and typechecking certificates.

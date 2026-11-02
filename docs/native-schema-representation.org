@@ -1,0 +1,316 @@
+#+TITLE: Complete catalog schema, revision and representation preparation
+#+OPTIONS: toc:2
+
+* Historical snapshot
+
+This is the accepted compatible representation audit at 04d/a06. The source-table
+wire migration proposed below is now implemented in [[file:native-source-table.org][the current canonical bulk audit]].
+Statements about unimplemented wire work in this older snapshot describe its
+historical boundary; its original receipts are preserved.
+
+* Scope and evidence boundary
+
+This change applies to all 51 published catalog entries and all nine existing POO
+object families. The Lean producer, object types, Contracts and proofs retain the
+accepted POO revision. Native acceptance still requires 1280 ordinary replay rows,
+2560 compiled/rendered authorizations, every frozen manifest, original-workflow
+comparisons and cross-artifact mutations. No domain-specific alternate runner or
+request-decision cache is introduced. PR #8 remains unmerged.
+
+The ordinary baseline is =7a99181b5be1bbeca10a54b8a879bdb330d7a3a5=.
+Its four native artifacts were frozen and verified against the previously accepted
+symmetric-file receipt before edits. A separate checkout of that exact revision
+adds only the identical phase observer for memory attribution. Its source hashes
+and instrumented executable identity accompany the observations. The published
+[[file:native-schema-observer-baseline.patch][baseline observer patch]] applies to that exact original revision and is
+checked against the observer checkout, making the diagnostic overlay reviewable.
+Apply this context-free diagnostic patch with =git apply --unidiff-zero <patch>=. Instrumented
+and ordinary executables are different evidence, not interchangeable timings.
+
+* P0: allocation shape and allocator retention
+
+The observer records requested live bytes before/after each phase, a fresh
+process-wide allocation high water within that sequential phase, request counts
+and bytes, current RSS, and platform heap in-use/reserved observations. It captures
+the first reference replay before benchmark reference/results retention changes
+the live baseline. The benchmark's inventory now also decodes one entry at a time;
+it must not rebuild the removed complete tree merely to count its inputs.
+
+On macOS, the optional observer uses libc's SDK-typed =proc_pidinfo= for its own
+PID and =malloc_zone_statistics(NULL)= for all malloc zones. On GNU Linux it uses
+=/proc/self/statm= and =mallinfo2=; the latter does not describe every possible
+allocator arena. Unsupported/failed observations stay absent. These are
+process-wide diagnostic snapshots and include observer/runtime overhead; they
+are not retained application heap or proven resource bounds. The global allocator
+forwards its original layout/pointer contracts to System. No allocator tuning,
+forced trimming, OS policy changes or extra runtime environment variables are used.
+
+The original algorithm materializes the entire generic catalog before consuming
+its first entry. Initial investigation observed about 94 MiB of requested live
+allocation at decode, falling to about 11 MiB after cleanup while current RSS
+remained around 116 MiB and the system allocator reported about 148 MiB reserved.
+The complete tree therefore establishes a large allocation high water; lower
+subsequent temporary allocation totals alone cannot establish lower RSS. Qualified
+phase comparisons and ordinary process measurements are recorded below.
+
+The earlier +1.23 MiB paired-median RSS increment is not a measured retained-cache
+size. That cohort reduced cumulative allocation requests while leaving the roughly
+102 MB requested process high water effectively unchanged. RSS also includes code,
+allocator bookkeeping/reservations and OS residency. The new phase evidence locates
+the dominant live input tree and retained allocator capacity; it does not identify
+the individual pages responsible for that older small increment.
+
+* P2: validated borrowed catalog spans
+
+Additional owned generic input storage changes from the sum of all entry trees
+to the largest live entry tree, plus the three explicitly retained cross-artifact
+consumers and finite Schema metadata. Input text and final receipts still occupy
+memory. The parser/index passes remain linear in input size; source preparation
+uses ordered maps keyed by complete source, without digest-only equality.
+
+The input path is now:
+
+#+begin_example
+immutable input text
+  -> complete serde syntax/number/depth validation, in original input order
+  -> linear index of borrowed entry spans, root keys normalized by serde
+  -> entries consumed in their original BTreeMap name order
+  -> one ordinary Value tree and typed manifest at a time
+  -> existing complete Cedar replay and final cross-artifact checks
+#+end_example
+
+The first pass uses the same serde JSON parser as before and constructs no value
+tree. Its key visitor borrows/discards nested keys. It preserves full-input errors,
+including malformed/out-of-range numbers in values later overwritten by duplicate
+keys, original error positions, recursion limits and trailing input errors. The
+span index is only a boundary index over already validated text; it makes no JSON
+validity or authorization decision. It checks slice bounds using safe Rust.
+
+Each consumed entry still passes through ordinary Value normalization before
+typed manifest decoding. Root and nested duplicates therefore keep the existing
+last-wins behavior; a naive direct typed decode would reject some accepted inputs.
+The serde feature set remains unchanged: enabling =raw_value= would also alter
+private-token Value behavior. Tests cover private token keys, signed zero, escaped
+keys/Unicode, invalid numbers, depth boundaries, every truncated fixture prefix,
+and byte corruptions against the previous whole-Value parser.
+
+Only the three already existing cross-artifact consumers retain their manifests.
+The complete output remains an ordinary owned Value with exactly the accepted
+receipt bytes. The CLI's buffered writer and error-checked flush remain unchanged.
+
+* P1: immutable preparation and exact source identity
+
+=CompiledPolicyJson= owns immutable source data through Arc. Its clones preserve
+the snapshot; the editable template-source boundary remains separate. Successful
+typed Case decoding interns equal sources within each revision without changing
+or rejecting conflicts early. Conflicting inputs remain available to the original
+validation/error path. Existing public runtime entrypoints retain their contracts.
+
+Source identity includes the complete JSON representation, numeric signed zero
+and ordering. Normal Value equality alone equates floating positive and negative
+zero even though their canonical receipt bytes differ. =JsonSourceIdentity= is a
+source-comparison/encoding capability, not admission. Canonical source keys are
+complete strings rather than digests used as authority shortcuts.
+
+Within one manifest, the preparation owner indexes SDK compiled policy sets and
+independently checked rendered syntax by complete source identity. Source misses
+invoke the original SDK parser/renderer/normalizer. Each fresh revision binds its
+current immutable source owner; schema-bound policy validation still executes for
+every revision. Source hits share immutable SDK syntax and body maps, never request
+or authorization results. The owner retires at manifest completion. The measured
+catalog has 221 revision bindings and 194 distinct per-manifest sources, so there
+are 27 compiled-source and 27 checked-syntax reuses.
+
+Across related manifests, =SchemaPreparation= retains only schema sources declared
+more than once by the finite input plan. It parses lazily at the original replay
+point, checks the complete source, and removes a slot on its last planned use.
+Unregistered/exhausted sources parse afresh. A source-only metadata projection
+establishes no validity and moves no schema or policy error before an earlier
+entry. The 23 schema uses include 21 distinct sources; every one of the 112 strict
+revision validations remains mandatory. Context and Request construction and both
+authorizers remain per case. Tests mutate schemas, policies and request contexts
+between reuses and verify independent reference results and retirement.
+
+Canonical receipt hashing now feeds SHA through a fixed stack buffer rather than
+building an entire canonical payload. Already ordered maps traverse directly;
+unordered maps still sort for the original canonical order. Golden tests compare
+the previous algorithm, escaping, numbers and payloads crossing buffer boundaries.
+The existing one-slot entity owner also retains one complete-source receipt digest:
+53 hashes and 1227 digest reuses for 1280 rows. Signed-zero changes cannot alias
+that digest. The uncached oracle disables this reuse as well as syntax/entity
+preparation. Receipt construction and all actual authorizations still execute.
+
+* Owner graph and proof boundary
+
+The runtime's transport contracts and interning belong to =input=; SDK parsing,
+rendering and normalization belong to =policy_codec=; immutable checked syntax has
+one contract owner. Preparation depends on those lower owners. Revision binding
+and Case execution consume them; replay/schema workflows compose the operations.
+Schema preparation owns no Case workflow. The dependency graph is acyclic, and the
+existing responsibility/owner gates are kept enabled.
+
+The new source-sharing boundaries are enforced by private constructors, immutable
+ownership, complete source checks and independent native controls. The existing
+Lean type/Contract/frame/Delta proofs and all Case proofs remain actual required
+gates. They do not purport to prove the SDK parser, system allocator or OS loader.
+Native oracle, wire and resource receipts remain separate from model proofs.
+
+* References
+
+- [[https://github.com/apple-oss-distributions/libmalloc/blob/main/include/malloc/malloc.h][Apple malloc API]] and the installed SDK define all-zone statistics.
+- [[https://man7.org/linux/man-pages/man3/mallinfo.3.html][GNU allocator observation]] documents the arena/mmap fields and limitations.
+- [[file:native-dataflow-acceptance.org][Earlier complete lifecycle audit]] retains all previous cohorts, their setup defects,
+  the actual macOS startup tails and the successful exact-head Ubuntu controls.
+
+* Qualified complete validation and ordinary process evidence
+
+The integrated base includes the parallel ZeroTrust/Authorization migration at
+=e709035565adbe0629058a5d1e18c1d31e3dadb3=. Its Agent Chain recipe still named the
+removed flat Compound module; the recipe now names the actual Authorization owner.
+No forwarding module, skipped Case or weaker guard was added. The integrated
+=just check= exits zero, including complete Lean library/Production/Tests builds,
+all functional object, Contract and axiom probes, all declared domain entrypoints,
+strict Rust workspace/feature/layer checks, independent 23 schema/24 raw workflows,
+Cedar/solver/Delta checks, and complete manifest ownership/tamper checks. The
+unchanged Python observation/protocol suite passes all 19 tests.
+
+The final ordinary cohort verifies 686 source inputs at measured commit =04d00e5=.
+The later CI-only test spelling change is explicitly distinguished below.
+It retains 48 native children, 15 byte comparisons, 486 object-profile observations
+and all 1836 per-entry timing rows. The workload, three pairs, three benchmark
+samples, 128 reads and 120-second process supervision remain unchanged.
+
+| Pair | Before pipeline wall ms | After pipeline wall ms | Before CPU ms | After CPU ms | Before max-child RSS MiB | After max-child RSS MiB |
+|------+-------------------------+------------------------+---------------+--------------+-------------------------+------------------------|
+| 1 | 2262.90 | 2766.79 | 470 | 440 | 119.58 | 66.03 |
+| 2 | 461.19 | 453.37 | 430 | 420 | 119.56 | 66.05 |
+| 3 | 457.34 | 440.84 | 430 | 410 | 119.22 | 66.03 |
+
+Pipeline medians are 461.19 / 453.37 ms wall and 430 / 420 ms CPU. CPU accounting
+has the OS time command's recorded precision. Ordinary Rust replay peak RSS
+medians are 119.56 / 36.08 MiB; the optimized pipeline's maximum child is now the
+Lean producer (about 66 MiB). Every first-file observation remains in the cohort.
+The first pair regresses in wall time; two subsequent pairs improve modestly.
+This establishes a substantial memory reduction and a small CPU improvement in
+this cohort, not stable acceleration of arbitrary complete-process launches.
+
+The nine existing paired ordinary benchmark samples per variant locate the
+remaining offset. Medians are observations of separate nested spans, not an
+additive attribution model or causal percentages:
+
+| Span | Before ms | After ms |
+|------+-----------+----------|
+| complete replay | 284.48 | 282.01 |
+| runtime preparation | 135.43 | 123.07 |
+| revision preparation | 66.71 | 59.73 |
+| schema preparation | 37.61 | 31.66 |
+| remaining replay time | 124.91 | 137.03 |
+| catalog preflight/decode | 43.71 | 14.02 |
+| schema-use plan | 0.00 | 4.95 |
+| entry processing | 221.48 | 246.20 |
+| final receipt serialization | 0.50 | 0.48 |
+
+Entry Value construction now occurs inside the entry span; its increase cannot
+be interpreted independently of the lower decode span. Complete syntax preflight,
+source-only metadata projection, entry decoding/interning and exact-source checks
+retain real costs outside SDK preparation. Their combined residual offsets most
+of the preparation savings. The residual does not isolate each of these operations;
+claiming that one parser pass alone causes all 12.12 ms would exceed the evidence.
+Final receipt serialization is below one millisecond and is not the dominant
+remaining complete replay cost. The complete legacy wire still repeats policy
+source across Cases; this migration reduces its live representation and sharing
+cost, not its byte count or the need to read it.
+
+* Memory receipts and true cold Rust build
+
+The qualified baseline adds only the published observer patch to the original
+7a algorithms. All observations use identical complete input. First-reference
+requested live allocation peaks are 94.58 / 21.89 MiB. Cleanup requested live
+allocation is effectively unchanged (10.8338 / 10.8355 MiB), while current RSS is
+116.06 / 34.45 MiB and allocator reserved space is 132 / 48 MiB. The removed large
+input tree, followed by allocator retention, explains the dominant old footprint;
+these snapshots do not establish a leak or a universal allocator bound.
+
+The three instrumented samples have median allocation requests 3542570 / 3248294
+and requested bytes 644939484 / 604510157. Instrumented whole-process RSS is
+120.44 / 38.27 MiB. These are diagnostic memory observations; their timings are
+not substituted for ordinary process measurements. The complete per-phase first
+reference, all sample allocation/cleanup records and both executable identities
+are retained in the machine receipt.
+
+A separate standard =cargo build --release --locked -p cedar-poo-bridge= uses the
+CLI =--target-dir= option with a previously absent target directory. No target
+artifacts are copied; normal Cargo source/download caches remain available and
+Cargo uses its default job count. Build wall time is 43.42 s, exit zero; build
+peak child RSS is 1762.48 MiB, which is compiler evidence, not runtime RSS. Its
+ordinary complete =replay-catalog= output is byte-identical to the accepted full
+receipt, and that cold-built consumer's process RSS is 35.92 MiB. This qualifies
+a cold Rust release build, not a cold Lean build or a cold OS/page cache.
+
+* Current startup boundary
+
+The actual complete-catalog copy and hardlink controls retain 24 further diagnostic
+children. Every exit is zero, every clock interval is valid and every full stdout
+matches its ordinary catalog/receipt. Fresh copied Lean files reach main after
+1407.64 / 1402.97 ms; repeated invocations are 111.93--117.14 ms, including observed
+import initialization of 87.35--91.55 ms. Rust copied files take 549.02 / 398.27 ms
+before main, versus 3.18--3.51 ms on repeats. Same-inode hardlink trials also retain
+fresh-path tails (Lean 1495.82 / 811.45 ms; Rust 358.00 / 103.27 ms). Thus file
+contents being shared does not remove all path/process startup variation here.
+
+These are separate diagnostic processes; they locate an existing pre-main tail
+but do not assign every ordinary first-pair delay to a particular OS service.
+Earlier loader-PC samples and the 7a Ubuntu controls remain in the historical
+receipt. No OS security policy, signing/cache behavior or system allocator setting
+is changed. Exact-current-head Ubuntu receipts belong to remote CI, separately
+from these macOS observations.
+
+* Remaining algorithm boundary across every domain
+
+The P0 memory attribution and P1 shared preparation are implemented; P2 borrowed
+representation is implemented and retains complete wire compatibility. All three
+share the existing catalog and owner APIs across the applicable domains. Stable
+whole-process latency remains open.
+
+1. Preserve startup, initialization, output and full-process evidence together.
+   Investigate the pre-main service only with direct OS evidence; library parser
+   changes cannot be credited with removing work before user main.
+2. Optimize the weighted source-preparation operations that remain after reuse:
+   21 distinct schemas, 194 distinct per-manifest policy sources and independent
+   rendered syntax still require real work. An SDK-level sharing change needs the
+   same strict validation, changed-source refusals and independent rendered replay.
+3. To remove repeated input bytes rather than only their live tree, design one
+   versioned source-table wire contract shared by the Lean producer and existing
+   Rust consumer. Type-bound Case references must resolve to immutable complete
+   policy/schema/entity snapshots, with missing, duplicate, stale and forged
+   references refused. Migrate all publishers, frozen fixtures and downstream
+   consumers together; a parallel domain runner or digest-only authority cache
+   would not close this boundary. This wire-contract migration is not implemented
+   or claimed by the compatible representation change above.
+
+* Published receipts
+
+- [[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-schema-lifecycle-evidence.json][Complete ordinary process/source identities and all outcomes]]
+- [[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-schema-preparation-evidence.json][Qualified phase memory, all ordinary benchmark spans, startup and cold-build evidence]]
+- [[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-schema-object-observations.csv][All 486 object observations]]
+- [[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-schema-entry-timings.csv][All 1836 catalog-entry observations]]
+- [[file:native-schema-observer-baseline.patch][Reviewable observer-only baseline overlay]]
+
+Reproduce ordinary comparison with the existing
+=just bench-dataflow-lifecycle <frozen-artifacts> <new-output-directory> 7a99181b5be1bbeca10a54b8a879bdb330d7a3a5=.
+Both variants must be built/frozen from their declared sources before that command;
+the driver verifies their identities, and the output directory must be new.
+
+* Compiler provenance and post-measurement test spelling
+
+The measurements use macOS 26.6.1 (25G76), Rust/Cargo 1.95.0, LLVM 22.1.2,
+Lean 4.34.1 and the recorded exact POO dependency. Ubuntu CI stable is Rust 1.99;
+its newer =byte_char_slices= lint requires the equivalent byte-string spelling
+of one parser mutation alphabet. The three parser tests and strict workspace
+Clippy pass after that test-only change; all mutation bytes are unchanged.
+
+The original 686-input measurement manifest is preserved. Its only subsequent
+source difference is that test file, explicitly recorded with before/after hashes
+in [[https://github.com/hardenedlinux/cedar-poo-spec/blob/d182c73f1aefc39811a4694b06a5a69cb45ef388/docs/native-schema-provenance.json][measurement provenance]]. The rebuilt ordinary release executable is byte-identical
+to the measured candidate, so no performance sample is regenerated or relabeled.
+Exact-head remote CI validates the final test spelling separately.

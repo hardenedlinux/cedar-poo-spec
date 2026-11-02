@@ -55,7 +55,7 @@ checks that adding the chain modules leaves the existing tool and bounded
 origin roots identical. This is policy-level locality; it does not claim that
 an arbitrary external token chain or proof certificate is reusable.
 
-The shared [[file:../../../../CedarPooSpec/CompoundAuthorization.lean][authorizeLayers API]] now caches each distinct POO root's
+The shared [[file:../../../../CedarPooSpec/Authorization/Compound.lean][authorizeLayers API]] now caches each distinct POO root's
 compilation within one compound request. A five-layer path evaluates three
 delegation requests and one origin request against one compiled C4 root;
 the tool check uses its own root. =compilationRootCountsFully= checks that
@@ -76,7 +76,7 @@ external agents.
 
 * Authorization delta across the whole path
 
-The [[file:../../../../CedarPooSpec/AuthorizationDeltaCompound.lean][compound delta API]] compares the same ordered tool, delegation, and
+The [[file:../../../../CedarPooSpec/Authorization/Delta/Compound.lean][compound delta API]] compares the same ordered tool, delegation, and
 origin checks under two POO revisions. It validates each Cedar request,
 entity snapshot, and compiled policy set before reporting a decision. A
 changed path is rejected: adding a hop is a new operation requiring its own

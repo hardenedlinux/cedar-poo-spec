@@ -1,0 +1,72 @@
+#+TITLE: Zero Trust Framework API and Application Specialization
+#+LANGUAGE: en
+
+* Framework ownership
+
+[[file:../CedarPooSpec/ZeroTrust/README.org][ZeroTrust]] is a generic functional
+framework with an optional POO interpretation. The top-level Lean file aggregates
+the directory; it contains no Gateway implementation. Read
+[[file:rfc/0010-zero-trust.org][RFC 0010]] for research sources, model boundaries,
+proofs, counterexamples and concrete Host obligations.
+
+| API | Meaning |
+|-----+---------|
+| =Requirement Effect View= | Typed function describing one effect/view condition |
+| =Framework.required= | Joint authentication, current authorization, freshness, durable consumption, unknown retention, non-revocation and mediation |
+| =adapt= / =strengthen= / =withRequirement= | Reuse functions under projections and additional requirements; preserve original implication |
+| =Observation= / =atObservation= | Bind actual mutable attributes and a non-reused authoritative generation |
+| =MediatedStep= / =Run= / =run_preserves= | Check every declared new effect against its actual state and reuse an existing application's invariant |
+| =ZeroTrust.ProfileObject= | Source-bound LeanPoo object inheritance and strengthening Session over original typed requirement functions |
+
+These are framework functions and proof-carrying object profiles, not a new
+Cedar evaluator or configuration DSL. Facts, authoritative originals and
+linearization are supplied by a trusted application adapter.
+
+* Applications consume the core
+
+[[file:../CedarPooSpec/Gateway/ZeroTrust.lean][Gateway.ZeroTrust]] specializes the
+framework through its existing POO publication, actual Cedar admission and
+operation/authority consumption. Its Proposal/FinalUse types belong to Gateway.
+The original operation is consumed once; ongoing releases use =continuing= with
+fresh assessment, original scope and explicit recovered =CommittedPrefix=.
+
+=fromFrameworkObject= requires both an independently required parent Session and
+the selected Session. It invokes =composeSessions= and returns a =Composed=
+requirement retaining both actual projections. The original type index is the
+Gateway publication's framework requirement. The composition theorem preserves
+the selected parent's condition and original Gateway Contract. Root-only shape
+recognition alone does not preserve extra ancestor requirements under raw POO
+overrides. Authenticating the required parent commitment remains a Host duty.
+
+=final_use_satisfies_framework= and
+=specialization_preserves_core_and_original= connect Gateway to the functional
+core. =continuing_use_preserves_original_consumption= rejects reconsumption
+against a current history extending the consumed prefix, including a renewed
+Authority. A rolled-back input ledger cannot supply that witness.
+
+[[file:../CedarPooSpec/Authorization/README.org][Authorization]] independently owns
+Cedar policy combination and Delta. Gateway composes both frameworks. Pure
+records/proofs are duplicable; the native executor still needs a fresh one-use
+runtime capability and complete mediation. A final release-completion commit
+after queue insertion must not be confused with the original durable-consumption
+prerequisite before sending.
+
+* Evidence and limits
+
+=Tests.ZeroTrust.Functional= uses a generic artifact-access fixture with no
+Gateway types. =Tests.ZeroTrust.ProfileObject= constructs and reads a real
+inherited object through LeanPoo Session. =Tests.ZeroTrust.ImportBoundary=
+inspects actual transitive imports and refuses Gateway dependencies.
+=Tests.Gateway.ZeroTrust= checks the application adapter and recovery-prefix
+counterexamples. All are discovered by the existing Tests aggregate.
+
+Unknown commit/hold blocks use. Currentness alone does not defeat revocation.
+An equal attribute value in a later generation cannot revive a stale
+observation. Generation non-reuse, authentic reading, atomic persistence,
+rollback-resistant recovery and native sender/trace correspondence remain Host
+premises, not consequences of naming a predicate currentAtUse.
+
+Applications on older fixed pins check new APIs in isolation. No pin is changed
+here. Historical raw evidence is preserved; inherited Cedar native-decision
+axioms remain visible in printed axiom audits. The complete UCON temporal rule
+system and deployed NIST compliance are not claimed.

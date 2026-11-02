@@ -1,0 +1,17 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: Apache-2.0
+
+build:
+    lake -d .. build caseManifestsNative
+
+prepare:
+    mkdir -p .generated
+    ../.lake/build/bin/caseManifestsNative catalog > .generated/lean-catalog.json
+
+render: build prepare
+    bun run render .generated/lean-catalog.json
+
+test:
+    lake -d .. build Tests.ZeroTrust.Functional Tests.ZeroTrust.ProfileObject Tests.ZeroTrust.UsageControl Tests.Gateway.ZeroTrust
+    bun run typecheck
+    bun test ./test

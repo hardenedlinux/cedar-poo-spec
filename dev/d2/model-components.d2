@@ -1,0 +1,120 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: Apache-2.0
+
+vars: {d2-config: {data: {figure: |json
+{
+  "purpose": "architecture",
+  "language": "en",
+  "width": 1120,
+  "primary": "purpose",
+  "themes": [
+    "sketchbook",
+    "compact"
+  ],
+  "icons": [
+    "engineering"
+  ],
+  "basis": {
+    "captureRef": "development-source-observation",
+    "modelRefs": [],
+    "obligationRefs": [],
+    "evidenceRefs": []
+  },
+  "title": "Reusable model Components",
+  "kind": "responsibility-map",
+  "questions": [
+    {
+      "ref": "purpose",
+      "text": "Which capabilities can an application compose?",
+      "focusRefs": [
+        "sysml",
+        "library"
+      ]
+    }
+  ],
+  "references": {
+    "source": "dev/d2/model-components.d2",
+    "sysml": "dev/sysml/architecture.sysml",
+    "library": "CedarPooSpec.lean",
+    "functionalSource": "CedarPooSpec/Functional/README.org",
+    "zeroTrustSource": "CedarPooSpec/ZeroTrust/README.org",
+    "authorizationSource": "CedarPooSpec/Authorization/README.org",
+    "pseudonymizationSource": "CedarPooSpec/Pseudonymization/README.org",
+    "admissionSource": "CedarPooSpec/Admission/README.org",
+    "governanceSource": "CedarPooSpec/Governance/README.org",
+    "gatewaySource": "CedarPooSpec/Gateway/README.org",
+    "dataSource": "CedarPooSpec/Data/README.org",
+    "cloudSource": "CedarPooSpec/Cloud/README.org",
+    "agenticAISource": "CedarPooSpec/AgenticAI/README.org"
+  },
+  "copy": {
+    "description": "Zero Trust is a peer Component; Cloud and AgenticAI are cross-industry capabilities.",
+    "status": "An inventory of implemented library families, not a claim that every profile selects every Component."
+  },
+  "presentation": {
+    "options": {
+      "elk.algorithm": "box",
+      "elk.aspectRatio": "1.8"
+    },
+    "edgeLabels": false,
+    "legend": false
+  },
+  "sysml": {
+    "source": "dev/sysml/architecture.sysml",
+    "view": "CedarArchitecture::components",
+    "bindings": {
+      "functional": {
+        "name": "CedarArchitecture::functional",
+        "icon": "library"
+      },
+      "zeroTrust": {
+        "name": "CedarArchitecture::zeroTrust",
+        "icon": "obligation"
+      },
+      "authorization": {
+        "name": "CedarArchitecture::authorization",
+        "icon": "model"
+      },
+      "pseudonymization": {
+        "name": "CedarArchitecture::pseudonymization",
+        "icon": "model"
+      },
+      "admission": {
+        "name": "CedarArchitecture::admission",
+        "icon": "model"
+      },
+      "governance": {
+        "name": "CedarArchitecture::governance",
+        "icon": "model"
+      },
+      "gateway": {
+        "name": "CedarArchitecture::gateway",
+        "icon": "model"
+      },
+      "data": {
+        "name": "CedarArchitecture::data",
+        "icon": "model"
+      },
+      "cloud": {
+        "name": "CedarArchitecture::cloud",
+        "icon": "model"
+      },
+      "agenticAI": {
+        "name": "CedarArchitecture::agenticAI",
+        "icon": "model"
+      }
+    }
+  }
+}
+|
+}}}
+functional: "Functional Cedar\nTyped Programs / capability selection\nShared preparation / Contracts"
+zeroTrust: "Zero Trust Component\nContinuous-use requirements\nConditions / obligations / refinement"
+authorization: "Authorization Component\nCedar policy composition\nValidation / Delta / evidence"
+pseudonymization: "Pseudonymization\nTransform / correlate / release\nExceptional re-identification"
+admission: "Admission\nTyped operation admission\nHandoff and current inputs"
+governance: "Governance\nOwned permits and vetoes\nDuties / approvals / delegation"
+gateway: "Gateway\nPublished profiles and consumption\nApplication-specific effect binding"
+data: "Data\nStorage and Lakehouse controls\nSource / destination boundaries"
+cloud: "Cloud\nCross-industry build / release\nArtifacts and provenance controls"
+agenticAI: "AgenticAI\nCross-industry agent capabilities\nDelegation / commerce / disclosure"

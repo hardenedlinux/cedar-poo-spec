@@ -1,4 +1,4 @@
-import CedarPooSpec.AuthorizationDeltaJson
+import CedarPooSpec.Authorization.Delta.Json
 import Examples.Governance.TicketSharing
 
 /-!
@@ -10,7 +10,7 @@ every request type declared by the example schema.
 namespace CedarPooSpec.TicketSharingDelta
 
 open CedarPooSpec.TicketSharingExample
-open CedarPooSpec.AuthorizationDelta
+open CedarPooSpec.Authorization.Delta
 
 def run : IO Lean.Json := do
   let narrowed ← match ← analyzeModelImpactExplained model "Published" "Posture" schema with
@@ -31,24 +31,24 @@ def run : IO Lean.Json := do
     { changedPolicyIds := expanded.symbolic.changedPolicyIds
       environmentsChecked := expanded.symbolic.environmentsChecked
       expansions := expanded.symbolic.gains }
-  let .ok narrowJson := CedarPooSpec.AuthorizationDeltaJson.report narrowReport
+  let .ok narrowJson := CedarPooSpec.Authorization.Delta.Json.report narrowReport
     | throw (IO.userError "could not render posture report")
-  let .ok expandedJson := CedarPooSpec.AuthorizationDeltaJson.report expandedReport
+  let .ok expandedJson := CedarPooSpec.Authorization.Delta.Json.report expandedReport
     | throw (IO.userError "could not render grant counterexample")
-  let .ok narrowImpact := CedarPooSpec.AuthorizationDeltaJson.impactReport narrowed.symbolic
+  let .ok narrowImpact := CedarPooSpec.Authorization.Delta.Json.impactReport narrowed.symbolic
     | throw (IO.userError "could not render posture impact")
-  let .ok expandedImpact := CedarPooSpec.AuthorizationDeltaJson.impactReport expanded.symbolic
+  let .ok expandedImpact := CedarPooSpec.Authorization.Delta.Json.impactReport expanded.symbolic
     | throw (IO.userError "could not render grant impact")
-  let .ok postureManifest := CedarPooSpec.AuthorizationDeltaJson.impactWitnessCases
+  let .ok postureManifest := CedarPooSpec.Authorization.Delta.Json.impactWitnessCases
     narrowed.symbolic model "Published" "Posture"
     | throw (IO.userError "could not render Cedar posture witness cases")
-  let .ok manifest := CedarPooSpec.AuthorizationDeltaJson.impactWitnessCases
+  let .ok manifest := CedarPooSpec.Authorization.Delta.Json.impactWitnessCases
     expanded.symbolic expandedModel "Revoked" "Expanded"
     | throw (IO.userError "could not render Cedar witness cases")
   return Lean.Json.mkObj [("posture", narrowJson), ("new_grant", expandedJson),
     ("posture_impact", narrowImpact), ("new_grant_impact", expandedImpact),
-    ("posture_explanation", CedarPooSpec.AuthorizationDeltaJson.explainedImpactReport narrowed),
-    ("new_grant_explanation", CedarPooSpec.AuthorizationDeltaJson.explainedImpactReport expanded),
+    ("posture_explanation", CedarPooSpec.Authorization.Delta.Json.explainedImpactReport narrowed),
+    ("new_grant_explanation", CedarPooSpec.Authorization.Delta.Json.explainedImpactReport expanded),
     ("posture_manifest", postureManifest), ("manifest", manifest)]
 
 end CedarPooSpec.TicketSharingDelta

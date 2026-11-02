@@ -1,3 +1,4 @@
+import CedarPooSpec.Functional.Capabilities
 import Examples.Enterprise.Agent.Session.BoundedSession
 
 /-!
@@ -81,7 +82,13 @@ def modelResult : Except LeanPoo.C4.Error Model := do
 
 def model : Model := modelResult.toOption.get (by native_decide)
 
+/-- Checked immutable policy context; current request inputs are supplied at consumption. -/
+protected def program : CedarPooSpec.Functional.Program model schema :=
+  CedarPooSpec.Functional.deferProgram CedarPooSpec.Functional.standard
+    model schema (model.modules.map (·.name)) (by native_decide)
+
 /-- One ledger for the delegation, plus a local counter for each worker. -/
+
 structure State where
   aUsed : Int64 := 0
   bUsed : Int64 := 0
@@ -109,18 +116,22 @@ def missingShared : Request :=
     ("localUsed", .prim (.int 0)),
     ("localMax", .prim (.int 1)),
     ("sharedMax", .prim (.int 1))]⟩
-def cedarAllows (root : String) (req : Request) : Bool :=
-  match model.compile root with
+def cedarAllows
+     (root : String) (req : Request)
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.SharedBudgetExample.model CedarPooSpec.SharedBudgetExample.schema :=
+      CedarPooSpec.SharedBudgetExample.program) : Bool :=
+  match programContext.response root req entities with
   | .error _ => false
-  | .ok policies =>
-      (isAuthorized req entities policies).decision == .allow
-def authorized (root : String) (state : State) (worker : EntityUID) : Bool :=
+  | .ok response => response.decision == .allow
+def authorized
+     (root : String) (state : State) (worker : EntityUID)
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.SharedBudgetExample.model CedarPooSpec.SharedBudgetExample.schema :=
+      CedarPooSpec.SharedBudgetExample.program) : Bool :=
   if worker != workerA && worker != workerB then false
   else
-    match model.compile root with
+    match programContext.response root (request state worker) entities with
     | .error _ => false
-    | .ok policies =>
-        let response := isAuthorized (request state worker) entities policies
+    | .ok response =>
         response.decision == .allow && response.erroringPolicies.isEmpty
 
 def advance (state : State) (worker : EntityUID) : State :=
@@ -131,20 +142,29 @@ def advance (state : State) (worker : EntityUID) : State :=
   else state
 
 /-- The host executes this transition atomically across all workers. -/
-def admit (root : String) (state : State) (worker : EntityUID) :
+def admit
+     (root : String) (state : State) (worker : EntityUID)
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.SharedBudgetExample.model CedarPooSpec.SharedBudgetExample.schema :=
+      CedarPooSpec.SharedBudgetExample.program) :
     Bool × State :=
-  let allowed := authorized root state worker
+  let allowed := (authorized (programContext := programContext)) root state worker
   (allowed, if allowed then advance state worker else state)
 
-def replay (root : String) (initial : State) (workers : List EntityUID) :
+def replay
+     (root : String) (initial : State) (workers : List EntityUID)
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.SharedBudgetExample.model CedarPooSpec.SharedBudgetExample.schema :=
+      CedarPooSpec.SharedBudgetExample.program) :
     List (Request × Bool) × State :=
   let (state, rows) := workers.foldl (fun (state, rows) worker =>
     let req := request state worker
-    let (allowed, next) := admit root state worker
+    let (allowed, next) := (admit (programContext := programContext)) root state worker
     (next, rows ++ [(req, allowed)])) (initial, [])
   (rows, state)
-def decisions (root : String) (initial : State) (workers : List EntityUID) :
-    List Bool := (replay root initial workers).1.map Prod.snd
+def decisions
+     (root : String) (initial : State) (workers : List EntityUID)
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.SharedBudgetExample.model CedarPooSpec.SharedBudgetExample.schema :=
+      CedarPooSpec.SharedBudgetExample.program) :
+    List Bool := ((replay (programContext := programContext)) root initial workers).1.map Prod.snd
 
 def cases : List (String × String × State × List EntityUID × List Bool) := [
   ("base-allows-fanout", "Base", {}, [workerA, workerB], [true, true]),
@@ -206,9 +226,11 @@ theorem missingFactsFailClosed :
     cedarAllows "Integrated" missingLocal = false ∧
     cedarAllows "Integrated" missingShared = false := by native_decide
 
-def rootsValidated : Bool :=
+def rootsValidated
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.SharedBudgetExample.model CedarPooSpec.SharedBudgetExample.schema :=
+      CedarPooSpec.SharedBudgetExample.program) : Bool :=
   ["Base", "Local", "Shared", "Integrated", "Incident", "Recovered"].all
-    fun root => (CedarPooSpec.PolicyJson.publish model root schema).isOk
+    fun root => (programContext.publish root).isOk
 theorem rootsValidatedExact : rootsValidated = true := by native_decide
 theorem recoveredPolicies :
     (model.compile "Recovered" == model.compile "Integrated") = true := by

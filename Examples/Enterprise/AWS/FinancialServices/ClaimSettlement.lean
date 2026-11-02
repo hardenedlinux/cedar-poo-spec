@@ -1,6 +1,7 @@
+import CedarPooSpec.Functional.Capabilities
 import Examples.Enterprise.AWS.FinancialServices.LakehouseGateway.LakehouseGateway
 import Examples.Enterprise.AWS.FinancialServices.MultiAccountBanking.Lineage
-import CedarPooSpec.CompoundAuthorization
+import CedarPooSpec.Authorization.Compound
 
 /-! Proposed cross-organization claim-settlement plan. The lakehouse and
 banking modules model separate published AWS examples; this composition is an
@@ -30,30 +31,35 @@ structure Plan where
   claimDetails : Decision
   bankCalls : List CedarPooSpec.MultiAccountBankingLineage.PlannedCall
 
-def planned (claimsRoot bankRoot mode : String) (actors : Actors)
-    (geography : Option String) : Option Plan := do
+def planned
+     (claimsRoot bankRoot mode : String) (actors : Actors)
+    (geography : Option String)
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.LakehouseGatewayExample.model CedarPooSpec.LakehouseGatewayExample.schema × CedarPooSpec.Functional.Program CedarPooSpec.MultiAccountBankingExample.model CedarPooSpec.MultiAccountBankingExample.schema :=
+      (CedarPooSpec.LakehouseGatewayExample.program, CedarPooSpec.MultiAccountBankingExample.program)) : Option Plan := do
   let claimsRequests :=
     [CedarPooSpec.LakehouseGatewayExample.queryClaims,
       CedarPooSpec.LakehouseGatewayExample.claimDetails].map fun action =>
         CedarPooSpec.LakehouseGatewayExample.request actors.adjuster action geography
-  let claims ← (CedarPooSpec.CompoundAuthorization.authorizeAll
-    CedarPooSpec.LakehouseGatewayExample.model claimsRoot claimsRequests
-    CedarPooSpec.LakehouseGatewayExample.entities).toOption
+  let claims ← (programContext.1.authorize
+      claimsRoot claimsRequests CedarPooSpec.LakehouseGatewayExample.entities).toOption
   let [claimsQuery, claimDetails] := claims.responses | none
   if !claimsQuery.erroringPolicies.isEmpty || !claimDetails.erroringPolicies.isEmpty then
     none
   else do
     let calls := CedarPooSpec.MultiAccountBankingLineage.transferRoute.map fun call =>
       { call with origin := actors.bankOperator }
-    let bankCalls ← CedarPooSpec.MultiAccountBankingLineage.plannedCalls
+    let bankCalls ← (CedarPooSpec.MultiAccountBankingLineage.plannedCalls (programContext := programContext.2))
       mode bankRoot calls
     return ⟨actors, claimsQuery.decision, claimDetails.decision, bankCalls⟩
 
 /-- Only Gateway decisions and POO-derived obligation plans are evaluated.
     The verified inter-organization handoff remains an external requirement. -/
-def gatewayPlanAllows (claimsRoot bankRoot mode : String) (actors : Actors)
-    (geography : Option String) : Bool :=
-  match planned claimsRoot bankRoot mode actors geography with
+def gatewayPlanAllows
+     (claimsRoot bankRoot mode : String) (actors : Actors)
+    (geography : Option String)
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.LakehouseGatewayExample.model CedarPooSpec.LakehouseGatewayExample.schema × CedarPooSpec.Functional.Program CedarPooSpec.MultiAccountBankingExample.model CedarPooSpec.MultiAccountBankingExample.schema :=
+      (CedarPooSpec.LakehouseGatewayExample.program, CedarPooSpec.MultiAccountBankingExample.program)) : Bool :=
+  match (planned (programContext := (programContext.1, programContext.2))) claimsRoot bankRoot mode actors geography with
   | none => false
   | some plan =>
       plan.claimsQuery == .allow && plan.claimDetails == .allow &&

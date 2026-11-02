@@ -83,11 +83,9 @@ def facts (state : State) (effect : Effect) : Facts :=
 
 def allowed (state : State) (effect : Effect) : Bool :=
   let req := request effect.actor effect.step.action effect.source (facts state effect)
-  match model.compile effect.root.name with
+  match program.authorize effect.root.name [req] entities with
   | .error _ => false
-  | .ok policies =>
-    let response := isAuthorized req entities policies
-    response.decision == .allow && response.erroringPolicies.isEmpty
+  | .ok receipt => receipt.allowed
 
 def prepare (state : State) (effect : Effect) : Option Ticket :=
   if effect.payloadDigest.isEmpty ||

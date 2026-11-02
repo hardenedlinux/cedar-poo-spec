@@ -20,7 +20,7 @@ structure Delegation where
   purpose : String
   revision : Nat
   expiresAt : Nat
-  deriving BEq
+  deriving BEq, DecidableEq
 
 def Delegation.applies (grant : Delegation)
     (origin agent action asset destination : EntityUID)

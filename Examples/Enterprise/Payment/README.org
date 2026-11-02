@@ -12,7 +12,7 @@ results before performing the payment. This follows Cedar's
 parties. The [[https://www.gao.gov/greenbook][GAO Green Book]] describes internal controls over improper
 payments, and [[https://csrc.nist.gov/CSRC/media/Projects/risk-management/800-53%20Downloads/800-53r5/SP_800-53_v5_1-derived-OSCAL.pdf][NIST AC-5]] describes separation of duties. Neither source
 prescribes the fictional roles, payment states, or =500.0000= threshold in
-this example. [[file:../../../CedarPooSpec/CompoundAuthorization.lean][CompoundAuthorization.authorizeAll]] compiles one POO root
+this example. [[file:../../../CedarPooSpec/Authorization/Compound.lean][CompoundAuthorization.authorizeAll]] compiles one POO root
 once, evaluates both requests against the same supplied entity store, and
 retains their exact responses. Its =allowed= projection rejects an empty
 request list and any policy evaluation error.

@@ -1,3 +1,4 @@
+import CedarPooSpec.Functional.Capabilities
 import Examples.Health.Interoperability.UnitedStatesAdmission
 
 /-! Export the finite payer-exchange decisions to official Cedar Rust. -/
@@ -6,11 +7,13 @@ namespace CedarPooSpec.UnitedStatesPayerExample.ValidatedExport
 
 open CedarPooSpec.UnitedStatesPayerExample
 
-def manifest : Except String Lean.Json := do
+def manifest
+    (owner : CedarPooSpec.Functional.Program CedarPooSpec.UnitedStatesPayerExample.model CedarPooSpec.UnitedStatesPayerExample.schema :=
+      CedarPooSpec.UnitedStatesPayerExample.program) : Except String CedarPooSpec.Transport.Manifest := do
   let rows ← cases.mapM fun (name, root, req, _) =>
-    CedarPooSpec.PolicyJson.authorizationCase name root model root req entities
+    owner.case name root root req entities
   let projected ← Admission.projectedCases.mapM fun (name, req, _) =>
-    CedarPooSpec.PolicyJson.authorizationCase name "Governed" model "Governed" req entities
-  CedarPooSpec.SchemaJson.validatedManifest schema (rows ++ projected)
+    owner.case name "Governed" "Governed" req entities
+  CedarPooSpec.SchemaJson.manifest schema (rows ++ projected)
 
 end CedarPooSpec.UnitedStatesPayerExample.ValidatedExport

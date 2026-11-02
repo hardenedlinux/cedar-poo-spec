@@ -1,6 +1,6 @@
 import CedarPooSpec.AgenticAI.Commerce.Budget
 import CedarPooSpec.AgenticAI.Commerce.Consumption
-import Lean
+import Lean.Data.Json
 
 /-!
 JSON claims shared with the optional Rust `agentic-ai-commerce-projection` API.

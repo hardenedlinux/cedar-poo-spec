@@ -1,4 +1,4 @@
-import CedarPooSpec.AuthorizationDeltaEvidence
+import CedarPooSpec.Authorization.Delta.Evidence
 import Examples.Governance.TicketSharing
 import Tests.Governance.AuthorizationDeltaReasonModels
 
@@ -9,7 +9,7 @@ must contribute descendants to the potential C4 invalidation set.
 
 namespace CedarPooSpec.AuthorizationDeltaInvalidationTest
 
-open Cedar.Spec CedarPooSpec.PolicyModules CedarPooSpec.AuthorizationDelta
+open Cedar.Spec CedarPooSpec.PolicyModules CedarPooSpec.Authorization.Delta
 open CedarPooSpec.TicketSharingExample
 
 def sourcePolicy : Policy :=
@@ -38,7 +38,7 @@ def siblingRevision : Revision :=
     (by native_decide)
 
 def siblingChanges : List PolicyChange :=
-  CedarPooSpec.AuthorizationDelta.Revision.policyChanges siblingRevision
+  CedarPooSpec.Authorization.Delta.Revision.policyChanges siblingRevision
 
 theorem siblingLastEditors :
     siblingChanges.length = 1 ∧
@@ -63,7 +63,7 @@ theorem removalInvalidatesBothSides :
     let revision := (CedarPooSpec.AuthorizationDeltaReasonModels.sharedModel.compileRevision
       "Shared" "OneGrantRemoved").toOption.get (by native_decide)
     let roots := affectedRoots CedarPooSpec.AuthorizationDeltaReasonModels.sharedModel
-      (CedarPooSpec.AuthorizationDelta.Revision.policyChanges revision)
+      (CedarPooSpec.Authorization.Delta.Revision.policyChanges revision)
     roots.contains "Shared" && roots.contains "OneGrantRemoved" := by
   native_decide
 
@@ -72,7 +72,7 @@ theorem removalInvalidatesBothSides :
 theorem provenanceTransferInvalidatesBothSides :
     let revision := (CedarPooSpec.AuthorizationDeltaReasonModels.ownerModel.compileRevision
       "Shared" "OwnershipShift").toOption.get (by native_decide)
-    let changes := CedarPooSpec.AuthorizationDelta.Revision.provenanceChanges revision
+    let changes := CedarPooSpec.Authorization.Delta.Revision.provenanceChanges revision
     let roots := affectedRoots CedarPooSpec.AuthorizationDeltaReasonModels.ownerModel changes
     changes.length = 1 ∧ roots.contains "Shared" ∧
       roots.contains "OwnershipShift" := by

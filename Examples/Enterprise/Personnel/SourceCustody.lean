@@ -1,3 +1,4 @@
+import CedarPooSpec.Functional.Capabilities
 import CedarPooSpec.Governance.Personnel.AssetAccess
 import CedarPooSpec.Governance.Personnel.Status
 import CedarPooSpec.Governance.Personnel.Assignment
@@ -192,6 +193,11 @@ def modelResult : Except LeanPoo.C4.Error Model := do
 
 def model : Model := modelResult.toOption.get (by native_decide)
 
+/-- Retain checked policies for this exact model/schema, never request decisions. -/
+def program : CedarPooSpec.Functional.Program model schema :=
+  CedarPooSpec.Functional.deferProgram CedarPooSpec.Functional.standard model schema
+    (model.modules.map (·.name)) (by native_decide)
+
 def state (origin : EntityUID) : Snapshot :=
   { origin, device := managedLaptop, deviceTrusted := true,
     delegationValid := false, approvalValid := false,
@@ -223,14 +229,19 @@ def releaseDelegation : Personnel.Delegation :=
     action := transfer, asset := coreSource, destination := externalSink,
     purpose := "release", revision := 1, expiresAt := 20 }
 
-def decisionIn (root : String) (store : Entities) (operation : Operation) : Bool :=
-  match model.compile root with
+def decisionIn
+     (root : String) (store : Entities) (operation : Operation)
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.SourceCustodyExample.model CedarPooSpec.SourceCustodyExample.schema :=
+      CedarPooSpec.SourceCustodyExample.program) : Bool :=
+  match programContext.authorize root [operation.request] store with
   | .error _ => false
-  | .ok policies =>
-      let response := isAuthorized operation.request store policies
-      response.decision == .allow && response.erroringPolicies.isEmpty
-def decision (root : String) (operation : Operation) : Bool :=
-  decisionIn root entities operation
+  | .ok receipt => receipt.allowed
+
+def decision
+     (root : String) (operation : Operation)
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.SourceCustodyExample.model CedarPooSpec.SourceCustodyExample.schema :=
+      CedarPooSpec.SourceCustodyExample.program) : Bool :=
+  (decisionIn (programContext := programContext)) root entities operation
 
 def normalRead : Operation :=
   ⟨effect founder read coreSource internalSink, state founder⟩
@@ -303,8 +314,11 @@ def crownRelease : Operation :=
 def partnerReadOperation : Operation :=
   let readEffect := effect partner read coreSource internalSink "review"
   ⟨readEffect, (state partner).withApproval partnerApproval readEffect 10⟩
-def partnerRead (root : String) : Bool :=
-  decision root partnerReadOperation
+def partnerRead
+     (root : String)
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.SourceCustodyExample.model CedarPooSpec.SourceCustodyExample.schema :=
+      CedarPooSpec.SourceCustodyExample.program) : Bool :=
+  (decision (programContext := programContext)) root partnerReadOperation
 def incidentRelease : Operation :=
   let current := approvedRelease 1
   ⟨current.effect, { current.state with incident := true }⟩

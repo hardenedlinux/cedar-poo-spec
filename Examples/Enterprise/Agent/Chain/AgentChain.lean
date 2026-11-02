@@ -1,5 +1,6 @@
+import CedarPooSpec.Functional.Capabilities
 import Examples.Enterprise.Agent.Delegation.AgentDelegation
-import CedarPooSpec.AuthorizationDeltaCompound
+import CedarPooSpec.Authorization.Delta.Compound
 
 /-!
 The same POO delegation policy is evaluated once per hop. A path with one,
@@ -59,6 +60,11 @@ def chainModelResult : Except LeanPoo.C4.Error Model := do
 
 def chainModel : Model := chainModelResult.toOption.get (by native_decide)
 
+/-- Checked immutable policy context; current request inputs are supplied at consumption. -/
+protected def chainProgram : CedarPooSpec.Functional.Program chainModel CedarPooSpec.AgentDelegationExample.schema :=
+  CedarPooSpec.Functional.deferProgram CedarPooSpec.Functional.standard
+    chainModel CedarPooSpec.AgentDelegationExample.schema ((chainModel.modules.map (·.name)).filter (· != "ChainConflicted")) (by native_decide)
+
 def requestHop (source target : EntityUID) (depth : Int64) : Request :=
   let requested := if target == dataBot then "delete_records" else "delegate"
   ⟨source, delegate, target, Map.make [
@@ -82,13 +88,16 @@ def checks (delegationRoot originRoot : String) (path : List EntityUID)
     [(originRoot, requestOrigin dataBot deleteRecords origin
       (Int64.ofNat (path.length - 1)))]
 
-def authorizeChain (delegationRoot originRoot : String) (path : List EntityUID)
-    (origin : EntityUID) : Bool :=
+def authorizeChain
+     (delegationRoot originRoot : String) (path : List EntityUID)
+    (origin : EntityUID)
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.AgentChainExample.chainModel CedarPooSpec.AgentDelegationExample.schema :=
+      CedarPooSpec.AgentChainExample.chainProgram) : Bool :=
   if !validPath path then false else
-    match CedarPooSpec.CompoundAuthorization.authorizeLayers chainModel
+    match programContext.authorizeLayers
         (checks delegationRoot originRoot path origin) chainEntities with
     | .error _ => false
-    | .ok receipts => CedarPooSpec.CompoundAuthorization.layersAllowed receipts
+    | .ok receipts => CedarPooSpec.Authorization.Compound.layersAllowed receipts
 
 def shortPath : List EntityUID := [orchestrator, dataBot]
 def routedPath : List EntityUID := [orchestrator, routingBot, dataBot]
@@ -116,15 +125,19 @@ def cases : List (String × String × String × List EntityUID × EntityUID × B
   ("five-layers-restored-edge", "ChainGovernedRestored", "ChainGovernedRestored", reviewedPath, admin, true),
   ("five-layers-cyclic-path", "ChainGoverned", "ChainGoverned", cyclicPath, admin, false)]
 
-def casesExact : Bool := cases.all fun (_, delegationRoot, originRoot, path,
+def casesExact
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.AgentChainExample.chainModel CedarPooSpec.AgentDelegationExample.schema :=
+      CedarPooSpec.AgentChainExample.chainProgram) : Bool := cases.all fun (_, delegationRoot, originRoot, path,
     origin, expected) =>
-  authorizeChain delegationRoot originRoot path origin == expected
+  (authorizeChain (programContext := programContext)) delegationRoot originRoot path origin == expected
 theorem casesExactFully : casesExact = true := by native_decide
 
-def allValidCasesErrorFree : Bool := cases.all fun (_, delegationRoot, originRoot,
+def allValidCasesErrorFree
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.AgentChainExample.chainModel CedarPooSpec.AgentDelegationExample.schema :=
+      CedarPooSpec.AgentChainExample.chainProgram) : Bool := cases.all fun (_, delegationRoot, originRoot,
     path, origin, _) =>
   if !validPath path then true else
-    match CedarPooSpec.CompoundAuthorization.authorizeLayers chainModel
+    match programContext.authorizeLayers
         (checks delegationRoot originRoot path origin) chainEntities with
     | .error _ => false
     | .ok receipts => receipts.all fun layer => layer.response.erroringPolicies.isEmpty
@@ -149,11 +162,13 @@ def governedPolicyIds : Bool :=
       ids.length == 2 && ids.contains "agent-delegation" && ids.contains "origin-user"
 theorem governedPolicyIdsFully : governedPolicyIds = true := by native_decide
 
-def rootsValidated : Bool :=
+def rootsValidated
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.AgentChainExample.chainModel CedarPooSpec.AgentDelegationExample.schema :=
+      CedarPooSpec.AgentChainExample.chainProgram) : Bool :=
   ["ToolHardened", "DelegationBounded", "ChainDelegation",
     "OriginBounded", "ChainOrigin", "ChainGoverned", "ChainGovernedRevoked",
     "ChainGovernedRestored"].all fun root =>
-      (CedarPooSpec.PolicyJson.publish chainModel root schema).isOk
+      (programContext.publish root).isOk
 theorem rootsValidatedFully : rootsValidated = true := by native_decide
 
 def unaffectedRoots : Bool :=
@@ -194,11 +209,11 @@ def compoundDeltaCases : Bool :=
   let old := checks "ChainDelegation" "OriginBounded" reviewedPath admin
   let governed := checks "ChainGoverned" "ChainGoverned" reviewedPath admin
   let revoked := checks "ChainGovernedRevoked" "ChainGovernedRevoked" reviewedPath admin
-  let admitted := CedarPooSpec.AuthorizationDelta.compareCompoundSnapshots schema
+  let admitted := CedarPooSpec.Authorization.Delta.compareCompoundSnapshots schema
     chainModel old governed chainEntities chainEntities
-  let masked := CedarPooSpec.AuthorizationDelta.compareCompoundSnapshots schema
+  let masked := CedarPooSpec.Authorization.Delta.compareCompoundSnapshots schema
     chainModel old revoked chainEntities chainEntities
-  let frozen := CedarPooSpec.AuthorizationDelta.compareCompoundSnapshots schema
+  let frozen := CedarPooSpec.Authorization.Delta.compareCompoundSnapshots schema
     chainModel governed revoked chainEntities chainEntities
   match admitted, masked, frozen with
   | .ok a, .ok m, .ok f =>
@@ -212,7 +227,7 @@ theorem compoundDeltaCasesExact : compoundDeltaCases = true := by native_decide
 
 /-- A policy delta cannot silently add or remove a required hop. -/
 def changedCompoundRejected : Bool :=
-  match CedarPooSpec.AuthorizationDelta.compareCompoundSnapshots schema chainModel
+  match CedarPooSpec.Authorization.Delta.compareCompoundSnapshots schema chainModel
       (checks "ChainGoverned" "ChainGoverned" shortPath admin)
       (checks "ChainGoverned" "ChainGoverned" routedPath admin)
       chainEntities chainEntities with

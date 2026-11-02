@@ -1,5 +1,6 @@
+import CedarPooSpec.Functional.Capabilities
 import Examples.Enterprise.AWS.FinancialServices.Reconciliation.Reconciliation
-import CedarPooSpec.CompoundAuthorization
+import CedarPooSpec.Authorization.Compound
 
 /-! A reviewable plan across the sample's ledger, notice, knowledge, Graph,
 and write targets. Host facts stand for values the published REQUEST interceptor
@@ -34,9 +35,11 @@ structure MailCall where
 def investigationActions : List EntityUID :=
   [searchLedger, searchNotices, retrieve, searchCorrespondence]
 
-def investigationAllowed (root : String) : Bool :=
-  match CedarPooSpec.CompoundAuthorization.authorizeAll model root
-      (investigationActions.map (readRequest agent)) entities with
+def investigationAllowed
+     (root : String)
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.AWS.Reconciliation.model CedarPooSpec.AWS.Reconciliation.schema :=
+      CedarPooSpec.AWS.Reconciliation.program) : Bool :=
+  match programContext.authorize root (investigationActions.map (readRequest agent)) entities with
   | .error _ => false
   | .ok receipt => receipt.allowed
 
@@ -82,11 +85,13 @@ def routeRequests (confidence : Option String) : List Request :=
 
 /-- A planned route crosses four read targets, a guarded ledger write, and
 an approved Graph send. This Boolean represents admission checks only. -/
-def routeAllowed (root : String) (confidence : Option String)
+def routeAllowed
+     (root : String) (confidence : Option String)
     (requestedReference : String) (caseRecord : Option CaseRecord)
-    (mail : MailCall) (draft : Option ApprovedDraft) : Bool :=
-  match CedarPooSpec.CompoundAuthorization.authorizeAll model root
-      (routeRequests confidence) entities with
+    (mail : MailCall) (draft : Option ApprovedDraft)
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.AWS.Reconciliation.model CedarPooSpec.AWS.Reconciliation.schema :=
+      CedarPooSpec.AWS.Reconciliation.program) : Bool :=
+  match programContext.authorize root (routeRequests confidence) entities with
   | .error _ => false
   | .ok receipt =>
       receipt.allowed &&

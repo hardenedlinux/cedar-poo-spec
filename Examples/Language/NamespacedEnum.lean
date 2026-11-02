@@ -1,3 +1,4 @@
+import CedarPooSpec.Functional.Capabilities
 import CedarPooSpec.PolicyJson
 
 /-!
@@ -64,6 +65,11 @@ def model : Model :=
     { name := "Scoped", parentOrders := [["Published"]],
       edits := [.overlay scopedPolicy] }] }
 
+/-- Checked immutable policy context; current request inputs are supplied at consumption. -/
+protected def program : CedarPooSpec.Functional.Program model schema :=
+  CedarPooSpec.Functional.deferProgram CedarPooSpec.Functional.standard
+    model schema (model.modules.map (·.name)) (by native_decide)
+
 def request (resource : EntityUID) : Request :=
   ⟨alice, readAction, resource, Map.empty⟩
 
@@ -73,21 +79,20 @@ def cases : List (String × String × Request × Decision) := [
   ("scoped-public", "Scoped", request publicDoc, .allow),
   ("scoped-restricted", "Scoped", request restrictedDoc, .deny)]
 
-def decisionsExact : Bool := cases.all fun (_, root, req, expected) =>
-  match model.compile root with
+def decisionsExact
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.NamespacedEnumExample.model CedarPooSpec.NamespacedEnumExample.schema :=
+      CedarPooSpec.NamespacedEnumExample.program) : Bool := cases.all fun (_, root, req, expected) =>
+  match programContext.response root req entities with
   | .error _ => false
-  | .ok policies =>
-      let response := isAuthorized req entities policies
+  | .ok response =>
       response.decision == expected && response.erroringPolicies.isEmpty
 
 theorem decisionsExactFully : decisionsExact = true := by native_decide
 
-def schemaValidationExact : Bool :=
-  schema.validateWellFormed.isOk &&
-  ["Published", "Scoped"].all fun root =>
-    match model.compile root with
-    | .error _ => false
-    | .ok policies => (validate policies schema).isOk
+def schemaValidationExact
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.NamespacedEnumExample.model CedarPooSpec.NamespacedEnumExample.schema :=
+      CedarPooSpec.NamespacedEnumExample.program) : Bool :=
+  ["Published", "Scoped"].all fun root => (programContext.at root).isOk
 
 theorem schemaValidationFully : schemaValidationExact = true := by native_decide
 

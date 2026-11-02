@@ -1,3 +1,5 @@
+import CedarPooSpec.Functional.Capabilities
+import CedarPooSpec.Functional.Admission
 import Examples.Enterprise.Agent.Fanout.SharedBudget
 import CedarPooSpec.SchemaJson
 import CedarPooSpec.Admission.PolicySnapshot
@@ -80,6 +82,11 @@ def modelResult : Except LeanPoo.C4.Error Model := do
 
 def model : Model := modelResult.toOption.get (by native_decide)
 
+/-- Retain checked policies for this exact model/schema, never request decisions. -/
+def program : CedarPooSpec.Functional.Program model schema :=
+  CedarPooSpec.Functional.deferProgram CedarPooSpec.Functional.standard model schema
+    (model.modules.map (·.name)) (by native_decide)
+
 inductive LedgerView where
   | workerLocal
   | delegationShared
@@ -139,11 +146,20 @@ def authorizedBy (policies : Policies) (view : LedgerView) (state : State)
     let response := isAuthorized (request view state attempt) entities policies
     response.decision == .allow && response.erroringPolicies.isEmpty
 
-def authorized (root : String) (view : LedgerView) (state : State)
-    (attempt : Attempt) : Bool :=
-  match model.compile root with
+/-- Evaluate current facts through the selected checked authorizer. -/
+def authorizedWith (ready : CedarPooSpec.Functional.Ready ⟨activeModel, root, schema⟩)
+    (view : LedgerView) (state : State) (attempt : Attempt) : Bool :=
+  if attempt.worker != workerA && attempt.worker != workerB then false else
+    (ready.authorize [request view state attempt] entities).allowed
+
+def authorized
+     (root : String) (view : LedgerView) (state : State)
+    (attempt : Attempt)
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.CrossAgentEgressExample.model CedarPooSpec.CrossAgentEgressExample.schema :=
+      CedarPooSpec.CrossAgentEgressExample.program) : Bool :=
+  match programContext.at root with
   | .error _ => false
-  | .ok policies => authorizedBy policies view state attempt
+  | .ok ready => authorizedWith ready view state attempt
 
 def advance (state : State) (attempt : Attempt) : State :=
   if attempt.action == readAction && attempt.resource == secretDoc then
@@ -158,9 +174,12 @@ def advance (state : State) (attempt : Attempt) : State :=
 
 /-- A policy-only diagnostic transition for Cedar replay cases. It does not
     consume an approval instance; Host admission uses prepare/commit below. -/
-def admit (root : String) (view : LedgerView) (state : State)
-    (attempt : Attempt) : Bool × State :=
-  let allowed := authorized root view state attempt
+def admit
+     (root : String) (view : LedgerView) (state : State)
+    (attempt : Attempt)
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.CrossAgentEgressExample.model CedarPooSpec.CrossAgentEgressExample.schema :=
+      CedarPooSpec.CrossAgentEgressExample.program) : Bool × State :=
+  let allowed := (authorized (programContext := programContext)) root view state attempt
   let next := advance state attempt
   (allowed, if allowed then { next with epoch := state.epoch + 1 } else state)
 
@@ -174,14 +193,18 @@ structure AdmissionTicket where
 
 def prepare (activeModel : Model) (root : String) (view : LedgerView) (state : State)
     (grantId : String) (effect : BoundEffect) : Option AdmissionTicket :=
-  match CedarPooSpec.Admission.PolicySnapshot.capture activeModel root with
+  match CedarPooSpec.Functional.prepareProgram CedarPooSpec.Functional.standard
+      activeModel schema [root] with
   | .error _ => none
-  | .ok snapshot =>
-      if authorizedBy snapshot.policies view state effect.attempt &&
-          (state.authority.check grantId effect).isOk &&
-          state.operations.check effect.operationId then
-        some ⟨snapshot, view, state.epoch, grantId, effect⟩
-      else none
+  | .ok active =>
+      match active.at root with
+      | .error _ => none
+      | .ok ready =>
+          if authorizedWith ready view state effect.attempt &&
+              (state.authority.check grantId effect).isOk &&
+              state.operations.check effect.operationId then
+            some ⟨ready.policySnapshot, view, state.epoch, grantId, effect⟩
+          else none
 
 /-- A compare-and-swap admission contract. A real host must persist the
     ledger and execute this check and reservation atomically. -/
@@ -190,10 +213,14 @@ def commit (activeModel : Model) (root : String) (view : LedgerView) (state : St
   if ticket.policy.root != root || ticket.view != view ||
       ticket.epoch != state.epoch || ticket.effect != effect then none
   else
-    match ticket.policy.currentPolicies activeModel with
+    match CedarPooSpec.Functional.prepareProgram CedarPooSpec.Functional.standard
+        activeModel schema [root] with
     | .error _ => none
-    | .ok policies =>
-        if !authorizedBy policies view state effect.attempt ||
+    | .ok active =>
+      match active.refreshPolicy ticket.policy with
+      | .error _ => none
+      | .ok current =>
+        if !authorizedWith current.val view state effect.attempt ||
             !state.operations.check effect.operationId then none
         else
           match state.authority.consume ticket.grantId effect with
@@ -205,16 +232,33 @@ def commit (activeModel : Model) (root : String) (view : LedgerView) (state : St
                   let next := advance state effect.attempt
                   some { next with authority, operations, epoch := state.epoch + 1 }
 
-def replay (root : String) (view : LedgerView) (initial : State)
-    (attempts : List Attempt) : List (Request × Bool) × State :=
-  let (state, rows) := attempts.foldl (fun (state, rows) attempt =>
-    let req := request view state attempt
-    let (allowed, next) := admit root view state attempt
-    (next, rows ++ [(req, allowed)])) (initial, [])
+def replayFactory
+     (attempts : List Attempt)
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.CrossAgentEgressExample.model CedarPooSpec.CrossAgentEgressExample.schema :=
+      CedarPooSpec.CrossAgentEgressExample.program) :
+    LeanPoo.Functional.Factory (String × LedgerView × State)
+      (fun _ => State × List (Request × Bool)) :=
+  LeanPoo.Functional.Factory.fold
+    (fun (root, view, _) (state, rows) attempt =>
+      let req := request view state attempt
+      let (allowed, next) := (admit (programContext := programContext)) root view state attempt
+      (next, rows ++ [(req, allowed)]))
+    (fun (_, _, initial) => (initial, []))
+    (attempts.map fun attempt _ => attempt)
+
+def replay
+     (root : String) (view : LedgerView) (initial : State)
+    (attempts : List Attempt)
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.CrossAgentEgressExample.model CedarPooSpec.CrossAgentEgressExample.schema :=
+      CedarPooSpec.CrossAgentEgressExample.program) : List (Request × Bool) × State :=
+  let (state, rows) := (replayFactory (programContext := programContext)) attempts (root, view, initial)
   (rows, state)
 
-def decisions (root : String) (view : LedgerView) (attempts : List Attempt) :
-    List Bool := (replay root view {} attempts).1.map Prod.snd
+def decisions
+     (root : String) (view : LedgerView) (attempts : List Attempt)
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.CrossAgentEgressExample.model CedarPooSpec.CrossAgentEgressExample.schema :=
+      CedarPooSpec.CrossAgentEgressExample.program) :
+    List Bool := ((replay (programContext := programContext)) root view {} attempts).1.map Prod.snd
 
 def cases : List (String × String × LedgerView × List Attempt × List Bool) := [
   ("read-only-owner-leaks-across-workers", "Read", .delegationShared,
@@ -327,6 +371,12 @@ def reloadedModelResult : Except LeanPoo.C4.Error Model := do
 
 def reloadedModel : Model := reloadedModelResult.toOption.get (by native_decide)
 
+/-- Checked immutable policy context; current request inputs are supplied at consumption. -/
+protected def reloadedProgram : CedarPooSpec.Functional.Program reloadedModel schema :=
+  CedarPooSpec.Functional.deferProgram CedarPooSpec.Functional.standard
+    reloadedModel schema (reloadedModel.modules.map (·.name)) (by native_decide)
+
+
 theorem reloadedPolicyStillAllowsSend :
     (reloadedModel.compile "CrossAgentGoverned").toOption.map
       (fun policies => authorizedBy policies .delegationShared {} publicSendA.attempt) =
@@ -338,7 +388,7 @@ theorem reloadedPolicyFreezesWorkerB :
       some false := by native_decide
 
 theorem reloadedRootValid :
-    (CedarPooSpec.PolicyJson.publish reloadedModel "CrossAgentGoverned" schema).isOk =
+    (CedarPooSpec.CrossAgentEgressExample.reloadedProgram.publish "CrossAgentGoverned").isOk =
       true := by native_decide
 
 /-- Root name, ledger epoch, and effect all still match. The changed POO
@@ -439,7 +489,7 @@ theorem duplicateGrantIdFailsClosed :
 theorem allRootsValidate :
     ["Read", "History", "Intent", "CrossAgentGoverned",
       "CrossAgentIncident", "CrossAgentRecovered"].all (fun root =>
-        (CedarPooSpec.PolicyJson.publish model root schema).isOk) = true := by
+        (program.publish root).isOk) = true := by
   native_decide
 
 end CedarPooSpec.CrossAgentEgressExample

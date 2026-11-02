@@ -1,5 +1,6 @@
 import CedarPooSpec.SchemaAdmission
-import Lean
+import CedarPooSpec.Transport.Case
+import Lean.Data.Json
 
 /-! A bounded projection of Cedar Lean schemas into Cedar's public JSON schema. -/
 
@@ -85,5 +86,10 @@ def schema (input : Schema) : Except Error Lean.Json := do
 def validatedManifest (input : Schema) (cases : List Lean.Json) : Except String Lean.Json := do
   let projected ← (schema input).mapError reprStr
   return obj [("schema", projected), ("cases", Lean.toJson cases)]
+
+/-- Typed production inventory; standalone JSON is derived only at the boundary. -/
+def manifest (input : Schema) (cases : List Transport.Case) : Except String Transport.Manifest := do
+  let projected ← (schema input).mapError reprStr
+  return ⟨cases, some (Transport.SourceSnapshot.ofJson projected)⟩
 
 end CedarPooSpec.SchemaJson

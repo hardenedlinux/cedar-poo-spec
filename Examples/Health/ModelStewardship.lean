@@ -1,3 +1,4 @@
+import CedarPooSpec.Functional.Compilation
 import CedarPooSpec.Data.Lineage
 import CedarPooSpec.Data.LineageUse
 import CedarPooSpec.Governance.ScopedApproval
@@ -133,6 +134,10 @@ def modelResult : Except LeanPoo.Object.CombineError Model := do
     [incidentControl.edit .withdraw]).mapError .c4
 
 def model : Model := modelResult.toOption.get (by native_decide)
+
+/-- Compile-stage capability for this schema-free semantic fixture. -/
+protected def program : CedarPooSpec.Functional.Compilation model :=
+  CedarPooSpec.Functional.compilation model
 
 /-- The grant source, target, action, purpose, and governance revision must
     all match. The Host supplies authenticated grant and clock values. -/

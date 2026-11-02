@@ -86,6 +86,8 @@ def main : IO Unit := do
       let full ← measureFull candidate
       let incremental ← measureIncremental candidate
       IO.println s!"scenario={scenario} sample={sample} policies=1000 full_ns={full} incremental_ns={incremental}"
+      IO.println s!"measurement: policy.{scenario}.full.sample{sample} {full} ns"
+      IO.println s!"measurement: policy.{scenario}.incremental.sample{sample} {incremental} ns"
 
 end CedarPooSpec.PolicyReuseBenchmark
 

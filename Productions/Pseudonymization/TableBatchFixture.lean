@@ -1,5 +1,5 @@
 import CedarPooSpec.Pseudonymization.TableBatchWire
-import Lean
+import Lean.Data.Json
 
 namespace CedarPooSpec.Pseudonymization.TableBatchFixture
 

@@ -1,3 +1,4 @@
+import CedarPooSpec.Functional.Capabilities
 import Examples.Enterprise.Agent.Fanout.CrossAgentEgress
 import CedarPooSpec.SchemaJson
 
@@ -124,7 +125,13 @@ def modelResult : Except LeanPoo.C4.Error Model := do
 
 def model : Model := modelResult.toOption.get (by native_decide)
 
+/-- Checked immutable policy context; current request inputs are supplied at consumption. -/
+protected def program : CedarPooSpec.Functional.Program model schema :=
+  CedarPooSpec.Functional.deferProgram CedarPooSpec.Functional.standard
+    model schema (model.modules.map (·.name)) (by native_decide)
+
 /-- The composed root retains each new owner and the inherited history owner. -/
+
 theorem composedOwnersPresent :
     (departments.map DepartmentObject.name ++
       ["Aggregate", "Temporal", "History"]).all (fun owner =>
@@ -165,12 +172,14 @@ def request (state : State) (attempt : Attempt) : Request :=
       ("originDept", .prim (.string state.originDept)),
       ("delegationActive", .prim (.bool state.delegationActive))]) }
 
-def authorized (root : String) (state : State) (attempt : Attempt) : Bool :=
+def authorized
+     (root : String) (state : State) (attempt : Attempt)
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.DepartmentSynthesisExample.model CedarPooSpec.DepartmentSynthesisExample.schema :=
+      CedarPooSpec.DepartmentSynthesisExample.program) : Bool :=
   if attempt.worker != workerA && attempt.worker != workerB then false else
-    match model.compile root with
+    match programContext.response root (request state attempt) entities with
     | .error _ => false
-    | .ok policies =>
-        let response := isAuthorized (request state attempt) entities policies
+    | .ok response =>
         response.decision == .allow && response.erroringPolicies.isEmpty
 
 def advance (state : State) (attempt : Attempt) : State :=
@@ -182,24 +191,34 @@ def advance (state : State) (attempt : Attempt) : State :=
         !state.seen.contains attempt.resource
       then attempt.resource :: state.seen else state.seen }
 
-def replay (root : String) (initial : State) (attempts : List Attempt) :
+def replay
+     (root : String) (initial : State) (attempts : List Attempt)
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.DepartmentSynthesisExample.model CedarPooSpec.DepartmentSynthesisExample.schema :=
+      CedarPooSpec.DepartmentSynthesisExample.program) :
     List (Request × Bool) × State :=
   let (state, rows) := attempts.foldl (fun (state, rows) attempt =>
     let req := request state attempt
-    let allowed := authorized root state attempt
+    let allowed := (authorized (programContext := programContext)) root state attempt
     let next := if allowed then advance state attempt else state
     (next, rows ++ [(req, allowed)])) (initial, [])
   (rows, state)
 
-def decisions (root : String) (state : State) (attempts : List Attempt) :
-    List Bool := (replay root state attempts).1.map Prod.snd
+def decisions
+     (root : String) (state : State) (attempts : List Attempt)
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.DepartmentSynthesisExample.model CedarPooSpec.DepartmentSynthesisExample.schema :=
+      CedarPooSpec.DepartmentSynthesisExample.program) :
+    List Bool := ((replay (programContext := programContext)) root state attempts).1.map Prod.snd
 
 /-- Authority can change after an admitted read and before a proposed send. -/
-def afterSalesThenRevoked : State :=
-  { (replay "DepartmentGoverned" {} [readSales]).2 with
+def afterSalesThenRevoked
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.DepartmentSynthesisExample.model CedarPooSpec.DepartmentSynthesisExample.schema :=
+      CedarPooSpec.DepartmentSynthesisExample.program) : State :=
+  { ((replay (programContext := programContext)) "DepartmentGoverned" {} [readSales]).2 with
     delegationActive := false }
 
-def cases : List (String × String × State × List Attempt × List Bool) := [
+def cases
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.DepartmentSynthesisExample.model CedarPooSpec.DepartmentSynthesisExample.schema :=
+      CedarPooSpec.DepartmentSynthesisExample.program) : List (String × String × State × List Attempt × List Bool) := [
   ("baseline-sales-reads-finance", "CrossAgentGoverned",
     { originDept := "Sales" }, [readFinance], [true]),
   ("sales-owner-alone-misses-finance", "Sales",
@@ -219,7 +238,7 @@ def cases : List (String × String × State × List Attempt × List Bool) := [
   ("revoked-send-denied", "DepartmentGoverned",
     { delegationActive := false }, [sendReport], [false]),
   ("revoked-after-read-denied", "DepartmentGoverned",
-    afterSalesThenRevoked, [sendReport], [false]),
+    (afterSalesThenRevoked (programContext := programContext)), [sendReport], [false]),
   ("incident-denies-unaffected-sales", "DepartmentIncident",
     {}, [readSales, sendReport], [true, false]),
   ("recovered-retains-aggregation", "DepartmentRecovered",
@@ -245,7 +264,7 @@ theorem allRootsValidate :
     (departments.map DepartmentObject.name ++
       ["Aggregate", "Temporal", "DepartmentGoverned",
         "DepartmentIncident", "DepartmentRecovered"]).all (fun root =>
-        (CedarPooSpec.PolicyJson.publish model root schema).isOk) = true := by
+        (CedarPooSpec.DepartmentSynthesisExample.program.publish root).isOk) = true := by
   native_decide
 
 end CedarPooSpec.DepartmentSynthesisExample

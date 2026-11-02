@@ -1,3 +1,4 @@
+import CedarPooSpec.Functional.Compilation
 import CedarPooSpec.PolicyJson
 
 /-! Exercise every extension function and value constructor in Cedar Lean's
@@ -75,6 +76,10 @@ def model : Model := { modules := [
   { name := "NegativeDuration", edits :=
       [.extend (policy "negative-duration" negativeDurationCheck)] }] }
 
+/-- Compile-stage capability for this schema-free semantic fixture. -/
+protected def program : CedarPooSpec.Functional.Compilation model :=
+  CedarPooSpec.Functional.compilation model
+
 def decimalValue : Value :=
   .ext (.decimal ((Cedar.Spec.Ext.Decimal.decimal "1.2500").get (by native_decide)))
 def ipValue : Value :=
@@ -113,11 +118,12 @@ def cases : List (String × String × Request × Decision) := [
   ("duration-negative-value", "NegativeDuration",
     request [("value", negativeDurationValue)], .allow)]
 
-def decisionsExact : Bool := cases.all fun (_, root, req, expected) =>
-  match model.compile root with
+def decisionsExact
+    (programContext : CedarPooSpec.Functional.Compilation CedarPooSpec.ExtensionCoverageExample.model :=
+      CedarPooSpec.ExtensionCoverageExample.program) : Bool := cases.all fun (_, root, req, expected) =>
+  match programContext.response root req entities with
   | .error _ => false
-  | .ok policies =>
-      let response := isAuthorized req entities policies
+  | .ok response =>
       response.decision == expected && response.erroringPolicies.isEmpty
 
 theorem decisionsExactFully : decisionsExact = true := by native_decide

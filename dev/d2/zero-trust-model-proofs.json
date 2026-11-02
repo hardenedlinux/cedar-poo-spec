@@ -1,0 +1,585 @@
+{
+  "sources": {
+    "CedarPooSpec/Gateway/ZeroTrust.lean": "1b85f84f809670f2548437633c0dc883ebf0705ac5cf9fc0aa0304ea479ca122",
+    "CedarPooSpec/Transport/SourceCatalog.lean": "6a558ed2d6191b9e0264a43d7fdf8c508102f475e01048c76fb9c541a9100c22",
+    "CedarPooSpec/ZeroTrust/Composition.lean": "ebab914cf26a6d08662fb58dea452985673e3ab3e7f6ee3c97abb572b840984e",
+    "CedarPooSpec/ZeroTrust/Continuous.lean": "f103491672c01df12df41ba8c19f0a66e99d169e2538cf329c3d3d810d24c9ad",
+    "CedarPooSpec/ZeroTrust/Model.lean": "bf9827dc36c52cfc41f63fd1ee9ff83b325972c41504b41444e2134d635519a2",
+    "CedarPooSpec/ZeroTrust/ProfileObject.lean": "5b78e3ea7c418c0dd44339f8c05dcad659a4f1763313be32768ee3a589c57580",
+    "CedarPooSpec/ZeroTrust/UsageControl.lean": "e8198fb65cd7be9ca9fbaf9260857054c7480ed22e0766b8103dc6c60d67c27d",
+    "dev/.generated/lean-catalog.json": "c6856fdb9e8b2d36407b8605756659e8a1c02fca09ce628bc41c845f0e376657",
+    "dev/.generated/zero-trust-model-proofs-sdk.json": "bdccac34de4c5c3f36882eb2a111489f0cceca50058035ccea9f3f8536eec69c",
+    "dev/bun.lock": "24ae62404f675c395c3890562d805dcba2024b3dd54a6a7981d5a8e36c37f5d1",
+    "dev/catalog.ts": "6bff1f1e8f235f80a5fb7286d38cf81e46825fa64edf26d042174487037fe49a",
+    "dev/d2/architecture-overview.d2": "040b9de8acb2b8ef9780b231f4dd171f74f856ea21b0c0614597383c560c3c6f",
+    "dev/d2/lean-catalog.d2": "38a9447d8239d93a2f2cd00fbfc03731aad9dceec0c6b4d6dbe8ff048eb470a9",
+    "dev/d2/model-components.d2": "bd1f5e867012261c03c011e9f3f2f60ba5acfa112a27b2cc6354c4a16e0bd91f",
+    "dev/d2/security-frameworks.d2": "901fd692144ac61c02293a965bde1deb95e38073ab7cdc8db9b4491d7689de1c",
+    "dev/d2/verticals-platforms.d2": "e81ccf945900c7a6fa0ffc08aca2119d8ea23245db03a2e576b08d27f2b10e03",
+    "dev/d2/zero-trust-model-proofs.d2": "7a387edd1f065146c33d8338b4d85feab6a4b396c8570e3aa52fa0a98150cd20",
+    "dev/d2/zero-trust-object-proofs.d2": "4cc1b2cea918c37cff09abd8206d4bba6d35fe455f7e3e92a0e8f19af583e511",
+    "dev/Justfile": "a13b2b6ef2cabfdd03841bbdc3da89fa70245071abf15f653c0095ae3defba7b",
+    "dev/package.json": "d861ed19512d396cec7a13b9b8e95b2d3400bbc6828ef7b0540784cf65a57df5",
+    "dev/projection.ts": "3fd049e50798aee9dce54af6cd6e6fccad45fec5ab24b994bb6a8a4b33d7252d",
+    "dev/proofs.ts": "ec657848f47b8fa1724105df2aab6f25bb528f909ec9e7a996036d7fdc89184c",
+    "dev/render.ts": "73abbe90b7d5df0d5eb785eb5d38993aca456a207095632ff6c4d9f4dd734f05",
+    "dev/sources.ts": "c6d2ce6fc272c75380c680ed151e0b2f2e7e76abf75c4a55679ef0c7580400c4",
+    "dev/sysml/zero-trust-proofs.sysml": "0b85a38957e0a94e1e9b3ddfa5f8681e11596b865f3efc9a6fde4ad1a7868eab",
+    "Examples/ManifestCatalog.lean": "7c1c1eb2d288dfc7d3601062f2fe452d302b693d231ac455dcf24238a3a8219c",
+    "lake-manifest.json": "005293d31347e363a7f46a7a2a2bfbfea3f18484d688d7b75d144ca1ad16e3cd",
+    "lakefile.toml": "017f19694164250b32c95ce483b1bfb9ed03290f6c39d2eb938a8f347e22f80c",
+    "lean-toolchain": "d5edba4e4b8faad9c1baeadb265716d20d03be4d1a2647dc5e35b0c0325bea7b",
+    "Tests/ZeroTrust/ProfileObject.lean": "afc35d973cc630dc87228e8117d3c99f377c9cc117bd0402d1bc95c928838615"
+  },
+  "receipt": {
+    "attribution": {
+      "copyright": [
+        "2026 hardenedlinux Linux Team and Contributors",
+        "2014 Indian Type Foundry (info@indiantypefoundry.com)"
+      ],
+      "license": "Apache-2.0 AND OFL-1.1"
+    },
+    "observation": {
+      "canvas": {
+        "x": 0,
+        "y": 0,
+        "width": 1280,
+        "height": 1789
+      },
+      "subjects": [
+        {
+          "id": "n0",
+          "role": "default",
+          "x": 281.0743408203125,
+          "y": 452.19061279296875,
+          "width": 300.278564453125,
+          "height": 152.0107421875
+        },
+        {
+          "id": "n1",
+          "role": "default",
+          "x": 510.25,
+          "y": 724.9011840820312,
+          "width": 286.48321533203125,
+          "height": 180.96533203125
+        },
+        {
+          "id": "n2",
+          "role": "default",
+          "x": 224.7120361328125,
+          "y": 724.7611694335938,
+          "width": 262.13739013671875,
+          "height": 147.84442138671875
+        },
+        {
+          "id": "n3",
+          "role": "default",
+          "x": 814.854736328125,
+          "y": 740.423583984375,
+          "width": 270.7425537109375,
+          "height": 148.0753173828125
+        },
+        {
+          "id": "n4",
+          "role": "default",
+          "x": 809.75,
+          "y": 1028.6064453125,
+          "width": 281.4544677734375,
+          "height": 148.276123046875
+        },
+        {
+          "id": "n5",
+          "role": "default",
+          "x": 804.8075561523438,
+          "y": 1300.34228515625,
+          "width": 290.85406494140625,
+          "height": 148.377197265625
+        },
+        {
+          "id": "n6",
+          "role": "default",
+          "x": 277.731689453125,
+          "y": 180.28384399414062,
+          "width": 303.83837890625,
+          "height": 148.32308959960938
+        }
+      ],
+      "relations": [
+        "edge:0",
+        "edge:1",
+        "edge:2",
+        "edge:3",
+        "edge:4",
+        "edge:5"
+      ],
+      "headings": [
+        {
+          "role": "title",
+          "x": 20,
+          "y": 20,
+          "width": 1240,
+          "height": 48
+        },
+        {
+          "role": "question",
+          "x": 20,
+          "y": 78,
+          "width": 1240,
+          "height": 34
+        },
+        {
+          "role": "note",
+          "x": 20,
+          "y": 122,
+          "width": 1240,
+          "height": 27
+        },
+        {
+          "role": "heading",
+          "x": 20,
+          "y": 1486,
+          "width": 612,
+          "height": 31
+        },
+        {
+          "role": "note",
+          "x": 20,
+          "y": 1521,
+          "width": 612,
+          "height": 27
+        },
+        {
+          "role": "heading",
+          "x": 648,
+          "y": 1486,
+          "width": 612,
+          "height": 31
+        },
+        {
+          "role": "note",
+          "x": 648,
+          "y": 1521,
+          "width": 612,
+          "height": 27
+        },
+        {
+          "role": "heading",
+          "x": 20,
+          "y": 1568,
+          "width": 612,
+          "height": 31
+        },
+        {
+          "role": "note",
+          "x": 20,
+          "y": 1603,
+          "width": 612,
+          "height": 27
+        },
+        {
+          "role": "heading",
+          "x": 648,
+          "y": 1568,
+          "width": 612,
+          "height": 31
+        },
+        {
+          "role": "note",
+          "x": 648,
+          "y": 1603,
+          "width": 612,
+          "height": 27
+        },
+        {
+          "role": "heading",
+          "x": 20,
+          "y": 1650,
+          "width": 612,
+          "height": 31
+        },
+        {
+          "role": "note",
+          "x": 20,
+          "y": 1685,
+          "width": 612,
+          "height": 27
+        },
+        {
+          "role": "heading",
+          "x": 648,
+          "y": 1650,
+          "width": 612,
+          "height": 31
+        },
+        {
+          "role": "note",
+          "x": 648,
+          "y": 1685,
+          "width": 612,
+          "height": 27
+        },
+        {
+          "role": "note",
+          "x": 20,
+          "y": 1732,
+          "width": 1240,
+          "height": 27
+        }
+      ]
+    },
+    "canvas": {
+      "background": "rgb(250, 247, 238)",
+      "transparent": false
+    },
+    "readability": {
+      "minimumTextSize": 12,
+      "samples": 52,
+      "requiredMinimum": 12
+    },
+    "inputSHA256": "4a86233cccd31ac2428834760398f45fa28113800a0ff285f7bac01d401ebb04",
+    "scenes": [
+      {
+        "inputSHA256": "1bdf05dcc8b408d773f9a0d8c4d41c942344a340fa40585913bc76b88fc059a6",
+        "layoutSHA256": "3796a9d8efa45dd268519a28ca746f951ba328551f1153b6dbdc40c1a3b92a86",
+        "nodes": 7,
+        "edges": 6,
+        "milliseconds": 320.8632080000025
+      }
+    ],
+    "svgSHA256": [
+      "401a2a675f293586f4bc1dc4a95c1fe06861294bad17e4c01619f9fa21053884",
+      "ced53c56557fb27ac1ecb8db2bed1e49abf1650a077b8347340e0f29472a78fa"
+    ],
+    "composedHTMLSHA256": "eefaf131538daa9c8aa729bddb6cf802cf17ba6f0ca3f8fcf8f94e24e05ac4ef",
+    "dependencies": {
+      "@fontsource/inter": "5.3.0",
+      "@fontsource/kalam": "5.3.0",
+      "@terrastruct/d2": "0.1.33",
+      "@xyflow/system": "0.0.83",
+      "elkjs": "0.12.1",
+      "parse5": "8.0.1",
+      "roughjs": "4.6.6",
+      "valibot": "1.2.0",
+      "web-worker": "1.5.0"
+    },
+    "regionSHA256": {},
+    "htmlSHA256": "fdb3a3ab766e9a7c7bd9fdbab6e5f645c87ceb2504c39b4215aa1b56a9ad7f7e",
+    "drawing": "roughjs@4.6.6",
+    "routing": "elkjs@0.12.1",
+    "assetSHA256": {
+      "@fontsource/kalam/files/kalam-latin-400-normal.woff2": "954410601a823f37e219f7930b7446f86afa15621326a7078d56fb9c910135cb",
+      "@fontsource/kalam/files/kalam-latin-700-normal.woff2": "252063af6ade8b9a744cde4ddad0fc21ea53b8ba711eed121a0c2e8610ea9c93"
+    },
+    "pngSHA256": "eb210e534a67f75fc07601c25f11165aafe47c41a40263cf698bad40a9d985fc",
+    "browser": "156.0.8078.4",
+    "width": 1920,
+    "height": 2684,
+    "scale": 1.5,
+    "bounds": {}
+  },
+  "sdk": {
+    "modelHash": "9cdc356acb74095fe0a5f8aa8683a80bd2a3e54f606374def35f4f35adaef578",
+    "view": "ZeroTrustProofs::model",
+    "trace": {
+      "modelHash": "9cdc356acb74095fe0a5f8aa8683a80bd2a3e54f606374def35f4f35adaef578",
+      "requestedView": "ZeroTrustProofs::model",
+      "resolvedView": "ZeroTrustProofs::model",
+      "renderingSHA256": "bdccac34de4c5c3f36882eb2a111489f0cceca50058035ccea9f3f8536eec69c",
+      "capturedRenderingJSON": "{\"modelHash\":\"9cdc356acb74095fe0a5f8aa8683a80bd2a3e54f606374def35f4f35adaef578\",\"requestedView\":\"ZeroTrustProofs::model\",\"rendering\":{\"view\":\"ZeroTrustProofs::model\",\"kind\":\"interconnection\",\"stated\":\"render asInterconnectionDiagram\",\"nodes\":[{\"id\":\"n0\",\"kind\":\"part\",\"name\":\"ZeroTrustProofs::required\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":7,\"startCol\":2,\"endLine\":7,\"endCol\":29}},{\"id\":\"n1\",\"kind\":\"part\",\"name\":\"ZeroTrustProofs::refinement\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":10,\"startCol\":2,\"endLine\":10,\"endCol\":30}},{\"id\":\"n2\",\"kind\":\"part\",\"name\":\"ZeroTrustProofs::observed\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":13,\"startCol\":2,\"endLine\":13,\"endCol\":28}},{\"id\":\"n3\",\"kind\":\"part\",\"name\":\"ZeroTrustProofs::mediated\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":16,\"startCol\":2,\"endLine\":16,\"endCol\":28}},{\"id\":\"n4\",\"kind\":\"part\",\"name\":\"ZeroTrustProofs::usage\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":19,\"startCol\":2,\"endLine\":19,\"endCol\":25}},{\"id\":\"n5\",\"kind\":\"part\",\"name\":\"ZeroTrustProofs::recovery\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":22,\"startCol\":2,\"endLine\":22,\"endCol\":28}},{\"id\":\"n6\",\"kind\":\"part\",\"name\":\"ZeroTrustProofs::meanings\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":27,\"startCol\":2,\"endLine\":27,\"endCol\":30}}],\"edges\":[{\"from\":\"n0\",\"to\":\"n1\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":52,\"startCol\":2,\"endLine\":52,\"endCol\":55}},{\"from\":\"n0\",\"to\":\"n2\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":53,\"startCol\":2,\"endLine\":53,\"endCol\":53}},{\"from\":\"n0\",\"to\":\"n3\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":54,\"startCol\":2,\"endLine\":54,\"endCol\":53}},{\"from\":\"n3\",\"to\":\"n4\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":55,\"startCol\":2,\"endLine\":55,\"endCol\":50}},{\"from\":\"n4\",\"to\":\"n5\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":56,\"startCol\":2,\"endLine\":56,\"endCol\":50}},{\"from\":\"n6\",\"to\":\"n0\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":57,\"startCol\":2,\"endLine\":57,\"endCol\":53}}],\"columns\":[],\"rows\":[],\"notes\":[],\"notices\":[],\"shown\":[\"port-symbols\",\"compartments\",\"keywords\"]}}",
+      "nodes": [
+        {
+          "id": "n0",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/zero-trust-proofs.sysml",
+            "startLine": 7,
+            "startCol": 2,
+            "endLine": 7,
+            "endCol": 29
+          }
+        },
+        {
+          "id": "n1",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/zero-trust-proofs.sysml",
+            "startLine": 10,
+            "startCol": 2,
+            "endLine": 10,
+            "endCol": 30
+          }
+        },
+        {
+          "id": "n2",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/zero-trust-proofs.sysml",
+            "startLine": 13,
+            "startCol": 2,
+            "endLine": 13,
+            "endCol": 28
+          }
+        },
+        {
+          "id": "n3",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/zero-trust-proofs.sysml",
+            "startLine": 16,
+            "startCol": 2,
+            "endLine": 16,
+            "endCol": 28
+          }
+        },
+        {
+          "id": "n4",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/zero-trust-proofs.sysml",
+            "startLine": 19,
+            "startCol": 2,
+            "endLine": 19,
+            "endCol": 25
+          }
+        },
+        {
+          "id": "n5",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/zero-trust-proofs.sysml",
+            "startLine": 22,
+            "startCol": 2,
+            "endLine": 22,
+            "endCol": 28
+          }
+        },
+        {
+          "id": "n6",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/zero-trust-proofs.sysml",
+            "startLine": 27,
+            "startCol": 2,
+            "endLine": 27,
+            "endCol": 30
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "edge:0",
+          "index": 0,
+          "from": "n0",
+          "to": "n1",
+          "fromPort": "",
+          "toPort": "",
+          "kind": "connection",
+          "origin": {
+            "file": "dev/sysml/zero-trust-proofs.sysml",
+            "startLine": 52,
+            "startCol": 2,
+            "endLine": 52,
+            "endCol": 55
+          }
+        },
+        {
+          "id": "edge:1",
+          "index": 1,
+          "from": "n0",
+          "to": "n2",
+          "fromPort": "",
+          "toPort": "",
+          "kind": "connection",
+          "origin": {
+            "file": "dev/sysml/zero-trust-proofs.sysml",
+            "startLine": 53,
+            "startCol": 2,
+            "endLine": 53,
+            "endCol": 53
+          }
+        },
+        {
+          "id": "edge:2",
+          "index": 2,
+          "from": "n0",
+          "to": "n3",
+          "fromPort": "",
+          "toPort": "",
+          "kind": "connection",
+          "origin": {
+            "file": "dev/sysml/zero-trust-proofs.sysml",
+            "startLine": 54,
+            "startCol": 2,
+            "endLine": 54,
+            "endCol": 53
+          }
+        },
+        {
+          "id": "edge:3",
+          "index": 3,
+          "from": "n3",
+          "to": "n4",
+          "fromPort": "",
+          "toPort": "",
+          "kind": "connection",
+          "origin": {
+            "file": "dev/sysml/zero-trust-proofs.sysml",
+            "startLine": 55,
+            "startCol": 2,
+            "endLine": 55,
+            "endCol": 50
+          }
+        },
+        {
+          "id": "edge:4",
+          "index": 4,
+          "from": "n4",
+          "to": "n5",
+          "fromPort": "",
+          "toPort": "",
+          "kind": "connection",
+          "origin": {
+            "file": "dev/sysml/zero-trust-proofs.sysml",
+            "startLine": 56,
+            "startCol": 2,
+            "endLine": 56,
+            "endCol": 50
+          }
+        },
+        {
+          "id": "edge:5",
+          "index": 5,
+          "from": "n6",
+          "to": "n0",
+          "fromPort": "",
+          "toPort": "",
+          "kind": "connection",
+          "origin": {
+            "file": "dev/sysml/zero-trust-proofs.sysml",
+            "startLine": 57,
+            "startCol": 2,
+            "endLine": 57,
+            "endCol": 53
+          }
+        }
+      ]
+    },
+    "diagnostics": [],
+    "observations": []
+  },
+  "lean": {
+    "path": "dev/.generated/lean-catalog.json",
+    "sha256": "c6856fdb9e8b2d36407b8605756659e8a1c02fca09ce628bc41c845f0e376657",
+    "formatVersion": 2,
+    "entries": 51,
+    "pools": {
+      "policies": 158,
+      "entities": 40,
+      "schemas": 22
+    }
+  },
+  "proofClaims": {
+    "modelHash": "9cdc356acb74095fe0a5f8aa8683a80bd2a3e54f606374def35f4f35adaef578",
+    "cards": [
+      {
+        "id": "ZeroTrustProofs::required",
+        "role": "Definition",
+        "symbol": "CedarPooSpec.ZeroTrust.Framework.required",
+        "source": "CedarPooSpec/ZeroTrust/Composition.lean"
+      },
+      {
+        "id": "ZeroTrustProofs::refinement",
+        "role": "KernelLaw",
+        "symbol": "CedarPooSpec.ZeroTrust.with_requirement_preserves_framework",
+        "source": "CedarPooSpec/ZeroTrust/Composition.lean"
+      },
+      {
+        "id": "ZeroTrustProofs::observed",
+        "role": "KernelLaw",
+        "symbol": "CedarPooSpec.ZeroTrust.changed_generation_blocks",
+        "source": "CedarPooSpec/ZeroTrust/Continuous.lean"
+      },
+      {
+        "id": "ZeroTrustProofs::mediated",
+        "role": "KernelLaw",
+        "symbol": "CedarPooSpec.ZeroTrust.effect_step_rechecks",
+        "source": "CedarPooSpec/ZeroTrust/Continuous.lean"
+      },
+      {
+        "id": "ZeroTrustProofs::usage",
+        "role": "KernelLaw",
+        "symbol": "CedarPooSpec.ZeroTrust.usage_retains_core",
+        "source": "CedarPooSpec/ZeroTrust/UsageControl.lean"
+      },
+      {
+        "id": "ZeroTrustProofs::recovery",
+        "role": "KernelLaw",
+        "symbol": "CedarPooSpec.ZeroTrust.usage_rechecks_after_recovery",
+        "source": "CedarPooSpec/ZeroTrust/UsageControl.lean"
+      },
+      {
+        "id": "ZeroTrustProofs::meanings",
+        "role": "HostPremise",
+        "symbol": "CedarPooSpec.ZeroTrust.Framework",
+        "source": "CedarPooSpec/ZeroTrust/Model.lean"
+      },
+      {
+        "id": "ZeroTrustProofs::profile",
+        "role": "Definition",
+        "symbol": "CedarPooSpec.ZeroTrust.ProfileObject.Profile",
+        "source": "CedarPooSpec/ZeroTrust/ProfileObject.lean"
+      },
+      {
+        "id": "ZeroTrustProofs::session",
+        "role": "Definition",
+        "symbol": "CedarPooSpec.ZeroTrust.ProfileObject.Session",
+        "source": "CedarPooSpec/ZeroTrust/ProfileObject.lean"
+      },
+      {
+        "id": "ZeroTrustProofs::counter",
+        "role": "KernelCounterexample",
+        "symbol": "CedarPooSpec.ZeroTrustObjectTest.raw_override_parent_weakening_counterexample",
+        "source": "Tests/ZeroTrust/ProfileObject.lean"
+      },
+      {
+        "id": "ZeroTrustProofs::joined",
+        "role": "Definition",
+        "symbol": "CedarPooSpec.ZeroTrust.ProfileObject.Composed.requirement",
+        "source": "CedarPooSpec/ZeroTrust/ProfileObject.lean"
+      },
+      {
+        "id": "ZeroTrustProofs::preserved",
+        "role": "KernelLaw",
+        "symbol": "CedarPooSpec.ZeroTrust.ProfileObject.composed_preserves_actual_parent_and_original",
+        "source": "CedarPooSpec/ZeroTrust/ProfileObject.lean"
+      },
+      {
+        "id": "ZeroTrustProofs::prefix",
+        "role": "HostPremise",
+        "symbol": "CedarPooSpec.Gateway.ZeroTrust.CommittedPrefix",
+        "source": "CedarPooSpec/Gateway/ZeroTrust.lean"
+      },
+      {
+        "id": "ZeroTrustProofs::continuing",
+        "role": "KernelLaw",
+        "symbol": "CedarPooSpec.Gateway.ZeroTrust.continuing_objects_preserve_parent_and_consumption",
+        "source": "CedarPooSpec/Gateway/ZeroTrust.lean"
+      }
+    ],
+    "uses": [
+      {
+        "dependency": "CedarPooSpec.ZeroTrust.usage_retains_core",
+        "target": "CedarPooSpec.ZeroTrust.usage_rechecks_after_recovery"
+      },
+      {
+        "dependency": "CedarPooSpec.ZeroTrust.ProfileObject.composed_preserves_actual_parent_and_original",
+        "target": "CedarPooSpec.Gateway.ZeroTrust.continuing_objects_preserve_parent_and_consumption"
+      }
+    ]
+  },
+  "binaries": {
+    "dev/vendor/render-d000902.tgz": "abd7bcba27ba23d0260c65534c897e902fd4c814c1e4fbf8704c87429804b44c",
+    ".lake/build/bin/caseManifestsNative": "39c53fec2d23f19c449657b660f4588e179220f762502c5e1025636e752dc1e4"
+  },
+  "rendererArchiveSHA256": "abd7bcba27ba23d0260c65534c897e902fd4c814c1e4fbf8704c87429804b44c"
+}

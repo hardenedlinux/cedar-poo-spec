@@ -1,0 +1,164 @@
+#+title: P0-P2 shared native preparation acceptance
+#+options: toc:2
+
+* Integrated scope and delivered owners
+
+This unit implements the accepted shared-preparation plan across all 51 catalog
+entries, 23 schema-bearing and 24 raw manifests, nine typed object families and
+four Production artifacts. PR #8 remains open and unmerged. No per-industry
+implementation, cache provider or independently declared slice is introduced.
+
+P0 records high-resolution observer wall time, OS-reported command wall/user/system
+CPU time, reporting precision, process identity/exit and RSS. A freshly copied
+executable and two repeat invocations use the same complete native benchmark.
+All original ordinary/instrumented/Lean workload gates remain required.
+
+P1 is implemented in three shared owners:
+
+- Rust EntitySlot borrows the actual schema and immutable full entity Value
+  snapshots for one invocation. Only a successful snapshot is retained; full
+  value equality permits reuse, changes parse and replace, and scope exit drops
+  the slot. Canonical parsing stays after policy-ID checks and before request parsing.
+  Direct-source batch checks use the same owner at their original parse point
+  and preserve their original error prefixes. Single-case validation and the
+  existing immutable disclosure PolicyBundle keep their own appropriate scopes.
+  Request/context/action parsing and both authorizers run for every row. No
+  decision, context, grant, credential or external fact is retained. Source
+  receipt hashes are still computed from each actual Case input.
+- Canonical receipt hashing borrows existing Values, writes escaped strings
+  directly into the canonical buffer and encodes digest hex without 32 temporary
+  strings. Exact legacy-byte tests include Unicode, escapes, nested key order,
+  signed zero and integer extrema. Complete old/new replay bytes also match.
+- Lean PreparedDiagnostics builds a Contract-indexed pure report closure using
+  fused inventory membership and constraint traversal. Its alignment theorem
+  proves the entire report equals POO diagnose, including refusal order; check
+  uses that witness to construct the original Checked evidence. No object
+  admission/value/result is cached. Thirteen object/report/retention laws pass
+  the existing standard-axiom audit. All prior proof audits remain gates.
+
+The independent test path forces fresh Entities parsing and original policy
+loading for all 23 schema and 24 raw manifests. It compares complete receipts,
+changed actions, changed invalid entities and simultaneous policy-ID/entity/UID
+faults. Additional tests cover same-UID changed attributes, A/B/A replacement,
+malformed parse followed by retry, fresh context changing allow to deny, schema
+changes and invocation retirement. Generic Rust lifetime/borrow ownership binds
+sources and the actual schema; these tests are execution evidence, not a Lean
+proof of the Rust compiler, Cedar parser or external facts.
+
+** Measured choices and rejected alternatives
+
+Direct typed JSON transport was assessed and not enabled: direct Manifest
+serde decoding rejects duplicate known fields that the existing Value-normalized
+catalog accepts using the last field. A regression test preserves that wire
+behavior. Safe borrowing/buffer changes landed within the existing normalization
+owner; there is no second parser/configuration layer.
+
+An inline-only Lean candidate had identical allocation counts and was withdrawn.
+Eagerly staging lists improved populated profiles but added setup on missing
+inputs; that candidate was replaced by the proved fused traversal. The final
+variant reduces populated/refused-present allocations and leaves missing-input
+counts unchanged. No upstream LeanPOO code, unsafe object mode, global interning,
+compiler profile, LTO switch, dependency pin or build-job environment changed.
+
+* Resource and replay evidence
+
+Every complete sample still has 1280 rows, 2560 compiled/rendered authorizations,
+221 source-policy loads/prepared revisions and all 51 catalog stage observations.
+It performs 53 entity parses, 1227 reuses and six replacements with one retained
+slot entry. The input has 51 distinct per-manifest entity snapshots; ordered
+A/B/A churn accounts for the extra parses. These counts are derived independently
+from the actual ordered input in the Rust benchmark, not hard-coded as a speed
+threshold. The slot bound is logical retention, not a whole-process heap bound.
+
+Allocation instrumentation remains a separate executable; ordinary latency is
+measured with the normal allocator. Final instrumented samples observed
+4,702,422 allocation requests and 984,631,100 cumulative requested bytes per
+replay. The previous accepted cohort observed about 6.84 million requests and
+1.219 GB. Instrumented wall time is not ordinary latency. Requested bytes are
+allocation traffic, not simultaneously live memory or OS RSS.
+
+** Lean allocation evidence for all families
+
+Each row below aggregates nine families, three fixed samples and 128 fresh
+constructions per sample. Values are current-thread small-allocation heartbeat
+counts, not bytes or retained heap. Inputs, selected-family checks, expected
+cardinalities and 120-second execution ceiling are unchanged.
+
+| Mode | Before per-field | Final per-field | Before shared session | Final shared session |
+|------+------------------+-----------------+-----------------------+----------------------|
+| valid | 2365440 | 1853952 | 1273344 | 1187328 |
+| forged | 1919232 | 1407744 | 937728 | 851712 |
+| missing | 663936 | 663936 | 283008 | 283008 |
+
+The checks-only auxiliary process runs the original nine-family admission guard
+inventory without workload loops. Its resource receipt means startup plus
+fixture/check work, not isolated loader cost. It never replaces the 81 complete
+accepted/forged/missing measurements, nine selected-family processes, original
+hot/churn probes or 8/32/128-root controls.
+
+** Same-host whole-process comparison
+
+macOS arm64, identical full catalog, compiler/dependency pins and ordinary
+allocator. The old immutable executable is b64ab6b. Initial process observations
+are recorded separately, and the official fresh-file cohort is shown below; the following are three alternating pairs
+of repeated-file invocations. Every one-shot process still parses inputs,
+prepares, authorizes all rows, serializes complete output and exits naturally.
+All six old/new one-shot output files were byte-identical.
+
+| Workload | b64ab6b wall ms, three runs | Final wall ms, three runs | b64ab6b CPU ms | Final CPU ms |
+|----------+----------------------------+---------------------------+---------------+--------------|
+| Full benchmark including warmup/samples | 2125.47 / 2119.47 / 2141.89 | 1672.46 / 1787.55 / 1639.73 | 2110.00 / 2100.00 / 2120.00 | 1650.00 / 1670.00 / 1620.00 |
+| Actual one-shot complete replay | 528.16 / 525.28 / 517.08 | 403.55 / 396.68 / 397.99 | 510.00 / 510.00 / 500.00 | 390.00 / 380.00 / 380.00 |
+
+Repeated-file process medians were 2125.47 to 1672.46 ms for the full benchmark
+and 525.28 to 397.99 ms for one-shot replay, roughly
+21% and 24% reductions in this bounded local comparison. One-shot RSS was
+124.91-125.76 MB before and 124.49-125.39 MB after. Across the nine measured
+replay samples, median request preparation fell from 147.63 to 56.42 ms
+and receipt work from 29.83 to 8.47 ms. These local fixed-workload observations
+establish neither tail latency, general throughput nor cross-host speed ratios.
+Ubuntu qualifies execution separately.
+
+Old executable SHA-256:
+=3ed1581b90efc41b76590f4ffc25ed141c95b65f519fb5c06ec3b6abc92b046a=.
+Final ordinary executable SHA-256:
+=289dd3972971608d6a1f1f8e61527e9195e3c0959c41f2ed249ed57452927142=.
+Final Lean profile executable SHA-256:
+=c39b35fee8cb3ee682d92560a25cec687e0a24c6700e45a3caa9218225501a30=.
+
+** First execution stays a separate measurement
+
+The official gate materializes a new executable file and records first and two
+repeated invocations; hashing reads its bytes before execution, so this is not
+a cold-filesystem experiment. All three run the unchanged full catalog.
+
+| Cohort | Observer wall ms | OS wall ms | OS user+system CPU ms | Benchmark body ms |
+|--------+------------------+------------+-----------------------+-------------------|
+| fresh | 2208.70 | 2200.00 | 1660.00 | 1670.46 |
+| repeated-1 | 1715.93 | 1710.00 | 1690.00 | 1706.58 |
+| repeated-2 | 1649.95 | 1640.00 | 1630.00 | 1640.64 |
+
+OS time values here have 10 ms reporting precision; the receipt records actual
+precision. Observer minus OS wall may reflect rounding/supervision/scheduling;
+CPU and wall are different measurements and are not required to be equal.
+The large fresh-file delay remains visible. No signature/kernel/loader mechanism
+is asserted or bypassed, and no first-execution speed guarantee is claimed.
+This closes the measurement distinction without relabeling residual time as
+Cedar authorization or hiding it inside a relaxed timeout.
+
+* P2 integrated acceptance
+
+Local full Lean checks, all 41 Rust feature/workspace gates (109 passing test
+executions), the two real-artifact mutation/original-workflow tests, ordinary
+release and independent allocation/launch benchmarks, 11 Python process/artifact
+tests and document/source checks passed. The gate preserves 48 frozen manifest
+byte identities, 14 settlement handoffs with only ready admitted, all four
+Production fixtures and all existing negative controls.
+
+CI on the final commit must pass Lean, Rust, authorization-delta and Cedar
+conformance together. Its logs retain 81 complete profile measurements, 18
+native process receipts, three launch-cohort records and 15 complete Rust
+samples (ordinary, three launch processes, independent allocation). Every Rust
+sample checks the one-slot/source/authorization/cardinality invariants and
+nonoverlapping phase accounting. PR #8 remains unmerged; no resource cap,
+watchdog, workload, proof whitelist or admission requirement is widened.

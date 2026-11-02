@@ -1,5 +1,5 @@
-import CedarPooSpec.PolicyJson
 import CedarPooSpec.SchemaJson
+import CedarPooSpec.Functional.Capabilities
 
 /-!
 A finite provider-to-payer prior-authorization workflow. A clinical agent
@@ -167,6 +167,14 @@ def modelResult : Except LeanPoo.C4.Error Model := do
 
 def model : Model := modelResult.toOption.get (by native_decide)
 
+def roots : List String :=
+  ["Base", "Identity", "Administration", "Privacy", "PayerRules", "Temporal",
+    "Combined", "Governed", "Incident", "Recovered"]
+
+def program : CedarPooSpec.Functional.Program model schema :=
+  CedarPooSpec.Functional.deferProgram CedarPooSpec.Functional.standard model schema roots
+    (by native_decide)
+
 structure State where
   expectedPatient : String := "patient-a"
   clinicalSeen : Bool := false
@@ -200,12 +208,13 @@ def request (state : State) (attempt : Attempt) : Request :=
     ("payerRequirementsCurrent", .prim (.bool state.payerRequirementsCurrent)),
     ("delegationActive", .prim (.bool state.delegationActive))]⟩
 
-def authorized (root : String) (state : State) (attempt : Attempt) : Bool :=
-  match model.compile root with
+def authorized
+     (root : String) (state : State) (attempt : Attempt)
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.PriorAuthorizationExample.model CedarPooSpec.PriorAuthorizationExample.schema :=
+      CedarPooSpec.PriorAuthorizationExample.program) : Bool :=
+  match programContext.authorize root [request state attempt] entities with
   | .error _ => false
-  | .ok policies =>
-      let response := isAuthorized (request state attempt) entities policies
-      response.decision == .allow && response.erroringPolicies.isEmpty
+  | .ok receipt => receipt.allowed
 
 def advance (state : State) (attempt : Attempt) : State :=
   { state with
@@ -214,23 +223,42 @@ def advance (state : State) (attempt : Attempt) : State :=
     billingSeen := state.billingSeen ||
       (attempt.action == readBilling && attempt.resource == billingA) }
 
-def replay (root : String) (initial : State) (attempts : List Attempt) :
+def replayFactory
+     (attempts : List Attempt)
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.PriorAuthorizationExample.model CedarPooSpec.PriorAuthorizationExample.schema :=
+      CedarPooSpec.PriorAuthorizationExample.program) : LeanPoo.Functional.Factory (String × State)
+    (fun _ => State × List (Request × Bool)) :=
+  LeanPoo.Functional.Factory.fold
+    (fun (root, _) (state, rows) attempt =>
+      let req := request state attempt
+      let allowed := (authorized (programContext := programContext)) root state attempt
+      (if allowed then advance state attempt else state, rows ++ [(req, allowed)]))
+    (fun (_, initial) => (initial, []))
+    (attempts.map fun attempt _ => attempt)
+
+def replay
+     (root : String) (initial : State) (attempts : List Attempt)
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.PriorAuthorizationExample.model CedarPooSpec.PriorAuthorizationExample.schema :=
+      CedarPooSpec.PriorAuthorizationExample.program) :
     List (Request × Bool) × State :=
-  let (state, rows) := attempts.foldl (fun (state, rows) attempt =>
-    let req := request state attempt
-    let allowed := authorized root state attempt
-    (if allowed then advance state attempt else state,
-      rows ++ [(req, allowed)])) (initial, [])
+  let (state, rows) := (replayFactory (programContext := programContext)) attempts (root, initial)
   (rows, state)
 
-def decisions (root : String) (initial : State) (attempts : List Attempt) :
-    List Bool := (replay root initial attempts).1.map Prod.snd
+def decisions
+     (root : String) (initial : State) (attempts : List Attempt)
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.PriorAuthorizationExample.model CedarPooSpec.PriorAuthorizationExample.schema :=
+      CedarPooSpec.PriorAuthorizationExample.program) :
+    List Bool := ((replay (programContext := programContext)) root initial attempts).1.map Prod.snd
 
-def afterEvidenceRevoked : State :=
-  { (replay "Governed" {} [clinicalRead, billingRead]).2 with
+def afterEvidenceRevoked
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.PriorAuthorizationExample.model CedarPooSpec.PriorAuthorizationExample.schema :=
+      CedarPooSpec.PriorAuthorizationExample.program) : State :=
+  { ((replay (programContext := programContext)) "Governed" {} [clinicalRead, billingRead]).2 with
     delegationActive := false }
 
-def cases : List (String × String × State × List Attempt × List Bool) := [
+def cases
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.PriorAuthorizationExample.model CedarPooSpec.PriorAuthorizationExample.schema :=
+      CedarPooSpec.PriorAuthorizationExample.program) : List (String × String × State × List Attempt × List Bool) := [
   ("baseline-submits-without-evidence", "Base", {}, [payerSubmit], [true]),
   ("identity-owner-misses-admin", "Identity", {},
     [clinicalRead, billingRead, payerSubmit], [true, true, true]),
@@ -261,7 +289,7 @@ def cases : List (String × String × State × List Attempt × List Bool) := [
   ("stale-payer-requirements", "Governed",
     { payerRequirementsCurrent := false },
     [clinicalRead, billingRead, payerSubmit], [true, true, false]),
-  ("delegation-revoked-after-reads", "Governed", afterEvidenceRevoked,
+  ("delegation-revoked-after-reads", "Governed", (afterEvidenceRevoked (programContext := programContext)),
     [payerSubmit], [false]),
   ("incident-freezes-valid-submission", "Incident", {},
     [clinicalRead, billingRead, payerSubmit], [true, true, false]),
@@ -300,9 +328,7 @@ theorem missingDisclosureFactCannotGrant :
       true := by native_decide
 
 theorem allRootsValidate :
-    ["Base", "Identity", "Administration", "Privacy", "PayerRules",
-      "Temporal", "Combined", "Governed", "Incident", "Recovered"].all
-      (fun root => (CedarPooSpec.PolicyJson.publish model root schema).isOk) =
+    roots.all (fun root => (program.publish root).isOk) =
         true := by native_decide
 
 end CedarPooSpec.PriorAuthorizationExample

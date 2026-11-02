@@ -1,0 +1,84 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: Apache-2.0
+
+vars: {d2-config: {data: {figure: |json
+{
+  "purpose": "architecture",
+  "language": "en",
+  "width": 1120,
+  "primary": "purpose",
+  "themes": [
+    "sketchbook",
+    "compact"
+  ],
+  "icons": [
+    "engineering"
+  ],
+  "basis": {
+    "captureRef": "development-source-observation",
+    "modelRefs": [],
+    "obligationRefs": [],
+    "evidenceRefs": []
+  },
+  "title": "Vertical controls and platform projections",
+  "kind": "responsibility-map",
+  "questions": [
+    {
+      "ref": "purpose",
+      "text": "Which industry controls and platform adapters actually exist?",
+      "focusRefs": [
+        "sysml",
+        "library"
+      ]
+    }
+  ],
+  "references": {
+    "source": "dev/d2/verticals-platforms.d2",
+    "sysml": "dev/sysml/architecture.sysml",
+    "library": "CedarPooSpec.lean",
+    "healthSource": "CedarPooSpec/Vertical/Health/README.org",
+    "financeSource": "CedarPooSpec/Vertical/FinancialServices/README.org",
+    "awsSource": "CedarPooSpec/Platform/AWS/AgentCore/README.org",
+    "googleSource": "CedarPooSpec/Platform/Google/README.org"
+  },
+  "copy": {
+    "description": "Healthcare and financial services are reusable verticals. AWS and Google are separate platform projections.",
+    "status": "Vehicle, procurement and other scenario families remain Examples; this view does not invent industry implementations."
+  },
+  "presentation": {
+    "options": {
+      "elk.algorithm": "box",
+      "elk.aspectRatio": "1.8"
+    },
+    "edgeLabels": false,
+    "legend": false
+  },
+  "sysml": {
+    "source": "dev/sysml/architecture.sysml",
+    "view": "CedarArchitecture::verticalsPlatforms",
+    "bindings": {
+      "health": {
+        "name": "CedarArchitecture::health",
+        "icon": "model"
+      },
+      "finance": {
+        "name": "CedarArchitecture::finance",
+        "icon": "model"
+      },
+      "aws": {
+        "name": "CedarArchitecture::aws",
+        "icon": "model"
+      },
+      "google": {
+        "name": "CedarArchitecture::google",
+        "icon": "model"
+      }
+    }
+  }
+}
+|
+}}}
+health: "Healthcare vertical\nDisclosure / consent / emergency\nFHIR / regional clinical exchange"
+finance: "Financial-services vertical\nBanking / payment release\nInsurance claims controls"
+aws: "AWS platform projection\nAgentCore Gateway integration\nSelected by a consuming profile"
+google: "Google platform projection\nSensitive Data Protection adapter\nSelected by a consuming profile"

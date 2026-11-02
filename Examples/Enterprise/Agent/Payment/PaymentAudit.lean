@@ -67,30 +67,45 @@ def PaymentExecutionProfile.allows (profile : PaymentExecutionProfile)
       feeCap.toInt >= 0 && feeCap.toInt <= maximum.toInt
   | _, _ => false
 
-def cedarAllowed (payment : PaymentOperation) : Bool :=
+def cedarAllowed
+     (payment : PaymentOperation)
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.AgentPaymentExample.paymentModel CedarPooSpec.AgentPaymentExample.paymentSchema :=
+      CedarPooSpec.AgentPaymentExample.paymentProgram) : Bool :=
   match canonicalCedarDecimal payment.amount with
   | none => false
   | some _ =>
-    authorizePayment "PaymentGoverned" payment.payerAccount payment.origin
+    (authorizePayment (programContext := programContext)) "PaymentGoverned" payment.payerAccount payment.origin
       payment.amount
 
 /-- Cedar handles account, origin, and amount; the synthetic Host profile binds
     the other terms before this example records a payment authorization. -/
-def exampleAllowed (payment : PaymentOperation) : Bool :=
-  executionProfile.allows payment && cedarAllowed payment
+def exampleAllowed
+     (payment : PaymentOperation)
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.AgentPaymentExample.paymentModel CedarPooSpec.AgentPaymentExample.paymentSchema :=
+      CedarPooSpec.AgentPaymentExample.paymentProgram) : Bool :=
+  executionProfile.allows payment && (cedarAllowed (programContext := programContext)) payment
 
-def cedarAuthorization (payment : PaymentOperation) : PaymentAuthorization :=
-  { payment, auditPolicy, allowed := exampleAllowed payment, verified := true }
+def cedarAuthorization
+     (payment : PaymentOperation)
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.AgentPaymentExample.paymentModel CedarPooSpec.AgentPaymentExample.paymentSchema :=
+      CedarPooSpec.AgentPaymentExample.paymentProgram) : PaymentAuthorization :=
+  { payment, auditPolicy, allowed := (exampleAllowed (programContext := programContext)) payment, verified := true }
 
-def reserveWithCedar (payment : PaymentOperation) (state : PaymentState)
-    (evidence : List AuditEvidence) : Option PaymentState :=
-  payment.reserve (cedarAuthorization payment) state evidence
+def reserveWithCedar
+     (payment : PaymentOperation) (state : PaymentState)
+    (evidence : List AuditEvidence)
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.AgentPaymentExample.paymentModel CedarPooSpec.AgentPaymentExample.paymentSchema :=
+      CedarPooSpec.AgentPaymentExample.paymentProgram) : Option PaymentState :=
+  payment.reserve ((cedarAuthorization (programContext := programContext)) payment) state evidence
 
 /-- The Host-facing pure path keeps this example's Cedar decision and numeric
     checks attached to the ledger's atomic preparation transition. -/
-def prepareLedgerWithCedar (ledger : PaymentLedger) (payment : PaymentOperation)
-    (evidence : List AuditEvidence) : Option PaymentLedger :=
-  ledger.prepare payment (cedarAuthorization payment) evidence
+def prepareLedgerWithCedar
+     (ledger : PaymentLedger) (payment : PaymentOperation)
+    (evidence : List AuditEvidence)
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.AgentPaymentExample.paymentModel CedarPooSpec.AgentPaymentExample.paymentSchema :=
+      CedarPooSpec.AgentPaymentExample.paymentProgram) : Option PaymentLedger :=
+  ledger.prepare payment ((cedarAuthorization (programContext := programContext)) payment) evidence
 
 /-- The bank-rail profile checks a reported fee against the approved cap.
     Exact effect-term matching remains in `PaymentAttempt.observe`. -/

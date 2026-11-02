@@ -1,0 +1,3 @@
+[build]
+# One workspace-owned directory for direct Cargo, Justfile and CI caching.
+target-dir = "rust/target"

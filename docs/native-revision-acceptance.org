@@ -1,0 +1,108 @@
+#+title: Integrated revision and typed-object preparation acceptance
+#+options: toc:2
+
+* Shared implementation and invariant boundaries
+
+This report records the bounded preparation improvements preceding the
+algorithm-level POO redesign requested by the user. It does not declare the
+whole P0-P2 performance program complete. It follows the evidence boundaries of the
+[[file:native-performance-next.org][first-file launch audit and integrated plan]]. The comparison baseline is
+23e7938d9f1e7974a80bcba70e456bf285e9dc26; implementation is
+f2288268886d9d34a449a189958c50139909a8df. All applicable domains consume the
+same shared owners: 51 catalog entries, 23 schema and 24 raw manifests, nine
+object families and four Production fixtures. PR #8 remains open and unmerged.
+
+** P0: disjoint revision observations
+
+The canonical runtime records six nested revision subphases: raw source loading,
+rendering, independent text parsing, text-side normalization, body comparison and
+receipt hashing. Their sum must not exceed revision preparation; runtime phases
+must not exceed replay; catalog/sample/lifecycle accounting keeps its existing
+independent overlap guards. Raw source loads occur here; schema-bound source
+loading and strict validation remain in schema preparation before any request.
+The ordinary implementation reads no observation clocks. The fields add no
+policy input, admission threshold, timeout or workload exception.
+
+** P1: retain existing immutable work and exact object semantics
+
+SourcePolicies is sealed and constructed through the public Cedar JSON loader.
+Its materialized policies already contain the normalized AST rendered by
+=Policy::to_cedar=. The runtime now retains those exact source bodies while
+rendering the sorted file into a single buffer. It uses them for the compiled
+body map, avoiding a second JSON/AST normalization and a second rendering of the
+same compiled policy. The independent rendered file still passes through Cedar's
+text parser and the original JSON/AST normalizer. Body multiplicity, diagnostic
+body equality, original policy IDs, both authorizers and source-bound hashes are
+unchanged. Policy-ID sets and body-count keys borrow immutable revision-owned
+strings. All ownership retires with the invocation; request/context/action facts
+are still prepared and both authorizations run for every row.
+
+An independent legacy JSON -> AST -> Cedar test compares each emitted revision's
+compiled bodies byte for byte before optimized replay. It covers all 47 raw and
+schema manifests; separate controls cover formatting, annotations, scopes,
+literals, condition structure, IDs, duplicate bodies and empty rendering. The
+original workflow oracle retains fresh Entities parsing and simultaneous-fault
+checks. Actual old/new native executables also compare complete receipt bytes
+across all 51 entries, independent of the shared test implementation.
+
+Lean PreparedDiagnostics uses root-path structural recursion for declared-name,
+required-field and constraint traversal. It creates no per-object descriptor
+list and does not retain admission results. Its generic theorem proves equality
+of the entire ordered report to POO diagnose, including missing/extra fields,
+constraints, obligations, prototype refusal and non-object refusal.
+
+The standard provider uses the statically known Capability constructors directly.
+=standard_eq_assemble= proves equality to the original Functional selection over
+the kernel-certified C4 order, including the actual returned factory functions.
+Custom provider assemblies keep their original Requirements.prepareConsumer path.
+Fourteen universal laws retain the existing standard-axiom whitelist. Dependent
+field types, Contract evidence, actual inherited reads and factory-indexed Session
+retirement/refusal remain in use across all nine families. The object representation,
+self binding, inheritance engine and compiler profile are unchanged.
+
+** P2: cache ownership and artifact lifecycle
+
+All three Cargo-cache actions own =. -> rust/target=, matching Just's actual
+CARGO_TARGET_DIR. The =cedar-poo-workspace-target-v2= namespace avoids restoring
+old root-target archives. The job name is part of shared-key itself, separating rust, cedar-conformance
+and authorization-delta archives: GitHub's immutable first saved debug archive
+must not prevent a later release job from saving its own dependencies. The pinned
+[[https://github.com/Swatinem/rust-cache/blob/49a0bdc70d2e1b713ca9e2869b211fcce03d3c1c/action.yml][official action inputs]] define the shared-key override and additional key.
+The first CI run confirmed the correct target path, but showed that this pinned
+action ignored the separate key input when shared-key was set. The job identity
+therefore moves into shared-key itself; its distinct archive identities and warm
+reuse still require CI verification. Configuration alone is not a speed result.
+
+The fixed ordinary/full-catalog benchmark, fresh-file/repeat cohorts, separate
+allocation executable, Lean root/hot/churn tests, per-family processes and six
+expected-rejection launch diagnostics remain distinct. The macOS first-file
+execution-assessment wait remains visible. No system security bypass, long-lived
+host, larger cache, Cargo job-count override, dependency update or resource-cap
+increase is introduced.
+
+* Measurement method and interpretation
+
+Local macOS arm64 comparisons use the frozen ordinary executable from baseline
+23e7938, a separately built final ordinary executable, and baseline/final native
+object executables. Three paired complete cohorts alternate order, with unchanged
+1280-row catalog and 128-iteration object probes. Initial copied-file executions
+are recorded separately; repeat comparisons do not hide first-file cost. CPU,
+wall and RSS are OS process observations with their reported precision. Profile
+heartbeats count small allocations, not bytes. Allocator traffic, requested-live
+peak and OS RSS are separate quantities.
+
+During the initial candidate cohort, host load varied substantially (observed
+load average 22.27). Its wall timings were visibly unstable. The final evidence
+therefore retains every process observation, CPU/phase/allocation metrics and
+ranges rather than presenting one favorable wall ratio as a stable speedup.
+No percentile or cross-host speed guarantee follows from three pairs. The
+allocation baseline is independently rebuilt from the fixed baseline Rust owners
+and rerun on the same catalog as the final instrumented executable. Source bytes
+are restored afterward and the current ordinary executable is checked against the
+frozen final SHA. Instrumentation stays separate from ordinary latency.
+
+The local full entrypoint initially stopped because CVC5 was not configured.
+The official macOS arm64 static CVC5 1.4.0 asset was then installed in a temporary
+tool directory, matching CI's version, and verified against release metadata:
+SHA-256 =6560851586d3aabb2a97e0c19f5f75e28da88149dc916a373debe5f2e435d71c=.
+No test was skipped and no project pin changed to resolve that environment gap.

@@ -1,3 +1,4 @@
+import CedarPooSpec.Functional.Capabilities
 import CedarPooSpec.PolicyJson
 import CedarPooSpec.SchemaJson
 import CedarPooSpec.Vertical.Health.Region.UnitedStates
@@ -105,6 +106,12 @@ def modelResult : Except LeanPoo.C4.Error Model := do
   incident.extend "Recovered" "Incident" [incidentControl.edit .withdraw]
 def model : Model := modelResult.toOption.get (by native_decide)
 
+/-- Checked immutable policy context; current request inputs are supplied at consumption. -/
+protected def program : CedarPooSpec.Functional.Program model schema :=
+  CedarPooSpec.Functional.deferProgram CedarPooSpec.Functional.standard
+    model schema (model.modules.map (·.name)) (by native_decide)
+
+
 structure Facts where
   subjectPatient : String := "patient-a"
   identityVerified : Bool := true
@@ -158,11 +165,12 @@ def cases : List (String × String × Request × Decision) := [
   ("recovered-keeps-opt-in", "Recovered", request receivingPayer
     transferToPayer clinicalA { patientOptIn := false }, .deny)]
 
-def casesConform : Bool := cases.all fun (_, root, req, expected) =>
-  match model.compile root with
+def casesConform
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.UnitedStatesPayerExample.model CedarPooSpec.UnitedStatesPayerExample.schema :=
+      CedarPooSpec.UnitedStatesPayerExample.program) : Bool := cases.all fun (_, root, req, expected) =>
+  match programContext.response root req entities with
   | .error _ => false
-  | .ok policies =>
-      let answer := isAuthorized req entities policies
+  | .ok answer =>
       answer.decision == expected && answer.erroringPolicies.isEmpty
 theorem casesConformFully : casesConform = true := by native_decide
 theorem incidentChangesOnePolicy :

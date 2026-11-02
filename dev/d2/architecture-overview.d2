@@ -1,0 +1,132 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: Apache-2.0
+
+vars: {d2-config: {data: {figure: |json
+{
+  "purpose": "architecture",
+  "language": "en",
+  "width": 1280,
+  "primary": "purpose",
+  "themes": [
+    "sketchbook",
+    "compact"
+  ],
+  "icons": [
+    "engineering"
+  ],
+  "basis": {
+    "captureRef": "development-source-observation",
+    "modelRefs": [],
+    "obligationRefs": [],
+    "evidenceRefs": []
+  },
+  "title": "Cedar model: Components, domains and consumers",
+  "kind": "responsibility-map",
+  "questions": [
+    {
+      "ref": "purpose",
+      "text": "How are reusable Components composed into distinct consumers?",
+      "focusRefs": [
+        "sysml",
+        "library"
+      ]
+    }
+  ],
+  "references": {
+    "source": "dev/d2/architecture-overview.d2",
+    "sysml": "dev/sysml/architecture.sysml",
+    "library": "CedarPooSpec.lean",
+    "modelSource": "CedarPooSpec.lean",
+    "zeroTrustSource": "CedarPooSpec/ZeroTrust/README.org",
+    "verticalControlsSource": "CedarPooSpec/Vertical/Health/README.org",
+    "platformProjectionsSource": "CedarPooSpec/Platform/AWS/AgentCore/README.org",
+    "productionSource": "Productions/README.org",
+    "examplesSource": "Examples/README.org",
+    "rustSource": "rust/README.org",
+    "hostSource": "Productions/Backend.org"
+  },
+  "copy": {
+    "description": "Zero Trust is an explicit model Component. Industry controls and platform projections remain distinct.",
+    "status": "Arrows describe selected composition and ownership handoffs, not mandatory imports or deployed effects."
+  },
+  "presentation": {
+    "options": {
+      "elk.direction": "DOWN",
+      "elk.layered.spacing.nodeNodeBetweenLayers": "42"
+    },
+    "edgeLabels": false,
+    "legend": true
+  },
+  "sysml": {
+    "source": "dev/sysml/architecture.sysml",
+    "view": "CedarArchitecture::overview",
+    "bindings": {
+      "leanPoo": {
+        "name": "CedarArchitecture::leanPoo",
+        "icon": "library"
+      },
+      "cedar": {
+        "name": "CedarArchitecture::cedar",
+        "icon": "library"
+      },
+      "model": {
+        "name": "CedarArchitecture::model",
+        "icon": "library"
+      },
+      "zeroTrust": {
+        "name": "CedarArchitecture::zeroTrust",
+        "icon": "obligation"
+      },
+      "verticalControls": {
+        "name": "CedarArchitecture::verticalControls",
+        "icon": "model"
+      },
+      "platformProjections": {
+        "name": "CedarArchitecture::platformProjections",
+        "icon": "model"
+      },
+      "production": {
+        "name": "CedarArchitecture::production",
+        "icon": "model"
+      },
+      "examples": {
+        "name": "CedarArchitecture::examples",
+        "icon": "model"
+      },
+      "rust": {
+        "name": "CedarArchitecture::rust",
+        "icon": "model"
+      },
+      "host": {
+        "name": "CedarArchitecture::host",
+        "icon": "model"
+      }
+    }
+  }
+}
+|
+}}}
+leanPoo: "LeanPoo foundation\nObject algorithms / C4 / caches\nTypes / Contracts / proof reuse"
+cedar: "Upstream Cedar semantics\nEvaluation and typechecking\nOfficial Lean specification"
+model: "Shared Cedar model\nComposable typed Components\nSee the component inventory"
+zeroTrust: "Zero Trust Component\nContinuous-use requirements\nConditions / obligations / refinement"
+verticalControls: "Vertical controls\nHealthcare / financial services\nSee each implemented vertical"
+platformProjections: "Platform projections\nAWS AgentCore / Google SDP\nOptional profile bindings"
+production: "Production profiles\nIndependent composed exports\nShared Backend architecture contract"
+examples: "Example Cases\nScenario facts and assumptions\nCatalog exports / conformance inputs"
+rust: "Rust consumers\nStrict SDK validation / replay\nShared crates and Host adapters"
+host: "Downstream Host\nAuthenticates facts / enforces effects\nDurability and runtime providers"
+leanPoo -> model: Object and proof APIs
+cedar -> model: Cedar semantic authority
+model -> zeroTrust: Exposes a model Component
+model -> verticalControls: Shared capability composition
+model -> platformProjections: Platform-specific projection
+model -> production: Compose selected Components
+model -> examples: Compose scenario controls
+zeroTrust -> production: Selected use requirements
+zeroTrust -> examples: Selected use requirements
+verticalControls -> production: Selected industry controls
+platformProjections -> production: Optional platform binding
+production -> rust: Versioned profile exports
+examples -> rust: Scenario replay inputs
+rust -> host: Admitted receipts and adapters

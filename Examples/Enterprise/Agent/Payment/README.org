@@ -145,7 +145,7 @@ roots against the same schema:
 
 This is a *joint-only authorization gain*. A branch review of either removal
 alone would miss it. The reusable
-[[file:../../../../CedarPooSpec/AuthorizationDeltaInteraction.lean][interaction analyzer]] requires both branch gain queries to be empty before
+[[file:../../../../CedarPooSpec/Authorization/Delta/Interaction.lean][interaction analyzer]] requires both branch gain queries to be empty before
 classifying the combined gain, then replays the combined witness against both
 branches. The four responses and determining-policy IDs are replayed by the
 official Rust Cedar authorizer. POO =extend=, =remove=, and =mix= provide the
@@ -170,7 +170,7 @@ the actual deployment state, and Host execution remain separate gates. It is
 evidence of one joint gain, not a proof that the two removals are the only
 cause or that every possible branch composition has been explored.
 
-The [[file:../../../../CedarPooSpec/AuthorizationDeltaRelease.lean][release-review snapshot]] binds that analysis to the four compiled
+The [[file:../../../../CedarPooSpec/Authorization/Delta/Release.lean][release-review snapshot]] binds that analysis to the four compiled
 policy sets, the exact schema representation, all C4 modules in the four root
 ancestries, and a Host-supplied policy epoch. A changed epoch or schema, or an
 owner edit that leaves Cedar policy bodies identical, makes the snapshot

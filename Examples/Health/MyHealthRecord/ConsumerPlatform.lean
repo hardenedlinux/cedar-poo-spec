@@ -1,3 +1,4 @@
+import CedarPooSpec.Functional.Capabilities
 import CedarPooSpec.PolicyJson
 import CedarPooSpec.SchemaJson
 import CedarPooSpec.Governance.Veto
@@ -164,6 +165,12 @@ def modelResult : Except LeanPoo.C4.Error Model := do
 
 def model : Model := modelResult.toOption.get (by native_decide)
 
+/-- Checked immutable policy context; current request inputs are supplied at consumption. -/
+protected def program : CedarPooSpec.Functional.Program model schema :=
+  CedarPooSpec.Functional.deferProgram CedarPooSpec.Functional.standard
+    model schema (model.modules.map (·.name)) (by native_decide)
+
+
 structure Facts where
   subjectPatient : String := "patient-a"
   purpose : String := "self-care"
@@ -243,15 +250,19 @@ def cases : List (String × String × Request × Decision) := [
   ("recovery-keeps-revocation", "Recovered", request assistant summarize summaryA
     { appAccessActive := false }, .deny)]
 
-def observed (root : String) (req : Request) : Decision × Bool :=
-  match model.compile root with
+def observed
+     (root : String) (req : Request)
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.MyHealthRecordExample.model CedarPooSpec.MyHealthRecordExample.schema :=
+      CedarPooSpec.MyHealthRecordExample.program) : Decision × Bool :=
+  match programContext.response root req entities with
   | .error _ => (.deny, false)
-  | .ok policies =>
-    let answer := isAuthorized req entities policies
+  | .ok answer =>
     (answer.decision, answer.erroringPolicies.isEmpty)
 
-def casesConform : Bool := cases.all fun (_, root, req, expected) =>
-  let answer := observed root req
+def casesConform
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.MyHealthRecordExample.model CedarPooSpec.MyHealthRecordExample.schema :=
+      CedarPooSpec.MyHealthRecordExample.program) : Bool := cases.all fun (_, root, req, expected) =>
+  let answer := (observed (programContext := programContext)) root req
   answer.1 == expected && answer.2
 theorem casesConformFully : casesConform = true := by native_decide
 

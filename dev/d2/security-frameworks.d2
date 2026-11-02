@@ -1,0 +1,89 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: Apache-2.0
+
+vars: {d2-config: {data: {figure: |json
+{
+  "purpose": "architecture",
+  "language": "en",
+  "width": 1120,
+  "primary": "purpose",
+  "themes": [
+    "sketchbook",
+    "compact"
+  ],
+  "icons": [
+    "engineering"
+  ],
+  "basis": {
+    "captureRef": "development-source-observation",
+    "modelRefs": [],
+    "obligationRefs": [],
+    "evidenceRefs": []
+  },
+  "title": "Zero Trust Component: requirements and interpretation",
+  "kind": "responsibility-map",
+  "questions": [
+    {
+      "ref": "purpose",
+      "text": "How does the Zero Trust Component retain requirements in selected consumers?",
+      "focusRefs": [
+        "sysml",
+        "lean"
+      ]
+    }
+  ],
+  "references": {
+    "source": "dev/d2/security-frameworks.d2",
+    "sysml": "dev/sysml/security-frameworks.sysml",
+    "lean": "CedarPooSpec/ZeroTrust/ProfileObject.lean"
+  },
+  "copy": {
+    "description": "This is the Zero Trust Component detail, not the repository architecture or a map of vertical industries.",
+    "status": "Logical specification handoffs; this diagram is not an import proof or an authorization decision."
+  },
+  "presentation": {
+    "options": {
+      "elk.direction": "DOWN",
+      "elk.layered.spacing.nodeNodeBetweenLayers": "42"
+    },
+    "edgeLabels": false,
+    "legend": true
+  },
+  "sysml": {
+    "source": "dev/sysml/security-frameworks.sysml",
+    "view": "CedarFrameworks::overview",
+    "bindings": {
+      "core": {
+        "name": "CedarFrameworks::core",
+        "icon": "question"
+      },
+      "authorization": {
+        "name": "CedarFrameworks::authorization",
+        "icon": "evidence"
+      },
+      "poo": {
+        "name": "CedarFrameworks::poo",
+        "icon": "library"
+      },
+      "gateway": {
+        "name": "CedarFrameworks::gateway",
+        "icon": "capture"
+      },
+      "other": {
+        "name": "CedarFrameworks::other",
+        "icon": "model"
+      }
+    }
+  }
+}
+|
+}}}
+core: "ZeroTrust functional requirements\nPre / ongoing use and obligations\nImmutable observations and refinement"
+authorization: "Authorization framework\nCedar Policy composition\nSchema-bound Delta analysis\nRevision and evidence contracts"
+poo: "ZeroTrust.ProfileObject\nOptional LeanPoo interpretation\nRequired + selected Sessions\nRetains the original requirement"
+gateway: "Gateway.ZeroTrust adapter\nGateway-specific effect binding\nCurrent use and retained consumption"
+other: "Other downstream integrations\nApplication-owned effects and views\nNo generic industry implementation"
+core -> poo: Functional requirements
+poo -> other: Typed specialization
+poo -> gateway: Actual inherited profile
+authorization -> gateway: Bound Policy assessment

@@ -4,9 +4,9 @@
 * Overview
 
 These examples exercise Cedar's upstream Lean specification through
-Lean-POO composition. [[file:../Productions/README.org][Productions]] owns the executable entrypoints
-that export composed cases to the official Cedar Rust authorizer or other
-consumers. Each case README states its sources, modeling assumptions, Lean
+Lean-POO composition. Example dispatchers own their scenario exports.
+[[file:../Productions/README.org][Productions]] independently owns production profiles and versioned exports;
+its import closure excludes Examples and Tests. Each case README states its sources, modeling assumptions, Lean
 claims, and runtime boundary.
 
 Examples define readable policy models, revision flows, and exportable Cedar

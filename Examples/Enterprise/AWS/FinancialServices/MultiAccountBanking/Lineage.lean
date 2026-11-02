@@ -1,5 +1,6 @@
+import CedarPooSpec.Functional.Capabilities
 import Examples.Enterprise.AWS.FinancialServices.MultiAccountBanking.MultiAccountBanking
-import CedarPooSpec.CompoundAuthorization
+import CedarPooSpec.Authorization.Compound
 import LeanPoo.C4.Linearize
 import LeanPoo.Object.Multimethod
 
@@ -101,16 +102,22 @@ def routeWellRelated : Bool :=
   transferRoute.all fun call =>
     call.origin == banker && belongsTo call.lob call.action
 
-def gatewayAllowsCalls (root : String) (calls : List RouteCall) : Bool :=
+def gatewayAllowsCalls
+     (root : String) (calls : List RouteCall)
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.MultiAccountBankingExample.model CedarPooSpec.MultiAccountBankingExample.schema :=
+      CedarPooSpec.MultiAccountBankingExample.program) : Bool :=
   if !calls.all (fun call => belongsTo call.lob call.action) then false
   else
-    match CedarPooSpec.CompoundAuthorization.authorizeAll model root
-        (calls.map fun call => request call.origin call.action) entities with
+    match programContext.authorize
+        root (calls.map fun call => request call.origin call.action) entities with
     | .error _ => false
     | .ok receipt => receipt.allowed
 
-def gatewayAllowsRoute (root : String) : Bool :=
-  gatewayAllowsCalls root transferRoute
+def gatewayAllowsRoute
+     (root : String)
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.MultiAccountBankingExample.model CedarPooSpec.MultiAccountBankingExample.schema :=
+      CedarPooSpec.MultiAccountBankingExample.program) : Bool :=
+  (gatewayAllowsCalls (programContext := programContext)) root transferRoute
 
 def routeRequirements (mode : String) : Option (List (List Requirement)) :=
   transferRoute.mapM fun call =>
@@ -124,26 +131,38 @@ structure PlannedCall where
   required : List Requirement
   gatewayDecision : Cedar.Spec.Decision
 
-def plannedCalls (mode root : String) (calls : List RouteCall) :
+def plannedCalls
+     (mode root : String) (calls : List RouteCall)
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.MultiAccountBankingExample.model CedarPooSpec.MultiAccountBankingExample.schema :=
+      CedarPooSpec.MultiAccountBankingExample.program) :
     Option (List PlannedCall) := do
   if !calls.all (fun call => belongsTo call.lob call.action) then none else do
-    let receipt ← (CedarPooSpec.CompoundAuthorization.authorizeAll model root
-      (calls.map fun call => request call.origin call.action) entities).toOption
+    let receipt ← (programContext.authorize
+        root (calls.map fun call => request call.origin call.action) entities).toOption
     if calls.length != receipt.responses.length then none else
       (calls.zip receipt.responses).mapM fun (call, response) => do
         if !response.erroringPolicies.isEmpty then none else do
           let required ← requirements mode call.lob
           return ⟨call, required, response.decision⟩
 
-def plannedCall (mode root : String) (call : RouteCall) : Option PlannedCall := do
-  let calls ← plannedCalls mode root [call]
+def plannedCall
+     (mode root : String) (call : RouteCall)
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.MultiAccountBankingExample.model CedarPooSpec.MultiAccountBankingExample.schema :=
+      CedarPooSpec.MultiAccountBankingExample.program) : Option PlannedCall := do
+  let calls ← (plannedCalls (programContext := programContext)) mode root [call]
   calls.head?
 
-def plannedRoute (mode root : String) : Option (List PlannedCall) :=
-  plannedCalls mode root transferRoute
+def plannedRoute
+     (mode root : String)
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.MultiAccountBankingExample.model CedarPooSpec.MultiAccountBankingExample.schema :=
+      CedarPooSpec.MultiAccountBankingExample.program) : Option (List PlannedCall) :=
+  (plannedCalls (programContext := programContext)) mode root transferRoute
 
-def plannedRouteAllowed (mode root : String) : Bool :=
-  match plannedRoute mode root with
+def plannedRouteAllowed
+     (mode root : String)
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.MultiAccountBankingExample.model CedarPooSpec.MultiAccountBankingExample.schema :=
+      CedarPooSpec.MultiAccountBankingExample.program) : Bool :=
+  match (plannedRoute (programContext := programContext)) mode root with
   | none => false
   | some calls => !calls.isEmpty && calls.all fun call =>
       call.gatewayDecision == .allow &&

@@ -7,22 +7,24 @@ open CedarPooSpec.AgentDataFlowExample
 open CedarPooSpec.AgentDelegationExample
 
 /-- Replay identical allow and deny requests through both construction roots. -/
-def dispatchComparisonRows : Except String (List Lean.Json) := do
+def dispatchComparisonRows
+    (owner : CedarPooSpec.Functional.Program CedarPooSpec.AgentDataFlowExample.dataModel CedarPooSpec.AgentDataFlowExample.dataSchema :=
+      CedarPooSpec.AgentDataFlowExample.program) : Except String (List CedarPooSpec.Transport.Case) := do
   let requests := [
     ("allow", publishRequest publicDoc publicRepo admin reviewer true),
     ("deny", publishRequest internalDoc publicRepo admin reviewer true)]
-  let mut rows : List Lean.Json := []
-  for (label, req) in requests do
-    for root in ["PublishGoverned", "PublishDispatched"] do
-      let receipt ← CedarPooSpec.PolicyJson.authorizationCase
-        s!"dispatch-{label}-{root.toLower}" root.toLower dataModel root req dataEntities
-      rows := rows ++ [receipt]
-  return rows
+  let rows ← LeanPoo.Functional.Validation.traverse (fun (label, req) =>
+    LeanPoo.Functional.Validation.traverse (fun root =>
+      owner.case s!"dispatch-{label}-{root.toLower}" root.toLower root req dataEntities)
+      ["PublishGoverned", "PublishDispatched"]) requests
+  return rows.flatten
 
-def manifest : Except String Lean.Json := do
-  let rows ← CedarPooSpec.AgentDataFlowExport.wellFormedRows
-  let comparisons ← dispatchComparisonRows
-  CedarPooSpec.SchemaJson.validatedManifest
+def manifest
+    (owner : CedarPooSpec.Functional.Program CedarPooSpec.AgentDataFlowExample.dataModel CedarPooSpec.AgentDataFlowExample.dataSchema :=
+      CedarPooSpec.AgentDataFlowExample.program) : Except String CedarPooSpec.Transport.Manifest := do
+  let rows ← (CedarPooSpec.AgentDataFlowExport.wellFormedRows (owner := owner))
+  let comparisons ← (dispatchComparisonRows (owner := owner))
+  CedarPooSpec.SchemaJson.manifest
     dataSchema (rows ++ comparisons)
 
 end CedarPooSpec.AgentDataFlowValidatedExport

@@ -1,3 +1,4 @@
+import CedarPooSpec.Functional.Capabilities
 import CedarPooSpec.Revision
 import CedarPooSpec.PolicyJson
 
@@ -97,7 +98,13 @@ def modelResult : Except LeanPoo.C4.Error Model := do
 
 def model : Model := modelResult.toOption.get (by native_decide)
 
+/-- Checked immutable policy context; current request inputs are supplied at consumption. -/
+protected def program : CedarPooSpec.Functional.Program model schema :=
+  CedarPooSpec.Functional.deferProgram CedarPooSpec.Functional.standard
+    model schema (model.modules.map (·.name)) (by native_decide)
+
 /-- The host owns this ledger and serializes admission and updates. -/
+
 structure Session where
   sensitiveSeen : Bool := false
   usedExports : Int64 := 0
@@ -125,11 +132,13 @@ def request (session : Session) (attempt : Attempt) : Request :=
     ("usedExports", .prim (.int session.usedExports)),
     ("maxExports", .prim (.int session.maxExports))]⟩
 
-def authorized (root : String) (session : Session) (attempt : Attempt) : Bool :=
-  match model.compile root with
+def authorized
+     (root : String) (session : Session) (attempt : Attempt)
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.BoundedSessionExample.model CedarPooSpec.BoundedSessionExample.schema :=
+      CedarPooSpec.BoundedSessionExample.program) : Bool :=
+  match programContext.response root (request session attempt) entities with
   | .error _ => false
-  | .ok policies =>
-      let response := isAuthorized (request session attempt) entities policies
+  | .ok response =>
       response.decision == .allow && response.erroringPolicies.isEmpty
 
 /-- A rejected action never advances the trusted ledger. -/
@@ -141,17 +150,23 @@ def advance (session : Session) (attempt : Attempt) : Session :=
   else session
 
 /-- Record the exact request before each decision, then update on Allow. -/
-def replay (root : String) (initial : Session) (attempts : List Attempt) :
+def replay
+     (root : String) (initial : Session) (attempts : List Attempt)
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.BoundedSessionExample.model CedarPooSpec.BoundedSessionExample.schema :=
+      CedarPooSpec.BoundedSessionExample.program) :
     List (Request × Bool) × Session :=
   let (state, rows) := attempts.foldl (fun (state, rows) attempt =>
     let req := request state attempt
-    let allowed := authorized root state attempt
+    let allowed := (authorized (programContext := programContext)) root state attempt
     let next := if allowed then advance state attempt else state
     (next, rows ++ [(req, allowed)])) (initial, [])
   (rows, state)
 
-def decisions (root : String) (initial : Session) (attempts : List Attempt) :
-    List Bool := (replay root initial attempts).1.map Prod.snd
+def decisions
+     (root : String) (initial : Session) (attempts : List Attempt)
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.BoundedSessionExample.model CedarPooSpec.BoundedSessionExample.schema :=
+      CedarPooSpec.BoundedSessionExample.program) :
+    List Bool := ((replay (programContext := programContext)) root initial attempts).1.map Prod.snd
 
 def cases : List (String × String × Session × List Attempt × List Bool) := [
   ("legacy-read-then-egress", "Base", {}, [readSecret, sendExternal], [true, true]),
@@ -192,9 +207,11 @@ theorem deniedActionLeavesState :
     ((replay "Integrated" {} [sendExternal "off-task"]).2 == ({} : Session)) = true := by
   native_decide
 
-def rootsValidated : Bool :=
+def rootsValidated
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.BoundedSessionExample.model CedarPooSpec.BoundedSessionExample.schema :=
+      CedarPooSpec.BoundedSessionExample.program) : Bool :=
   ["Base", "Intent", "History", "Budget", "Integrated", "Incident",
-    "Recovered"].all fun root => (CedarPooSpec.PolicyJson.publish model root schema).isOk
+    "Recovered"].all fun root => (programContext.publish root).isOk
 theorem rootsValidatedExact : rootsValidated = true := by native_decide
 
 def incidentRevision : Revision :=

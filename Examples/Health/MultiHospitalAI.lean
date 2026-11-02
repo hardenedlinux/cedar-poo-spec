@@ -1,3 +1,4 @@
+import CedarPooSpec.Functional.Compilation
 import CedarPooSpec.Data.Lineage
 import CedarPooSpec.Data.LineageUse
 import CedarPooSpec.Pseudonymization.TokenCatalog
@@ -127,6 +128,11 @@ def modelResult : Except LeanPoo.C4.Error Model := do
 
 def model : Model := modelResult.toOption.get (by native_decide)
 
+/-- Compile-stage capability for this schema-free semantic fixture. -/
+protected def program : CedarPooSpec.Functional.Compilation model :=
+  CedarPooSpec.Functional.compilation model
+
+
 structure Facts where
   targetArtifact : String
   lineageRevision : String := "r1"
@@ -161,20 +167,28 @@ def request (actor action resource : EntityUID) (facts : Facts) : Request :=
     ("emergencyActive", .prim (.bool facts.emergencyActive)),
     ("patientBound", .prim (.bool facts.patientBound))]⟩
 
-def decision (root revision : String) (req : Request) : Option Decision := do
-  let policies ← (model.compile root).toOption
-  let response := isAuthorized req (entities revision) policies
+def decision
+     (root revision : String) (req : Request)
+    (programContext : CedarPooSpec.Functional.Compilation CedarPooSpec.MultiHospitalAIExample.model :=
+      CedarPooSpec.MultiHospitalAIExample.program) : Option Decision := do
+  let response ← (programContext.response root req (entities revision)).toOption
   if response.erroringPolicies.isEmpty then some response.decision else none
 
-def researchDecision (root revision : String) (action resource : EntityUID)
+def researchDecision
+     (root revision : String) (action resource : EntityUID)
     (target : String) (withdrawn : List String)
-    (bProfile : TokenProfile := hospitalBProfile) :
+    (bProfile : TokenProfile := hospitalBProfile)
+    (programContext : CedarPooSpec.Functional.Compilation CedarPooSpec.MultiHospitalAIExample.model :=
+      CedarPooSpec.MultiHospitalAIExample.program) :
     Except Lineage.Error (Option Decision) := do
   let facts ← factsFor target withdrawn revision bProfile
-  return decision root revision (request researcher action resource facts)
+  return (decision (programContext := programContext)) root revision (request researcher action resource facts)
 
-def clinicalDecision (revision : String) : Option Decision :=
-  decision "HospitalStudy" revision <|
+def clinicalDecision
+     (revision : String)
+    (programContext : CedarPooSpec.Functional.Compilation CedarPooSpec.MultiHospitalAIExample.model :=
+      CedarPooSpec.MultiHospitalAIExample.program) : Option Decision :=
+  (decision (programContext := programContext)) "HospitalStudy" revision <|
     request clinician emergencyRead hospitalB
       { targetArtifact := "hospital-b-record", lineageRevision := revision,
         lineageAvailable := false, purpose := "treatment",

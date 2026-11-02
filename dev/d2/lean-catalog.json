@@ -1,0 +1,274 @@
+{
+  "sources": {
+    "CedarPooSpec/Transport/SourceCatalog.lean": "6a558ed2d6191b9e0264a43d7fdf8c508102f475e01048c76fb9c541a9100c22",
+    "dev/.generated/lean-catalog-sdk.json": "753379a05389491ce2c0871239106ba5422fb279c6b12de9670bf05273456abf",
+    "dev/.generated/lean-catalog.json": "c6856fdb9e8b2d36407b8605756659e8a1c02fca09ce628bc41c845f0e376657",
+    "dev/bun.lock": "24ae62404f675c395c3890562d805dcba2024b3dd54a6a7981d5a8e36c37f5d1",
+    "dev/catalog.ts": "6bff1f1e8f235f80a5fb7286d38cf81e46825fa64edf26d042174487037fe49a",
+    "dev/d2/architecture-overview.d2": "040b9de8acb2b8ef9780b231f4dd171f74f856ea21b0c0614597383c560c3c6f",
+    "dev/d2/lean-catalog.d2": "38a9447d8239d93a2f2cd00fbfc03731aad9dceec0c6b4d6dbe8ff048eb470a9",
+    "dev/d2/model-components.d2": "bd1f5e867012261c03c011e9f3f2f60ba5acfa112a27b2cc6354c4a16e0bd91f",
+    "dev/d2/security-frameworks.d2": "901fd692144ac61c02293a965bde1deb95e38073ab7cdc8db9b4491d7689de1c",
+    "dev/d2/verticals-platforms.d2": "e81ccf945900c7a6fa0ffc08aca2119d8ea23245db03a2e576b08d27f2b10e03",
+    "dev/d2/zero-trust-model-proofs.d2": "7a387edd1f065146c33d8338b4d85feab6a4b396c8570e3aa52fa0a98150cd20",
+    "dev/d2/zero-trust-object-proofs.d2": "4cc1b2cea918c37cff09abd8206d4bba6d35fe455f7e3e92a0e8f19af583e511",
+    "dev/Justfile": "a13b2b6ef2cabfdd03841bbdc3da89fa70245071abf15f653c0095ae3defba7b",
+    "dev/package.json": "d861ed19512d396cec7a13b9b8e95b2d3400bbc6828ef7b0540784cf65a57df5",
+    "dev/projection.ts": "3fd049e50798aee9dce54af6cd6e6fccad45fec5ab24b994bb6a8a4b33d7252d",
+    "dev/proofs.ts": "ec657848f47b8fa1724105df2aab6f25bb528f909ec9e7a996036d7fdc89184c",
+    "dev/render.ts": "73abbe90b7d5df0d5eb785eb5d38993aca456a207095632ff6c4d9f4dd734f05",
+    "dev/sources.ts": "c6d2ce6fc272c75380c680ed151e0b2f2e7e76abf75c4a55679ef0c7580400c4",
+    "dev/sysml/lean-catalog.sysml": "ab7215eb4846306aec3ef2b0f16ec55dda87179efb10ea762f02b78d0c6234e5",
+    "Examples/ManifestCatalog.lean": "7c1c1eb2d288dfc7d3601062f2fe452d302b693d231ac455dcf24238a3a8219c",
+    "lake-manifest.json": "005293d31347e363a7f46a7a2a2bfbfea3f18484d688d7b75d144ca1ad16e3cd",
+    "lakefile.toml": "017f19694164250b32c95ce483b1bfb9ed03290f6c39d2eb938a8f347e22f80c",
+    "lean-toolchain": "d5edba4e4b8faad9c1baeadb265716d20d03be4d1a2647dc5e35b0c0325bea7b"
+  },
+  "receipt": {
+    "attribution": {
+      "copyright": [
+        "2026 hardenedlinux Linux Team and Contributors",
+        "2014 Indian Type Foundry (info@indiantypefoundry.com)"
+      ],
+      "license": "Apache-2.0 AND OFL-1.1"
+    },
+    "observation": {
+      "canvas": {
+        "x": 0,
+        "y": 0,
+        "width": 1120,
+        "height": 563
+      },
+      "subjects": [
+        {
+          "id": "n0",
+          "role": "default",
+          "x": 542.8243408203125,
+          "y": 183.19061279296875,
+          "width": 190.79632568359375,
+          "height": 85.652099609375
+        },
+        {
+          "id": "n1",
+          "role": "default",
+          "x": 354.5,
+          "y": 397.5800476074219,
+          "width": 273.6944580078125,
+          "height": 85.39031982421875
+        },
+        {
+          "id": "n2",
+          "role": "default",
+          "x": 562.9620361328125,
+          "y": 291,
+          "width": 203.164306640625,
+          "height": 83.45523071289062
+        },
+        {
+          "id": "n3",
+          "role": "default",
+          "x": 354.46929931640625,
+          "y": 290.423583984375,
+          "width": 185.35089111328125,
+          "height": 84.13394165039062
+        },
+        {
+          "id": "n4",
+          "role": "default",
+          "x": 354.5,
+          "y": 183.66293334960938,
+          "width": 165.4544677734375,
+          "height": 84.06927490234375
+        }
+      ],
+      "relations": [],
+      "headings": [
+        {
+          "role": "title",
+          "x": 20,
+          "y": 20,
+          "width": 1080,
+          "height": 48
+        },
+        {
+          "role": "question",
+          "x": 20,
+          "y": 78,
+          "width": 1080,
+          "height": 34
+        },
+        {
+          "role": "note",
+          "x": 20,
+          "y": 122,
+          "width": 1080,
+          "height": 27
+        },
+        {
+          "role": "note",
+          "x": 20,
+          "y": 506,
+          "width": 1080,
+          "height": 27
+        }
+      ]
+    },
+    "canvas": {
+      "background": "rgb(250, 247, 238)",
+      "transparent": false
+    },
+    "readability": {
+      "minimumTextSize": 12,
+      "samples": 15,
+      "requiredMinimum": 12
+    },
+    "inputSHA256": "c1811fdd76366ec5385f34b4b969c9a0478206d22c39c9ed047f86ff462c7b1b",
+    "scenes": [
+      {
+        "inputSHA256": "b82c75dbd14a51b3f16fca7a2f47aa2d4b03f7dfeabd7a73dd998da2b0bd5780",
+        "layoutSHA256": "a221a5e4f7349068f8701046972ce793ab445e84da6753666a375097cdd42d80",
+        "nodes": 5,
+        "edges": 0,
+        "milliseconds": 472.3240420000002
+      }
+    ],
+    "svgSHA256": [
+      "a2e06c8547c35bc1160c40921a050c80e069887b7d2d2b7a33de06deb0fcba33",
+      "2bba8ad7741dd2f690377128044235869511e92e8aa3ae5e0a648562ac01dbc0"
+    ],
+    "composedHTMLSHA256": "90d242cfe3fa29b58802580355cf53b48ab0e57d373c96d50974502eb419cdbe",
+    "dependencies": {
+      "@fontsource/inter": "5.3.0",
+      "@fontsource/kalam": "5.3.0",
+      "@terrastruct/d2": "0.1.33",
+      "@xyflow/system": "0.0.83",
+      "elkjs": "0.12.1",
+      "parse5": "8.0.1",
+      "roughjs": "4.6.6",
+      "valibot": "1.2.0",
+      "web-worker": "1.5.0"
+    },
+    "regionSHA256": {},
+    "htmlSHA256": "e59d788d6c32c9e1b9d73daacdb082ee9501daf856bb908f61a1846e7bd20336",
+    "drawing": "roughjs@4.6.6",
+    "routing": "elkjs@0.12.1",
+    "assetSHA256": {
+      "@fontsource/kalam/files/kalam-latin-400-normal.woff2": "954410601a823f37e219f7930b7446f86afa15621326a7078d56fb9c910135cb",
+      "@fontsource/kalam/files/kalam-latin-700-normal.woff2": "252063af6ade8b9a744cde4ddad0fc21ea53b8ba711eed121a0c2e8610ea9c93"
+    },
+    "pngSHA256": "1435283ba003c24f8adfe6c4a56b1cfddaddbb5b604a69f2362be63cde9173b1",
+    "browser": "156.0.8078.4",
+    "width": 1680,
+    "height": 845,
+    "scale": 1.5,
+    "bounds": {}
+  },
+  "sdk": {
+    "modelHash": "665d61c642370cfe88a2c7e787417b4a2d132e45b98c4d2faf82b05cdd669043",
+    "view": "LeanCatalog::overview",
+    "trace": {
+      "modelHash": "665d61c642370cfe88a2c7e787417b4a2d132e45b98c4d2faf82b05cdd669043",
+      "requestedView": "LeanCatalog::overview",
+      "resolvedView": "LeanCatalog::overview",
+      "renderingSHA256": "753379a05389491ce2c0871239106ba5422fb279c6b12de9670bf05273456abf",
+      "capturedRenderingJSON": "{\"modelHash\":\"665d61c642370cfe88a2c7e787417b4a2d132e45b98c4d2faf82b05cdd669043\",\"requestedView\":\"LeanCatalog::overview\",\"rendering\":{\"view\":\"LeanCatalog::overview\",\"kind\":\"tree\",\"stated\":\"\",\"nodes\":[{\"id\":\"n0\",\"kind\":\"part\",\"name\":\"LeanCatalog::group0\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/lean-catalog.sysml\",\"startLine\":10,\"startCol\":2,\"endLine\":10,\"endCol\":31}},{\"id\":\"n1\",\"kind\":\"part\",\"name\":\"LeanCatalog::group1\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/lean-catalog.sysml\",\"startLine\":12,\"startCol\":1,\"endLine\":12,\"endCol\":30}},{\"id\":\"n2\",\"kind\":\"part\",\"name\":\"LeanCatalog::group2\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/lean-catalog.sysml\",\"startLine\":14,\"startCol\":1,\"endLine\":14,\"endCol\":30}},{\"id\":\"n3\",\"kind\":\"part\",\"name\":\"LeanCatalog::group3\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/lean-catalog.sysml\",\"startLine\":16,\"startCol\":1,\"endLine\":16,\"endCol\":30}},{\"id\":\"n4\",\"kind\":\"part\",\"name\":\"LeanCatalog::group4\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/lean-catalog.sysml\",\"startLine\":18,\"startCol\":1,\"endLine\":18,\"endCol\":30}}],\"edges\":[],\"columns\":[],\"rows\":[],\"notes\":[],\"notices\":[],\"shown\":[\"port-symbols\",\"compartments\",\"keywords\"]}}",
+      "nodes": [
+        {
+          "id": "n0",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/lean-catalog.sysml",
+            "startLine": 10,
+            "startCol": 2,
+            "endLine": 10,
+            "endCol": 31
+          }
+        },
+        {
+          "id": "n1",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/lean-catalog.sysml",
+            "startLine": 12,
+            "startCol": 1,
+            "endLine": 12,
+            "endCol": 30
+          }
+        },
+        {
+          "id": "n2",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/lean-catalog.sysml",
+            "startLine": 14,
+            "startCol": 1,
+            "endLine": 14,
+            "endCol": 30
+          }
+        },
+        {
+          "id": "n3",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/lean-catalog.sysml",
+            "startLine": 16,
+            "startCol": 1,
+            "endLine": 16,
+            "endCol": 30
+          }
+        },
+        {
+          "id": "n4",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/lean-catalog.sysml",
+            "startLine": 18,
+            "startCol": 1,
+            "endLine": 18,
+            "endCol": 30
+          }
+        }
+      ],
+      "edges": []
+    },
+    "diagnostics": [],
+    "observations": [
+      {
+        "expression": "LeanCatalog::group0Count",
+        "value": "24"
+      },
+      {
+        "expression": "LeanCatalog::group1Count",
+        "value": "23"
+      },
+      {
+        "expression": "LeanCatalog::group2Count",
+        "value": "1"
+      },
+      {
+        "expression": "LeanCatalog::group3Count",
+        "value": "1"
+      },
+      {
+        "expression": "LeanCatalog::group4Count",
+        "value": "2"
+      }
+    ]
+  },
+  "lean": {
+    "path": "dev/.generated/lean-catalog.json",
+    "sha256": "c6856fdb9e8b2d36407b8605756659e8a1c02fca09ce628bc41c845f0e376657",
+    "formatVersion": 2,
+    "entries": 51,
+    "pools": {
+      "policies": 158,
+      "entities": 40,
+      "schemas": 22
+    }
+  },
+  "binaries": {
+    "dev/vendor/render-d000902.tgz": "abd7bcba27ba23d0260c65534c897e902fd4c814c1e4fbf8704c87429804b44c",
+    ".lake/build/bin/caseManifestsNative": "39c53fec2d23f19c449657b660f4588e179220f762502c5e1025636e752dc1e4"
+  },
+  "rendererArchiveSHA256": "abd7bcba27ba23d0260c65534c897e902fd4c814c1e4fbf8704c87429804b44c"
+}

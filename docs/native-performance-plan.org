@@ -1,0 +1,204 @@
+#+title: Native lifecycle audit and next whole-repository acceptance unit
+#+options: toc:2
+
+The [[file:native-performance-next.org][2026-10-30 launch attribution and next integrated plan]] supersedes this
+earlier proposal after the shared-preparation implementation.
+
+* Scope and evidence boundary
+
+The owner is the shared Rust runtime/catalog and the shared Lean Functional
+object layer. All 51 catalog entries, 23 schema-bearing manifests, nine object
+families and applicable Production fixtures remain one acceptance unit. Domain
+fixtures consume shared changes; there is no per-industry engine, provider or
+independently declared completion. PR #8 remains open and unmerged.
+
+P0-P2 is now implemented and locally qualified as one shared unit. The
+[[file:native-preparation-acceptance.org][implementation and acceptance report]] records exact code, tests, all-domain
+coverage and measured results. The design sections below preserve the earlier
+proposal and its rationale; they are superseded by that implementation status.
+
+* Why the earlier process comparison was inconclusive
+
+The earlier baseline/current observation was 2.150/2.187 seconds per process,
+although the sum of the three replay+serialization samples was 1.546/1.490
+seconds. Thus unsampled work was 604.1/697.1 ms, an increase of 93.0 ms against
+a 55.6 ms sample reduction. That single fixed-order pair could not identify
+startup regression or qualify an end-to-end speedup.
+
+The benchmark source proves that a process additionally executes one full
+unmeasured catalog replay as its warmup/reference, reparses the complete input
+to count revisions, compares outputs, constructs observations and drops values.
+The OS observer includes executable launch, stdin reading, final output and
+teardown too. These costs must not all be labeled startup. The historical
+93 ms difference cannot be retrospectively assigned to a particular phase;
+that run did not record those phases.
+
+A bounded three-pair repeat alternated process order without changing any
+process's warmup, three samples or 120-second ceiling:
+
+| Pair and order | Baseline process s | d1fc4fa process s | Baseline outside samples ms | d1fc4fa outside samples ms |
+|----------------+--------------------+------------------+-----------------------------+---------------------------|
+| 1 current/baseline | 2.194 | 2.091 | 612.6 | 586.1 |
+| 2 baseline/current | 2.189 | 2.091 | 609.1 | 580.1 |
+| 3 current/baseline | 3.647 | 2.525 | 880.7 | 656.3 |
+
+Current was lower in all three pairs, while the third pair showed substantial
+host variation. This refutes treating the original single pair as an established
+repeatable regression. It does not establish a general speed ratio or tail
+latency bound. A separate one-second native CPU stack sample observed entity
+parsing, JSON conversion, allocation and destruction paths. Sampling perturbs
+the process and covers a window; its timings are not latency qualification or
+whole-run CPU percentages.
+
+* Common ownership and lifecycle changes (b64ab6b baseline)
+
+The catalog moves its already encoded nested Values into the final JSON object,
+removing a redundant deep serialization. It retains manifests/typed receipts
+only for the existing cross-artifact consumers: pseudonymization deployment,
+claim settlement claims and banking. The remaining schema manifests finish
+at their own entry; all still replay before retirement. The required three
+inputs remain available until all cross-artifact checks finish. This is a
+logical retained-manifest count, not an RSS bound.
+
+The ordinary replay path adds no clocks. The existing benchmark now reports:
+
+- Lifecycle: reference warmup, revision-inventory parse/count/drop, complete
+  sample loop, reference cleanup, bookkeeping and measured benchmark body.
+- Samples: replay, comparison, serialization, explicit output cleanup and wall
+  time; complete receipt equality and authorization/preparation counters remain.
+- Catalog: input decode, entry loop, cross-artifact/output finalization and
+  explicit retained-manifest cleanup; every catalog name has an observation.
+  Deferred deployment/handoff entries record capture costs, while their actual
+  validation costs are in finalization. Entry records and stages are different
+  views and must not be added together.
+
+Stage sums are checked for overlap. OS elapsed minus measured benchmark body
+is an external residual including launch, CLI setup/stdin, final report output,
+remaining drops, shutdown and observer overhead. It is not isolated dyld time,
+a cold-filesystem measurement, or Python/uv startup time: the wrapper starts
+its timer after importing itself and hashing the executable.
+
+* Measured lifecycle follow-up and optimization limits (b64ab6b baseline)
+
+Final ordinary executable SHA-256 is
+=3ed1581b90efc41b76590f4ffc25ed141c95b65f519fb5c06ec3b6abc92b046a=.
+Three executions of the actual rebuilt release path used identical input and
+unchanged one-warmup/three-sample workloads. All exited naturally with complete
+outputs. CLI stdin timing is reported separately from the benchmark body.
+
+| Execution after build | OS process ms | stdin ms | Benchmark body ms | Residual excluding stdin ms | Warmup ms | Inventory ms | Samples ms |
+|-----------------------+---------------+----------+-------------------+-----------------------------+-----------+--------------+------------|
+| 1 | 2915.390 | 1.071 | 2182.942 | 731.377 | 538.884 | 62.099 | 1581.450 |
+| 2 | 2202.155 | 1.109 | 2192.605 | 8.441 | 537.445 | 64.347 | 1590.321 |
+| 3 | 2191.605 | 1.176 | 2181.629 | 8.801 | 535.599 | 63.123 | 1582.463 |
+
+The first execution's additional approximately 723 ms was outside stdin and
+benchmark body. Warmup and sample costs were comparable in the later processes.
+This locates the large outlier outside business replay; it does not identify a
+specific kernel, signature-validation, loader or scheduling mechanism.
+
+Two newly copied, byte-identical diagnostic executables were also run with
+the valid JSON text ={}= (an invalid manifest). Both returned the
+same expected missing-cases error, without policy parsing/authorization:
+
+| Fresh file cohort | First execution ms | Second ms | Third ms |
+|-------------------+--------------------+-----------+----------|
+| 1 | 381.435 | 14.911 | 16.916 |
+| 2 | 699.440 | 16.991 | 17.977 |
+
+A new hard-link path to an already executed inode took 132.734 ms in one
+additional control. These controls establish a first-execution/host-boundary
+confound without making a path-versus-inode or OS-subsystem attribution. They
+are deliberately failing diagnostic controls, not accepted Cedar executions.
+Their binary SHA-256 was
+=af3bd56a1db77544d188b7fb059ab7dbce6922572808822d20ef7d9823a11bfa=,
+the ownership+stage cohort before adding the CLI stdin timer.
+
+That ownership cohort was also compared with immutable d1fc4fa binaries, using
+three alternating pairs for both benchmark and real one-shot replay. All six
+one-shot output files were byte-identical. Process timings were:
+
+| Workload | d1fc4fa ms, three runs | Ownership cohort ms, three runs |
+|----------+-----------------------+---------------------------------|
+| Benchmark with warmup/samples | 2648.44 / 2051.09 / 2149.28 | 2655.17 / 2117.03 / 2135.47 |
+| One-shot full catalog | 554.48 / 565.34 / 542.22 | 543.52 / 670.20 / 554.13 |
+
+There is no stable material one-shot latency gain from these two ownership
+changes. They remove unnecessary work and reduce the logical retained set from
+23 manifests to the three cross-artifact dependencies. One-shot RSS observations
+were 127.21-127.65 MB before and 124.40-124.99 MB for the ownership cohort;
+benchmark RSS was about 130.56-131.19 MB before and 128.09-128.24 MB after.
+The remaining dominant cost still warrants shared preparation/transport work.
+The final CLI-timed artifact has separate receipts above; observations from
+these distinct artifact cohorts are not silently combined into a speed claim.
+
+* Accepted P0-P2 design (see implementation status above)
+
+| Workstream | Shared owner and delivery | Acceptance scope |
+|------------+---------------------------+------------------|
+| 1. Complete lifecycle baseline | Implemented observer/OS wall, CPU and precision, fresh/repeated cohorts and fixed alternating benchmark/one-shot comparisons | All 51 entries, complete artifacts, process identity/exit/RSS and phase residuals |
+| 2. Entity preparation and transport ownership | Implemented schema/invocation-bound EntitySlot and borrowed canonical hashing; preserve Value normalization after rejecting incompatible direct typed decoding | Every schema-bearing and raw manifest, including changed entities/schema and simultaneous invalid-input controls |
+| 3. Lean typed allocation/retention | Implemented Contract-indexed fused diagnostics with exact report proof; measured all nine families and retained existing Program/ContextSlot ownership | All nine families, accepted/forged/missing inputs, existing hot/churn and 8/32/128-root controls |
+| 4. Whole-process qualification | Same exact head on macOS and Ubuntu; ordinary process latency, separate allocation/RSS and complete proof/replay gates | All industries and Production fixtures together; PR #8 remains unmerged |
+
+** Shared Entities preparation: implemented
+
+A source-input survey found 1280 case rows but only 51 distinct entity JSON
+snapshots when identity is scoped separately to each manifest. That inventory
+motivated the implementation, but did not itself prove authorization equivalence.
+The original path reparsed every row; the implemented bounded slot now performs
+53 parses and 1227 reuses, including ordered churn. The acceptance report gives
+the complete original-workflow comparisons and current resource evidence.
+
+Use the pinned [[https://docs.rs/cedar-policy/4.12.0/cedar_policy/struct.Entities.html][Cedar 4.12.0 public Entities API]]. Its parser validates with the
+supplied schema and incorporates schema action entities. Therefore a UID or
+JSON digest alone is insufficient for reusing parsed entities.
+
+The implemented slot borrows the actual schema and full immutable input Values
+for one invocation alongside parsed Entities. Lookup verifies full Value
+equality; changes replace the slot, and invocation exit releases it.
+No global cache, cross-schema reuse or decision/credential retention is allowed.
+Construction stays lazy at its original point after policy-ID checks, preserving
+first-error behavior. Request/context/action parsing and both authorization
+calls still execute for every row. Changed schema, entities, actions, actors,
+malformed input, simultaneous faults, refusal and retry require exact complete
+receipt/error parity against the independent original workflow. The candidate
+is accepted only after this proof boundary and actual end-to-end measurements.
+
+The transport assessment preserves catalog order, input classification,
+unknown-entry refusal, normalization and cross-artifact checks. Direct typed
+Manifest decoding changes duplicate-field behavior and was not enabled; a
+regression test locks that boundary. Borrowed Value hashing and direct escaping
+are tested against the previous canonical algorithm and complete old/new output.
+Shared policies still complete strict validation before requests are observed.
+
+** Lean and compiler scope
+
+Use the same dependent slot types, Contracts, factory-indexed Session witnesses
+and standard-axiom audits. Measure accepted and refused construction separately;
+heartbeat counts remain small-allocation counters, not allocated bytes. A
+checks-only auxiliary process, if needed, must be labeled startup plus shared
+fixture/check work and cannot replace any of the full 81 workload observations.
+Avoid new global interning, mutable semantic objects or per-domain wrappers.
+
+Compiler experiments follow ownership/allocation work. [[https://doc.rust-lang.org/cargo/reference/profiles.html][Cargo profile settings]]
+belong to the workspace root; evaluate any LTO/codegen change in an isolated
+artifact cohort with build latency, size, startup and steady-state execution.
+Do not mix profiled/instrumented binaries with ordinary latency or overwrite
+the existing qualified default profile. No job-count environment override or
+resource/watchdog expansion is part of this plan.
+
+** Final acceptance and stop conditions
+
+Keep the 48 frozen manifest byte identities, 51 catalog entries, 1280 replay
+rows, 2560 observed compiled/rendered authorization calls per sample, 23-manifest
+original-workflow comparison, 14 handoff scenarios, four Production fixtures,
+nine native object families and all type/Contract/axiom/negative-control gates.
+Any new cache also needs changed-input, refusal and retry evidence. Resource
+records retain executable SHA-256, architecture, exit, bytes units and scope.
+
+Publish one integrated result on the same PR after these workstreams converge.
+Report both one-shot process and phase costs using fixed bounded repeated
+comparisons, including regressions and variation. Do not declare end-to-end
+performance closed from a hot-loop gain or a green correctness job. Cross-host
+observations qualify execution separately; their ratios are not speed claims.

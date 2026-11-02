@@ -1,6 +1,167 @@
 #+TITLE: Benchmarks
 #+OPTIONS: toc:nil
 
+* Official Lean benchmark boundary
+
+Follow the [[https://github.com/leanprover/lean4/blob/master/tests/README.md][official Lean benchmark suite]] distinction between =compile_bench=
+(compiled execution), =elab_bench= (elaboration), and =lake_bench= (Lake).
+That suite belongs to Lean's compiler source tree; consumer libraries do not
+need to import its CMake/test infrastructure. Here the existing Lake native
+targets and Justfile recipes own execution. Both policy and Functional reuse
+probes emit the official =measurement: <name> <value> <unit>= lines from Lean,
+alongside their existing coverage/checksum observations. Samples have distinct
+names; their fixed workloads and sample counts are unchanged.
+
+Lean owns algorithms, generated benchmark workloads, checksums, types, Contracts
+and proofs. Rust owns SDK replay, complete-output equality and allocation
+counters. Internal Lean timers use the standard =IO.monoNanosNow=. No benchmark
+recipe uses =lean --run= to qualify native execution time. Elaboration checks
+and proofs retain their existing memory/tick limits separately.
+
+=just bench-policy-reuse= and =just bench-functional-reuse= build and directly
+run Lean executables without Python. =just bench-functional-native= additionally
+observes the native workloads with the external Python testing package.
+Python in =cedar_poo_py_test=, including its =dataflow_lifecycle= process coordinator, only launches fixed
+processes, records identities, compares complete wire bytes and observes OS
+clocks/RSS. It implements no Cedar policy or POO benchmark algorithm. Building
+or consuming the Lean library requires no Python. An in-process timer cannot
+observe its own pre-main interval; that observation stays external. Diagnostic
+and allocation-instrumented samples remain separate from ordinary latency.
+
+* Primary commands and separate external observations
+
+The primary actual-Case benchmark runs Lean directly:
+
+#+begin_src sh
+just bench-catalog-preparation
+# Equivalent direct native entry after building:
+.lake/build/bin/manifestLifecycleNative benchmark
+#+end_src
+
+For the POO library itself, build =contextSlotScale= in its workspace and run:
+
+#+begin_src sh
+.lake/build/bin/contextSlotScale structural equal 8192 256
+.lake/build/bin/contextSlotScale structural miss 8192 256
+.lake/build/bin/contextSlotScale structural-reference 8192 256
+#+end_src
+
+Those workloads, warmup/sample policy, oracles and clocks are Lean. Rust owns the
+SDK workload through its existing =benchmark-catalog= entry. Python is confined
+to the separate external process/resource/identity observations; its coordinator
+is not the algorithm benchmark or its internal elapsed time. /usr/bin/time and
+/usr/bin/sample observations remain separate from native measurement records.
+
+* Complete real-Case native entrypoints
+
+=just bench-catalog-preparation= builds the existing =manifestLifecycleNative=
+Lake executable and runs its =benchmark= mode directly. Lean owns the actual
+51-entry typed catalog, one warmup, three fixed samples, preparation/serialization
+clocks and complete-output equality. It emits nine official =measurement:= lines
+plus the entry/byte/checksum inventory. The =total= span covers preparation and
+serialization only; complete-result checking, cleanup, output and pre-main
+startup remain outside it. The helper takes the actual entries as a
+runtime argument, preventing closed catalog work from becoming module initialization.
+
+=just bench-catalog-stages= runs the same native target in a separate attribution
+mode: one first-use pass and three fixed samples over all 51 entries, followed
+by complete equality against the production publisher. It shares the actual
+source pools and publication step. Per-entry production/publication and final
+framing/rendering emit native wall-clock and =IO.getNumHeartbeats= observations.
+Lean defines the latter as current-thread small-allocation counts, not total
+allocated bytes, peak memory, RSS or CPU time. No heartbeat limit is changed.
+The clocks/counters and diagnostic bookkeeping have overhead; these samples
+are distinct from the original nine measurements and ordinary launch cohorts.
+
+Production includes typed Case construction and first-use Program work.
+Publication also forces each Case's independent Lean authorization and builds
+request JSON; lazy fragment compression remains in rendering. Final =wire=
+joins one String for the benchmark oracle, while the ordinary production
+entry streams certified chunks. Native import initialization precedes all these
+stages; loader/runtime work before the first diagnostic import is outside them.
+
+=just bench-catalog-authorization= uses the same target's =stages-authorized=
+mode. It first forces existing proof-bound response thunks, records native
+wall/small-allocation observations, then invokes the unchanged publisher on
+those same Cases. This diagnostic moves authorization earlier and adds traversal
+and counter overhead; its residual publication time is not an exact subtraction
+from ordinary latency. All 1292 typed Cases are traversed per pass: 1280 main
+replay rows and 12 separately replayed schema-evolution rows. Complete production
+wire equality is still required. No authorization decision cache is introduced.
+
+The existing Rust =benchmark-catalog= mode owns SDK parsing, strict validation,
+independent text replay, request preparation and serialization of the same complete
+catalog. Its seven stage observations per sample now also emit =measurement:=
+lines, after all timed spans. JSON observations and original fixed counters remain.
+Python supplies only external process/resource observations. CI publishes native
+logs and observation files directly. Additional tar.gz evidence bundles are not a
+benchmark entrypoint or a required deliverable; no new archival step is introduced.
+
+Schema source identity now travels through one immutable owner from the source
+table through finite-use planning, typed manifest and SDK preparation. Native
+counters still require every original first parse, strict validation and both
+authorizers. Shared ownership alone is not evidence of a timing or RSS gain;
+retain all fixed samples and byte-identical control images when interpreting it.
+
+SDK first parsing uses public string entrypoints. Exact source encoding now
+uses the standard serializer in a stack-only sizing pass and one exact-capacity
+output pass, with bytewise equivalence controls; it retains no extra Entity wire. Schema wire remains shared by
+its existing immutable owner; Entity wire is temporary and drops on parsing,
+while the existing one-slot cache retains the prepared SDK Entities. Source-table
+uniqueness uses a temporary borrowed exact-source hash index, with full equality
+on hash collisions. Lower retention can increase total encoding allocations;
+report both rather than treating a requested peak decrease as an OS RSS win.
+
+=schema_parse_calls= and =entity_parse_calls= count logical source preparations;
+=schema_diagnostic_reparses= and =entity_diagnostic_reparses= expose extra
+original-Value parses used to retain exact rejection diagnostics. Valid actual
+catalog guards require both reparse counters zero. Instrumented allocation totals
+and peaks, ordinary OS RSS and complete-process timings remain separate.
+
+* Generated measurements and CI artifacts
+
+Write measurement logs, raw stdout/stderr, CSV and resource receipts under ignored
+=.lake/build/= or =$RUNNER_TEMP=. Keep workloads, expected test fixtures and short
+audit conclusions in Git. Do not commit generated result tables in =docs/=.
+CI uploads native receipts and logs even after a failed check. Download from the
+run's Artifacts section or use:
+
+#+begin_src sh
+gh run download RUN_ID --repo hardenedlinux/cedar-poo-spec --name native-evidence-lean
+gh run download RUN_ID --repo hardenedlinux/cedar-poo-spec --name native-evidence-cedar-conformance
+#+end_src
+
+Availability follows the repository's configured retention. Download evidence
+needed for longer term comparisons before expiry. Source/executable hashes,
+failed controls and ordinary/instrumented scope must stay attached to receipts.
+An absent artifact is unavailable evidence.
+
+The existing launch observer also retains raw stderr byte offsets and per-line
+arrival clocks. Its reader must drain while the owned child is alive, preserve
+partial/non-UTF8 final lines, and stop before qualification. These clocks are
+parent observation upper bounds, not the child's write or syscall timestamps.
+They can bracket loader diagnostics without changing the native workloads.
+The 120-second child deadline and separate sampler cleanup budget remain fixed.
+
+The existing =just bench-dataflow-lifecycle ARTIFACTS OUTPUT BASELINE= entrypoint
+now invokes =python -m cedar_poo_py_test.dataflow_lifecycle= in the testing
+package. =Benchmarks/= contains Lean workloads and their documentation/recipes;
+external observation belongs to the existing Python testing package. There is
+no compatibility runner at the old =Benchmarks/DataflowLifecycle.py= path.
+
+The 62 generated CSV/JSON files formerly in =docs/= were removed from the current
+source tree. Historical audit links are pinned to their final snapshot,
+=d182c73f1aefc39811a4694b06a5a69cb45ef388=; history was not rewritten. Retrieve an
+old receipt into an ignored directory, for example:
+
+#+begin_src sh
+mkdir -p .lake/build/historical-evidence
+git show d182c73f1aefc39811a4694b06a5a69cb45ef388:docs/native-c4-preparation-lifecycle.json > .lake/build/historical-evidence/native-c4-preparation-lifecycle.json
+#+end_src
+
+Those historical macOS observations are not artifacts from a newer Ubuntu run.
+Packaging or output-format changes are not new performance measurements.
+
 * Scope
 
 Benchmarks measure cost without defining the public scenario or a correctness
@@ -11,3 +172,178 @@ validation for a generated policy set; its static proof claims are checked by
 #+begin_src sh
 just bench-policy-reuse
 #+end_src
+
+* Native input and resource boundaries
+
+The catalog's =EntryProducer= stores the actual typed Program/Compilation value
+and its interpreter. Native execution uses the same parameterized public Case
+factory, rather than a closed Unit wrapper whose computation can be extracted
+into module initialization. Program-dependent verification functions remain
+proved/tested but no longer run merely because their example module is imported.
+Other static model/data computations and Lean's core initialization remain.
+
+Darwin diagnostic memory records retain raw =proc_taskinfo= CPU, fault and thread
+counters alongside resident/virtual bytes, using the installed public SDK ABI.
+Raw CPU counters are not silently converted to wall-clock nanoseconds. A bounded
+owned-process identity observation uses public =proc_pid_rusage= V0 and
+=proc_pidpath=. Its executable UUID/start clock are kernel observations, distinct
+from =sample='s image list. Read failures and unsupported platforms stay explicit;
+no sampling interval, execution deadline or cleanup budget is widened.
+
+The same launcher offers opt-in =--thread-states= on Darwin. It reads public
+=PROC_PIDLISTTHREADS= handles and =PROC_PIDTHREADINFO= scheduler states using the
+installed SDK layout. This is a separate instrumented cohort; default observation
+is unchanged. Raw thread CPU counters, short reads, exited threads and possible
+64-handle truncation remain explicit. A handle is not a unique thread ID.
+=TH_STATE_WAITING= distinguishes a sampled waiting thread from a runnable one;
+it identifies neither a kernel wait event nor a responsible security service.
+No administrator privilege or signing/security changes are required for the
+owned-child API. See [[https://github.com/apple-oss-distributions/xnu/blob/main/bsd/kern/proc_info.c][Apple's proc_info implementation]] for the public read boundary.
+
+* Native complete-catalog replay
+
+=just bench-functional-catalog= first runs =check-functional-catalog= and its
+artifact/negative-control gates. It then builds the release Rust bridge and
+writes =.lake/build/functional-native-benchmark.json=: one complete warmup and
+three fixed samples, each with all 1280 Cedar rows and 2560 compiled/rendered
+authorization calls. Every measured output equals the complete ordinary replay.
+Strict schema/revision/request/entity preparation, actual authorization and JSON
+transport serialization have separate observations. Overall replay also includes
+hashes, diagnostics and cross-artifact checks. Prepared-revision counts are per
+manifest; they do not imply cross-source or cross-schema cache reuse. No duration
+threshold, increased execution ceiling or build-job override is used.
+
+* Native Functional preparation and reuse
+
+=just bench-functional-native= builds the =functionalReuseNative= Lake executable
+from the same =Benchmarks.FunctionalReuse= source as =bench-functional-reuse=. No
+parallel implementation or substitute fixture is used. Warmup/sample/read counts,
+changing facts, checksums, same-root hits and alternating-root misses remain
+identical. Execution has the same 120-second ceiling; elaboration's memory/tick
+settings remain separate. CI runs direct and externally observed probes. A historical macOS observation measured
+22-49 ms cold versus 1.0-6.4 ms with one slot for 128 same-root reads; alternating
+roots had zero hits and were slower with one slot in that run. This qualifies
+native execution and documents the churn cost, rather than asserting a general
+speedup, process-RSS bound or hardware-independent latency guarantee.
+
+The native gate also runs =objectProfilesNative= using the same nine-family
+Contract check inventory as [[file:../Tests/Functional/Profiles.lean][the Lean tests]]. It must pass every public-getter check and exit naturally.
+
+* Complete prepared-resource acceptance
+
+=bench-functional-native= now includes nine-family accepted/forged/missing batch
+projection measurements and actual 8/32/128-root lookup scaling. Each measured
+operation constructs fresh inputs and forces its result before ending timing.
+Native process identity, exit status and peak RSS are collected by the existing
+Python testing package; heartbeat counters are reported with their Lean units.
+Selected-family runs include shared executable startup/fixture state, so their
+RSS is not attributed exclusively to one family's object heap.
+
+=bench-functional-allocation= depends on the full ordinary catalog benchmark,
+then runs a separately compiled allocation-instrumented release bridge. Its
+three complete outputs still match ordinary replay. JSON source loads must equal
+prepared revisions; both authorizers and all old mutation tests remain gates.
+Instrumented durations are not ordinary latency measurements. See the
+[[file:../docs/functional-coverage.org][coverage and resource matrix]] for ownership and measurement limits.
+
+* A-D local native observations (2026-10-30)
+
+macOS arm64, fixed 128 fresh valid objects per sample, three samples per family.
+Times below are per-family sample medians; heartbeat deltas are Lean current-thread
+small-allocation counts per sample, not bytes. Rust acceptance was also running on
+this host; these observations are not isolated throughput qualifications.
+
+| Family | Per-field ms | Shared-session ms | Per-field small allocations | Shared small allocations |
+|--------+--------------+-------------------+-----------------------------+--------------------------|
+| banking | 1.018 | 0.690 | 36736 | 26880 |
+| controller | 3.374 | 1.588 | 136832 | 64384 |
+| disclosure | 4.931 | 2.203 | 217088 | 89728 |
+| handoff | 2.241 | 1.507 | 53632 | 33536 |
+| lineage | 1.614 | 1.273 | 66176 | 54272 |
+| location | 2.459 | 1.221 | 99712 | 48384 |
+| policy | 0.955 | 0.683 | 38912 | 29056 |
+| protection | 2.659 | 1.328 | 102656 | 51328 |
+| source | 0.895 | 0.621 | 36736 | 26880 |
+
+All 81 accepted/forged/missing measurements passed, plus nine independently
+selected-family processes. Those selected processes observed 40.86-41.04 MB
+OS high-water RSS including the shared startup/check inventory. Native root
+preparation for 8/32/128 roots took 0.102/0.474/3.752 ms; 128 last-root
+lookups took 10.7/15.4/40.3 microseconds. The root counts also matched the
+kernel-checked retained-cardinality law. This does not establish arbitrary-scale
+lookup complexity or a memory bound.
+
+Same-host release comparison against pre-A-D commit
+ =3f8161bcfbf514bb0c3d38f8212e3de510ebe543= used the exact same emitted
+catalog, compiler/dependency pins, fixed warmup and three samples. Baseline ran
+before current, once each; no randomized-order or cross-host claim follows.
+Project-package release artifacts were rebuilt after detecting a shared-target
+baseline metadata collision; the values below come from the corrected binaries.
+Complete =replay-catalog= output bytes were identical.
+
+| Build | Three replay samples (ms) | Process peak RSS (MB, decimal) |
+|-------+---------------------------+--------------------------------|
+| baseline | 518.23 / 516.89 / 509.14 | 232.34 |
+| current | 497.59 / 495.53 / 495.51 | 130.50 |
+
+Baseline executable SHA-256:
+=a2fea80c84908105db32240fa7340994f6750a1a49a389dcb88d10bc3ac31b23=.
+Current ordinary executable SHA-256:
+=34867485eed0679ad6859b7c7ba451143d517999773ed96deb0bb57ce653c7e4=.
+
+Every current sample retained 1280 rows, 2560 authorization calls, 221 prepared
+revisions and exactly 221 JSON source-policy loads. Separate instrumented
+samples observed 6,870,331-6,870,335 successful allocation requests and about
+1.222 GB cumulatively requested per replay. Process-wide requested-live peak
+was about 102.02 MB; instrumented OS RSS was 129.84 MB. Requested bytes are
+cumulative traffic, not simultaneous live memory, and the requested-live high
+water mark is not an OS RSS bound. Allocation instrumentation uses a different
+executable and does not qualify the ordinary latency table.
+
+* Lifecycle follow-up
+
+The [[file:../docs/native-performance-plan.org][native lifecycle audit]] supersedes interpreting the single earlier
+process pair as a repeatable regression. The benchmark now emits =lifecycle=
+and per-sample =catalog= stages/entry coverage, and measures explicit cleanup.
+OS elapsed minus the measured body is a combined external residual, not startup
+alone. Fixed ordinary and allocation recipes retain these fields in CI output.
+
+* P0-P2 shared native preparation
+
+The [[file:../docs/native-preparation-acceptance.org][integrated acceptance report]] records invocation/schema-bound Entities
+reuse, proved fused Contract reports, canonical hashing, full lifecycle/CPU/RSS
+evidence and all-domain closure. Requests/decisions are never cached.
+
+The [[file:../docs/native-performance-next.org][first-file launch attribution and next integrated plan]] separates matched macOS
+execution-assessment waits from remaining shared runtime and object allocation
+costs, with all 51 entries retained in one acceptance unit.
+
+The [[file:../docs/native-revision-acceptance.org][shared revision and typed-object acceptance]] records retained canonical
+rendering, proved static Functional provider selection, root diagnostic traversal,
+and corrected Cargo cache ownership with complete-domain resource evidence.
+
+The [[file:../docs/native-dataflow-acceptance.org][materialized-object lifecycle study]] supersedes interpreting the old
+memoized-object timings as the new algorithm's application performance.
+=just bench-dataflow-lifecycle ARTIFACTS OUTPUT= runs fixed alternating complete
+native cohorts and separate fresh-file observations through existing process
+resource recording. The baseline must supply the documented immutable binaries
+and =baseline-identities.json=. Semantic ownership stays in Lean/Rust; the Python
+driver only coordinates processes, artifact hashes, wire-byte comparisons and
+OS resource receipts. No timed result changes an admission threshold.
+
+* Real catalog startup and transport phases
+
+=just bench-catalog-launch NEW_DIRECTORY= runs two fresh files and three invocations
+per file for each actual Lean/Rust full-catalog diagnostic. =ManifestLifecycle.lean=
+imports the same =Examples.ManifestCatalog= implementation as the ordinary manifest
+entrypoint, with timing dependencies isolated to the diagnostic executable. The
+existing Rust launch example invokes the real CLI. Complete output bytes must match
+the already accepted ordinary catalog and receipts. PID/exit, before-main time,
+phase stderr and child OS usage remain separate from ordinary latency acceptance.
+See [[file:../docs/native-dataflow-acceptance.org][complete lifecycle evidence]] for the fixed ordinary process cohort.
+
+=just bench-catalog-inode ANOTHER_NEW_DIRECTORY= follows that recipe with two
+new hardlink paths sharing the source inode. It tests file identity separately
+from pathname and content; it changes no OS policy. Lean's first diagnostic import
+records the span of subsequent module initialization before main. Generated native
+initializer order must be checked before attributing that span to imported modules.

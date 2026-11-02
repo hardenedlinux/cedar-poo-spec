@@ -26,21 +26,23 @@ def obligation (owner : Owner) : Obligation Owner Value where
 def claimsObligation : Obligation Owner Value := obligation .claims
 def bankObligation : Obligation Owner Value := obligation .bank
 
-def baseline : ProofObject Owner Value where
+def baseline
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.LakehouseGatewayExample.model CedarPooSpec.LakehouseGatewayExample.schema × CedarPooSpec.Functional.Program CedarPooSpec.MultiAccountBankingExample.model CedarPooSpec.MultiAccountBankingExample.schema :=
+      (CedarPooSpec.LakehouseGatewayExample.program, CedarPooSpec.MultiAccountBankingExample.program)) : ProofObject Owner Value where
   state := fun
     | .claims =>
-        CedarPooSpec.LakehouseGatewayExample.decideAt "FailClosed"
+        (CedarPooSpec.LakehouseGatewayExample.decideAt (programContext := programContext.1)) "FailClosed"
           (CedarPooSpec.LakehouseGatewayExample.request
             CedarPooSpec.LakehouseGatewayExample.adjusterUS
             CedarPooSpec.LakehouseGatewayExample.queryClaims (some "US")) ==
           some .allow &&
-        CedarPooSpec.LakehouseGatewayExample.decideAt "FailClosed"
+        (CedarPooSpec.LakehouseGatewayExample.decideAt (programContext := programContext.1)) "FailClosed"
           (CedarPooSpec.LakehouseGatewayExample.request
             CedarPooSpec.LakehouseGatewayExample.adjusterUS
             CedarPooSpec.LakehouseGatewayExample.claimDetails (some "US")) ==
           some .allow
     | .bank =>
-        CedarPooSpec.MultiAccountBankingLineage.plannedRouteAllowed
+        (CedarPooSpec.MultiAccountBankingLineage.plannedRouteAllowed (programContext := programContext.2))
           "SourceM2M" "OwnerCombined"
   obligations := [claimsObligation, bankObligation]
 
@@ -67,9 +69,11 @@ theorem baselineCertificate : Certificate baseline := by
 
 /-- The patch value comes from the actual banking route under its incident
     overlay, rather than an invented Boolean flag. -/
-def bankPause : Patch Owner Value :=
+def bankPause
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.MultiAccountBankingExample.model CedarPooSpec.MultiAccountBankingExample.schema :=
+      CedarPooSpec.MultiAccountBankingExample.program) : Patch Owner Value :=
   Patch.set .bank
-    (CedarPooSpec.MultiAccountBankingLineage.plannedRouteAllowed
+    ((CedarPooSpec.MultiAccountBankingLineage.plannedRouteAllowed (programContext := programContext))
       "SourceM2M" "TransferPaused")
 
 theorem claimsUnaffected : unaffected claimsObligation bankPause := by

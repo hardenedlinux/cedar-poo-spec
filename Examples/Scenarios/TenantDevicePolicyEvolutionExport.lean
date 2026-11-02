@@ -1,3 +1,4 @@
+import CedarPooSpec.Functional.Capabilities
 import Examples.Scenarios.TenantDevicePolicyEvolution
 import CedarPooSpec.PolicyJson
 
@@ -7,10 +8,12 @@ namespace CedarPooSpec.TenantDevicePolicyEvolutionExport
 
 open CedarPooSpec.TenantDeviceAuthorizationExample
 
-def manifest : Except String Lean.Json := do
+def manifest
+    (owner : CedarPooSpec.Functional.Program CedarPooSpec.TenantDeviceAuthorizationExample.model CedarPooSpec.TenantDeviceAuthorizationExample.schema :=
+      CedarPooSpec.TenantDeviceAuthorizationExample.program) : Except String CedarPooSpec.Transport.Manifest := do
   let rows ← expectedDecisions.zipIdx.mapM fun ((root, req, _), index) =>
-    CedarPooSpec.PolicyJson.authorizationCase
-      s!"{root.toLower}-case-{index}" root.toLower model root req entities
-  return Lean.Json.mkObj [("cases", Lean.toJson rows)]
+    owner.case
+        s!"{root.toLower}-case-{index}" root.toLower root req entities
+  return { cases := rows }
 
 end CedarPooSpec.TenantDevicePolicyEvolutionExport

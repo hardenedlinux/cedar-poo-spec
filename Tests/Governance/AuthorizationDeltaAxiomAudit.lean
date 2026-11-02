@@ -67,7 +67,7 @@ private def sameNames (actual : Array Name) (expected : List String) : Bool :=
 
 run_cmd do
   let core ← collectAxioms
-    ``CedarPooSpec.AuthorizationDeltaBooleanCore.unsatOfShapeAndWellFormedAtoms
+    ``CedarPooSpec.Authorization.Delta.BooleanCore.unsatOfShapeAndWellFormedAtoms
   unless sameNames core standardAxioms do
     throwError "Boolean core axiom boundary changed: {core}"
 

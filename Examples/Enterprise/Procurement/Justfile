@@ -4,6 +4,6 @@ purchase-approval:
     timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 Examples/Enterprise/Procurement/PurchaseApproval.lean
 
 delegated-approval:
-    mkdir -p .lake/build/lib/lean/Examples/Enterprise/Procurement
-    timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 -o .lake/build/lib/lean/Examples/Enterprise/Procurement/PurchaseApproval.olean Examples/Enterprise/Procurement/PurchaseApproval.lean
+    lake build Examples.Enterprise.Procurement.PurchaseApproval
+    timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 Examples/Enterprise/Procurement/PurchaseApproval.lean
     timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 Examples/Enterprise/Procurement/DelegatedApproval.lean

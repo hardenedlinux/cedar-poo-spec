@@ -9,3 +9,8 @@ rust/target/
 python/.venv/
 __pycache__/
 *.pyc
+
+# Generated benchmark observations belong in ignored build directories / CI artifacts.
+/docs/native-*.csv
+/docs/native-*.json
+/docs/lean-cache-evidence.json

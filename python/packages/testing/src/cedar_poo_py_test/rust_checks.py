@@ -8,6 +8,15 @@ import subprocess
 COMMERCE = (None, "projection", "admission", "acceptance", "ap2-receipt", "ap2-coordination")
 
 
+def dependency_names(flat_tree: str) -> set[str]:
+    """Package names from `cargo tree --prefix none --format {p}`.
+
+    Cargo package names cannot contain whitespace. Source paths are diagnostic
+    suffixes, never dependency identities.
+    """
+    return {line.split()[0] for line in flat_tree.splitlines() if line.strip()}
+
+
 def run(repository: Path) -> None:
     repository = repository.resolve()
     base = ["--locked", "--manifest-path", "Cargo.toml"]
@@ -53,17 +62,18 @@ def run(repository: Path) -> None:
             args += ["--features", feature]
         print(f"dependency boundary: {package}/{feature or 'default'}", flush=True)
         tree = subprocess.check_output(
-            ["cargo", "tree", *base, *args, "-e", "normal"], cwd=repository, text=True,
+            ["cargo", "tree", *base, *args, "-e", "normal", "--prefix", "none", "--format", "{p}"], cwd=repository, text=True,
         )
         (build / f"{package}-{feature or 'default'}-tree.txt").write_text(tree)
-        if "cedar-policy" in tree:
+        dependencies = dependency_names(tree)
+        if any(name.startswith("cedar-policy") for name in dependencies):
             raise ValueError(f"{package}/{feature} unexpectedly depends on Cedar runtime")
         expects_p256 = package.startswith("cedar-poo-commerce") and (
             package != "cedar-poo-commerce-mandate" or feature == "ap2-checkout"
         )
-        if ("p256 v" in tree) != expects_p256:
+        if ("p256" in dependencies) != expects_p256:
             raise ValueError(f"{package}/{feature} has an unexpected P-256 dependency")
-        if "mrr-data" in tree:
+        if any(name.startswith("mrr-data") for name in dependencies):
             raise ValueError(f"{package}/{feature} imports MRR")
         cargo("clippy", *args, "--all-targets", "--", "-D", "warnings")
 

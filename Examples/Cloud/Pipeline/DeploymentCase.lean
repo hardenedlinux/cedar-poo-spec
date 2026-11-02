@@ -1,3 +1,4 @@
+import CedarPooSpec.Functional.Capabilities
 import Examples.Cloud.Pipeline.GoogleThreatCase
 import CedarPooSpec.Cloud.Pipeline.DeploymentBoundary
 
@@ -101,6 +102,11 @@ def modelResult : Except LeanPoo.Object.CombineError Model := do
 
 def model : Model := modelResult.toOption.get (by native_decide)
 
+/-- Exact checked policy snapshots; actual requests/entities remain per-call. -/
+def program : CedarPooSpec.Functional.Program model schema :=
+  CedarPooSpec.Functional.deferProgram CedarPooSpec.Functional.standard model schema
+    (model.modules.map (·.name)) (by native_decide)
+
 inductive Root where
   | ready
   | incident
@@ -112,8 +118,11 @@ def Root.name : Root → String
   | .incident => "DeploymentIncident"
   | .recovered => "DeploymentRecovered"
 
-def publish (root : Root) :=
-  CedarPooSpec.PolicyJson.publish model root.name schema
+def publish
+     (root : Root)
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.Cloud.Pipeline.DeploymentCase.model CedarPooSpec.Cloud.Pipeline.DeploymentCase.schema :=
+      CedarPooSpec.Cloud.Pipeline.DeploymentCase.program) :=
+  programContext.publish root.name
 
 structure Choice where
   name : String
@@ -142,24 +151,38 @@ def deployRequest (choice : Choice) : Request :=
     ("policyEnforced", .prim (.bool choice.policyEnforced)),
     ("incidentActive", .prim (.bool choice.pipeline.incidentActive))]⟩
 
-def allowed (root : String) (request : Request) : Bool :=
-  match model.compile root with
+def allowed
+     (root : String) (request : Request)
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.Cloud.Pipeline.DeploymentCase.model CedarPooSpec.Cloud.Pipeline.DeploymentCase.schema :=
+      CedarPooSpec.Cloud.Pipeline.DeploymentCase.program) : Bool :=
+  match programContext.authorize root [request] entities with
   | .error _ => false
-  | .ok policies =>
-      let response := isAuthorized request entities policies
-      response.decision == .allow && response.erroringPolicies.isEmpty
+  | .ok receipt => receipt.allowed
 
-def promotionAllowed (choice : Choice) : Bool :=
-  allowed choice.root
+def promotionAllowed
+     (choice : Choice)
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.Cloud.Pipeline.DeploymentCase.model CedarPooSpec.Cloud.Pipeline.DeploymentCase.schema :=
+      CedarPooSpec.Cloud.Pipeline.DeploymentCase.program) : Bool :=
+  (allowed (programContext := programContext)) choice.root
     (GoogleThreatCase.request GoogleThreatCase.candidate choice.pipeline)
 
-def deploymentAllowed (choice : Choice) : Bool :=
-  allowed choice.root (deployRequest choice)
+def deploymentAllowed
+     (choice : Choice)
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.Cloud.Pipeline.DeploymentCase.model CedarPooSpec.Cloud.Pipeline.DeploymentCase.schema :=
+      CedarPooSpec.Cloud.Pipeline.DeploymentCase.program) : Bool :=
+  (allowed (programContext := programContext)) choice.root (deployRequest choice)
 
 /-- Both decisions must hold for the sample release; the Host still owns
     atomic redemption and actual deployment enforcement. -/
-def admitted (choice : Choice) : Bool :=
-  promotionAllowed choice && deploymentAllowed choice
+def admitted
+     (choice : Choice)
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.Cloud.Pipeline.DeploymentCase.model CedarPooSpec.Cloud.Pipeline.DeploymentCase.schema :=
+      CedarPooSpec.Cloud.Pipeline.DeploymentCase.program) : Bool :=
+  match programContext.authorize choice.root
+      [GoogleThreatCase.request GoogleThreatCase.candidate choice.pipeline,
+       deployRequest choice] entities with
+  | .error _ => false
+  | .ok receipt => receipt.allowed
 
 def choices : List Choice := [
   { name := "ready", expectedPromotion := true, expectedDeployment := true },

@@ -1,0 +1,10 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: Apache-2.0
+
+#+title: Renderer package source
+
+This is the unmodified bun pm pack output of packages/render at
+https://github.com/hardenedlinux/deterministic-engineering/commit/d000902e6321dd227393bcf206052e82531c4188
+Package version is read from its own package.json; no version is forked here.
+All TypeScript sources, LGPL-2.1-or-later license and font notices are included.
+Archive SHA256: abd7bcba27ba23d0260c65534c897e902fd4c814c1e4fbf8704c87429804b44c

@@ -1,0 +1,111 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: Apache-2.0
+
+vars: {d2-config: {data: {figure: |json
+{
+  "purpose": "architecture",
+  "language": "en",
+  "width": 1280,
+  "primary": "purpose",
+  "themes": [
+    "sketchbook",
+    "compact"
+  ],
+  "icons": [
+    "engineering"
+  ],
+  "basis": {
+    "captureRef": "development-source-observation",
+    "modelRefs": [],
+    "obligationRefs": [],
+    "evidenceRefs": []
+  },
+  "title": "Zero Trust: conditional model proofs",
+  "kind": "proof-reading-map",
+  "questions": [
+    {
+      "ref": "purpose",
+      "text": "Which premises do the model laws preserve or reject?",
+      "focusRefs": [
+        "sysml",
+        "core"
+      ]
+    }
+  ],
+  "references": {
+    "source": "dev/d2/zero-trust-model-proofs.d2",
+    "sysml": "dev/sysml/zero-trust-proofs.sysml",
+    "core": "CedarPooSpec/ZeroTrust/Model.lean",
+    "requiredSource": "CedarPooSpec/ZeroTrust/Composition.lean",
+    "refinementSource": "CedarPooSpec/ZeroTrust/Composition.lean",
+    "observedSource": "CedarPooSpec/ZeroTrust/Continuous.lean",
+    "mediatedSource": "CedarPooSpec/ZeroTrust/Continuous.lean",
+    "usageSource": "CedarPooSpec/ZeroTrust/UsageControl.lean",
+    "recoverySource": "CedarPooSpec/ZeroTrust/UsageControl.lean",
+    "meaningsSource": "CedarPooSpec/ZeroTrust/Model.lean"
+  },
+  "copy": {
+    "description": "Definitions, premises, kernel laws and counterexamples are distinct. Each card names its actual Lean declaration.",
+    "status": "Authored proof-reading map. Arrows label premises or lemma use; a conditional theorem is not native Host enforcement."
+  },
+  "presentation": {
+    "options": {
+      "elk.direction": "DOWN",
+      "elk.layered.spacing.nodeNodeBetweenLayers": "48"
+    },
+    "edgeLabels": true,
+    "legend": true
+  },
+  "sysml": {
+    "source": "dev/sysml/zero-trust-proofs.sysml",
+    "view": "ZeroTrustProofs::model",
+    "bindings": {
+      "required": {
+        "name": "ZeroTrustProofs::required",
+        "icon": "library"
+      },
+      "refinement": {
+        "name": "ZeroTrustProofs::refinement",
+        "icon": "evidence"
+      },
+      "observed": {
+        "name": "ZeroTrustProofs::observed",
+        "icon": "evidence"
+      },
+      "mediated": {
+        "name": "ZeroTrustProofs::mediated",
+        "icon": "evidence"
+      },
+      "usage": {
+        "name": "ZeroTrustProofs::usage",
+        "icon": "evidence"
+      },
+      "recovery": {
+        "name": "ZeroTrustProofs::recovery",
+        "icon": "evidence"
+      },
+      "meanings": {
+        "name": "ZeroTrustProofs::meanings",
+        "icon": "obligation"
+      }
+    }
+  },
+  "proofs": {
+    "namespace": "ZeroTrustProofs"
+  }
+}
+|
+}}}
+required: "Core requirement [definition]\nauthn / authz / current\ncommitted / unknown retained\nnot revoked / mediated"
+refinement: "Strengthening [kernel law]\nwith_requirement_preserves_\nframework\naccepted strengthened framework\nimplies the original full core"
+observed: "Observation [kernel law]\nchanged_generation_blocks\ngiven an atObservation binding\nchanged generation blocks use"
+mediated: "Every effect [kernel law]\neffect_step_rechecks\ngiven an accepted MediatedStep\nthen: fresh source-state conditions"
+usage: "Use transition [kernel law]\nusage_retains_core\ngiven accepted UsageControl.step\nthen: core.required at source state"
+recovery: "After recovery [kernel law]\nusage_rechecks_after_recovery\ngiven recovery AND ongoing admission\nthen: current / committed / unknown"
+meanings: "Supplied meanings [premises]\nactual identity / current facts\ncommit / unknown / mediation\nmodel proofs do not implement IO"
+required -> refinement: "Definition used by conditional theorem"
+required -> observed: "Add actual observation equality"
+required -> mediated: "MediatedStep requires the core"
+mediated -> usage: "UsageControl.step includes MediatedStep"
+usage -> recovery: "usage_retains_core is used in this proof"
+meanings -> required: "Application supplies predicate meanings"

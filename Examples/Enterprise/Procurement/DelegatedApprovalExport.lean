@@ -1,13 +1,15 @@
+import CedarPooSpec.Functional.Capabilities
 import Examples.Enterprise.Procurement.DelegatedApproval
 
 namespace CedarPooSpec.DelegatedApprovalExport
 
 open CedarPooSpec.DelegatedApprovalExample
 
-def manifest : Except String Lean.Json := do
+def manifest
+    (owner : CedarPooSpec.Functional.Program CedarPooSpec.DelegatedApprovalExample.delegatedModel CedarPooSpec.DelegatedApprovalExample.delegatedSchema :=
+      CedarPooSpec.DelegatedApprovalExample.delegatedProgram) : Except String CedarPooSpec.Transport.Manifest := do
   let exported ← delegatedCases.mapM fun (name, root, req, _) =>
-    CedarPooSpec.PolicyJson.authorizationCase name root.toLower delegatedModel
-      root req delegatedEntities
-  return Lean.Json.mkObj [("cases", Lean.toJson exported)]
+    owner.case name root.toLower root req delegatedEntities
+  return { cases := exported }
 
 end CedarPooSpec.DelegatedApprovalExport

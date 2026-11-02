@@ -103,7 +103,7 @@ not hidden session states.
 * Authorization delta over a finite session trace
 
 [[file:AuthorizationTraceDelta.lean][AuthorizationTraceDelta.lean]] uses the
-public [[file:../../../../CedarPooSpec/AuthorizationDeltaTrace.lean][trace-delta API]] to replay the *same proposed actions* under =Base=
+public [[file:../../../../CedarPooSpec/Authorization/Delta/Trace.lean][trace-delta API]] to replay the *same proposed actions* under =Base=
 and =Integrated=. Each side carries its own state forward only after an
 error-free Cedar Allow. A sensitive read followed by external send changes
 =[Allow, Allow]= to =[Allow, Deny]=. In a separate four-proposal trace, the

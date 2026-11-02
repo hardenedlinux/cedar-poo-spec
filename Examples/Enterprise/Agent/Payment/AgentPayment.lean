@@ -1,3 +1,4 @@
+import CedarPooSpec.Functional.Capabilities
 import Examples.Enterprise.Agent.Delegation.AgentDelegation
 
 /-!
@@ -95,6 +96,11 @@ def paymentModelResult : Except LeanPoo.C4.Error Model := do
 
 def paymentModel : Model := paymentModelResult.toOption.get (by native_decide)
 
+/-- Checked immutable policy context; current request inputs are supplied at consumption. -/
+protected def paymentProgram : CedarPooSpec.Functional.Program paymentModel paymentSchema :=
+  CedarPooSpec.Functional.deferProgram CedarPooSpec.Functional.standard
+    paymentModel paymentSchema (paymentModel.modules.map (·.name)) (by native_decide)
+
 /-- Inspect the compiled C4 slot at a revision boundary. `some none` is the
     explicit removal tombstone; Cedar publication still validates edit intent. -/
 def policySlot (root : String) (id : PolicyID) : Option (Option Policy) :=
@@ -116,12 +122,15 @@ def checks (root : String) (account origin : EntityUID) (requested : String) :
   ("FinanceTool", requestTool financeBot paymentTool),
   (root, paymentRequest account origin requested)]
 
-def authorizePayment (root : String) (account origin : EntityUID)
-    (requested : String) : Bool :=
-  match CedarPooSpec.CompoundAuthorization.authorizeLayers paymentModel
+def authorizePayment
+     (root : String) (account origin : EntityUID)
+    (requested : String)
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.AgentPaymentExample.paymentModel CedarPooSpec.AgentPaymentExample.paymentSchema :=
+      CedarPooSpec.AgentPaymentExample.paymentProgram) : Bool :=
+  match programContext.authorizeLayers
       (checks root account origin requested) paymentEntities with
   | .error _ => false
-  | .ok receipts => CedarPooSpec.CompoundAuthorization.layersAllowed receipts
+  | .ok receipts => CedarPooSpec.Authorization.Compound.layersAllowed receipts
 
 def cases : List (String × String × EntityUID × EntityUID × String × Bool) := [
   ("base-external-high-support", "PaymentBase", externalAccount, support, "500.0000", true),
@@ -141,17 +150,21 @@ def cases : List (String × String × EntityUID × EntityUID × String × Bool) 
   ("frozen-reserve-unaffected", "PaymentFrozen", reserveAccount, admin, "50.0000", true),
   ("restored-target", "PaymentRestored", approvedAccount, admin, "50.0000", true)]
 
-def casesExact : Bool := cases.all fun (_, root, account, origin, requested, expected) =>
-  authorizePayment root account origin requested == expected
+def casesExact
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.AgentPaymentExample.paymentModel CedarPooSpec.AgentPaymentExample.paymentSchema :=
+      CedarPooSpec.AgentPaymentExample.paymentProgram) : Bool := cases.all fun (_, root, account, origin, requested, expected) =>
+  (authorizePayment (programContext := programContext)) root account origin requested == expected
 
 theorem casesExactFully : casesExact = true := by native_decide
 
-def branchesNeedComposition : Bool :=
-  authorizePayment "PaymentAccount" approvedAccount support "500.0000" &&
-  authorizePayment "PaymentAmount" externalAccount admin "50.0000" &&
-  authorizePayment "PaymentOrigin" approvedAccount admin "500.0000" &&
-  !authorizePayment "PaymentGoverned" approvedAccount support "500.0000" &&
-  !authorizePayment "PaymentGoverned" externalAccount admin "50.0000"
+def branchesNeedComposition
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.AgentPaymentExample.paymentModel CedarPooSpec.AgentPaymentExample.paymentSchema :=
+      CedarPooSpec.AgentPaymentExample.paymentProgram) : Bool :=
+  (authorizePayment (programContext := programContext)) "PaymentAccount" approvedAccount support "500.0000" &&
+  (authorizePayment (programContext := programContext)) "PaymentAmount" externalAccount admin "50.0000" &&
+  (authorizePayment (programContext := programContext)) "PaymentOrigin" approvedAccount admin "500.0000" &&
+  !(authorizePayment (programContext := programContext)) "PaymentGoverned" approvedAccount support "500.0000" &&
+  !(authorizePayment (programContext := programContext)) "PaymentGoverned" externalAccount admin "50.0000"
 theorem branchesNeedCompositionFully : branchesNeedComposition = true := by
   native_decide
 
@@ -191,21 +204,24 @@ def malformedOriginRequest : Request :=
 def malformedChecks : List (String × Request) := [
   ("FinanceTool", requestTool financeBot paymentTool),
   ("PaymentGoverned", malformedOriginRequest)]
-def malformedOriginRejected : Bool :=
-  match CedarPooSpec.CompoundAuthorization.authorizeLayers paymentModel
-      malformedChecks paymentEntities with
+def malformedOriginRejected
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.AgentPaymentExample.paymentModel CedarPooSpec.AgentPaymentExample.paymentSchema :=
+      CedarPooSpec.AgentPaymentExample.paymentProgram) : Bool :=
+  match programContext.authorizeLayers malformedChecks paymentEntities with
   | .ok [toolLayer, paymentLayer] =>
       paymentLayer.response.decision == .allow &&
       !paymentLayer.response.erroringPolicies.isEmpty &&
-      !CedarPooSpec.CompoundAuthorization.layersAllowed [toolLayer, paymentLayer]
+      !CedarPooSpec.Authorization.Compound.layersAllowed [toolLayer, paymentLayer]
   | _ => false
 theorem malformedOriginRejectedFully : malformedOriginRejected = true := by
   native_decide
 
-def allRootsValidated : Bool :=
+def allRootsValidated
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.AgentPaymentExample.paymentModel CedarPooSpec.AgentPaymentExample.paymentSchema :=
+      CedarPooSpec.AgentPaymentExample.paymentProgram) : Bool :=
   ["FinanceTool", "PaymentBase", "PaymentAccount", "PaymentAmount",
     "PaymentOrigin", "PaymentGoverned", "PaymentFrozen", "PaymentRestored"].all
-    fun root => (CedarPooSpec.PolicyJson.publish paymentModel root paymentSchema).isOk
+    fun root => (programContext.publish root).isOk
 
 theorem allRootsValidatedFully : allRootsValidated = true := by native_decide
 

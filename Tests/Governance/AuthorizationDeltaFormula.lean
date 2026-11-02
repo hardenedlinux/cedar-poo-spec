@@ -1,9 +1,9 @@
-import CedarPooSpec.AuthorizationDeltaOperationalExactProof
-import CedarPooSpec.AuthorizationDeltaBooleanCore
+import CedarPooSpec.Authorization.Delta.OperationalExactProof
+import CedarPooSpec.Authorization.Delta.BooleanCore
 import Examples.Governance.TicketSharing
 
 open Cedar.Spec Cedar.Validation Cedar.SymCC
-open CedarPooSpec.AuthorizationDelta
+open CedarPooSpec.Authorization.Delta
 open CedarPooSpec.TicketSharingExample
 
 namespace CedarPooSpec.AuthorizationDeltaFixture
@@ -159,10 +159,10 @@ private theorem tdWF : td.WellFormed symEnv.entities ∧ td.typeOf = .bool := by
     proofs and reusable Boolean implication are kernel checked. Construction
     of the compiled revision and exact query shape still uses `native_decide`. -/
 theorem exactUnsat : symEnv ⊭ asserts :=
-  CedarPooSpec.AuthorizationDeltaBooleanCore.unsatOfShapeAndWellFormedAtoms
+  CedarPooSpec.Authorization.Delta.BooleanCore.unsatOfShapeAndWellFormedAtoms
     symEnv asserts pb pa ra rb st td
     (by simpa only [formula, base, v2b, v2a, v1b, v1a,
-      CedarPooSpec.AuthorizationDeltaBooleanCore.formula] using exactQueryShape)
+      CedarPooSpec.Authorization.Delta.BooleanCore.formula] using exactQueryShape)
     pbWF paWF raWF rbWF stWF tdWF
 
 theorem singletonTypeEnvironment : schema.environments = [typeEnv] := by

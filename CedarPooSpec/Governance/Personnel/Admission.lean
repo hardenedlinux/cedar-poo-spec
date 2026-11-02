@@ -28,7 +28,7 @@ def authorizeAndObserve {Fact : Type} [BEq Fact]
     (boundary : KnowledgeScope.Boundary Fact)
     (ledger : KnowledgeScope.Ledger EntityUID) :
     Except AdmissionError
-      ((CedarPooSpec.CompoundAuthorization.Receipt model root
+      ((CedarPooSpec.Authorization.Compound.Receipt model root
         [operation.request] entities) × KnowledgeScope.Ledger EntityUID) := do
   let receipt ← (CedarPooSpec.Admission.BoundOperation.authorize operation
     actualEffect actualState model root entities).mapError .operation

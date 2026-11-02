@@ -1,16 +1,20 @@
+import CedarPooSpec.Functional.Capabilities
 import Examples.Governance.CountryApproval
 
 namespace CedarPooSpec.CountryApprovalExport
 
 open CedarPooSpec.CountryApprovalExample
 
-def rows : Except String (List Lean.Json) :=
+def rows
+    (owner : CedarPooSpec.Functional.Program CedarPooSpec.CountryApprovalExample.model CedarPooSpec.CountryApprovalExample.schema :=
+      CedarPooSpec.CountryApprovalExample.program) : Except String (List CedarPooSpec.Transport.Case) :=
   cases.mapM fun (name, root, req, _) =>
-    CedarPooSpec.PolicyJson.authorizationCase name root.toLower model
-      root req entities
+    owner.case name root.toLower root req entities
 
-def manifest : Except String Lean.Json := do
-  let exported ← rows
-  return Lean.Json.mkObj [("cases", Lean.toJson exported)]
+def manifest
+    (owner : CedarPooSpec.Functional.Program CedarPooSpec.CountryApprovalExample.model CedarPooSpec.CountryApprovalExample.schema :=
+      CedarPooSpec.CountryApprovalExample.program) : Except String CedarPooSpec.Transport.Manifest := do
+  let exported ← (rows (owner := owner))
+  return { cases := exported }
 
 end CedarPooSpec.CountryApprovalExport

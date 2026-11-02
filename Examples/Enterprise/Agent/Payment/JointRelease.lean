@@ -1,4 +1,5 @@
-import CedarPooSpec.AuthorizationDeltaRelease
+import CedarPooSpec.Functional.Capabilities
+import CedarPooSpec.Authorization.Delta.Release
 import CedarPooSpec.PolicyJson
 import Examples.Enterprise.Agent.Payment.AgentPayment
 
@@ -9,7 +10,7 @@ Each branch remains denied; their C4 mix creates an authorization gain.
 
 namespace CedarPooSpec.AgentPaymentJointRelease
 
-open Cedar.Spec CedarPooSpec.PolicyModules CedarPooSpec.AuthorizationDelta
+open Cedar.Spec CedarPooSpec.PolicyModules CedarPooSpec.Authorization.Delta
 open CedarPooSpec.AgentPaymentExample
 
 def riskHold : Policy := { frozenAccountVeto with id := "risk-payment-hold" }
@@ -25,9 +26,18 @@ def modelResult : Except LeanPoo.C4.Error Model := do
 
 def model : Model := modelResult.toOption.get (by native_decide)
 
-private def hasPolicy (root : String) (id : PolicyID) : Bool :=
-  match model.compile root with
-  | .ok policies => (policies.map Policy.id).contains id
+/-- Checked immutable policy context; current request inputs are supplied at consumption. -/
+protected def program : CedarPooSpec.Functional.Program model CedarPooSpec.AgentPaymentExample.paymentSchema :=
+  CedarPooSpec.Functional.deferProgram CedarPooSpec.Functional.standard
+    model CedarPooSpec.AgentPaymentExample.paymentSchema (model.modules.map (·.name)) (by native_decide)
+
+
+private def hasPolicy
+     (root : String) (id : PolicyID)
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.AgentPaymentJointRelease.model CedarPooSpec.AgentPaymentExample.paymentSchema :=
+      CedarPooSpec.AgentPaymentJointRelease.program) : Bool :=
+  match programContext.at root with
+  | .ok ready => (ready.checked.policies.map Policy.id).contains id
   | .error _ => false
 
 /-- The two native POO removals remain local, while C4 combines both in the
@@ -41,7 +51,9 @@ theorem compiledRoots :
     hasPolicy "JointRelease" complianceHold.id = false := by
   native_decide
 
-def run : IO Lean.Json := do
+def run
+    (programContext : CedarPooSpec.Functional.Program CedarPooSpec.AgentPaymentJointRelease.model CedarPooSpec.AgentPaymentExample.paymentSchema :=
+      CedarPooSpec.AgentPaymentJointRelease.program) : IO Lean.Json := do
   match ← analyzeModelInteraction model "DualHold" "RiskReleased"
       "ComplianceReleased" "PaymentFrozen" paymentSchema with
   | .error (.topology _) => pure ()
@@ -145,8 +157,7 @@ def run : IO Lean.Json := do
   let entities := gain.combined.witness.entities
   let mut cases := []
   for root in ["DualHold", "RiskReleased", "ComplianceReleased", "JointRelease"] do
-    let .ok receipt := CedarPooSpec.PolicyJson.authorizationCase root root model root
-        request entities
+    let .ok receipt := programContext.authorizationCase root root root request entities
       | throw (IO.userError s!"cannot export {root} Cedar replay")
     cases := cases ++ [receipt]
   return Lean.Json.mkObj [

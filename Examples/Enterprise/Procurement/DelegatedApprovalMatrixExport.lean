@@ -1,3 +1,4 @@
+import CedarPooSpec.Functional.Capabilities
 import Examples.Enterprise.Procurement.DelegatedApproval
 
 /-!
@@ -31,19 +32,21 @@ def cases : List (String × String × Request × Decision) := Id.run do
               expectedDecision root principal resource agent requested) :: rows
   return rows.reverse
 
-def exact : Bool := cases.all fun (_, root, req, expected) =>
-  match delegatedModel.compile root with
+def exact
+    (owner : CedarPooSpec.Functional.Program CedarPooSpec.DelegatedApprovalExample.delegatedModel CedarPooSpec.DelegatedApprovalExample.delegatedSchema :=
+      CedarPooSpec.DelegatedApprovalExample.delegatedProgram) : Bool := cases.all fun (_, root, req, expected) =>
+  match owner.response root req delegatedEntities with
   | .error _ => false
-  | .ok policies =>
-      let response := isAuthorized req delegatedEntities policies
+  | .ok response =>
       response.decision == expected && response.erroringPolicies.isEmpty
 
 theorem exactFully : exact = true := by native_decide
 
-def manifest : Except String Lean.Json := do
+def manifest
+    (owner : CedarPooSpec.Functional.Program CedarPooSpec.DelegatedApprovalExample.delegatedModel CedarPooSpec.DelegatedApprovalExample.delegatedSchema :=
+      CedarPooSpec.DelegatedApprovalExample.delegatedProgram) : Except String CedarPooSpec.Transport.Manifest := do
   let exported ← cases.mapM fun (name, root, req, _) =>
-    CedarPooSpec.PolicyJson.authorizationCase name root.toLower delegatedModel
-      root req delegatedEntities
-  return Lean.Json.mkObj [("cases", Lean.toJson exported)]
+    owner.case name root.toLower root req delegatedEntities
+  return { cases := exported }
 
 end CedarPooSpec.DelegatedApprovalMatrixExport

@@ -1,0 +1,98 @@
+// SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+// SPDX-License-Identifier: Apache-2.0
+// Authored proof-reading map, not an automatically extracted proof-term graph.
+package ZeroTrustProofs {
+ private import Views::*; private import ScalarValues::*;
+ part def Definition; part def KernelLaw; part def KernelCounterexample; part def HostPremise;
+ part required : Definition;
+ attribute requiredSymbol : String = "CedarPooSpec.ZeroTrust.Framework.required";
+ attribute requiredSource : String = "CedarPooSpec/ZeroTrust/Composition.lean";
+ part refinement : KernelLaw;
+ attribute refinementSymbol : String = "CedarPooSpec.ZeroTrust.with_requirement_preserves_framework";
+ attribute refinementSource : String = "CedarPooSpec/ZeroTrust/Composition.lean";
+ part observed : KernelLaw;
+ attribute observedSymbol : String = "CedarPooSpec.ZeroTrust.changed_generation_blocks";
+ attribute observedSource : String = "CedarPooSpec/ZeroTrust/Continuous.lean";
+ part mediated : KernelLaw;
+ attribute mediatedSymbol : String = "CedarPooSpec.ZeroTrust.effect_step_rechecks";
+ attribute mediatedSource : String = "CedarPooSpec/ZeroTrust/Continuous.lean";
+ part usage : KernelLaw;
+ attribute usageSymbol : String = "CedarPooSpec.ZeroTrust.usage_retains_core";
+ attribute usageSource : String = "CedarPooSpec/ZeroTrust/UsageControl.lean";
+ part recovery : KernelLaw;
+ attribute recoverySymbol : String = "CedarPooSpec.ZeroTrust.usage_rechecks_after_recovery";
+ attribute recoverySource : String = "CedarPooSpec/ZeroTrust/UsageControl.lean";
+ // Proof-term claims reference existing model declarations, not a second edge graph.
+ attribute recoveryUses : String[0..*] = ("ZeroTrustProofs::usage");
+ part meanings : HostPremise;
+ attribute meaningsSymbol : String = "CedarPooSpec.ZeroTrust.Framework";
+ attribute meaningsSource : String = "CedarPooSpec/ZeroTrust/Model.lean";
+ part profile : Definition;
+ attribute profileSymbol : String = "CedarPooSpec.ZeroTrust.ProfileObject.Profile";
+ attribute profileSource : String = "CedarPooSpec/ZeroTrust/ProfileObject.lean";
+ part session : Definition;
+ attribute sessionSymbol : String = "CedarPooSpec.ZeroTrust.ProfileObject.Session";
+ attribute sessionSource : String = "CedarPooSpec/ZeroTrust/ProfileObject.lean";
+ part counter : KernelCounterexample;
+ attribute counterSymbol : String = "CedarPooSpec.ZeroTrustObjectTest.raw_override_parent_weakening_counterexample";
+ attribute counterSource : String = "Tests/ZeroTrust/ProfileObject.lean";
+ part joined : Definition;
+ attribute joinedSymbol : String = "CedarPooSpec.ZeroTrust.ProfileObject.Composed.requirement";
+ attribute joinedSource : String = "CedarPooSpec/ZeroTrust/ProfileObject.lean";
+ part preserved : KernelLaw;
+ attribute preservedSymbol : String = "CedarPooSpec.ZeroTrust.ProfileObject.composed_preserves_actual_parent_and_original";
+ attribute preservedSource : String = "CedarPooSpec/ZeroTrust/ProfileObject.lean";
+ part prefix : HostPremise;
+ attribute prefixSymbol : String = "CedarPooSpec.Gateway.ZeroTrust.CommittedPrefix";
+ attribute prefixSource : String = "CedarPooSpec/Gateway/ZeroTrust.lean";
+ part continuing : KernelLaw;
+ attribute continuingSymbol : String = "CedarPooSpec.Gateway.ZeroTrust.continuing_objects_preserve_parent_and_consumption";
+ attribute continuingSource : String = "CedarPooSpec/Gateway/ZeroTrust.lean";
+ attribute continuingUses : String[0..*] = ("ZeroTrustProofs::preserved");
+ connection modelEdge0 connect required to refinement;
+ connection modelEdge1 connect required to observed;
+ connection modelEdge2 connect required to mediated;
+ connection modelEdge3 connect mediated to usage;
+ connection modelEdge4 connect usage to recovery;
+ connection modelEdge5 connect meanings to required;
+ view model {
+  expose required;
+  expose refinement;
+  expose observed;
+  expose mediated;
+  expose usage;
+  expose recovery;
+  expose meanings;
+  expose modelEdge0;
+  expose modelEdge1;
+  expose modelEdge2;
+  expose modelEdge3;
+  expose modelEdge4;
+  expose modelEdge5;
+  render asInterconnectionDiagram;
+ }
+ connection objectsEdge0 connect profile to session;
+ connection objectsEdge1 connect profile to counter;
+ connection objectsEdge2 connect session to joined;
+ connection objectsEdge3 connect counter to joined;
+ connection objectsEdge4 connect joined to preserved;
+ connection objectsEdge5 connect preserved to continuing;
+ connection objectsEdge6 connect prefix to continuing;
+ view objects {
+  expose profile;
+  expose session;
+  expose counter;
+  expose joined;
+  expose preserved;
+  expose prefix;
+  expose continuing;
+  expose objectsEdge0;
+  expose objectsEdge1;
+  expose objectsEdge2;
+  expose objectsEdge3;
+  expose objectsEdge4;
+  expose objectsEdge5;
+  expose objectsEdge6;
+  render asInterconnectionDiagram;
+ }
+}

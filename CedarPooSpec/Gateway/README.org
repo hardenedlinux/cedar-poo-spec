@@ -1,0 +1,234 @@
+#+TITLE: Gateway Admission and Authorization Delta Library
+
+* Ownership
+
+=CedarPooSpec.Gateway= is a platform-neutral Lean library. It composes existing
+Admission, Functional compilation, PolicyModules and exact operational
+Authorization Delta capabilities. It adds no Cedar evaluator, solver semantics,
+transport service, persistence engine or Gateway Rust runtime. The AWS AgentCore
+Gateway projection remains under =Platform/AWS/AgentCore=.
+
+Weaver owns scenario-specific Rust execution, authenticated Host adapters,
+durable CAS, reservations, dispatch, partial writes and recovery. Scheme owns
+higher-order Session/Workflow/Governor semantics; Go owns cloud lifecycle and
+routing proposals. Neither a proposal nor a Lean receipt is a send permit.
+
+* Composable interface
+
+The generic [[file:../ZeroTrust/README.org][Zero Trust functional framework]]
+owns reusable model/composition/continuity functions and a generic POO
+interpretation. =Gateway.ZeroTrust= specializes it using this library's actual
+publication, Contract, Session and consumption. Gateway imports the framework;
+the framework's transitive import closure must not contain Gateway. See
+[[file:../Authorization/README.org][Authorization]] for the independent Delta family.
+
+| Module | Responsibility | Existing mechanism reused |
+|--------+----------------+---------------------------|
+| Context | Original scope, deciding revisions, named profile requirements | Explicit caller-supplied typed data |
+| ProfileObject | Source-bound governance objects, inherited requirements and explicit strengthening | LeanPoo Dataflow/C4, ObjectProfile Contract and factory-indexed Session |
+| ProfileAdmission | Exact selected profile and scope binding to the current publication | Actual ObjectProfile Session, projection and Contract consequences |
+| Admission | Validate actual operation, schema, current source and error-free Cedar allow | BoundOperation, PolicySnapshot, Functional compilation, upstream validators |
+| Consumption | Compose original-operation admission and effect-bound grant consumption | OperationLedger and AuthorityLedger |
+| AuthorizationDelta | Prepare source-bound C4 revision, analyze gains/losses, compose conditional proofs | Exact operational Delta, policy/provenance changes, proof footprint |
+
+Authorization uses flat =Except= composition. Each validation step returns either
+a specific failure or evidence retained by the resulting =Receipt=. Transparent
+=Prepared= constructors cannot bypass revalidation. Required checks must match
+the profile's unique ordered names exactly; unknown, omitted, duplicate or
+refused assessments fail closed.
+
+The canonical operation ID comes from the original scope, independently of a
+grant ID. Renewed approval cannot admit that ID again against the returned
+operation ledger. Gateway consumption requires =LawfulBEq= for effect types;
+the underlying general-purpose ledger's weaker =BEq= interface admits an invalid
+custom comparator, as the dedicated counterexample demonstrates. This is a pure transition: failure exposes no partial updated
+ledger. A caller can still pass an old ledger, forge source metadata or fail to
+persist the result; preventing those actions is the Host transaction contract,
+not a theorem established by this library.
+
+* Actual objects, inheritance and Contract admission
+
+=ProfileObject.define= builds a real =LeanPoo.Object.Dataflow.Instance= with
+dependent typed slots for identity, checks and the derived profile. The derived
+expression uses =Expr.need= against final self. =extendChecks= uses
+=Instance.extendWith= and =GeneralizedFragments.Fragment.extend= to append to
+the inherited check method. It does not read a parent value and freeze a copy.
+The test also uses =Instance.defineWith= for a shared-base C4 diamond inside one
+source family. =Instance.defineFrom= joins disjoint families; merging two copies
+of the shared base is correctly refused as duplicate declaration ownership.
+
+=Functional.ObjectProfile= supplies shape admission, Contract refinement and
+the factory-indexed =Session=. =prepareFromObject= consumes this Session's
+actual projected profile before the existing Gateway preparation gates.
+=read_preserves_original_requirements= proves identity preservation, profile
+validity and ordered inclusion of every original check. The proof reuses
+=ObjectContract.refine_accepts_iff= and =Access.read_matches=. Existing
+=materialized_source= and =materialized_read= certify actual source/read binding.
+=Profile.Refines.trans= composes strengthening across multiple inheritance steps.
+=inherited_obligations_are_satisfied= joins actual object projection with accepted
+message assessments and proves a satisfied assessment for each original check.
+
+Ordinary inheritance permits overriding slots. Security strengthening is explicit
+in =contract original=, whose original profile is outside the child object. A
+child cannot replace an internal template slot to justify dropping budget or
+history checks. Tests refuse removed/reordered obligations, forged projections,
+identity substitution and duplicates. Caller authentication of that original
+profile and its source closure remains mandatory. Raw record preparation and
+semantic authorization remain lower-level computations. They cannot enter
+=consumeAdmission= without a =PublishedReceipt= bound to the current publication.
+
+Immutable scope data and proof-bearing receipts remain records. They are not
+represented as method owners or another inheritance evaluator; those semantics
+belong to the reused LeanPoo APIs above.
+
+* Original profile authority and raw preparation
+
+=ProfileObject.Publication= retains the actual original Profile, object and
+factory-indexed Session; the selected value has an exact projection witness.
+=capturePublication= only constructs a pure Host read view. It does not publish
+to durable storage, authenticate a producer or make a caller-selected original
+authoritative. The Host supplies this view independently of candidate data.
+
+=authorizePublished= composes semantic authorization with =bindPublication=.
+Binding compares the complete selected Profile, including ordered checks, and
+the complete deciding Context. =consumeAdmission= takes an explicit publication
+and a =PublishedReceipt= indexed by that exact publication. A raw =Receipt= fails
+the consumption API's type check. Neither raw nor object construction gets an
+entry-origin exemption. An exactly matching raw value is allowed because the
+retained publication supplies the actual object Contract proof. This guarantees
+the postcondition; it does not prove which constructor produced a raw value.
+
+=published_profile_refines_authoritative_original= and
+=published_original_obligations_are_satisfied= reuse the Session's Contract
+consequence. =published_scope_cannot_reset= preserves every claim/canonical-key/
+budget/history coordinate relative to the publication.
+=weakened_original_cannot_have_published_receipt= rules out dropping original
+obligations. =published_execution_preserves_original_and_delta= joins those
+consequences with exact Delta implication, retaining all upstream premises.
+
+Weaver Rust must resolve current authority from the existing original-family
+assignment and publication ledger, authenticate original full profile content
+and actual object/source/factory closure, then join publication identity/revision
+with claim, account/history, pending intents and owner fence in final CAS. Every
+payload/source change needs a new authority identity/revision. Do not derive the
+authority from candidate data, trust a proof tag across FFI, or confuse a matching
+digest with producer authentication. Verify actual bytes and source closure.
+Reading a correct publication before an intervening commit is insufficient.
+
+This library has no authority registry, anti-rollback store or final transport.
+A Host that passes a self-selected weaker publication, or an old publication and
+old ledger, can still violate the system contract. Expected counterexamples are
+retained. A constructor or type label is not a credential or durable-use receipt.
+
+* Binding and trust assumptions
+
+The Host authenticates the original root/claim, operation identity, profile,
+budget/history domains, schema identity, source cut and module/projection closure.
+Nonempty strings are structural validation, not authentication. The supplied
+schema identity must commit to the actual schema; a satisfied assessment is not
+proof that external history, source freshness or budget storage is truthful.
+
+Admission compares exact source modules and recompiles the captured root.
+Delta reuse compares exact source modules, scope and both compiled policy sets.
+This conservative whole-model binding also invalidates unrelated declaration
+changes. It intentionally makes no incremental reuse or hash-performance claim.
+The typed schema is retained and actual requests/entities are validated against
+it. Changes to schema or facts require new bound analysis, not relabeling old
+evidence with a new context string.
+
+At final use the Host must serialize current scope/revisions, source identity,
+original-operation consumption, grant use and the original reservation in a
+durable transaction. Context equality here compares provided values; it does not
+close a read-to-CAS race or prevent storage rollback. Unknown outcomes retain
+their original reservation. Retries, partial writes and reconnects cannot obtain
+new effect capacity merely by replacing a grant or operation identity.
+
+* Proof composition
+
+=admitted_actual_request_is_error_free= transports the existing compound receipt
+to the actual bound effect/state. =admitted_context_is_current= and the profile
+laws expose exactly what admission checked.
+
+=ExactCoverage= retains the upstream theorem's well-formed-schema, successful
+typed-query and UNSAT premises for every schema environment. The no-execution-gain
+theorem retains request/entity validation and strong environment well-formedness
+for both policy sets. =admitted_execution_preserves_delta= joins that theorem
+with an actual admission receipt through explicit equality with the after-policy
+set. Its conclusion is pointwise in one validated world. It proves neither
+unchanging external facts nor atomic publication nor external exactly-once send.
+
+Execution Delta means allow with no evaluation errors; it differs from decision
+Delta, which can observe allow despite errors. Policy-body, provenance and proof
+footprint changes remain separate outputs. Empty gain reports do not construct
+=ExactCoverage=. Executable CVC5 analysis validates/replays witnesses; UNSAT is
+still a solver result, not a newly imported kernel proof certificate.
+
+* Claim, budget and history proof boundary
+
+=AdmissionBinding= is the stronger composition interface: scope, actual schema,
+exact source modules, after-root, current plan and evaluated after-policy set
+must align. =bound_admitted_execution_preserves_delta= reuses request/entity
+validation from the actual receipt through schema equality. The lower-level
+=admitted_execution_preserves_delta= proves only pointwise semantic implication;
+its policy equality alone is not a claim/domain/freshness binding certificate.
+
+| Obligation | Proven here | Still required from Weaver |
+|------------+-------------+----------------------------|
+| Original claim/root and canonical operation | Receipt context equality preserves every scope field; operation ID equals the supplied canonical operation; bound Delta preserves original scope | Authenticate original identity; canonical registry prevents consistent relabeling/new family |
+| Budget and history domains | Exact scope equality preserves supplied domain identifiers | Authenticate domain ownership and migrations; shared balances and original reservation survive restart |
+| Original profile | Publication-indexed admission preserves actual selected content and original ordered checks; raw Receipt cannot enter Gateway consumption | Authenticate and freshly resolve original content, source/factory and current publication; forbid candidate-selected authority |
+| Operation/grant consumption | Success preserves the complete operation prefix and adds the original key; returned state rejects replay even with a renewed grant | One durable CAS selects among concurrent transitions; restore anti-rollback state |
+| Reservation arithmetic/unknown exposure | No arithmetic or unknown-result settlement theorem in this library | Atomically reserve/consume; retain unknown budget; settle only with bound authoritative application evidence |
+| History contents and freshness | Named assessment inclusion and equality of supplied history revision | Durable ordered history, true source assessments, pending-intent retention and final-CAS freshness |
+| Dispatch after admission | Error-free Cedar allow for exactly the admitted effect/state | Final execution guard after owner/Policy/history change; no duplicate sends on retries or partial writes |
+
+=Tests/Gateway/Counterexamples.lean= deliberately executes successful attacks
+against stronger claims the pure API does not establish: two consumers of one
+pre-state, old-ledger recovery with new approval, consistent claim/domain
+relabeling, a weaker raw profile with the same identity, satisfied labels beside
+zero external budget, supplied stale revisions and a later owner change.
+Same-policy allow/deny in two different fact worlds demonstrates why a
+pointwise no-gain theorem cannot justify cross-world reuse. These expected
+counterexamples are green tests documenting missing Host premises, not accepted
+Gateway execution behavior. The returned-ledger replay negative control must
+still refuse.
+
+* Validation
+
+Run =just check-gateway= for module/contracts and axiom audit. Run
+=CVC5=/absolute/path/to/cvc5 just check-gateway-delta= for solver-backed
+loss-only restriction, gain-only unfreeze, equivalence and stale binding checks.
+The existing =check-authorization-delta-proof= lane builds the contracts;
+=check-delta= runs solver checks in the existing solver-enabled CI job.
+
+The local audit used Lean 4.34.1 and CVC5 1.3.4 without changing dependency pins.
+The contract, counterexample and object suites are built together. Contracts
+cover actual-effect/state replacement, stale owner/fact/source context,
+source/provenance mutation, unknown/missing/duplicate checks, operation replay
+with renewed grants, missing/mismatched/exhausted authority and changed schema or
+projection scope. Solver fixtures span both declared action environments.
+
+The second review passed 54 executable assertions: 28 original contracts,
+14 Host-boundary/comparator controls and 12 object inheritance/admission checks.
+Its axiom audit covers 19 Gateway declarations and two reused materialized-object
+laws. The original =b688288= Lean and Authorization Delta CI jobs passed; those
+results do not qualify later commits. Exact-head CI status is reported separately.
+
+The third review adds 16 publication controls and a negative type check. Weaker
+same-name profiles, same-claim new canonical keys, claim/domain replacement,
+stronger actual selection and owner changes face the same binding gate. A
+self-selected weaker publication is shown to pass if the Host chooses the wrong
+authority; zero external balance and old-ledger replay remain Host obligations.
+The cumulative suite has 70 executable assertions, one negative type check,
+27 Gateway law audits and two reused object-law audits. Baseline =f524732=
+completed all four CI jobs, including Authorization Delta and conformance,
+before this follow-up. Follow-up CI is checked separately. No dependency pins or
+Rust runtime code are changed.
+
+During development, compilation exposed a Cedar =Effect= namespace collision,
+non-decidable validation error equality and an unavailable Option helper. Those
+failures were corrected using explicit generic parameters and proof-producing
+validation combinators; no axiom, timeout or validator was weakened. Axiom audit
+prints inherited Cedar native-decide dependencies separately from ordinary Lean
+logical axioms. Full-repository CI and Weaver runtime admission are distinct
+receipts and must not be inferred from these focused tests.
