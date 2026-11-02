@@ -63,3 +63,34 @@ fn typed_normalization_materializes_actual_link_values_and_preserves_annotations
         assert!(canonical_policy_body(policy).unwrap().contains(id));
     }
 }
+
+#[test]
+fn canonical_wire_loader_matches_original_sdk_values_and_rejection_diagnostics() {
+    use crate::{CompiledPolicyJson, load_policy_set};
+    for text in [
+        "",
+        "permit(principal, action, resource);",
+        "@label(\"μ\") permit(principal, action, resource); forbid(principal, action, resource) when { context.n == -9223372036854775808 };",
+        "permit(principal, action, resource) when { ip(\"10.0.0.1\").isInRange(ip(\"10.0.0.0/8\")) };",
+    ] {
+        let value = PolicySet::from_str(text).unwrap().to_json().unwrap();
+        let source: CompiledPolicyJson = serde_json::from_value(value.clone()).unwrap();
+        let direct = load_policy_set(&source).unwrap();
+        let legacy = PolicySet::from_json_value(value).unwrap();
+        assert_eq!(direct.to_json().unwrap(), legacy.to_json().unwrap());
+    }
+    for body in [
+        json!({}),
+        json!({"effect":"invented"}),
+        json!({"effect":false}),
+        json!({"effect":"permit","principal":{"op":"All"},"action":{"op":"All"},"resource":{"op":"All"},"conditions":[{"kind":"when","body":{"Value":-0.0}}]}),
+    ] {
+        let value = json!({"staticPolicies":{"bad":body},"templates":{},"templateLinks":[]});
+        let source: CompiledPolicyJson = serde_json::from_value(value.clone()).unwrap();
+        let actual = load_policy_set(&source).map(|set| set.to_json().unwrap());
+        let legacy = PolicySet::from_json_value(value)
+            .map(|set| set.to_json().unwrap())
+            .map_err(|error| format!("Cedar policy parse: {error}"));
+        assert_eq!(actual, legacy);
+    }
+}

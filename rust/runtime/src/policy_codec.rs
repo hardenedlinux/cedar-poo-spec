@@ -65,8 +65,14 @@ pub fn load_policy_set(json: &CompiledPolicyJson) -> Result<PolicySet, String> {
     {
         return Err("compiled policy artifact must contain only materialized policies".into());
     }
-    let policies = PolicySet::from_json_value(json.deref().clone())
-        .map_err(|error| format!("Cedar policy parse: {error}"))?;
+    // Prepared source lookup already owns this immutable complete wire. Decode
+    // directly into the SDK's typed representation instead of cloning a Value
+    // tree only to consume it again. Keep the original parser for exact errors.
+    let policies = match PolicySet::from_json_str(json.source_identity()?) {
+        Ok(policies) => policies,
+        Err(_) => PolicySet::from_json_value(json.deref().clone())
+            .map_err(|error| format!("Cedar policy parse: {error}"))?,
+    };
     let expected = static_policies.keys().cloned().collect::<BTreeSet<_>>();
     let loaded = policies
         .policies()

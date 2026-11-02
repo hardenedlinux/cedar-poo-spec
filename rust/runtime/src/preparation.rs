@@ -25,6 +25,13 @@ impl ParsedTextPolicies {
     }
 }
 
+// One full-source key owns both stages of immutable syntax preparation.
+// Requests, schema admission and receipt bindings remain outside this slot.
+struct PreparedSyntax {
+    policies: std::sync::Arc<PolicySet>,
+    checked: [Option<crate::syntax::CheckedRevision>; 2],
+}
+
 /// One manifest invocation owns pure normalization results, keyed by complete
 /// parsed source. SDK 4.12's text-to-JSON conversion reparses that exact text.
 /// Hits avoid this repeated EST parse as well as JSON-to-AST normalization.
@@ -38,8 +45,7 @@ pub(crate) struct PreparedReplay<'catalog> {
     shared: Option<&'catalog mut crate::syntax_preparation::SyntaxPreparation>,
     bodies: BTreeMap<String, String>,
     uids: BTreeMap<String, EntityUid>,
-    compiled: BTreeMap<String, std::sync::Arc<PolicySet>>,
-    checked: [BTreeMap<String, crate::syntax::CheckedRevision>; 2],
+    syntax: BTreeMap<String, PreparedSyntax>,
 }
 
 impl<'catalog> PreparedReplay<'catalog> {
@@ -57,11 +63,11 @@ impl<'catalog> PreparedReplay<'catalog> {
         mut metrics: Option<&mut ReplayMetrics>,
     ) -> Result<std::sync::Arc<PolicySet>, String> {
         let key = source.source_identity()?;
-        if let Some(parsed) = self.compiled.get(key) {
+        if let Some(slot) = self.syntax.get(key) {
             if let Some(stats) = metrics {
                 stats.source_policy_reuses += 1;
             }
-            return Ok(parsed.clone());
+            return Ok(slot.policies.clone());
         }
         if let Some(parsed) = self
             .shared
@@ -72,7 +78,13 @@ impl<'catalog> PreparedReplay<'catalog> {
                 stats.source_policy_reuses += 1;
                 stats.catalog_policy_reuses += 1;
             }
-            self.compiled.insert(key.to_owned(), parsed.clone());
+            self.syntax.insert(
+                key.to_owned(),
+                PreparedSyntax {
+                    policies: parsed.clone(),
+                    checked: [None, None],
+                },
+            );
             return Ok(parsed);
         }
         let parsed = std::sync::Arc::new(crate::policy_codec::load_policy_set(source)?);
@@ -86,7 +98,13 @@ impl<'catalog> PreparedReplay<'catalog> {
         if let Some(stats) = metrics {
             stats.source_policy_loads += 1;
         }
-        self.compiled.insert(key.to_owned(), parsed.clone());
+        self.syntax.insert(
+            key.to_owned(),
+            PreparedSyntax {
+                policies: parsed.clone(),
+                checked: [None, None],
+            },
+        );
         Ok(parsed)
     }
     pub(crate) fn checked(
@@ -95,9 +113,10 @@ impl<'catalog> PreparedReplay<'catalog> {
         hash: bool,
     ) -> Result<Option<crate::syntax::CheckedRevision>, String> {
         let key = source.source_identity()?;
-        Ok(self.checked[usize::from(hash)]
+        Ok(self
+            .syntax
             .get(key)
-            .cloned()
+            .and_then(|slot| slot.checked[usize::from(hash)].clone())
             .or_else(|| self.shared.as_deref().and_then(|s| s.checked(key, hash))))
     }
     pub(crate) fn remember_checked(
@@ -105,11 +124,21 @@ impl<'catalog> PreparedReplay<'catalog> {
         checked: crate::syntax::CheckedRevision,
         hash: bool,
     ) -> Result<(), String> {
-        let key = checked.source.source_identity()?.to_owned();
+        let key = checked.source.source_identity()?;
         if let Some(shared) = self.shared.as_deref_mut() {
-            shared.remember_checked(&key, hash, checked.clone());
+            shared.remember_checked(key, hash, checked.clone());
         }
-        self.checked[usize::from(hash)].insert(key, checked);
+        if let Some(slot) = self.syntax.get_mut(key) {
+            slot.checked[usize::from(hash)] = Some(checked);
+        } else {
+            let key = key.to_owned();
+            let mut slot = PreparedSyntax {
+                policies: checked.policies.clone(),
+                checked: [None, None],
+            };
+            slot.checked[usize::from(hash)] = Some(checked);
+            self.syntax.insert(key, slot);
+        }
         Ok(())
     }
     fn uid(
