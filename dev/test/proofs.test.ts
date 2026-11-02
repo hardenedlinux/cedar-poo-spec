@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import {test,expect} from 'bun:test';
-import {readFile} from 'node:fs/promises';
+import {readFile,readdir} from 'node:fs/promises';
 import {connectWasm} from '@openmbee/opensysml';
 import {readProofMap,leanProofCheck,type ProofMap} from '../proofs';
 const root=new URL('../../',import.meta.url),source='dev/sysml/zero-trust-proofs.sysml';
@@ -19,6 +19,10 @@ const raw=()=>readFile(new URL(source,root),'utf8');
 test('SDK declarations, roles and proof-use references drive native Lean validation',async()=>{
  const map=await observe(await raw());expect(map.cards.length).toBeGreaterThan(0);
  for(const card of map.cards)expect((await readFile(new URL(card.source,root),'utf8')).length).toBeGreaterThan(0);
+ for(const file of (await readdir(new URL('../d2/',import.meta.url))).filter(file=>file.endsWith('.json'))){
+  const receipt:{sdk:{view:string};proofClaims?:ProofMap}=JSON.parse(await readFile(new URL('../d2/'+file,import.meta.url),'utf8'));
+  if(receipt.sdk.view.startsWith('ZeroTrustProofs::'))expect(receipt.proofClaims).toEqual(map);
+ }
  const result=check(map);expect(result).toMatchObject({code:0,stderr:''});expect(result.stdout).toContain('PROOF-FIGURES-LEAN-OK');
 },30000);
 test('SDK observation tolerates formatting and discovers added declarations without fixed counts',async()=>{
