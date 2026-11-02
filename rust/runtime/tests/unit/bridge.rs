@@ -832,6 +832,8 @@ fn replay_distinguishes_explicit_empty_geography_from_missing_and_other_values()
 
 #[path = "preparation.rs"]
 mod preparation;
+#[path = "publication_review.rs"]
+mod publication_review;
 
 // Retain the exact pre-optimization normalizer as an independent test oracle.
 fn assert_legacy_revision_bodies(case: &Case) {

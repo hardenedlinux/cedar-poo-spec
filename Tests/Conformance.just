@@ -33,13 +33,13 @@ check-google-table-batch-v1:
 check-delta: check-gateway-delta check-authorization-delta check-authorization-delta-operational check-authorization-delta-reasons check-authorization-delta-effective-reasons check-payment-delta check-payment-interaction check-agent-trace-delta check-health-authorization-impact
 
 check-gateway:
-    lake build CedarPooSpec.Gateway Tests.Gateway.Contracts Tests.Gateway.Counterexamples Tests.Gateway.Objects Tests.Gateway.Publication Tests.Gateway.Delta Tests.Gateway.ZeroTrust Tests.Gateway.PublicationReview Tests.ZeroTrust.UsageControl Tests.ZeroTrust.ImportBoundary
+    lake build CedarPooSpec.Gateway Tests.Gateway.Contracts Tests.Gateway.Counterexamples Tests.Gateway.Objects Tests.Gateway.Publication Tests.Gateway.Delta Tests.Gateway.ZeroTrust Tests.Gateway.PublicationReview Tests.ZeroTrust.UsageControl Tests.ZeroTrust.ImportBoundary Tests.ZeroTrust.Functional
 
 check-gateway-delta: check-gateway
     timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 --run Tests/Gateway/Delta.lean
     cargo run --locked -p cedar-poo-bridge --manifest-path Cargo.toml -- replay-receipts < .lake/build/gateway-current-review-manifest.json > .lake/build/gateway-current-review-receipts.json
     jq -e 'length == 10' .lake/build/gateway-current-review-receipts.json > /dev/null
-    cargo test --locked -p cedar-poo-runtime --lib simulated_publication_histories_match_lean -- --ignored
+    cargo test --locked -p cedar-poo-runtime --lib publication_review -- --include-ignored
 
 check-replay-receipts: prepare-agent-payment-manifest
     cargo run --locked --quiet -p cedar-poo-bridge --manifest-path Cargo.toml -- replay-receipts < .lake/build/agent-payment-manifest.json > .lake/build/agent-payment-replay-receipts.json

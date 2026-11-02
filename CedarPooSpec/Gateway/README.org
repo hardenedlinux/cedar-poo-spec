@@ -271,3 +271,11 @@ actual Final receipt. The existing simulator also has an inductive at-most-one
 commit and unknown-retention proof for arbitrary finite histories of one fixed
 review. Its independent authority floor remains preserved; the native Rust
 correspondence remains the explicitly bounded corpus above.
+
+The observation-cut layer now separates preparation from current commit. The
+existing Gateway acceptance also compares 2,528 staged histories / 12,528 steps
+with a test-owned native shared authority and actual observer counts. Real
+thread races, a competing control writer, ABA, foreign tickets and finite-counter
+exhaustion have explicit controls. Whole-authority rollback remains a retained
+counterexample. These tests add native arbitration evidence without introducing
+a production Gateway backend or claiming physical durability.

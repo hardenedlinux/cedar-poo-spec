@@ -194,6 +194,86 @@ private def publicationTraces (reviewed : Authorization.Delta.ReviewedInteractio
     ("candidate", Lean.toJson reviewed.snapshot.combined.root), ("no_gain", Lean.toJson noGain),
     ("approved", Lean.toJson approved), ("traces", Lean.toJson traces)]
 
+-- Prepared tickets are authority-issued observation cuts, independent of the
+-- policy epoch. They survive caller retries; every authority control advances cut.
+private structure PublicationSchedule where
+  current : ZeroTrust.Observation PublicationState
+  first : Option Nat := none
+  second : Option Nat := none
+
+private def publicationScheduleStep (reviewed : Authorization.Delta.ReviewedInteraction)
+    (approved : Bool) (initial : Authorization.Delta.ReleaseState) (faults : Nat)
+    (schedule : PublicationSchedule) (command : Nat) : PublicationSchedule × Nat :=
+  if command == 0 then ({schedule with first := some schedule.current.generation}, 0)
+  else if command == 1 then ({schedule with second := some schedule.current.generation}, 0)
+  else if command == 2 || command == 3 then
+    let ticket := if command == 2 then schedule.first else schedule.second
+    match ticket with
+    | none => (schedule, 5)
+    | some generation =>
+      let lost := if command == 2 then faults % 2 == 1 else faults / 2 % 2 == 1
+      let transition (image : PublicationState) : Except Nat (Nat × PublicationState) :=
+        let (next, reply) := publicationStep reviewed approved initial image (if lost then 6 else 0)
+        if reply == 0 then .error 4 else .ok (reply, next)
+      match ZeroTrust.Observation.compareAndAdvance generation schedule.current 3 transition with
+      | .error cause => (schedule, cause)
+      | .ok (reply, next) => ({schedule with current := next}, reply)
+  else
+    let control := if command == 4 then 3 else if command == 5 then 4
+      else if command == 6 then 1 else if command == 7 then 5 else 2
+    let transition (image : PublicationState) : Except Nat (Nat × PublicationState) :=
+      let (next, reply) := publicationStep reviewed approved initial image control
+      .ok (reply, next)
+    match ZeroTrust.Observation.compareAndAdvance schedule.current.generation schedule.current 3 transition with
+    | .error cause => (schedule, cause)
+    | .ok (reply, next) => ({schedule with current := next}, reply)
+
+private def scheduleObservation (schedule : PublicationSchedule) : Lean.Json :=
+  Lean.Json.mkObj [("generation", Lean.toJson schedule.current.generation),
+    ("image", publicationObservation schedule.current.attributes),
+    ("first", Lean.toJson schedule.first), ("second", Lean.toJson schedule.second)]
+
+private def publicationCasTraces (reviewed : Authorization.Delta.ReviewedInteraction)
+    (approved : Bool) : IO Lean.Json := do
+  let initial : Authorization.Delta.ReleaseState :=
+    ⟨reviewed.snapshot.base.root, reviewed.snapshot.base.policies, .enforcing, 7⟩
+  let start : PublicationSchedule := ⟨⟨0, ⟨initial, initial, 7, false⟩⟩, none, none⟩
+  let orders := [[0, 2, 1, 3], [0, 1, 2, 3], [0, 1, 3, 2],
+    [1, 3, 0, 2], [1, 0, 3, 2], [1, 0, 2, 3]]
+  let mut inputs : Array (Nat × List Nat) := #[]
+  for faults in [0, 1, 2, 3] do
+    for order in orders do
+      inputs := inputs.push (faults, order)
+      for position in List.range 5 do
+        for control in [4, 5, 6, 7, 8] do
+          inputs := inputs.push (faults, order.take position ++ [control] ++ order.drop position)
+    inputs := inputs.push (faults, [0, 6, 7, 2])
+    inputs := inputs.push (faults, [0, 6, 7, 0, 2])
+  let mut traces : Array Lean.Json := #[]
+  for (faults, commands) in inputs do
+    let traceModel : LeanPoo.Functional.PropertyTesting.TraceModel PublicationSchedule Nat Nat :=
+      ⟨start, (fun _ command => decide (command < 9)), publicationScheduleStep reviewed approved initial faults⟩
+    unless LeanPoo.Functional.PropertyTesting.traceValid traceModel start commands do
+      throw (IO.userError "invalid prepared-publication command")
+    let observed := LeanPoo.Functional.PropertyTesting.traceObservations
+      (publicationScheduleStep reviewed approved initial faults) id start commands
+    let mut commits := 0
+    let mut held := false
+    let mut observations : Array Lean.Json := #[]
+    for (reply, next) in observed do
+      if reply == 1 || reply == 2 then commits := commits + 1
+      unless decide (commits ≤ 1) && (!held || next.current.attributes.unknown) do
+        throw (IO.userError s!"prepared-publication invariant failed: {faults}/{commands}")
+      held := next.current.attributes.unknown
+      observations := observations.push (Lean.Json.mkObj [("reply", Lean.toJson reply),
+        ("state", scheduleObservation next), ("commits", Lean.toJson commits)])
+    traces := traces.push (Lean.Json.mkObj [("faults", Lean.toJson faults),
+      ("commands", Lean.toJson commands), ("observations", Lean.toJson observations)])
+  let noGain := match reviewed.analysis.outcome with | .noCombinedGain => true | _ => false
+  return Lean.Json.mkObj [("base", Lean.toJson reviewed.snapshot.base.root),
+    ("candidate", Lean.toJson reviewed.snapshot.combined.root), ("no_gain", Lean.toJson noGain),
+    ("approved", Lean.toJson approved), ("traces", Lean.toJson traces)]
+
 private def checkReleaseProperties : IO Unit := do
   let .ok gain ← Authorization.Delta.analyzeAndCapture releaseModel "base" "left" "right" "mixed" schema 7
     | throw (IO.userError "could not capture actual joint-gain analysis")
@@ -245,6 +325,13 @@ private def checkReleaseProperties : IO Unit := do
   IO.FS.writeFile ".lake/build/gateway-publication-traces.json"
     (Lean.Json.mkObj [("format_version", Lean.toJson (1 : Nat)), ("runs", Lean.toJson traceRuns)]).compress
   IO.println "GATEWAY-PUBLICATION-TRACES-OK: 1372 complete three-command traces / 4116 steps; lost reply, recovery, rollback, modes and retry"
+  let mut casRuns : Array Lean.Json := #[]
+  for reviewed in [gain, safe] do
+    for approved in [true, false] do
+      casRuns := casRuns.push (← publicationCasTraces reviewed approved)
+  IO.FS.writeFile ".lake/build/gateway-publication-cas.json"
+    (Lean.Json.mkObj [("format_version", Lean.toJson (1 : Nat)), ("runs", Lean.toJson casRuns)]).compress
+  IO.println "GATEWAY-PUBLICATION-CAS-OK: 2528 histories / 12528 steps; all two-actor interleavings, control boundaries and ABA"
   let program := Functional.deferProgram Functional.standard releaseModel schema
     (releaseModel.modules.map (·.name)) (by native_decide)
   let mut cases := []

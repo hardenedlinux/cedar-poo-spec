@@ -525,3 +525,60 @@ The standalone current-admission consequence no longer requires unused =BEq E=
 or =LawfulBEq E= instances. Consumption still requires its actual lawful effect
 comparator. This removes an irrelevant API prerequisite without changing
 admission, equality or runtime execution.
+
+** Observation-cut compare-and-advance and native arbitration
+
+=ZeroTrust.Observation.compareAndAdvance= is a pure specification for an
+optimistic preparation followed by an authority-owned current transition. It
+compares the captured generation first, passes the actual attributes to the
+checked transition, preserves a fresh transition's original error, and advances
+the observation generation only on success. The successful-transition theorem
+retains its exact input/output and successor generation. The returned-cut law
+rejects an old generation under arbitrary later callbacks, including when the
+attribute values have been restored. The framework composition theorem retains
+the existing MediatedStep requirements; matching a cut is not authorization.
+
+The observation cut is independent of the policy epoch. Every participating
+posture/configuration/recovery writer must advance the same authority cut,
+even when it restores equal attributes or does not publish a policy. Generation
+values are scoped to that authority and require authenticated, non-reused
+interpretation. Two pure evaluations against copies of the same pre-state can
+still both succeed. The primitive performs no IO and makes no atomicity claim.
+The native adapter must linearize read, compare, current admission, installation
+and the local commit observer under one actual authority boundary.
+
+The test-owned Rust authority now supplies that boundary using one shared mutex
+for publication and control writers. Two real threads capture before a barrier
+and race to commit; only one eligible callback observes installation. A second
+native writer demonstrably cannot acquire the boundary while the final observer
+runs. Ticket ownership uses an allocation-owned Arc identity, so equal generation
+numbers from another authority are refused. This is process-local ownership,
+not a workload credential, signature or persistent identity scheme.
+
+The existing release interpreter is reused; no new Cedar evaluator, production
+Gateway crate, backend provider or database is introduced. The Rust fixture code
+moves from SDK preparation tests to the explicit =publication_review= test owner.
+The existing 1,372 histories and ten Cedar replay cases remain intact. A companion
+Lean producer invokes the actual compare-and-advance primitive for 2,528 prepared
+histories / 12,528 steps: all six legal two-actor prepare/commit interleavings,
+both actors' lost-reply choices, every insertion boundary for recovery, live
+rollback and mode updates, plus old-cut and freshly recaptured ABA histories.
+The native authority compares every reply, complete modeled state, prepared cuts
+and actual observer invocation count with those Lean observations.
+
+Eight additional native controls cover eligible/refused thread races, ABA,
+lost-reply recovery, machine-counter exhaustion, a competing writer, foreign
+ownership and two intentional counterexamples. Independent prechecks can admit
+two callbacks; rolling back the whole authority record can revive an old ticket.
+Both counterexamples remain green diagnostics of absent premises, not admitted
+behaviors. Native generation exhaustion uses checked addition and refuses before
+installation/observation. The finite native fixture range and that explicit
+word-boundary refusal do not establish unbounded machine arithmetic refinement.
+
+The tests model logical recovery while the authority record survives. They do
+not implement process-crash durability, cryptographic custody, physical rollback
+resistance, remote delivery, fairness or a production mutex architecture. Other
+Host implementations may use a transactional CAS with the same ordering; the
+source reader, all relevant writers and the final use boundary must participate.
+Generated CAS fixtures stay in the ignored Lake build directory. Lean/Rust own
+all semantic assertions; Python remains unchanged process/artifact glue.

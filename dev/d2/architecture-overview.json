@@ -4,7 +4,7 @@
     "CedarPooSpec.lean": "d4fc5b573fdc7050fbb62074eeb59f364d4a782f152853e3efc2a103ba1951eb",
     "CedarPooSpec/Platform/AWS/AgentCore/README.org": "59c9695d0131b789e6b3342672a5fd20b3c196b1cd0fa8a5168d290ce60a638b",
     "CedarPooSpec/Vertical/Health/README.org": "8b7db1eeca779d26bbca0c93fe6152fdc70fe1550d14a5843e830919d220455b",
-    "CedarPooSpec/ZeroTrust/README.org": "30da5380c191d12d368272904324c377722e6f939b1eab1b0bf07a93cc4aacc4",
+    "CedarPooSpec/ZeroTrust/README.org": "a11d81d3ad69af9786e1ae879f24295c42d5d8166012863c2b22ef272aed2508",
     "dev/.generated/architecture-overview-sdk.json": "6c2d887a362d7d3c721f03251f27393861b777942ddda3c8fc559470340e46db",
     "dev/artifacts.ts": "ca1096947536fbdbd5da5cbf1ce5c6f57521bd4a7b135233285dfe8fcff9859d",
     "dev/bun.lock": "2b7060a881aad9312d122f6d01146ef78c207b3c95254aa66b7b57a9eede5acd",
@@ -729,21 +729,21 @@
       "samples": 63,
       "requiredMinimum": 12
     },
-    "inputSHA256": "378541c6682f203a6f4e49584da583d14fe3927383a39519ad02fe848505d682",
+    "inputSHA256": "d045e1a1ba77780720386be8f57fb499493514b7e39ad9d5ac7903ae254b4fc4",
     "scenes": [
       {
         "inputSHA256": "e37712d455e547bad725dabd5b84f2c459f5477c15e4f5350e5ef58d5546586a",
         "layoutSHA256": "e3a006d7aedb8c3ed9f03375fdc88ec9edf699022226cf9f75a26b9dd3d7faed",
         "nodes": 10,
         "edges": 14,
-        "milliseconds": 361.43375000000015
+        "milliseconds": 1015.2811249999995
       }
     ],
     "svgSHA256": [
-      "b8f33fe1a3d469790901560328f7583850d4b6c4daf23dbf7fc4d3d675ddffea",
+      "4499c78ad9185a691e684a6bab8a5feeb54ff672ceef1fa1f1160fe1c73204c7",
       "1c1c8324c7774e2d1ab76e8273ca28604a281b8df09c4b09660f7c97bcac4449"
     ],
-    "composedHTMLSHA256": "1d69a26c6b4115d86355a6d01bf63348b7959db4cf38949808d8272020dd455b",
+    "composedHTMLSHA256": "39c59ee8f897abe5c42a972d28a045d47a8b47ff9925674307e7f8c10c37bc02",
     "dependencies": {
       "@fontsource/inter": "5.3.0",
       "@fontsource/kalam": "5.3.0",
@@ -756,7 +756,7 @@
       "web-worker": "1.5.0"
     },
     "regionSHA256": {},
-    "htmlSHA256": "4d7a951df9f7e11178a80dcbb788120819171a375dcb83f58a49e5a1d071b4d2",
+    "htmlSHA256": "2345b9404cc0e6bb6d6d2858f0599c8918282dd15009b1f278d8904edc79217d",
     "drawing": "roughjs@4.6.6",
     "routing": "elkjs@0.12.1",
     "assetSHA256": {
