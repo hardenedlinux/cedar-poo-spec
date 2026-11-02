@@ -71,7 +71,7 @@ def EncodedJson.native (value : Lean.Json) : EncodedJson :=
 
 def EncodedJson.snapshot (source : SourceSnapshot kind) : EncodedJson :=
   let rendering := source.encoding
-  ⟨Thunk.pure source.value, Thunk.mk fun _ => [rendering.get.val],
+  ⟨Thunk.pure source.value, Thunk.mk fun _ => [rendering.get.val.wire],
     by
       change JsonEncoding source.value [source.wire]
       rw [source.encoded]

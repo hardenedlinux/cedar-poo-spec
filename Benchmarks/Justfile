@@ -77,7 +77,9 @@ bench-catalog-launch output: check-functional-catalog
 
 # Same bytes/real workload, but new paths share a single source inode. Keep this
 # diagnostic distinct from the fresh-copy and ordinary complete-process cohorts.
-bench-catalog-inode output:
+bench-catalog-inode output: check-functional-catalog
+    lake build caseManifestsNative manifestLifecycleNative
+    cargo build --release --locked -p cedar-poo-bridge --manifest-path Cargo.toml --example launch_probe
     timeout --signal=TERM --kill-after=3s 120s uv run --project python --package cedar-poo-py-test --locked python -m cedar_poo_py_test.launch .lake/build/bin/manifestLifecycleNative --output-directory {{quote(output)}}/lean --materialization hardlink --expected-exit 0 --child-arguments catalog
     timeout --signal=TERM --kill-after=3s 120s uv run --project python --package cedar-poo-py-test --locked python -m cedar_poo_py_test.launch rust/target/release/examples/launch_probe --output-directory {{quote(output)}}/rust --materialization hardlink --input .lake/build/functional-catalog.json --expected-exit 0 --child-arguments replay-catalog
     for stdout in {{quote(output)}}/lean/*.stdout; do cmp "$stdout" .lake/build/functional-catalog.json || exit $?; done

@@ -10,26 +10,57 @@ inductive SourceKind where | policy | entities | schema
 structure SourceRef (kind : SourceKind) where
   index : Nat
   deriving Repr
-/-- One immutable source value with one memoized full encoding. -/
+/-- One complete key carries its already computed hash. Equality remains full
+wire equality; the proof makes equal wires have equal hashes. -/
+structure SourceKey where
+  wire : String
+  fingerprint : UInt64
+  consistent : fingerprint = hash wire
+instance : BEq SourceKey where
+  beq left right := left.wire == right.wire
+instance : LawfulBEq SourceKey where
+  rfl := by
+    intro value
+    change (value.wire == value.wire) = true
+    exact BEq.rfl
+  eq_of_beq := by
+    intro left right same
+    have wires : left.wire = right.wire := eq_of_beq same
+    rcases left with ⟨left, lh, lc⟩
+    rcases right with ⟨right, rh, rc⟩
+    dsimp at wires
+    subst right
+    cases lc
+    cases rc
+    rfl
+instance : Hashable SourceKey where
+  hash key := key.fingerprint
+
+theorem SourceKey.hash_eq (left right : SourceKey) (same : left.wire = right.wire) :
+    hash left = hash right := by
+  change left.fingerprint = right.fingerprint
+  exact left.consistent.trans ((congrArg (fun wire : String => hash wire) same).trans right.consistent.symm)
+
+/-- Encoding and lookup preparation share one memoized result, not two thunks. -/
 structure SourceSnapshot (kind : SourceKind) where
   value : Lean.Json
-  encoding : Thunk { wire : String // wire = value.compress }
-  fingerprint : Thunk { code : UInt64 // code = hash encoding.get.val } :=
-    Thunk.mk fun _ => ⟨hash encoding.get.val, rfl⟩
+  encoding : Thunk { key : SourceKey // key.wire = value.compress }
 
 def SourceSnapshot.ofJson (value : Lean.Json) : SourceSnapshot kind :=
-  { value := value, encoding := Thunk.mk fun _ => ⟨value.compress, rfl⟩ }
-def SourceSnapshot.wire (snapshot : SourceSnapshot kind) : String := snapshot.encoding.get.val
+  ⟨value, Thunk.mk fun _ =>
+    let wire := value.compress
+    ⟨⟨wire, hash wire, rfl⟩, rfl⟩⟩
+def SourceSnapshot.wire (snapshot : SourceSnapshot kind) : String := snapshot.encoding.get.val.wire
 theorem SourceSnapshot.encoded (snapshot : SourceSnapshot kind) :
     snapshot.wire = snapshot.value.compress := snapshot.encoding.get.property
 
-/-- Fingerprints only select buckets; complete wire equality authorizes reuse. -/
 theorem SourceSnapshot.fingerprint_bound (snapshot : SourceSnapshot kind) :
-    snapshot.fingerprint.get.val = hash snapshot.wire := snapshot.fingerprint.get.property
+    snapshot.encoding.get.val.fingerprint = hash snapshot.wire :=
+  snapshot.encoding.get.val.consistent
 
 structure SourcePool (kind : SourceKind) where
   entries : Array (SourceSnapshot kind) := #[]
-  candidates : Std.HashMap UInt64 (List Nat) := {}
+  candidates : Std.HashMap SourceKey Nat := {}
   recent : Option Nat := none
 
 def SourcePool.resolve (pool : SourcePool kind) (ref : SourceRef kind) : Option String :=
@@ -44,8 +75,7 @@ private def append (pool : SourcePool kind) (source : SourceSnapshot kind) :
     Publication pool source.value :=
   let index := pool.entries.size
   { next := { entries := pool.entries.push source
-              candidates := pool.candidates.insert source.fingerprint.get.val
-                (index :: pool.candidates[source.fingerprint.get.val]?.getD [])
+              candidates := pool.candidates.insert source.encoding.get.val index
               recent := some index }
     reference := ⟨index⟩
     bound := by simp [SourcePool.resolve, index, source.encoded]
@@ -57,19 +87,17 @@ private def append (pool : SourcePool kind) (source : SourceSnapshot kind) :
 private def publishIndexed (pool : SourcePool kind) (source : SourceSnapshot kind) :
     Publication pool source.value :=
   let wire := source.wire
-  let candidates := pool.candidates[source.fingerprint.get.val]?.getD []
-  let found : Option { index : Nat // pool.resolve ⟨index⟩ = some wire } :=
-    candidates.findSome? fun index =>
-      if bound : pool.resolve ⟨index⟩ = some wire then some ⟨index, bound⟩ else none
-  match found with
-  | some ⟨index, bound⟩ =>
-      ⟨{ pool with recent := some index }, ⟨index⟩,
-        bound.trans (congrArg some source.encoded), fun _ _ => rfl⟩
+  match pool.candidates[source.encoding.get.val]? with
+  | some index =>
+      if bound : pool.resolve ⟨index⟩ = some wire then
+        ⟨{ pool with recent := some index }, ⟨index⟩,
+          bound.trans (congrArg some source.encoded), fun _ _ => rfl⟩
+      else append pool source
   | none => append pool source
 
 
 /-- Consecutive Cases usually share one snapshot. Check the last published
-reference before hashing the full wire again. Both hints remain untrusted:
+reference before consulting the prepared key. Both hints remain untrusted:
 every reuse resolves and compares complete source bytes in this exact pool. -/
 def SourcePool.publishSnapshot (pool : SourcePool kind) (source : SourceSnapshot kind) :
     Publication pool source.value :=
