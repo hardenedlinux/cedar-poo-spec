@@ -8,12 +8,12 @@
     "CedarPooSpec/Vertical/Health/README.org": "8b7db1eeca779d26bbca0c93fe6152fdc70fe1550d14a5843e830919d220455b",
     "dev/.generated/verticals-platforms-sdk.json": "516e466302ccfb3a9612971f59a55642c853d04fa4d7dfb2b712f81c8627b280",
     "dev/artifacts.ts": "ca1096947536fbdbd5da5cbf1ce5c6f57521bd4a7b135233285dfe8fcff9859d",
-    "dev/bun.lock": "ff7dfa5e83619b9ea614de09044a6ea84674934b8f284e440d253beeb6677663",
+    "dev/bun.lock": "2b7060a881aad9312d122f6d01146ef78c207b3c95254aa66b7b57a9eede5acd",
     "dev/catalog.ts": "6d65a91afcddb11de668cc668aa3c6b9076435c02e73a90323c7bf28a991965e",
     "dev/d2/verticals-platforms.d2": "e81ccf945900c7a6fa0ffc08aca2119d8ea23245db03a2e576b08d27f2b10e03",
     "dev/inputs.ts": "8ccc4bd7ceda2013d5fd86b37d2565beb60f1a8761004d67be77d0c2acd1265e",
     "dev/Justfile": "a13b2b6ef2cabfdd03841bbdc3da89fa70245071abf15f653c0095ae3defba7b",
-    "dev/package.json": "47082928b4f138c4fdabd4b1adfc75ee70873c188a0450bbce25810ec3eb40e0",
+    "dev/package.json": "4597c8e94f87afcc8655b9be5197b5835e620ed5610f8182b20ee386194f6a5f",
     "dev/projection.ts": "3fd049e50798aee9dce54af6cd6e6fccad45fec5ab24b994bb6a8a4b33d7252d",
     "dev/proofs.ts": "7ecca5b114869cbf7ea212bfeb7982c04a3015ea47d0e34a136b022d097d8d2f",
     "dev/render.ts": "1b07616b3a05602676ea0101546ab66f20fd73943326382fda0ebafef2735201",
@@ -82,9 +82,9 @@
     "observations": []
   },
   "renderer": {
-    "specifier": "git+https://github.com/hardenedlinux/deterministic-engineering.git#6223c5c44cc368e6e5b6d597421b275c160f9064",
+    "specifier": "git+https://github.com/hardenedlinux/deterministic-engineering.git#1fe20380441a0cd85055695c2adcc55ce699a369",
     "name": "@deterministic-engineering/render",
-    "version": "1.0.1"
+    "version": "1.0.2"
   },
   "receipt": {
     "attribution": {
@@ -176,21 +176,21 @@
       "samples": 17,
       "requiredMinimum": 12
     },
-    "inputSHA256": "e4cd3c63e5b6f61ceb18e50f2a9da7679a3fecc3e64f85f030348da0e171e667",
+    "inputSHA256": "97d4c72bd4eb06b8120f1e7a43fe058dbe1a7dd9501451e68d03cf5da74e5c6b",
     "scenes": [
       {
         "inputSHA256": "b17be10ff64f7605949d442d1a1115f2e8d5ab11a936d8aae0cda4782a5ae6d7",
         "layoutSHA256": "220ef9222adb0ce6d1392c0722d333a50c38bac327d166ce1d923e2adfb768c4",
         "nodes": 4,
         "edges": 0,
-        "milliseconds": 170.7936669999981
+        "milliseconds": 97.14325000000099
       }
     ],
     "svgSHA256": [
-      "63596617268e31e0afc4f5da96c26c2b290db85064012be4be1b64a199c8a1f6",
+      "c70ee7edfd5943546cc455e07cef84c50eba1dea8f6bed04a5fd642eac0604c1",
       "6b5e3c7c76f12616be1d28a45782d37c9e431484a4bafd9e0c3f5a29b51a6b2c"
     ],
-    "composedHTMLSHA256": "2e3e692cac87669a47d0c5fdc86a5a9687b13473cb51c1ea96829e61b7cbbca0",
+    "composedHTMLSHA256": "9058fdde11abd61aa51e1b98148f2230874ced1cfd400ae829532d6e935c5df3",
     "dependencies": {
       "@fontsource/inter": "5.3.0",
       "@fontsource/kalam": "5.3.0",
@@ -203,7 +203,7 @@
       "web-worker": "1.5.0"
     },
     "regionSHA256": {},
-    "htmlSHA256": "393ad27ffeb7bd60003ab98411c4089e58b155d0af72961464fce25f1b85102c",
+    "htmlSHA256": "f65c0739ef4fcd7813781dd70a79758b48a30e11b3a37318044f7b1c92721c2d",
     "drawing": "roughjs@4.6.6",
     "routing": "elkjs@0.12.1",
     "assetSHA256": {

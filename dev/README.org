@@ -318,3 +318,24 @@ The native proof checker imports only the Lean command-evaluation and constant-u
 inspection modules it consumes. It still checks the entire SDK capture and all
 existing negative controls within the same per-test memory/heartbeat/time bounds.
 See the shared-plan Org audit for the preserved macOS failure and import profile.
+
+
+* Released compiler lifetime capability
+
+The selected Render Git source includes upstream PR #5. Compiler allocation and
+IPC lifecycle belong to that Library: each compile owns its SDK worker and native
+process, and settles only after native close. Cedar keeps using the same public
+=compileModel= API; it adds no subprocess wrapper, pool or alternate D2 compiler.
+The reviewed release source is linked by =package.json= and Bun's lockfile. Read
+the actual installed name/version instead of declaring a second version here:
+#+begin_src sh
+bun -e 'import metadata from "@deterministic-engineering/render/package.json"; console.log(metadata.name, metadata.version)'
+#+end_src
+
+Updating the real Git revision and native lock invalidates previously accepted
+figure receipts. The preserved local control accepted the original architecture
+receipt before the update, then refused it with =Captured source changed= for
+=dev/bun.lock=. All seven views are regenerated using the new installed Library;
+SDK/Lean interpretation, Questions and layout declarations are unchanged.
+The existing cold-install, exact-source and dependency/worker/artifact recovery
+checks apply to this released source, without consuming a Release attachment.
