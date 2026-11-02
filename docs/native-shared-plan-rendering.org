@@ -623,3 +623,87 @@ Remote PR #9 was merged externally by GTrunSec at 2026-11-02T03:49:59Z, despite
 the requested hold; this run did not merge it. The current follow-up is local on
 =fix/native-lifecycle-diagnostics=, with no main push or further merge. The six
 remote green checks on 6072b5d are baseline evidence, not CI for this follow-up.
+
+** Native follow-up: identical-image controls and sampled thread ownership
+
+No Lean/Rust semantic or algorithm code changes in this follow-up. The frozen
+native baseline is 6072b5d, LeanPoo ed1a2834991b44e8b8e7f47d739229edd599da9b.
+The existing 48-child coordinator ran as an explicitly declared A/A control:
+its before/after labels identify byte-identical images in separate new paths.
+All 15 full-wire comparisons and native gates pass. Across all domains, the
+Rust workload retains 51 entries, 1280 rows and 2560 authorizations per sample.
+
+| A/A pipeline pair | A wall ms | B wall ms | A / B CPU ms |
+|-------------------+-----------+-----------+--------------|
+| 1 | 2676.615 | 2545.424 | 260 / 340 |
+| 2 | 301.504 | 429.482 | 260 / 300 |
+| 3 | 310.437 | 316.495 | 260 / 270 |
+
+The second and third B samples lose despite identical code; no speedup is
+claimed. Maximum-child RSS ranges 50462720–50675712 bytes. All 36 SDK samples
+from this cohort are retained: replay 152.788–280.971 ms, preparation
+98.539–201.633 ms, final serialization 0.455–1.359 ms. Preparation subphases
+are nested and must not be added to their parent again.
+
+A separate fixed three-process Lean native benchmark (one warmup, three samples
+inside each process) retains all nine totals: 28.266 / 27.903 / 27.721;
+29.713 / 29.307 / 36.401; 30.012 / 148.067 / 29.979 ms. The 148.067 ms non-win
+is retained. Process wall is 2024.809 / 246.144 / 343.867 ms, CPU
+210 / 200 / 190 ms, maximum-child RSS 58736640–58818560 bytes.
+Both native attribution modes pass unchanged production-wire equality: 832
+measurements for stages; 1240 measurements and 204 authorization records for
+stages-authorized, including all 1292 typed rows in each traversal.
+
+The interleaved Rust native benchmark's nine later replay samples are much
+slower: 232.449–1061.213 ms. Their three complete processes take
+2175.409 / 1923.537 / 3579.355 ms versus CPU 830 / 860 / 950 ms. Schema, revision,
+request preparation and authorization all vary; these samples remain alongside
+the earlier 36. Unrelated host builds were observed; wall/CPU divergence does
+not by itself identify scheduling, paging or a particular wait object. There
+is no stable whole-process acceleration claim and no shortened workload.
+
+All 24 copy/hardlink launch diagnostics pass their existing clock, protocol and
+complete-output/native-semantic gates, with 120-second child limits unchanged.
+
+| Runtime/mode | Two new-path pre-main samples ms |
+|--------------+----------------------------------|
+| Lean copy | 1822.654 / 1382.826 |
+| Lean hardlink | 1470.186 / 968.298 |
+| Rust copy | 544.413 / 400.356 |
+| Rust hardlink | 391.906 / 96.663 |
+
+Fresh Lean import spans are only 25.642–36.887 ms; spawn returns in 1.844–10.975 ms
+across these new paths. Repeated-path non-wins include Lean 93.975 ms and Rust
+26.414 ms. Neither import initialization nor inode identity explains the whole
+pre-main interval. No signing/security/cache settings were changed.
+
+[[https://developer.apple.com/documentation/xcode/reducing-your-app-s-launch-time][Apple's App Launch procedure]] produced a usable target trace with exit(0),
+thread states, syscalls, dyld intervals and user stacks. The 149.996 ms OS-main
+=sys_ulock_wait= has callers =_pthread_join → lean::run_with_thread_stack →
+lean_run_main=. It is the coordinator waiting for Lean's execution thread, not
+an independently established output bottleneck. The trace contains active
+worker stacks in catalog construction and =writeChunks=; these identify work,
+not a proven optimization. Trace startup and instrumentation are not ordinary
+launch latency. Its stdout capture does not preserve the complete catalog and
+is not counted as another conformance pass.
+
+The first attempted Rust SDK sample exited zero but collected only 896 samples
+at =_dyld_start+0=, with unavailable binary images and 96 KiB footprint. The
+actual main-entry marker followed sampling readiness by 1177.453 ms. Retain this
+as a pre-main register-only observation, not SDK attribution or a resolved
+kernel wait. After correcting the protocol to wait for the actual native
+main-entry marker before starting the sampler and releasing stdin, one 1-second
+/ 1-ms sample collects 780 main-thread observations, including policy parsing,
+schema replay, entity preparation and allocations. Sampler and child exit zero
+and the unchanged Rust benchmark gate passes. This profile includes warmup and
+early measured work; it is not all three steady samples and is excluded from
+ordinary latency. PID, executable SHA, marker and sample image identity are
+retained. The exact kernel pre-main wait remains open.
+
+Next changes must follow these ownership boundaries: measure the logical Lean
+execution thread separately from its OS-main join; require a real main marker
+for SDK sampling; preserve all non-wins; attribute revision/schema/entity work
+with the existing native counters before altering preparation or source
+representation. A new cache or timeout increase is not justified by these data.
+Raw logs, XML, trace and resource receipts remain local and ignored; no CSV or
+archive evidence bundle is added to Git.
