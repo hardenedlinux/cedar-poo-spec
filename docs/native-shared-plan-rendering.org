@@ -1199,109 +1199,178 @@ finite typed selectors replace function-valued fields. All four specialized
 mapped constructors now contain zero indirect =lean_apply_= field calls. The
 same universal equalities and Contract certificate continue to hold.
 
-*** Final fixed native evidence and limitations
+*** Payload lifetime, build graph and final native evidence
 
-Both candidates pass =lake build Examples Tests=, the entire =just check= suite,
-explicit builds of all four native roles, and the locked release Rust build.
-This includes the nine existing object families, original per-domain workflows,
-schema-bound/refusal cases, proofs, independent Rust replay and artifact-tampering
-checks. The final native workload covers all 51 catalog entries with the existing
-warmup and sample counts. All 48 lifecycle children pass and all 15 complete-wire
-comparisons pass. Catalog bytes remain 1,177,069 with SHA-256
+The follow-up baseline is =fa385c6= (the qualified =f099f60= constructor
+implementation), not the release-only baseline above. Generated C exposes
+another cost despite fewer field-list allocations: each request-layout node
+reconstructs its two-field RequestObjectFields payload, and each entity-wrapper
+node reconstructs its four-field payload. An isolated codegen replay of the exact
+baseline sources confirms those allocation statements. It has default symbol
+prefixes rather than Lake package prefixes and is used for allocation-pattern
+attribution, not as an exact old executable identity claim.
+
+=dfc57f0= makes the private typed selectors inlineable. Complete generated C
+functions, parsed through balanced braces, now contain no such per-node payload
+allocations; UID/Case selectors also avoid their helper calls. Public logical
+definitions, universal compiler equalities, kind-indexed refs, the consumed
+Contract certificate, error precedence and authorization remain unchanged.
+This changes native construction, not a cache of decisions or SDK admission.
+
+The entire ordinary gate passes: =lake build Examples Tests=, =just check=,
+four explicit native targets and locked release Rust. Subsequent diagnostic-only
+refactoring (=f7bca83=) moves the same native loops into
+=Benchmarks.CatalogLifecycle=, accepting the actual typed producer list.
+=IO.ofExcept= supplies the standard IO boundary. This module imports the shared
+transport, not the domain catalog, so its compilation can overlap domain exports.
+The executable still imports ManifestInitialization first and supplies the same
+complete catalog. All Examples/Tests and four native targets compile, layer checks
+pass, and all three ordinary Lean executable images remain byte-identical across
+this diagnostic split. The final 48-child lifecycle and native modes validate
+that new diagnostic too.
+
+All nine existing object families and all 51 catalog entries remain covered,
+including original per-domain workflows, Schema/refusal cases, proofs, independent
+Rust replay and tampering controls. All 48 lifecycle children and 15 complete-wire
+comparisons pass. The 12 copy/hardlink diagnostic launches also preserve the full
+1,177,069-byte catalog, SHA-256
 =c6856fdb9e8b2d36407b8605756659e8a1c02fca09ce628bc41c845f0e376657=.
-The 12 additional copy/hardlink launch diagnostics also preserve those bytes.
+An initial metadata preflight rejects a missing baseline catalog-hash field
+before starting any native child. Its refusal and unused execution files are
+retained; the field is restored from the independent frozen baseline before the
+full fixed cohort. No child sample is discarded or selectively rerun.
 
-Lean owns every benchmark workload and emits native =measurement:= records.
-Each ordinary stage run retains 832 records; each authorization-separated run
-retains 1240. Rust owns SDK/replay and its separate allocation workload.
-Python only observes external processes, OS resources, artifacts and clocks.
-No sample is discarded or rerun to obtain a pass.
+Lean owns the native workload and =measurement:= records: one warmup and three
+samples per process, three paired processes, plus the unchanged stage modes.
+Each ordinary stage process retains 832 records; each authorization-separated
+process retains 1240. Rust owns SDK/replay and allocation workloads. Python only
+observes processes, OS resources, artifacts and clocks. The deterministic warm
+small-allocation counts in every sample are:
 
-The final warm per-pass small-allocation counts are deterministic across all
-three samples, including the authorization-separated control:
+| Stage          | Prior constructor | Inline selectors | Delta |
+|----------------+-------------------+------------------+-------|
+| Source produce |            172030 |           172030 |     0 |
+| Publish        |            692149 |           684957 | -7192 |
+| Finish         |              1228 |             1228 |     0 |
+| Serialize      |             95389 |            95389 |     0 |
+| Total          |            960796 |           953604 | -7192 |
 
-| Stage               | Release baseline | Final selector layout | Delta  |
-|---------------------+------------------+-----------------------+--------|
-| Source produce      |           172678 |                172030 |   -648 |
-| Publish             |           720593 |                692149 | -28444 |
-| Finish              |             1228 |                  1228 |      0 |
-| Serialize           |            95389 |                 95389 |      0 |
-| Total               |           989888 |                960796 | -29092 |
+First-use publication likewise falls 775649 -> 768457. In the separated control,
+authorization allocations remain 533764 and publication falls 159829 -> 152637.
+The reduction therefore concerns construction rather than omitted authorization
+or output. These are small-allocation counts, not allocated bytes or retained
+heap; large strings and the final output buffer need separate resource evidence.
 
-The authorization-separated workload keeps authorization allocations unchanged
-at 533764, while publication allocations fall 188273 -> 159829. This attributes
-the removed work to construction rather than omitted authorization or encoding.
-First-use production allocations fall 800308 -> 793636; first-use publication
-falls 804093 -> 775649. Allocation instrumentation remains separate from timing.
+Nine-sample Lean total medians improve 30.307 -> 28.588 ms (5.67% observed).
+The second paired process has all three samples slower, and its median worsens
+27.188 -> 28.454 ms; those non-wins remain. Complete pipelines also remain mixed:
 
-Final nine-sample Lean timing medians are 123.034 -> 126.788 ms: still a non-win.
-Complete producer-plus-replay pairs are retained in full:
+| Pair / state | Baseline wall ms | Candidate wall ms | Baseline CPU ms | Candidate CPU ms |
+|--------------+------------------+-------------------+-----------------+------------------|
+| 1 / first    |         2677.380 |          2911.166 |             300 |              320 |
+| 2 / repeated |          869.231 |           638.157 |             290 |              260 |
+| 3 / repeated |          767.769 |           712.013 |             280 |              290 |
 
-| Pair / file state | Baseline wall ms | Candidate wall ms | Baseline CPU ms | Candidate CPU ms |
-|-------------------+------------------+-------------------+-----------------+------------------|
-| 1 / first use     |         9617.596 |          2483.964 |             340 |              290 |
-| 2 / repeated      |          612.080 |           732.252 |             300 |              280 |
-| 3 / repeated      |          570.185 |           658.047 |             280 |              250 |
+Repeated wall observations improve by 231.075 and 55.756 ms, but first-use wall
+regresses 233.787 ms and CPU improves in only one pair. Peak pipeline RSS changes
+-49152, -32768 and +65536 bytes. Stable whole-process acceleration and RSS
+improvement are still not accepted from this cohort.
 
-CPU observations improve in these three pairs, at the OS counter's coarse
-precision, but repeated wall time regresses by 120.172 and 87.862 ms. Peak pipeline
-RSS rises by 245760, 311296 and 245760 bytes respectively. Neither stable whole-chain
-latency nor OS RSS improvement is accepted. The final Rust ordinary and allocation
-images are identical to their baseline images: this is an A/A control, not a Rust
-optimization claim. Its nine-sample replay median nevertheless shifts
-1152.848 -> 771.172 ms; allocation peak/live remain 17078567/8991899 bytes.
-Tiny request-count/byte differences are not attributed to an algorithm change.
+There is no new retained runtime field/cache. The ordinary Lean image's __TEXT
+segment size is unchanged; its actual __text shrinks by 1088 bytes and __LINKEDIT
+grows by 464. This is evidence against a new code-page-size explanation for this
+follow-up, not a measurement of Lean retained heap. The Rust image and input are
+A/A controls: allocation requests are unchanged at 1480184, peak/live requested
+bytes remain 17078567/8991899, and the 16-byte total-request difference is not an
+algorithm claim. Nevertheless its native replay median changes
+226.314 -> 274.964 ms. Together with 30 other compiler processes at the initial
+cohort snapshot, this prevents clean attribution of wall/RSS variation to the
+constructor alone. A later swap snapshot reports 4995.50 MiB used; a snapshot
+does not establish that a particular child wait was caused by swapping.
 
-Our own builds stop before measurement. The pre-cohort snapshot still contains
-13 other compiler processes. Post-cohort read-only observations show about
-11.7 GiB swap used; this is a snapshot, not proof that a particular wait was
-caused by swapping. Process CPU, involuntary context switches and wall time are
-retained for every child. Environmental variation prevents causal attribution
-of the large wall differences from this cohort alone.
+*** Correct toolchain and official Lake cache recovery
 
-Root-project cold builds preserve dependency directories, but Lake still rebuilds
-some dependency modules. Neither candidate completes within the unchanged
-120-second/default-job limit: exit 124 at 120.066 and 120.102 seconds, with OS peak
-RSS 1008451584 and 837615616 bytes. Partial build trees and receipts are preserved;
-qualified warm trees are restored and frozen images used for timing. No complete
-cold-build or cold/hot identity pass is claimed. Two earlier observer setup
-failures never start Lean: resolving Nix's timeout link exposes the coreutils
-multicall executable. Its documented =--coreutils-prog=timeout= dispatch fixes the
-observer; both failures remain in the first evidence directory. No actual cold
-build is retried with relaxed limits. Unchanged Rust source/configuration and
-exact binary identity permit reuse of its earlier project-release-cold receipt;
-that is dependency-reusing evidence, not a new empty-cache build.
+The earlier two 120-second cold failures used a hard-coded Lean 4.34.0 Lake
+binary, although the project declares 4.34.1. Their dependency rebuilds are
+invalid evidence for the declared-toolchain cold gate; the raw failures remain
+preserved and are not silently relabeled. The standard
+=just bench-project-native-cold OUTPUT= entrypoint now resolves Lake through
+=lake env lean --print-prefix=, checks its version, records compiler identity,
+keeps the unchanged 120-second/default-job limit and restores the qualified
+build on success, error or interruption. It rejects an output directory inside
+the build tree before moving anything. This negative control is executed.
 
-*** Pre-main correlation and remaining acceptance
+Two correct-toolchain attempts also fail and remain retained. Before the
+algorithm-module split, three cold images match their qualified images but the
+last lifecycle executable is missing at 120.079 seconds. The diagnostic algorithm
+had to wait for the complete catalog and then compile for 7.5 seconds plus 4.6
+seconds of C compilation. Splitting moves this algorithm earlier in the graph;
+the independent core completes before the catalog and the thin entrypoint takes
+2.4 seconds plus 0.274 seconds of C in the observed incremental build. Yet that
+empty-root attempt still reaches the limit at 120.071 seconds with only one
+image complete. Host conditions differ; this is a retained non-win, not proof
+that the graph split causes a total slowdown. Reported target durations identify
+Profiles, disclosure and other domain compilation as remaining costs; their
+individual durations cannot simply be summed into a parallel critical path.
 
-Both new diagnostic cohorts retain raw Mach-domain joins for all 12 exact child
-PIDs, using the existing native clock calibration after verifying the same boot.
-The first cohort's notices occur 48-84 ms before main. The final cohort is much
-more variable: first-file pre-main spans approximately 1.34-2.46 seconds, and even
-repeated launches range approximately 89-931 ms. Import initialization also
-varies 17-559 ms. A provenance/skip notice can precede main by 66-923 ms, including
-that initialization; it is not a completion/wakeup signal. The final log query
-retains 7759 events and matches notices inside all owned child lifetimes.
-Displayed log wall timestamps are still excluded from latency calculations.
+Inspection of the installed Lake 4.34.1 source finds that its default artifact
+cache is readable but not writable. Neither inherited artifact-cache variable
+is set, and the project had not enabled writes. A cache directory alone therefore
+does not imply that this project's verified input/output mappings were populated.
+=84c18dd= enables the official =enableArtifactCache= option and
+=restoreAllArtifacts=, preserving normal artifact paths for existing consumers.
+=lake --rehash build= verifies actual inputs and populates Lake's existing,
+toolchain-owned store; no custom cache, version salt or extra environment variable
+is added. All Examples/Tests and four native targets pass, and all four resulting
+executables are byte-identical to the measured images above.
 
-The previously captured 2731.498-ms blocked event and its recorded =syspolicyd=
-wakeup execution context remain useful independent evidence. Its transformed
-wait key still does not identify a kernel object type or wake subroutine.
-The new log correlations do not resolve that limit. No signature, security,
-priority or log-privacy setting is changed.
+The next empty-root build, with dependency directories and that official store
+preserved, completes in 100.391 seconds within the unchanged 120-second limit.
+All four cold/qualified image hashes match; natural exit and identity acceptance
+both pass. Selected warm/cold traces also have identical inputs, dependency hashes
+and outputs. This closes the cache-preserving root-directory cold-start gate.
+It does not establish a 120-second build from completely empty caches, nor prove
+that every timing difference is caused by cache behavior in a changing host.
+The earlier cold failures, partial trees and resource receipts remain.
 
-The shared algorithm/type/Contract/proof/replay migration is validated across the
-catalog; the performance acceptance remains open. The next integrated gate must
-separate immutable Case/request projection cost, SDK preparation, import
-initialization and off-CPU wait in the same full workload. Any further reuse
-belongs to the existing typed source/Case owner, must preserve complete-byte and
-independent-replay controls, and must demonstrate a whole-process benefit before
-being described as a speedup. A readable target wait stack is still needed to
-name the opaque kernel wait; another service notice cannot supply that evidence.
+The existing CI cache action now discovers the actual official store using
+=lake env printenv LAKE_CACHE_DIR= after restoring dependencies and includes it
+alongside normal compiler outputs. Existing compiler/target/build compatibility
+and source identities remain the key authority; no arbitrary cache versions are
+introduced, and generated benchmark evidence is not cached. YAML syntax and the
+local store lookup pass. This unpublished follow-up has not run remote exact-head
+Ubuntu CI; that result is not inferred from local acceptance.
 
-Both complete cohorts, all non-wins, generated-code identities and resource
-receipts remain local/ignored in =../cedar-case-fields-release-20261102/= and
-=../cedar-case-selectors-20261102/=. Earlier rejected candidates remain preserved
-in their existing evidence directories. No CSV, archive, rendered HTML or vendor
-content is added. These follow-up changes remain local, unpushed and unmerged;
-remote exact-head CI is not claimed.
+*** Pre-main evidence and remaining acceptance
+
+All 12 final diagnostic PIDs match policy notices inside their observed lives.
+The 2778-event raw log window is joined through the existing, verified Mach-clock
+calibration on the same boot. First-file pre-main spans approximately 805-1550 ms;
+repeated launches span 46-57 ms, including 18-23 ms of import initialization.
+Those are separate process observations, not producer-algorithm time.
+Provenance/skip notices are not wakeup or completion signals, and formatted wall
+log timestamps are not used to calculate their latency.
+
+Two additional stack observations run only after ordinary measurements. The
+stopped Python exec observer exits naturally with unchanged full output, but
+sample reports CSSymbolicator creation failure and produces no stack report even
+though sample exits zero. A tiny native debug-symbol exec observer also preserves
+full output; sample creates image metadata but its call graph is empty across
+exec. Neither observation supplies a usable wait stack. These failure records
+are retained and excluded from latency/resource admission. No signature,
+security, priority or log-privacy setting is changed.
+
+The previous 2731.498-ms blocked event and recorded syspolicyd wakeup execution
+context remain independent evidence. Its transformed key still does not identify
+a kernel object type or wake subroutine. The new observations do not close that
+limit. The next integrated acceptance must keep import initialization, actual
+kernel/off-CPU waits, SDK preparation and immutable Case projection separate in
+the full workload. A readable wait stack is needed to name the opaque object.
+Consistent complete-process evidence, including all first-use and repeated
+non-wins, is still required before claiming a stable speedup or retained-heap gain.
+A completely cache-empty source build also remains a distinct, unpassed scope.
+
+Current full evidence is local/ignored in =../cedar-constructor-lifetime-20261102/=.
+Both preceding constructor cohorts and all earlier rejected candidates remain
+preserved in their existing evidence directories. No CSV, archive, rendered HTML
+or vendor content is added. Follow-up changes remain local, unpushed and unmerged.
