@@ -197,3 +197,7 @@ end CedarPooSpec.Transport.SourceTableTest
       throw (IO.userError "missing/duplicate/extra Case field inventory admitted")
   IO.println "CASE-FIELDS-CONTRACT-OK complete/permuted/missing/duplicate/extra"
 #print axioms CedarPooSpec.Transport.Case.encodedFields_value
+
+#print axioms CedarPooSpec.PolicyJson.entity_eq_layout
+#print axioms CedarPooSpec.PolicyJson.request_eq_layout
+#print axioms CedarPooSpec.PolicyJson.entityObject_eq_layout
