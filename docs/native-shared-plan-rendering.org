@@ -612,3 +612,10 @@ Catalog-free views need no catalog producer during recovery. Bun owns Git
 resolution and integrity; no dependency admission layer, installer wrapper,
 version registry or publication framework is added. Lean/Rust algorithms and
 existing proof/resource limits remain outside this change.
+
+Local final qualification passed 40 tests / 244 assertions (177.14 s), including
+13 focused source/recovery tests. The first CI configuration attempt at 625b544
+(run 41386028834) was rejected before any engineering-view jobs started. Its
+job-level cache declaration used the step-only runner context. The cache directory
+is now passed directly to native =bun install= via the shell's =RUNNER_TEMP=;
+no failed build/test is relabeled as a pass and no test budget is widened.
