@@ -1,6 +1,9 @@
 name = "CedarPooSpec"
 version = "0.1.0"
 defaultTargets = ["CedarPooSpec"]
+# Use Lake's toolchain-owned, input-indexed cache; retain normal artifact paths.
+enableArtifactCache = true
+restoreAllArtifacts = true
 
 [[require]]
 name = "Cedar"
