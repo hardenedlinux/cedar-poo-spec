@@ -52,6 +52,105 @@ private def publicationStep (reviewed : Authorization.Delta.ReviewedInteraction)
   else
     ({image with live := {image.live with executionMode := .enforcing}, durable := {image.durable with executionMode := .enforcing}}, 0)
 
+-- This is a property of the actual simulator function, not an assumed step
+-- relation. The independent floor is never reset by any declared command.
+private theorem publicationStep_invariant
+    (reviewed : Authorization.Delta.ReviewedInteraction) (approved : Bool)
+    (initial : Authorization.Delta.ReleaseState) (image : PublicationState) (command : Nat) :
+    let result := publicationStep reviewed approved initial image command
+    image.floor ≤ result.1.floor ∧
+      (image.unknown = true → result.1.unknown = true) ∧
+      (result.2 ≠ 0 → image.floor = reviewed.snapshot.epoch ∧
+        result.1.floor = reviewed.snapshot.epoch + 1) := by
+  unfold publicationStep
+  split
+  · split
+    · simp
+    · rename_i fresh
+      cases accepted : reviewed.advanceReviewed releaseModel schema image.live (fun _ _ => approved) with
+      | error error => simp
+      | ok value =>
+        obtain ⟨next, policies⟩ := value
+        obtain ⟨epoch, rfl⟩ := reviewed.advanceReviewed_postcondition releaseModel schema image.live next policies
+          (fun _ _ => approved) accepted
+        cases lost : command == 6 <;> simp_all
+  · split
+    · simp
+    · split
+      · simp
+      · split
+        · simp
+        · split <;> simp
+
+-- Induction over the existing released trace projection, with no horizon or
+-- sample-count premise. The finite Rust corpus remains a separate conformance test.
+private theorem publicationHistory_retired
+    (reviewed : Authorization.Delta.ReviewedInteraction) (approved : Bool)
+    (initial : Authorization.Delta.ReleaseState) (commands : List Nat)
+    (image : PublicationState) (retired : reviewed.snapshot.epoch < image.floor) :
+    (LeanPoo.Functional.PropertyTesting.traceObservations
+      (publicationStep reviewed approved initial) id image commands).countP (fun row => row.1 != 0) = 0 := by
+  induction commands generalizing image with
+  | nil => rfl
+  | cons command rest ih =>
+    cases transition : publicationStep reviewed approved initial image command with
+    | mk after reply =>
+      have invariant := publicationStep_invariant reviewed approved initial image command
+      simp only [transition] at invariant
+      have zero : reply = 0 := by
+        by_contra nonzero
+        have committed := invariant.2.2 nonzero
+        omega
+      have nextRetired : reviewed.snapshot.epoch < after.floor := by omega
+      simpa [LeanPoo.Functional.PropertyTesting.traceObservations, transition, zero] using ih after nextRetired
+
+private theorem publicationHistory_at_most_one_commit
+    (reviewed : Authorization.Delta.ReviewedInteraction) (approved : Bool)
+    (initial : Authorization.Delta.ReleaseState) (commands : List Nat) (image : PublicationState) :
+    (LeanPoo.Functional.PropertyTesting.traceObservations
+      (publicationStep reviewed approved initial) id image commands).countP (fun row => row.1 != 0) ≤ 1 := by
+  induction commands generalizing image with
+  | nil => simp [LeanPoo.Functional.PropertyTesting.traceObservations]
+  | cons command rest ih =>
+    cases transition : publicationStep reviewed approved initial image command with
+    | mk after reply =>
+      by_cases zero : reply = 0
+      · simpa [LeanPoo.Functional.PropertyTesting.traceObservations, transition, zero] using ih after
+      · have invariant := publicationStep_invariant reviewed approved initial image command
+        simp only [transition] at invariant
+        have retired : reviewed.snapshot.epoch < after.floor := by
+          have committed := invariant.2.2 zero
+          omega
+        have noMore := publicationHistory_retired reviewed approved initial rest after retired
+        simp [LeanPoo.Functional.PropertyTesting.traceObservations, transition, zero, noMore]
+
+private theorem publicationHistory_retains_unknown
+    (reviewed : Authorization.Delta.ReviewedInteraction) (approved : Bool)
+    (initial : Authorization.Delta.ReleaseState) (commands : List Nat)
+    (image : PublicationState) (held : image.unknown = true) :
+    ∀ observation ∈ LeanPoo.Functional.PropertyTesting.traceObservations
+      (publicationStep reviewed approved initial) id image commands, observation.2.unknown = true := by
+  induction commands generalizing image with
+  | nil => simp [LeanPoo.Functional.PropertyTesting.traceObservations]
+  | cons command rest ih =>
+    cases transition : publicationStep reviewed approved initial image command with
+    | mk after reply =>
+      have invariant := publicationStep_invariant reviewed approved initial image command
+      simp only [transition] at invariant
+      have nextHeld := invariant.2.1 held
+      intro observation member
+      have located : observation = (reply, after) ∨ observation ∈
+          LeanPoo.Functional.PropertyTesting.traceObservations
+            (publicationStep reviewed approved initial) id after rest := by
+        simpa [LeanPoo.Functional.PropertyTesting.traceObservations, transition] using member
+      rcases located with rfl | later
+      · exact nextHeld
+      · exact ih after nextHeld observation later
+
+#print axioms publicationStep_invariant
+#print axioms publicationHistory_at_most_one_commit
+#print axioms publicationHistory_retains_unknown
+
 private def modeName : Authorization.Delta.ExecutionMode → String
   | .enforcing => "enforcing" | .observing => "observing" | .disabled => "disabled"
 

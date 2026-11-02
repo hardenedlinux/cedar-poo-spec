@@ -1,7 +1,7 @@
 {
   "entry": "dev/d2/zero-trust-model-proofs.d2",
   "sources": {
-    "CedarPooSpec/Gateway/ZeroTrust.lean": "2498eb24a0cef0b123b8a925ec545118d8d7d047afce4e53068d05be71d92192",
+    "CedarPooSpec/Gateway/ZeroTrust.lean": "6ef9abbec130ae27ac17f7fb3b2b4426193e6dcb862b11847abeb370612b69a0",
     "CedarPooSpec/ZeroTrust/Composition.lean": "ebab914cf26a6d08662fb58dea452985673e3ab3e7f6ee3c97abb572b840984e",
     "CedarPooSpec/ZeroTrust/Continuous.lean": "f103491672c01df12df41ba8c19f0a66e99d169e2538cf329c3d3d810d24c9ad",
     "CedarPooSpec/ZeroTrust/Model.lean": "bf9827dc36c52cfc41f63fd1ee9ff83b325972c41504b41444e2134d635519a2",
@@ -522,21 +522,21 @@
       "samples": 52,
       "requiredMinimum": 12
     },
-    "inputSHA256": "2ae53158cc0bda844d8318c9703305f36c290370cc1d34f9b8c849c7c18a6615",
+    "inputSHA256": "8bc0cc787dfa5f9a9e1b4a22165f59bbb2c7d13af6e68578ccc3bd2371986705",
     "scenes": [
       {
         "inputSHA256": "1bdf05dcc8b408d773f9a0d8c4d41c942344a340fa40585913bc76b88fc059a6",
         "layoutSHA256": "3796a9d8efa45dd268519a28ca746f951ba328551f1153b6dbdc40c1a3b92a86",
         "nodes": 7,
         "edges": 6,
-        "milliseconds": 234.91149999999834
+        "milliseconds": 138.66804200000115
       }
     ],
     "svgSHA256": [
-      "8a1e9b8747869538f20eb4deb5e989ebdcc83a3aa4201e467f0b9aeea61ca37b",
+      "187b2e45e822cccb63b4bbd1688d3c9d76e38ef2796deb0839fe6648c97540c9",
       "ced53c56557fb27ac1ecb8db2bed1e49abf1650a077b8347340e0f29472a78fa"
     ],
-    "composedHTMLSHA256": "60086d03300c07e707564af35775c879c6e39ffb6a43cad66381eaee81ea00a5",
+    "composedHTMLSHA256": "ee28151687f74b1741a68d94e800610da893e18944e160e46f27474fc7bf76bc",
     "dependencies": {
       "@fontsource/inter": "5.3.0",
       "@fontsource/kalam": "5.3.0",
@@ -549,7 +549,7 @@
       "web-worker": "1.5.0"
     },
     "regionSHA256": {},
-    "htmlSHA256": "b7b61ea533e0be6deb5cc2cf1e985cd4bcc2e149524808872885d4a9ec5a994c",
+    "htmlSHA256": "5c61f32f987ae0c4c216a29177f056512450a40dc8fe7186556045d74f1ef70d",
     "drawing": "roughjs@4.6.6",
     "routing": "elkjs@0.12.1",
     "assetSHA256": {

@@ -256,4 +256,32 @@ theorem rejected_delta_cannot_commit
   rw [rejected artifact reviewed resolved] at passed
   contradiction
 
+/-- The actual committed image retires the resolved review, even if a later
+caller supplies fresh approval or another model/schema. This is a statement
+about the returned image; it does not authenticate recovered storage. -/
+theorem delta_final_retires_resolved_review
+    {host : Host Command Result View Parent Artifact Cut}
+    {resolve modelAt schemaAt stateAt approveGain}
+    {template : Contract Atom Command Result} {command actual}
+    (publication : Final (host.withDeltaReview resolve modelAt schemaAt stateAt approveGain)
+      template prepare command actual) :
+    ∃ artifact reviewed policies,
+      host.approvedEvidenceAt actual command = some artifact ∧
+      resolve actual command artifact = some reviewed ∧
+      (stateAt actual).epoch = reviewed.snapshot.epoch ∧
+      stateAt publication.receipt.state =
+        { activeRoot := reviewed.snapshot.combined.root
+          activePolicies := policies
+          executionMode := .enforcing
+          epoch := (stateAt actual).epoch + 1 } ∧
+      ∀ otherModel otherSchema otherApproval,
+        (reviewed.advanceReviewed otherModel otherSchema (stateAt publication.receipt.state) otherApproval).isOk = false := by
+  obtain ⟨_, artifact, reviewed, policies, present, resolved, advanced⟩ := delta_final_retains_exact_review publication
+  obtain ⟨epoch, installed⟩ := reviewed.advanceReviewed_postcondition (modelAt actual) (schemaAt actual)
+    (stateAt actual) (stateAt publication.receipt.state) policies (approveGain actual command) advanced
+  refine ⟨artifact, reviewed, policies, present, resolved, epoch, installed, ?_⟩
+  intro otherModel otherSchema otherApproval
+  exact reviewed.returned_state_rejects_republication (modelAt actual) otherModel (schemaAt actual) otherSchema
+    (stateAt actual) (stateAt publication.receipt.state) policies (approveGain actual command) otherApproval advanced
+
 end CedarPooSpec.Gateway.PublicationReview

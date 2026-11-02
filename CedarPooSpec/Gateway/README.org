@@ -262,3 +262,12 @@ modes and repeated commits. Rolling back the independent epoch floor as well
 as the image admits a second commit in the deliberate negative control. These
 are bounded simulated-store checks, not deployed persistence or anti-rollback
 evidence. The full 51-entry catalog remains a separate acceptance requirement.
+
+The general =advanceReviewed_postcondition= and
+=returned_state_rejects_republication= laws now prove exact installation and
+review retirement under arbitrary later approval/model/schema choices.
+=delta_final_retires_resolved_review= carries those consequences through the
+actual Final receipt. The existing simulator also has an inductive at-most-one
+commit and unknown-retention proof for arbitrary finite histories of one fixed
+review. Its independent authority floor remains preserved; the native Rust
+correspondence remains the explicitly bounded corpus above.

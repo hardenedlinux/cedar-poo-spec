@@ -279,6 +279,7 @@ def currentAdmission (requiredProfile : Gateway.Profile) (host : Host E V)
       (host.context actual) (checksAt actual) (entitiesAt actual),
     requiredProfile.Refines (preparedAt actual).profile
 
+omit [BEq E] [LawfulBEq E] in
 /-- Current admission also supports an independently approved gain: fresh
 error-free authorization and original-profile refinement do not require a
 no-gain claim. Keep the receipt so callers retain its exact policy provenance. -/

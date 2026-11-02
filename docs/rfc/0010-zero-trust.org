@@ -482,3 +482,46 @@ job-count environment variable, provider backend or Python semantic test is adde
 Only source and tests are versioned; generated trace/receipt JSON stays in the
 ignored Lake build directory. Final source and remote CI qualification must be
 reported separately from this design/implementation inventory.
+
+** General publication laws and finite-history induction
+
+The follow-up strengthens the proof coverage without changing the release or
+simulation algorithms. =ReviewSnapshot.currentPolicies_epoch= exposes the epoch
+check in actual successful revalidation. =advanceReviewed_postcondition= proves
+that every successful no-gain or governed-gain advance matches that review epoch
+and installs exactly the returned policies/root in enforcing mode at the next
+natural epoch. =stale_epoch_cannot_advance= and
+=returned_state_rejects_republication= refuse reuse of that review under arbitrary
+later approval callbacks, models and schemas. The guarantee is about the actual
+returned state, not about a caller supplying an older state again.
+
+=PublicationReview.delta_final_retires_resolved_review= connects these laws to
+the actual Final receipt, selected artifact, resolved review and committed
+post-state. Original Contract, registration, fencing and current-use premises
+remain unchanged. The proof supplies neither an affine IO capability nor atomic
+arbitration between two callers holding the same pre-state.
+
+The existing test-owned =publicationStep= now has a checked step invariant:
+the independent epoch floor never decreases, a successful commit advances the
+matched review epoch, and unknown results remain retained. Induction directly
+over released LeanPoo =traceObservations= proves, for arbitrary finite command
+lists interpreted by that function, that the same fixed review commits at most
+once, and that every later observation retains an already unknown result.
+These proofs have no three-step horizon or sample-count premise. No second
+runner or runtime state machine is introduced. The seven declared commands,
+fixed reviewed artifact and preserved independent authority floor delimit the
+model; exchanging artifacts or rewinding that authority is a different model.
+
+The 384 configuration checks and 1,372 three-command Lean/Rust histories remain
+unchanged as executable conformance evidence. The pure-model induction does not
+extend the Rust comparison to unbounded executions or machine-word overflow,
+and establishes no deployed storage/IO refinement, fair scheduling or MDP utility
+guarantee. Existing floor-rewind and concurrent-pre-state counterexamples remain
+valid outside the strengthened forward-history premises. All new lifecycle and
+history proofs are kernel-checked using ordinary logical axioms; they consume no
+new native-decision axiom or external UNSAT certificate.
+
+The standalone current-admission consequence no longer requires unused =BEq E=
+or =LawfulBEq E= instances. Consumption still requires its actual lawful effect
+comparator. This removes an irrelevant API prerequisite without changing
+admission, equality or runtime execution.
