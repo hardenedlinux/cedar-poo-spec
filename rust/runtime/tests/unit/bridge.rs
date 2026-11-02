@@ -895,3 +895,35 @@ fn json_ast_render_preserves_legacy_normalization_and_source_bytes() {
         "// Generated from Lean-POO. Cedar assigns new IDs when parsing this text.\n\n"
     );
 }
+
+#[test]
+fn typed_request_literals_match_the_independent_sdk_json_context() {
+    for value in [
+        json!({}),
+        json!({"μ\n\"": "escaped\t😀", "flag": true, "n": i64::MIN}),
+        json!({"max": i64::MAX, "nested": {"array": [1, 1, 2, false, "a"], "empty": {}}}),
+        json!({"set": [{"b": [1, 2], "a": false}, {"b": [2, 1], "a": false}]}),
+    ] {
+        let actual = super::literal_context(&value).expect("literal subset");
+        let original = cedar_policy::Context::from_json_value(value, None).unwrap();
+        assert_eq!(actual, original);
+    }
+}
+
+#[test]
+fn typed_request_literals_delegate_reserved_unknown_and_invalid_forms() {
+    for value in [
+        json!(null),
+        json!([]),
+        json!({"null": null}),
+        json!({"float": 1.0}),
+        json!({"negative_zero": -0.0}),
+        json!({"oversized": u64::MAX}),
+        json!({"__expr": "true"}),
+        json!({"nested": {"__entity": {"type": "User", "id": "a"}}}),
+        json!({"set": [{"__extn": {"fn": "ip", "arg": "10.0.0.1"}}]}),
+        json!({"__entity": "ordinary-looking", "other": 1}),
+    ] {
+        assert!(super::literal_context(&value).is_none(), "{value}");
+    }
+}

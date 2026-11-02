@@ -14,16 +14,22 @@ structure SourceRef (kind : SourceKind) where
 structure SourceSnapshot (kind : SourceKind) where
   value : Lean.Json
   encoding : Thunk { wire : String // wire = value.compress }
+  fingerprint : Thunk { code : UInt64 // code = hash encoding.get.val } :=
+    Thunk.mk fun _ => ⟨hash encoding.get.val, rfl⟩
 
 def SourceSnapshot.ofJson (value : Lean.Json) : SourceSnapshot kind :=
-  ⟨value, Thunk.mk fun _ => ⟨value.compress, rfl⟩⟩
+  { value := value, encoding := Thunk.mk fun _ => ⟨value.compress, rfl⟩ }
 def SourceSnapshot.wire (snapshot : SourceSnapshot kind) : String := snapshot.encoding.get.val
 theorem SourceSnapshot.encoded (snapshot : SourceSnapshot kind) :
     snapshot.wire = snapshot.value.compress := snapshot.encoding.get.property
 
+/-- Fingerprints only select buckets; complete wire equality authorizes reuse. -/
+theorem SourceSnapshot.fingerprint_bound (snapshot : SourceSnapshot kind) :
+    snapshot.fingerprint.get.val = hash snapshot.wire := snapshot.fingerprint.get.property
+
 structure SourcePool (kind : SourceKind) where
   entries : Array (SourceSnapshot kind) := #[]
-  candidates : Std.HashMap String Nat := {}
+  candidates : Std.HashMap UInt64 (List Nat) := {}
   recent : Option Nat := none
 
 def SourcePool.resolve (pool : SourcePool kind) (ref : SourceRef kind) : Option String :=
@@ -38,7 +44,8 @@ private def append (pool : SourcePool kind) (source : SourceSnapshot kind) :
     Publication pool source.value :=
   let index := pool.entries.size
   { next := { entries := pool.entries.push source
-              candidates := pool.candidates.insert source.wire index
+              candidates := pool.candidates.insert source.fingerprint.get.val
+                (index :: pool.candidates[source.fingerprint.get.val]?.getD [])
               recent := some index }
     reference := ⟨index⟩
     bound := by simp [SourcePool.resolve, index, source.encoded]
@@ -50,12 +57,14 @@ private def append (pool : SourcePool kind) (source : SourceSnapshot kind) :
 private def publishIndexed (pool : SourcePool kind) (source : SourceSnapshot kind) :
     Publication pool source.value :=
   let wire := source.wire
-  match pool.candidates[wire]? with
-  | some index =>
-      if bound : pool.resolve ⟨index⟩ = some wire then
-        ⟨{ pool with recent := some index }, ⟨index⟩,
-          bound.trans (congrArg some source.encoded), fun _ _ => rfl⟩
-      else append pool source
+  let candidates := pool.candidates[source.fingerprint.get.val]?.getD []
+  let found : Option { index : Nat // pool.resolve ⟨index⟩ = some wire } :=
+    candidates.findSome? fun index =>
+      if bound : pool.resolve ⟨index⟩ = some wire then some ⟨index, bound⟩ else none
+  match found with
+  | some ⟨index, bound⟩ =>
+      ⟨{ pool with recent := some index }, ⟨index⟩,
+        bound.trans (congrArg some source.encoded), fun _ _ => rfl⟩
   | none => append pool source
 
 

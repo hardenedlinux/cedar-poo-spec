@@ -182,3 +182,28 @@ theorem arbitrary_record_key_admission (fields : List (String × α)) :
       throw (IO.userError "record key admission changed")
   IO.println "RECORD-KEY-ADMISSION-OK ordered/unordered/duplicate/empty/unicode"
 end CedarPooSpec.Transport.SourceTableTest
+
+-- A bucket can contain colliding/stale/missing indices. No hint admits a source.
+#eval show IO Unit from do
+  let original : CedarPooSpec.Transport.SourceSnapshot .policy :=
+    .ofJson (Lean.toJson "bucket-original")
+  let independent : CedarPooSpec.Transport.SourceSnapshot .policy :=
+    .ofJson (Lean.toJson "bucket-original")
+  let first := ({} : CedarPooSpec.Transport.SourcePool .policy).publishSnapshot original
+  let changed := first.next.publish (Lean.toJson "bucket-changed")
+  let collision := { changed.next with
+    recent := none
+    candidates := changed.next.candidates.insert independent.fingerprint.get.val [changed.reference.index, 999, first.reference.index] }
+  let found : CedarPooSpec.Transport.Publication collision independent.value :=
+    collision.publishSnapshot independent
+  unless found.reference.index == first.reference.index && found.next.entries.size == 2 do
+    throw (IO.userError "collision bucket skipped complete source confirmation")
+  let missing := { changed.next with
+    recent := none
+    candidates := changed.next.candidates.insert independent.fingerprint.get.val [changed.reference.index, 999] }
+  let appended : CedarPooSpec.Transport.Publication missing independent.value :=
+    missing.publishSnapshot independent
+  unless appended.next.entries.size == 3 && appended.next.resolve appended.reference == some independent.wire do
+    throw (IO.userError "untrusted bucket admitted missing or different source")
+  IO.println "SOURCE-FINGERPRINT-OK full-equality/collision/stale/missing/independent"
+#print axioms CedarPooSpec.Transport.SourceSnapshot.fingerprint_bound

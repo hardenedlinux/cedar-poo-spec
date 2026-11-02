@@ -17,14 +17,35 @@ pub(crate) fn value_sha256(value: &Value) -> Result<String, String> {
     };
     write_canonical_json(value, &mut writer)?;
     writer.flush().map_err(|error| error.to_string())?;
-    let digest = writer.digest.finalize();
+    Ok(encode_digest(writer.digest.finalize()))
+}
+
+// The source owner supplies its own exact wire; arbitrary bytes cannot be paired
+// with another value. Preserve the canonical fallback if object order changes.
+pub(crate) fn schema_sha256(source: &cedar_poo_core::SchemaSourceJson) -> Result<String, String> {
+    fn ordered(value: &Value) -> bool {
+        match value {
+            Value::Object(fields) => fields.keys().is_sorted() && fields.values().all(ordered),
+            Value::Array(values) => values.iter().all(ordered),
+            _ => true,
+        }
+    }
+    if ordered(source) {
+        Ok(encode_digest(Sha256::digest(
+            source.source_identity()?.as_bytes(),
+        )))
+    } else {
+        value_sha256(source)
+    }
+}
+fn encode_digest(digest: impl IntoIterator<Item = u8>) -> String {
     const HEX: &[u8; 16] = b"0123456789abcdef";
     let mut encoded = String::with_capacity(64);
     for byte in digest {
         encoded.push(HEX[usize::from(byte >> 4)] as char);
         encoded.push(HEX[usize::from(byte & 15)] as char);
     }
-    Ok(encoded)
+    encoded
 }
 
 // Stack buffering avoids a full canonical payload and tiny SHA update calls.

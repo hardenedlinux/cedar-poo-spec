@@ -38,7 +38,7 @@ impl PreparedSchema {
     }
     pub(crate) fn digest(&self) -> Result<&str, String> {
         if self.digest.get().is_none() {
-            let value = crate::canonical::value_sha256(&self.source)?;
+            let value = crate::canonical::schema_sha256(&self.source)?;
             let _ = self.digest.set(value);
         }
         self.digest
