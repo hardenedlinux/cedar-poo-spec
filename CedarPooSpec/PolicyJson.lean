@@ -98,7 +98,7 @@ def entity (uid : EntityUID) : Lean.Json :=
 -- original reference; compiler rewrites require their exact equality proofs.
 private inductive EntityField where
   | type | id
-private def entityField (uid : EntityUID) : EntityField → Lean.Json
+@[inline] private def entityField (uid : EntityUID) : EntityField → Lean.Json
   | .type => Lean.toJson (toString uid.ty)
   | .id => Lean.toJson uid.eid
 private def entityLayout : Std.TreeMap.Raw String EntityField :=
@@ -387,7 +387,7 @@ private structure EntityObjectFields where
   tags : Lean.Json
 private inductive EntityObjectField where
   | uid | attributes | parents | tags
-private def entityObjectField (fields : EntityObjectFields) : EntityObjectField → Lean.Json
+@[inline] private def entityObjectField (fields : EntityObjectFields) : EntityObjectField → Lean.Json
   | .uid => entity fields.uid
   | .attributes => fields.attributes
   | .parents => fields.parents
@@ -427,7 +427,7 @@ private structure RequestObjectFields where
   context : Lean.Json
 private inductive RequestObjectField where
   | principal | action | resource | context
-private def requestObjectField (fields : RequestObjectFields) : RequestObjectField → Lean.Json
+@[inline] private def requestObjectField (fields : RequestObjectFields) : RequestObjectField → Lean.Json
   | .principal => Lean.toJson (toString fields.request.principal)
   | .action => Lean.toJson (toString fields.request.action)
   | .resource => Lean.toJson (toString fields.request.resource)

@@ -21,7 +21,7 @@ private def errors (fields : RefFields) : Lean.Json := Lean.toJson fields.respon
 -- at every mapped node while retaining one typed, proof-bound field inventory.
 private inductive Field where
   | name | revision | identifiers | request | expected | reasons | errors | policy | entities
-private def project (f : RefFields) : Field → Lean.Json
+@[inline] private def project (f : RefFields) : Field → Lean.Json
   | .name => Lean.toJson f.name
   | .revision => Lean.toJson f.revision
   | .identifiers => f.identifiers

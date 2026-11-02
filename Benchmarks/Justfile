@@ -99,3 +99,39 @@ bench-catalog-stages:
 bench-catalog-authorization:
     lake build manifestLifecycleNative
     timeout --signal=TERM --kill-after=3s 120s .lake/build/bin/manifestLifecycleNative stages-authorized
+
+# Observe an empty root build with the declared toolchain; preserve dependency
+# directories and restore the qualified build on success, timeout or interruption.
+[script]
+bench-project-native-cold output:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    output=$(python3 -c 'from pathlib import Path; import sys; p=Path(sys.argv[1]).resolve(); b=Path(".lake/build").resolve(); assert p != b and b not in p.parents, "cold evidence must be outside the build directory"; print(p)' {{quote(output)}})
+    test -d .lake/build
+    test ! -e "$output"
+    mkdir -p "$output"
+    lake_executable="$(lake env lean --print-prefix)/bin/lake"
+    {
+        cat lean-toolchain
+        "$lake_executable" --version
+        lake env lean --version
+    } > "$output/toolchain.txt"
+    python3 -c 'from pathlib import Path; import hashlib,json,sys; p=Path(sys.argv[1]).resolve(); print(json.dumps({"lake_executable":str(p),"lake_sha256":hashlib.sha256(p.read_bytes()).hexdigest(),"declared_toolchain":Path("lean-toolchain").read_text().strip()}))' "$lake_executable" > "$output/toolchain.json"
+    expected=$(sed 's/.*:v//' lean-toolchain)
+    "$lake_executable" --version | tail -n 1 | rg -F "Lean version $expected)" > /dev/null
+    mv .lake/build "$output/qualified-build"
+    restore() {
+        if test -d "$output/qualified-build"; then
+            if test -e .lake/build; then mv .lake/build "$output/cold-build"; fi
+            mv "$output/qualified-build" .lake/build
+        fi
+    }
+    trap restore EXIT
+    trap 'exit 129' HUP
+    trap 'exit 130' INT
+    trap 'exit 143' TERM
+    status=0
+    uv run --project python --package cedar-poo-py-test --locked python -m cedar_poo_py_test.resources --output "$output/resource.json" /bin/sh -c 'exec timeout --signal=TERM --kill-after=3s 120s "$@"' native-project-cold "$lake_executable" build caseManifestsNative objectProfilesNative functionalReuseNative manifestLifecycleNative > "$output/build.log" 2>&1 || status=$?
+    printf '%s\n' "$status" > "$output/exit-status"
+    python3 -c 'from pathlib import Path; import hashlib,json,sys; r=Path(sys.argv[1]); h=lambda p:hashlib.sha256(p.read_bytes()).hexdigest() if p.is_file() else None; names=["caseManifestsNative","objectProfilesNative","functionalReuseNative","manifestLifecycleNative"]; rows={n:{"qualified":h(r/"qualified-build/bin"/n),"cold":h(Path(".lake/build/bin")/n)} for n in names}; status=int(sys.argv[2]); accepted=status==0 and all(v["cold"] is not None and v["cold"]==v["qualified"] for v in rows.values()); print(json.dumps({"scope":"Root build initially absent; dependency directories preserved; fixed120s/defaultjobs", "returncode":status,"executables":rows,"accepted":accepted},indent=2)); sys.exit(0 if status or accepted else 1)' "$output" "$status" > "$output/identities.json"
+    exit "$status"
