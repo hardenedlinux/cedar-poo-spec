@@ -449,3 +449,38 @@ fn gateway_corrupted_witness_refuses_dispatch_and_pending_precommit_is_not_clean
         assert!(independent.actions.is_empty());
     }
 }
+
+#[test]
+fn gateway_operation_identity_encodes_typed_fields_without_delimiter_aliasing() {
+    let (mut left, schema, _) = setup();
+    let mut right = left.clone();
+    left.revision = "a/b".into();
+    left.name = "c".into();
+    right.revision = "a".into();
+    right.name = "b/c".into();
+    assert_eq!(
+        format!("{}/{}", left.revision, left.name),
+        format!("{}/{}", right.revision, right.name)
+    );
+    // Current revision validation already excludes this slash ambiguity.
+    assert!(Simulator::new(&left, Some(&schema)).is_err());
+    assert_ne!(
+        crate::json_sha256(&("cedar-poo-operation-v1", &left.revision, &left.name)).unwrap(),
+        crate::json_sha256(&("cedar-poo-operation-v1", &right.revision, &right.name)).unwrap()
+    );
+    left.revision = "a-b".into();
+    left.name = "c".into();
+    right.revision = "a".into();
+    right.name = "b-c".into();
+    let first = Simulator::new(&left, Some(&schema)).unwrap();
+    let second = Simulator::new(&right, Some(&schema)).unwrap();
+    assert_eq!(
+        first.envelope().effect.operation,
+        crate::json_sha256(&("cedar-poo-operation-v1", &left.revision, &left.name)).unwrap()
+    );
+    assert_ne!(
+        first.envelope().effect.operation,
+        second.envelope().effect.operation
+    );
+    assert!(second.prepare(&first.envelope()).is_err());
+}

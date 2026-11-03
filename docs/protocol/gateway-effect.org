@@ -41,7 +41,11 @@ acquire the optional P-256 dependency; isolated feature checks enforce this.
 
 The optional Rust =gateway= feature uses existing workspace P-256/ES256 and
 unpadded base64url. Signed payloads are exact UTF-8 JSON bytes of typed records;
-verification checks those original bytes before accepting their meaning. Field
+verification checks those original bytes before accepting their meaning. Operation
+IDs hash the versioned typed tuple of revision and Case name; delimiter-joined
+identifiers are not used. A native regression checks current slash refusal,
+typed tuple encoding and cross-operation refusal separately. Current revision
+validation already excludes slash aliases; this is not an exploit claim. Field
 separators, caller public keys and self-declared verification flags are not
 accepted as authentication. Fact authorities select keys from independent
 issuer policy and require exact expected source/meaning/value/lease bindings.
@@ -162,7 +166,7 @@ and 275 full audit reports (eleven controls for each of 25 enforcing-eligible
 manifest sides). This is 41,619 compared rows. Raw, unschematized evaluation is
 an explicit refusal control; it is not an enforcing effect profile.
 
-Eight native source/handle/recovery/audit tests and two real child-process
+Nine native source/handle/recovery/audit tests and two real child-process
 integration tests cover trusted-key selection, source lease changes, foreign
 and stale handles, concurrent use, resource replacement, damaged witness
 history, old checkpoints, wire duplication/version failures, shadow/enforce

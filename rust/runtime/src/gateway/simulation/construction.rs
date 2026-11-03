@@ -60,7 +60,7 @@ impl Simulator {
             ..review
         };
         let effect = EffectIdentity {
-            operation: format!("{}/{}", case.revision, case.name),
+            operation: json_sha256(&("cedar-poo-operation-v1", &case.revision, &case.name))?,
             object: case.request.resource.clone(),
             generation: 7,
             payload: cedar.request_sha256.clone(),
