@@ -1,0 +1,41 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: Apache-2.0
+
+name: Cedar healthcare
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+defaults:
+  run:
+    shell: bash
+jobs:
+  healthcare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      with:
+        persist-credentials: false
+    - uses: ./.github/actions/setup-verification
+      with:
+        rust: 'true'
+    - run: just example health prior-authorization
+    - run: just example health prior-authorization-internal-channels
+    - run: just example health pseudonymization
+    - run: just example health agentic-ai-language-model-disclosure
+    - run: just example health australian-emr
+    - run: just example health united-states-payer
+    - run: just example health multi-hospital-ai
+    - run: just example health model-stewardship
+    - run: just example health my-health-record
+    - run: just check-health-authorization-impact
+'on':
+  push:
+    branches:
+    - main
+  pull_request:
+    branches:
+    - main
+  workflow_dispatch: null

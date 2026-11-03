@@ -1,0 +1,64 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: Apache-2.0
+
+name: Cedar Zero Trust and authorization
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+defaults:
+  run:
+    shell: bash
+jobs:
+  zero-trust:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      with:
+        persist-credentials: false
+    - uses: ./.github/actions/setup-verification
+      with:
+        rust: 'true'
+    - name: Install pinned CVC5
+      run: |
+        curl --fail --location --retry 3 --silent --show-error \
+          https://github.com/cvc5/cvc5/releases/download/cvc5-1.4.0/cvc5-Linux-x86_64-static.zip \
+          --output "$RUNNER_TEMP/cvc5.zip"
+        echo "61d13483ec9c4e8d05c7f3d532225255b2183a0c03b161d37d942d1ba089ec6d  $RUNNER_TEMP/cvc5.zip" | sha256sum --check
+        unzip -q "$RUNNER_TEMP/cvc5.zip" -d "$RUNNER_TEMP"
+        echo "CVC5=$RUNNER_TEMP/cvc5-Linux-x86_64-static/bin/cvc5" >> "$GITHUB_ENV"
+    - run: lake build Tests.ZeroTrust.Functional Tests.ZeroTrust.ProfileObject Tests.ZeroTrust.UsageControl Tests.ZeroTrust.ImportBoundary
+    - run: just check-gateway-delta
+    - run: just check-agent-trace-delta
+  authorization-delta:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      with:
+        persist-credentials: false
+    - uses: ./.github/actions/setup-verification
+      with:
+        rust: 'true'
+    - name: Install pinned CVC5
+      run: |
+        curl --fail --location --retry 3 --silent --show-error \
+          https://github.com/cvc5/cvc5/releases/download/cvc5-1.4.0/cvc5-Linux-x86_64-static.zip \
+          --output "$RUNNER_TEMP/cvc5.zip"
+        echo "61d13483ec9c4e8d05c7f3d532225255b2183a0c03b161d37d942d1ba089ec6d  $RUNNER_TEMP/cvc5.zip" | sha256sum --check
+        unzip -q "$RUNNER_TEMP/cvc5.zip" -d "$RUNNER_TEMP"
+        echo "CVC5=$RUNNER_TEMP/cvc5-Linux-x86_64-static/bin/cvc5" >> "$GITHUB_ENV"
+    - run: just check-authorization-delta
+    - run: just check-authorization-delta-operational
+    - run: just check-authorization-delta-reasons
+    - run: just check-authorization-delta-effective-reasons
+'on':
+  push:
+    branches:
+    - main
+  pull_request:
+    branches:
+    - main
+  workflow_dispatch: null

@@ -1,0 +1,36 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: Apache-2.0
+
+name: Cedar cross-module conformance
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+defaults:
+  run:
+    shell: bash
+jobs:
+  cedar-conformance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      with:
+        persist-credentials: false
+    - uses: ./.github/actions/setup-verification
+      with:
+        rust: 'true'
+    - run: just check-cedar-artifacts
+    - run: just check-replay-receipts
+    - run: just check-schema-bound-receipts
+    - run: just check-schema-bound-scenarios
+    - run: uv run --project python --package cedar-poo-py-test --locked python -m unittest discover -s python/tests
+'on':
+  push:
+    branches:
+    - main
+  pull_request:
+    branches:
+    - main
+  workflow_dispatch: null

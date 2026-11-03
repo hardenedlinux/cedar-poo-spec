@@ -1,232 +1,52 @@
-name: Cedar POO CI
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: Apache-2.0
 
-on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-  workflow_dispatch:
-
+name: Cedar core
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
-
 permissions:
   contents: read
-
 defaults:
   run:
     shell: bash
-
 jobs:
   lean:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-        with:
-          persist-credentials: false
-      - uses: leanprover/lean-action@50fcf42d2e460296f1a34b402e990d1b24f8b596 # v1
-        with:
-          auto-config: false
-          use-github-cache: false
-          build: false
-          test: false
-          lint: false
-      - uses: taiki-e/install-action@b6a061addd82b81aaeca51bdf2c53cd707996e5a # just
-      - name: Install recipe search dependency
-        run: |
-          sudo apt-get update
-          sudo apt-get install --yes --no-install-recommends ripgrep
-      - name: Restore compatible Lean artifacts
-        uses: ./.github/actions/lean-cache
-      - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
-      - name: Process and resource observer controls
-        run: uv run --project python --package cedar-poo-py-test --locked python -m unittest discover -s python/tests -v
-      - run: just check-lean
-      - run: |
-          mkdir -p .lake/build/resources
-          just bench-policy-reuse | tee .lake/build/resources/policy-reuse.log
-      - run: |
-          just bench-functional-reuse | tee .lake/build/resources/functional-reuse.log
-      - run: just bench-functional-native | tee .lake/build/resources/functional-native.log
-      - run: just bench-catalog-preparation | tee .lake/build/resources/catalog-preparation.log
-      - run: just bench-catalog-stages | tee .lake/build/resources/catalog-stages.log
-      - run: just bench-catalog-authorization | tee .lake/build/resources/catalog-authorization.log
-      - name: Verify native recovery with the declared toolchain and official cache
-        run: |
-          lake build caseManifestsNative objectProfilesNative functionalReuseNative manifestLifecycleNative
-          just bench-project-native-cold "$RUNNER_TEMP/project-native-cold"
-      - name: Preserve native recovery receipts
-        if: ${{ always() }}
-        run: |
-          mkdir -p .lake/build/resources/native-cold
-          for name in toolchain.txt toolchain.json resource.json resource.stderr.txt build.log exit-status identities.json; do
-            if test -f "$RUNNER_TEMP/project-native-cold/$name"; then
-              cp "$RUNNER_TEMP/project-native-cold/$name" .lake/build/resources/native-cold/
-            fi
-          done
-      - name: Check benchmark source tree is clean
-        run: |
-          git diff --exit-code
-          test -z "$(git ls-files --others --exclude-standard)"
-      - name: Record observation provenance
-        if: ${{ always() }}
-        run: |
-          mkdir -p .lake/build/resources
-          {
-            echo "commit=$GITHUB_SHA run=$GITHUB_RUN_ID attempt=$GITHUB_RUN_ATTEMPT job=$GITHUB_JOB"
-            sha256sum lean-toolchain lakefile.toml lake-manifest.json
-          } > .lake/build/resources/provenance.txt
-      - name: Upload native observations
-        if: ${{ always() }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: native-evidence-${{ github.job }}
-          include-hidden-files: true
-          if-no-files-found: error
-          path: .lake/build/resources/
-
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      with:
+        persist-credentials: false
+    - uses: ./.github/actions/setup-verification
+      with:
+        rust: 'false'
+    - run: uv run --project python --package cedar-poo-py-test --locked python -m unittest discover -s python/tests
+        -v
+    - run: just check-lean
   rust:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-        with:
-          persist-credentials: false
-      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
-        with:
-          components: rustfmt, clippy
-      - uses: taiki-e/install-action@b6a061addd82b81aaeca51bdf2c53cd707996e5a # just
-      - name: Restore Cargo cache
-        uses: Swatinem/rust-cache@49a0bdc70d2e1b713ca9e2869b211fcce03d3c1c # v2
-        with:
-          workspaces: ". -> rust/target"
-      - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
-      - run: just check-lean-layers
-      - run: just check-rust
-
-  cedar-conformance:
-    needs: [lean, rust]
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-        with:
-          persist-credentials: false
-      - uses: leanprover/lean-action@50fcf42d2e460296f1a34b402e990d1b24f8b596 # v1
-        with:
-          auto-config: false
-          use-github-cache: false
-          build: false
-          test: false
-          lint: false
-      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
-      - uses: taiki-e/install-action@b6a061addd82b81aaeca51bdf2c53cd707996e5a # just
-      - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
-        with:
-          version: "0.11.3"
-      - name: Restore compatible Lean artifacts
-        uses: ./.github/actions/lean-cache
-      - name: Restore Cargo cache
-        uses: Swatinem/rust-cache@49a0bdc70d2e1b713ca9e2869b211fcce03d3c1c # v2
-        with:
-          workspaces: ". -> rust/target"
-      - run: just check-cedar-artifacts
-      - run: uv run --project python --package cedar-poo-py-test --locked python -m unittest discover -s python/tests
-      - run: just check-replay-receipts
-      - run: just check-schema-bound-receipts
-      - run: just check-schema-bound-scenarios
-      - run: just bench-functional-allocation
-      - run: just example aws financial-services lakehouse
-      - run: just example aws financial-services multi-account-banking
-      - run: just example aws financial-services claim-settlement
-      - run: just example aws financial-services reconciliation
-      - run: just example aws agentic-platform expense
-      - run: just example enterprise agent cross-agent-egress
-      - run: just example enterprise agent department-synthesis
-      - run: just example health prior-authorization
-      - run: just example cloud pipeline-google-threat
-      - run: just example cloud pipeline-google-deployment
-      - run: just example cloud data-protection-google-sdp
-      - run: just example health prior-authorization-internal-channels
-      - run: just example health pseudonymization
-      - run: just example health agentic-ai-language-model-disclosure
-      - run: just example health australian-emr
-      - run: just example health united-states-payer
-      - run: just example governance country-approval-validated
-      - run: just example governance attested-views
-      - run: just check-attested-schema-evolution
-      - run: just check-mission-comparison
-      - run: just check-personnel-governance
-      - run: just check-agentic-ai-commerce-admission
-      - run: just probe-native-launch "$RUNNER_TEMP/launch-probe"
-      - name: Observe real catalog startup and transport phases
-        run: |
-          just --no-deps bench-catalog-launch "$RUNNER_TEMP/catalog-launch"
-          just bench-catalog-inode "$RUNNER_TEMP/catalog-inode"
-      - name: Check benchmark source tree is clean
-        run: |
-          git diff --exit-code
-          test -z "$(git ls-files --others --exclude-standard)"
-      - name: Record observation provenance
-        if: ${{ always() }}
-        run: |
-          mkdir -p .lake/build/resources
-          {
-            echo "commit=$GITHUB_SHA run=$GITHUB_RUN_ID attempt=$GITHUB_RUN_ATTEMPT job=$GITHUB_JOB"
-            sha256sum lean-toolchain lakefile.toml lake-manifest.json
-          } > .lake/build/resources/provenance.txt
-      - name: Upload native observations
-        if: ${{ always() }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: native-evidence-${{ github.job }}
-          include-hidden-files: true
-          if-no-files-found: error
-          path: |
-            .lake/build/resources/
-            .lake/build/*.json
-            ${{ runner.temp }}/launch-probe/
-            ${{ runner.temp }}/catalog-launch/
-            ${{ runner.temp }}/catalog-inode/
-
-  authorization-delta:
-    needs: [lean, rust]
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-        with:
-          persist-credentials: false
-      - uses: leanprover/lean-action@50fcf42d2e460296f1a34b402e990d1b24f8b596 # v1
-        with:
-          auto-config: false
-          use-github-cache: false
-          build: false
-          test: false
-          lint: false
-      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
-      - uses: taiki-e/install-action@b6a061addd82b81aaeca51bdf2c53cd707996e5a # just
-      - name: Install recipe search dependency
-        run: |
-          sudo apt-get update
-          sudo apt-get install --yes --no-install-recommends ripgrep
-      - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
-        with:
-          version: "0.11.3"
-      - name: Restore compatible Lean artifacts
-        uses: ./.github/actions/lean-cache
-      - name: Restore Cargo cache
-        uses: Swatinem/rust-cache@49a0bdc70d2e1b713ca9e2869b211fcce03d3c1c # v2
-        with:
-          workspaces: ". -> rust/target"
-      - name: Install pinned CVC5
-        run: |
-          curl --fail --location --retry 3 --silent --show-error \
-            https://github.com/cvc5/cvc5/releases/download/cvc5-1.4.0/cvc5-Linux-x86_64-static.zip \
-            --output "$RUNNER_TEMP/cvc5.zip"
-          echo "61d13483ec9c4e8d05c7f3d532225255b2183a0c03b161d37d942d1ba089ec6d  $RUNNER_TEMP/cvc5.zip" | sha256sum --check
-          unzip -q "$RUNNER_TEMP/cvc5.zip" -d "$RUNNER_TEMP"
-          echo "CVC5=$RUNNER_TEMP/cvc5-Linux-x86_64-static/bin/cvc5" >> "$GITHUB_ENV"
-      - run: just check-delta
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      with:
+        persist-credentials: false
+    - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87
+      with:
+        components: rustfmt, clippy
+    - uses: taiki-e/install-action@b6a061addd82b81aaeca51bdf2c53cd707996e5a
+    - name: Restore Cargo cache
+      uses: Swatinem/rust-cache@49a0bdc70d2e1b713ca9e2869b211fcce03d3c1c
+      with:
+        workspaces: . -> rust/target
+    - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4
+    - run: just check-lean-layers
+    - run: just check-rust
+'on':
+  push:
+    branches:
+    - main
+  pull_request:
+    branches:
+    - main
+  workflow_dispatch: null
