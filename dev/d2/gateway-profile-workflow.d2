@@ -1,0 +1,111 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: Apache-2.0
+
+vars: {d2-config: {data: {figure: |json
+{
+  "purpose": "architecture",
+  "language": "en",
+  "width": 1400,
+  "primary": "purpose",
+  "themes": [
+    "blueprint",
+    "comfortable"
+  ],
+  "icons": [
+    "engineering"
+  ],
+  "basis": {
+    "captureRef": "development-source-observation",
+    "modelRefs": [],
+    "obligationRefs": [],
+    "evidenceRefs": []
+  },
+  "title": "Gateway: typed publication admission workflow",
+  "kind": "workflow",
+  "questions": [
+    {
+      "ref": "purpose",
+      "text": "Where can admission refuse before a publication-bound receipt exists?",
+      "focusRefs": [
+        "sysml",
+        "sourceCode"
+      ]
+    }
+  ],
+  "references": {
+    "source": "dev/d2/gateway-profile-workflow.d2",
+    "sysml": "dev/sysml/gateway-activities.sysml",
+    "sourceCode": "CedarPooSpec/Gateway/ProfileAdmission.lean",
+    "objects": "CedarPooSpec/Gateway/ProfileObject.lean",
+    "admission": "CedarPooSpec/Gateway/Admission.lean"
+  },
+  "copy": {
+    "description": "Read top to bottom. Labelled arrows are success/error alternatives; only one branch is taken per call. The Host supplies the actual publication independently.",
+    "status": "Authored call/return reading of pure Lean APIs. authorizePublished calls authorize then bindPublication. Symbol existence and defining modules are checked in Lean; arrows are not extracted execution traces."
+  },
+  "presentation": {
+    "notation": "workflow",
+    "activity": {
+      "entry": "stepSession",
+      "decisions": [
+        "stepSession",
+        "stepCapture",
+        "stepAuthorize",
+        "stepBind"
+      ],
+      "terminals": [
+        "stepAccepted",
+        "stepRefused"
+      ]
+    }
+  },
+  "sysml": {
+    "source": "dev/sysml/gateway-activities.sysml",
+    "view": "GatewayProfileFlow::overview",
+    "bindings": {
+      "stepSession": {
+        "name": "GatewayProfileFlow::stepSession",
+        "icon": "question"
+      },
+      "stepCapture": {
+        "name": "GatewayProfileFlow::stepCapture",
+        "icon": "question"
+      },
+      "stepAuthorize": {
+        "name": "GatewayProfileFlow::stepAuthorize",
+        "icon": "question"
+      },
+      "stepBind": {
+        "name": "GatewayProfileFlow::stepBind",
+        "icon": "question"
+      },
+      "stepAccepted": {
+        "name": "GatewayProfileFlow::stepAccepted",
+        "icon": "evidence"
+      },
+      "stepRefused": {
+        "name": "GatewayProfileFlow::stepRefused",
+        "icon": "evidence"
+      }
+    }
+  },
+  "proofs": {
+    "namespace": "GatewayProfileFlow"
+  }
+}
+|
+}}}
+stepSession: "Open the typed Session?\nopenSession original object\nShape + original refinement Contract"
+stepCapture: "Capture a published profile?\ncapturePublication context session\nRead the actual profile projection"
+stepAuthorize: "Authorize the actual request?\nauthorize prepared model effect state\nCurrent context / checks / Cedar allow"
+stepBind: "Bind to authoritative publication?\nbindPublication publication receipt\nExact selected profile + context"
+stepAccepted: "Return PublishedReceipt\nBound semantic receipt\nThis is not a dispatch or commit"
+stepRefused: "Return the owning typed error\nNo PublishedReceipt is constructed\nNo fallback to an unbound Receipt"
+stepSession -> stepCapture: "ok: indexed Session"
+stepSession -> stepRefused: "error: Contract issues"
+stepCapture -> stepAuthorize: "ok: Publication"
+stepCapture -> stepRefused: "error: invalidProfile"
+stepAuthorize -> stepBind: "ok: semantic Receipt"
+stepAuthorize -> stepRefused: "error: admission refused"
+stepBind -> stepAccepted: "ok: PublishedReceipt"
+stepBind -> stepRefused: "error: invalidProfile / staleContext"

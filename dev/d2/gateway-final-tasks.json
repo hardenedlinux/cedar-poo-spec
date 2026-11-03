@@ -1,0 +1,669 @@
+{
+  "entry": "dev/d2/gateway-final-tasks.d2",
+  "sources": {
+    "CedarPooSpec/Gateway/PublicationReview.lean": "1ddfb0a04e008bf26f34e51f54d26b01421fbf62139727ab93de4195996ce204",
+    "dev/.generated/gateway-final-tasks-sdk.json": "155deb5bb32100cb4181ca658a4466fe683267a5ae21af3c6321e4797918c61a",
+    "dev/artifacts.ts": "ca1096947536fbdbd5da5cbf1ce5c6f57521bd4a7b135233285dfe8fcff9859d",
+    "dev/bun.lock": "2b7060a881aad9312d122f6d01146ef78c207b3c95254aa66b7b57a9eede5acd",
+    "dev/catalog.ts": "6d65a91afcddb11de668cc668aa3c6b9076435c02e73a90323c7bf28a991965e",
+    "dev/d2/gateway-final-tasks.d2": "0c38c0e1eae535594c64707fdde43af1eda8a04e0b0c212af5e6d42b650240b1",
+    "dev/icons.ts": "f9f59a014cfb141cc48d444396e4f88217a51c53987ca69a279b542141a10512",
+    "dev/inputs.ts": "d79d292e5652cd4c4368a754e1472485fda4aeb0fea721e8b43b3f11d5aadc3f",
+    "dev/Justfile": "364059989486f5babe149b9ab2a570e09fce7abf9f450dc03d47a0f564fa1a10",
+    "dev/notation.ts": "9f92b6f5144fe9e27bd103972574d27fa88a0d719e000227b52fe7b24cc26503",
+    "dev/package.json": "4eb137a6d73d5dfb1e43020c3041e9a42151d480b26d6e01b99ee0ebc2997d90",
+    "dev/projection.ts": "3fd049e50798aee9dce54af6cd6e6fccad45fec5ab24b994bb6a8a4b33d7252d",
+    "dev/proofs.ts": "8a9cb88dd75b807f176c1389bd3e8b4df7cf658c657ad85bbf0487d09cafedd9",
+    "dev/render.ts": "41b5ff6dfef93c5be3935198f190337c86454e358ab332eb9d908cf84b6b47e9",
+    "dev/sources.ts": "3cd11d095476ee65c9086172773813e6e37e88087c9d01ee962cec59369d7ed8",
+    "dev/sysml/gateway-activities.sysml": "8b177e554ac0e8a68e7c2929ee259530d63ec4bf67d94574e84e5603c0c51b1e"
+  },
+  "binaries": {},
+  "sdk": {
+    "modelHash": "9857a2aa827e5c04f66fd672f568a3c8e318d8362ccec34634a96643c3eeedcc",
+    "view": "GatewayFinalTasks::overview",
+    "trace": {
+      "modelHash": "9857a2aa827e5c04f66fd672f568a3c8e318d8362ccec34634a96643c3eeedcc",
+      "requestedView": "GatewayFinalTasks::overview",
+      "resolvedView": "GatewayFinalTasks::overview",
+      "renderingSHA256": "155deb5bb32100cb4181ca658a4466fe683267a5ae21af3c6321e4797918c61a",
+      "capturedRenderingJSON": "{\"modelHash\":\"9857a2aa827e5c04f66fd672f568a3c8e318d8362ccec34634a96643c3eeedcc\",\"requestedView\":\"GatewayFinalTasks::overview\",\"rendering\":{\"view\":\"GatewayFinalTasks::overview\",\"kind\":\"interconnection\",\"stated\":\"render asInterconnectionDiagram\",\"nodes\":[{\"id\":\"n0\",\"kind\":\"part\",\"name\":\"GatewayFinalTasks::stepFinal\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":73,\"startCol\":2,\"endLine\":73,\"endCol\":30}},{\"id\":\"n1\",\"kind\":\"part\",\"name\":\"GatewayFinalTasks::stepReceipt\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":76,\"startCol\":2,\"endLine\":76,\"endCol\":32}},{\"id\":\"n2\",\"kind\":\"part\",\"name\":\"GatewayFinalTasks::stepApproved\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":79,\"startCol\":2,\"endLine\":79,\"endCol\":33}},{\"id\":\"n3\",\"kind\":\"part\",\"name\":\"GatewayFinalTasks::stepDurable\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":82,\"startCol\":2,\"endLine\":82,\"endCol\":32}},{\"id\":\"n4\",\"kind\":\"part\",\"name\":\"GatewayFinalTasks::stepRecovered\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":85,\"startCol\":2,\"endLine\":85,\"endCol\":34}},{\"id\":\"n5\",\"kind\":\"part\",\"name\":\"GatewayFinalTasks::stepFenced\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":88,\"startCol\":2,\"endLine\":88,\"endCol\":31}},{\"id\":\"n6\",\"kind\":\"part\",\"name\":\"GatewayFinalTasks::stepCurrent\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":91,\"startCol\":2,\"endLine\":91,\"endCol\":32}},{\"id\":\"n7\",\"kind\":\"part\",\"name\":\"GatewayFinalTasks::stepPending\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":94,\"startCol\":2,\"endLine\":94,\"endCol\":32}},{\"id\":\"n8\",\"kind\":\"part\",\"name\":\"GatewayFinalTasks::stepCommitted\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":97,\"startCol\":2,\"endLine\":97,\"endCol\":34}}],\"edges\":[{\"from\":\"n0\",\"to\":\"n1\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":100,\"startCol\":2,\"endLine\":100,\"endCol\":52}},{\"from\":\"n0\",\"to\":\"n2\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":101,\"startCol\":2,\"endLine\":101,\"endCol\":53}},{\"from\":\"n0\",\"to\":\"n3\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":102,\"startCol\":2,\"endLine\":102,\"endCol\":52}},{\"from\":\"n0\",\"to\":\"n4\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":103,\"startCol\":2,\"endLine\":103,\"endCol\":54}},{\"from\":\"n0\",\"to\":\"n5\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":104,\"startCol\":2,\"endLine\":104,\"endCol\":51}},{\"from\":\"n0\",\"to\":\"n6\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":105,\"startCol\":2,\"endLine\":105,\"endCol\":52}},{\"from\":\"n0\",\"to\":\"n7\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":106,\"startCol\":2,\"endLine\":106,\"endCol\":52}},{\"from\":\"n0\",\"to\":\"n8\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":107,\"startCol\":2,\"endLine\":107,\"endCol\":54}}],\"columns\":[],\"rows\":[],\"notes\":[],\"notices\":[],\"shown\":[\"port-symbols\",\"compartments\",\"keywords\"]}}",
+      "nodes": [
+        {
+          "id": "n0",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/gateway-activities.sysml",
+            "startLine": 73,
+            "startCol": 2,
+            "endLine": 73,
+            "endCol": 30
+          }
+        },
+        {
+          "id": "n1",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/gateway-activities.sysml",
+            "startLine": 76,
+            "startCol": 2,
+            "endLine": 76,
+            "endCol": 32
+          }
+        },
+        {
+          "id": "n2",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/gateway-activities.sysml",
+            "startLine": 79,
+            "startCol": 2,
+            "endLine": 79,
+            "endCol": 33
+          }
+        },
+        {
+          "id": "n3",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/gateway-activities.sysml",
+            "startLine": 82,
+            "startCol": 2,
+            "endLine": 82,
+            "endCol": 32
+          }
+        },
+        {
+          "id": "n4",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/gateway-activities.sysml",
+            "startLine": 85,
+            "startCol": 2,
+            "endLine": 85,
+            "endCol": 34
+          }
+        },
+        {
+          "id": "n5",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/gateway-activities.sysml",
+            "startLine": 88,
+            "startCol": 2,
+            "endLine": 88,
+            "endCol": 31
+          }
+        },
+        {
+          "id": "n6",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/gateway-activities.sysml",
+            "startLine": 91,
+            "startCol": 2,
+            "endLine": 91,
+            "endCol": 32
+          }
+        },
+        {
+          "id": "n7",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/gateway-activities.sysml",
+            "startLine": 94,
+            "startCol": 2,
+            "endLine": 94,
+            "endCol": 32
+          }
+        },
+        {
+          "id": "n8",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/gateway-activities.sysml",
+            "startLine": 97,
+            "startCol": 2,
+            "endLine": 97,
+            "endCol": 34
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "edge:0",
+          "index": 0,
+          "from": "n0",
+          "to": "n1",
+          "fromPort": "",
+          "toPort": "",
+          "kind": "connection",
+          "origin": {
+            "file": "dev/sysml/gateway-activities.sysml",
+            "startLine": 100,
+            "startCol": 2,
+            "endLine": 100,
+            "endCol": 52
+          }
+        },
+        {
+          "id": "edge:1",
+          "index": 1,
+          "from": "n0",
+          "to": "n2",
+          "fromPort": "",
+          "toPort": "",
+          "kind": "connection",
+          "origin": {
+            "file": "dev/sysml/gateway-activities.sysml",
+            "startLine": 101,
+            "startCol": 2,
+            "endLine": 101,
+            "endCol": 53
+          }
+        },
+        {
+          "id": "edge:2",
+          "index": 2,
+          "from": "n0",
+          "to": "n3",
+          "fromPort": "",
+          "toPort": "",
+          "kind": "connection",
+          "origin": {
+            "file": "dev/sysml/gateway-activities.sysml",
+            "startLine": 102,
+            "startCol": 2,
+            "endLine": 102,
+            "endCol": 52
+          }
+        },
+        {
+          "id": "edge:3",
+          "index": 3,
+          "from": "n0",
+          "to": "n4",
+          "fromPort": "",
+          "toPort": "",
+          "kind": "connection",
+          "origin": {
+            "file": "dev/sysml/gateway-activities.sysml",
+            "startLine": 103,
+            "startCol": 2,
+            "endLine": 103,
+            "endCol": 54
+          }
+        },
+        {
+          "id": "edge:4",
+          "index": 4,
+          "from": "n0",
+          "to": "n5",
+          "fromPort": "",
+          "toPort": "",
+          "kind": "connection",
+          "origin": {
+            "file": "dev/sysml/gateway-activities.sysml",
+            "startLine": 104,
+            "startCol": 2,
+            "endLine": 104,
+            "endCol": 51
+          }
+        },
+        {
+          "id": "edge:5",
+          "index": 5,
+          "from": "n0",
+          "to": "n6",
+          "fromPort": "",
+          "toPort": "",
+          "kind": "connection",
+          "origin": {
+            "file": "dev/sysml/gateway-activities.sysml",
+            "startLine": 105,
+            "startCol": 2,
+            "endLine": 105,
+            "endCol": 52
+          }
+        },
+        {
+          "id": "edge:6",
+          "index": 6,
+          "from": "n0",
+          "to": "n7",
+          "fromPort": "",
+          "toPort": "",
+          "kind": "connection",
+          "origin": {
+            "file": "dev/sysml/gateway-activities.sysml",
+            "startLine": 106,
+            "startCol": 2,
+            "endLine": 106,
+            "endCol": 52
+          }
+        },
+        {
+          "id": "edge:7",
+          "index": 7,
+          "from": "n0",
+          "to": "n8",
+          "fromPort": "",
+          "toPort": "",
+          "kind": "connection",
+          "origin": {
+            "file": "dev/sysml/gateway-activities.sysml",
+            "startLine": 107,
+            "startCol": 2,
+            "endLine": 107,
+            "endCol": 54
+          }
+        }
+      ]
+    },
+    "diagnostics": [],
+    "observations": []
+  },
+  "proofClaims": {
+    "modelHash": "9857a2aa827e5c04f66fd672f568a3c8e318d8362ccec34634a96643c3eeedcc",
+    "cards": [
+      {
+        "id": "GatewayFinalTasks::stepFinal",
+        "role": "Definition",
+        "symbol": "CedarPooSpec.Gateway.PublicationReview.Final",
+        "source": "CedarPooSpec/Gateway/PublicationReview.lean"
+      },
+      {
+        "id": "GatewayFinalTasks::stepReceipt",
+        "role": "Definition",
+        "symbol": "CedarPooSpec.Gateway.PublicationReview.Final.receipt",
+        "source": "CedarPooSpec/Gateway/PublicationReview.lean"
+      },
+      {
+        "id": "GatewayFinalTasks::stepApproved",
+        "role": "Definition",
+        "symbol": "CedarPooSpec.Gateway.PublicationReview.Final.approved",
+        "source": "CedarPooSpec/Gateway/PublicationReview.lean"
+      },
+      {
+        "id": "GatewayFinalTasks::stepDurable",
+        "role": "Definition",
+        "symbol": "CedarPooSpec.Gateway.PublicationReview.Final.durable",
+        "source": "CedarPooSpec/Gateway/PublicationReview.lean"
+      },
+      {
+        "id": "GatewayFinalTasks::stepRecovered",
+        "role": "Definition",
+        "symbol": "CedarPooSpec.Gateway.PublicationReview.Final.recovered",
+        "source": "CedarPooSpec/Gateway/PublicationReview.lean"
+      },
+      {
+        "id": "GatewayFinalTasks::stepFenced",
+        "role": "Definition",
+        "symbol": "CedarPooSpec.Gateway.PublicationReview.Final.fenced",
+        "source": "CedarPooSpec/Gateway/PublicationReview.lean"
+      },
+      {
+        "id": "GatewayFinalTasks::stepCurrent",
+        "role": "Definition",
+        "symbol": "CedarPooSpec.Gateway.PublicationReview.Final.current",
+        "source": "CedarPooSpec/Gateway/PublicationReview.lean"
+      },
+      {
+        "id": "GatewayFinalTasks::stepPending",
+        "role": "Definition",
+        "symbol": "CedarPooSpec.Gateway.PublicationReview.Final.pending",
+        "source": "CedarPooSpec/Gateway/PublicationReview.lean"
+      },
+      {
+        "id": "GatewayFinalTasks::stepCommitted",
+        "role": "Definition",
+        "symbol": "CedarPooSpec.Gateway.PublicationReview.Final.committed",
+        "source": "CedarPooSpec/Gateway/PublicationReview.lean"
+      }
+    ],
+    "uses": [],
+    "record": {
+      "symbol": "CedarPooSpec.Gateway.PublicationReview.Final",
+      "fields": [
+        "CedarPooSpec.Gateway.PublicationReview.Final.receipt",
+        "CedarPooSpec.Gateway.PublicationReview.Final.approved",
+        "CedarPooSpec.Gateway.PublicationReview.Final.durable",
+        "CedarPooSpec.Gateway.PublicationReview.Final.recovered",
+        "CedarPooSpec.Gateway.PublicationReview.Final.fenced",
+        "CedarPooSpec.Gateway.PublicationReview.Final.current",
+        "CedarPooSpec.Gateway.PublicationReview.Final.pending",
+        "CedarPooSpec.Gateway.PublicationReview.Final.committed"
+      ]
+    }
+  },
+  "renderer": {
+    "specifier": "git+https://github.com/hardenedlinux/deterministic-engineering.git#1fe20380441a0cd85055695c2adcc55ce699a369",
+    "name": "@deterministic-engineering/render",
+    "version": "1.0.2"
+  },
+  "receipt": {
+    "attribution": {
+      "copyright": [
+        "2026 hardenedlinux Linux Team and Contributors",
+        "2016 The Inter Project Authors (https://github.com/rsms/inter)"
+      ],
+      "license": "Apache-2.0 AND OFL-1.1"
+    },
+    "observation": {
+      "canvas": {
+        "x": 0,
+        "y": 0,
+        "width": 1600,
+        "height": 815
+      },
+      "subjects": [
+        {
+          "id": "n1",
+          "role": "default",
+          "x": 53,
+          "y": 350,
+          "width": 373.546875,
+          "height": 79
+        },
+        {
+          "id": "n7",
+          "role": "default",
+          "x": 53,
+          "y": 441,
+          "width": 373.546875,
+          "height": 76
+        },
+        {
+          "id": "n2",
+          "role": "default",
+          "x": 488.546875,
+          "y": 350,
+          "width": 305.4375,
+          "height": 78
+        },
+        {
+          "id": "n3",
+          "role": "default",
+          "x": 805.984375,
+          "y": 350,
+          "width": 305.453125,
+          "height": 78
+        },
+        {
+          "id": "n4",
+          "role": "default",
+          "x": 488.546875,
+          "y": 440,
+          "width": 305.4375,
+          "height": 76
+        },
+        {
+          "id": "n5",
+          "role": "default",
+          "x": 805.984375,
+          "y": 440,
+          "width": 305.453125,
+          "height": 79
+        },
+        {
+          "id": "n6",
+          "role": "default",
+          "x": 1173.4375,
+          "y": 350,
+          "width": 373.5625,
+          "height": 79
+        },
+        {
+          "id": "n8",
+          "role": "default",
+          "x": 1173.4375,
+          "y": 441,
+          "width": 373.5625,
+          "height": 79
+        },
+        {
+          "id": "n0",
+          "role": "default",
+          "x": 703,
+          "y": 636.5,
+          "width": 328,
+          "height": 81
+        }
+      ],
+      "relations": [
+        "edge:0",
+        "edge:6",
+        "edge:1",
+        "edge:2",
+        "edge:3",
+        "edge:4",
+        "edge:5",
+        "edge:7"
+      ],
+      "headings": [
+        {
+          "role": "title",
+          "x": 32,
+          "y": 32,
+          "width": 1536,
+          "height": 37
+        },
+        {
+          "role": "question",
+          "x": 32,
+          "y": 79,
+          "width": 1536,
+          "height": 34
+        },
+        {
+          "role": "note",
+          "x": 32,
+          "y": 123,
+          "width": 1536,
+          "height": 22
+        },
+        {
+          "role": "heading",
+          "x": 53,
+          "y": 306,
+          "width": 373.546875,
+          "height": 26
+        },
+        {
+          "role": "heading",
+          "x": 66,
+          "y": 363,
+          "width": 347.546875,
+          "height": 31
+        },
+        {
+          "role": "note",
+          "x": 66,
+          "y": 394,
+          "width": 347.546875,
+          "height": 22
+        },
+        {
+          "role": "heading",
+          "x": 66,
+          "y": 454,
+          "width": 347.546875,
+          "height": 28
+        },
+        {
+          "role": "note",
+          "x": 66,
+          "y": 482,
+          "width": 347.546875,
+          "height": 22
+        },
+        {
+          "role": "heading",
+          "x": 488.546875,
+          "y": 306,
+          "width": 622.890625,
+          "height": 26
+        },
+        {
+          "role": "heading",
+          "x": 501.546875,
+          "y": 363,
+          "width": 279.4375,
+          "height": 30
+        },
+        {
+          "role": "note",
+          "x": 501.546875,
+          "y": 393,
+          "width": 279.4375,
+          "height": 22
+        },
+        {
+          "role": "heading",
+          "x": 818.984375,
+          "y": 363,
+          "width": 279.453125,
+          "height": 30
+        },
+        {
+          "role": "note",
+          "x": 818.984375,
+          "y": 393,
+          "width": 279.453125,
+          "height": 22
+        },
+        {
+          "role": "heading",
+          "x": 501.546875,
+          "y": 453,
+          "width": 279.4375,
+          "height": 28
+        },
+        {
+          "role": "note",
+          "x": 501.546875,
+          "y": 481,
+          "width": 279.4375,
+          "height": 22
+        },
+        {
+          "role": "heading",
+          "x": 818.984375,
+          "y": 453,
+          "width": 279.453125,
+          "height": 31
+        },
+        {
+          "role": "note",
+          "x": 818.984375,
+          "y": 484,
+          "width": 279.453125,
+          "height": 22
+        },
+        {
+          "role": "heading",
+          "x": 1173.4375,
+          "y": 306,
+          "width": 373.5625,
+          "height": 26
+        },
+        {
+          "role": "heading",
+          "x": 1186.4375,
+          "y": 363,
+          "width": 347.5625,
+          "height": 31
+        },
+        {
+          "role": "note",
+          "x": 1186.4375,
+          "y": 394,
+          "width": 347.5625,
+          "height": 22
+        },
+        {
+          "role": "heading",
+          "x": 1186.4375,
+          "y": 454,
+          "width": 347.5625,
+          "height": 31
+        },
+        {
+          "role": "note",
+          "x": 1186.4375,
+          "y": 485,
+          "width": 347.5625,
+          "height": 22
+        },
+        {
+          "role": "classification",
+          "x": 32,
+          "y": 559,
+          "width": 1536,
+          "height": 26
+        },
+        {
+          "role": "heading",
+          "x": 717,
+          "y": 650.5,
+          "width": 300,
+          "height": 31
+        },
+        {
+          "role": "note",
+          "x": 717,
+          "y": 681.5,
+          "width": 300,
+          "height": 22
+        },
+        {
+          "role": "note",
+          "x": 32,
+          "y": 751,
+          "width": 1536,
+          "height": 22
+        }
+      ]
+    },
+    "canvas": {
+      "background": "rgb(240, 245, 247)",
+      "transparent": false
+    },
+    "readability": {
+      "minimumTextSize": 13,
+      "samples": 27,
+      "requiredMinimum": 12
+    },
+    "inputSHA256": "f1237239d0c00a09aa2b71d728e5a8466b0ab53ac06bb621918d984998f434b6",
+    "scenes": [],
+    "svgSHA256": [
+      "f191dd602b5ea3600ab56ea313d14e89baf11692958e39984ad90c8443338121"
+    ],
+    "composedHTMLSHA256": "29613af5a887b6580a9eb91acf0ddd5806fd57516b3bbbe1dd5a1c88dce5d85d",
+    "dependencies": {
+      "@fontsource/inter": "5.3.0",
+      "@fontsource/kalam": "5.3.0",
+      "@terrastruct/d2": "0.1.33",
+      "@xyflow/system": "0.0.83",
+      "elkjs": "0.12.1",
+      "parse5": "8.0.1",
+      "roughjs": "4.6.6",
+      "valibot": "1.2.0",
+      "web-worker": "1.5.0"
+    },
+    "regionSHA256": {},
+    "htmlSHA256": "ea25d52cfd17366b0dbd7bff8e07b68bd1ab8d21ad9c7d80412d146cc210363b",
+    "drawing": "precise",
+    "routing": "none",
+    "assetSHA256": {
+      "@fontsource/inter/files/inter-latin-400-normal.woff2": "8909904ab6c872eb994093482a88a28eca2cd95912d7b6fecd72103b0dc07edc",
+      "@fontsource/inter/files/inter-latin-700-normal.woff2": "6f56409fd3d64bb85f7d070bce20749db2d66b6d63cec586cc22d1c761be2491"
+    },
+    "pngSHA256": "b48fe90f1a83f98456da9b4434d0e1eccb11be831a845017ad0764fcc5845123",
+    "browser": "156.0.8078.4",
+    "width": 2400,
+    "height": 1223,
+    "scale": 1.5,
+    "bounds": {}
+  }
+}

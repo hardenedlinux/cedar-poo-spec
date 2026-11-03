@@ -44,15 +44,75 @@ compositor. The original 12 CSS pixel readability gate remains in force.
 | Transport inventory | Quantitative distribution | Native entry counts, checked through the SDK |
 | Model proofs | Assurance panels | Requirements, current-use laws, history laws and counterexamples |
 | Object proofs | Assurance panels | Original-parent composition, continuing use and publication-frontier Contracts |
+| Profile admission | Branching workflow | Success/error return paths of the actual pure APIs |
+| Publication ownership | Swimlanes | Caller, shared authority and observer responsibilities; one retained lock scope |
+| Final completion | Task decomposition | All mandatory fields together, not a temporal sequence |
 
 Reading groups are authored presentation, not additional SysML containment or
 execution stages. Every captured subject still appears exactly once, and every
-captured relationship stays visible as an interface entry, matrix cell or basis
+captured relationship stays visible as an interface entry, responsibility entry or basis
 item. Proof labels distinguish native-checked lemma dependencies from authored
 reading relationships. The bars consume already verified numeric SDK observations,
 not numbers parsed from prose. No industry/platform coverage cross-product is
 invented. Temporal flow or sequence notation belongs to a view with actual
 ordered events; these static responsibility and proof views do not assert one.
+
+* Visual communication standard
+
+A view starts from a reader's question and the decision they need to make.
+Use a scene or structure that carries the explanation: participants, a shared
+boundary, alternative outcomes, required inputs, quantities or a proof argument.
+Choose the notation after identifying these semantics. A different palette on
+the same stack of text cards does not constitute a different visual explanation.
+
+- Show a few clear regions with short question headings. Place related visual
+  information together; use available width before creating a tall text scroll.
+- Give icons distinct meanings (request, evidence, registrar, registry, recovery,
+  current-use shield, pending intent and commit gate). Repeating a document icon
+  for every role adds no information. Every image remains an inspectable vector.
+- Keep the main labels in the reader's language. Function names, field names and
+  proof terms belong in the source index or proof view when they are not needed
+  to understand the main scene. The source binding remains machine checked.
+- Make relation semantics visible: alternatives for workflows, responsibility
+  and retained critical sections for lanes, AND requirements for task assemblies.
+  Never imply temporal order, authenticated facts or completed work by decoration.
+- Visually inspect the complete exported image for whitespace, text burden,
+  hierarchy and navigation. Existing 12px/vector/source checks remain necessary;
+  passing them alone does not establish human comprehension or design quality.
+
+* A reading path for people
+
+Start with the architecture to locate a responsibility. Move to the
+[[file:d2/gateway-profile-workflow.png][Profile admission workflow]] to follow success/error alternatives. Use the
+[[file:d2/gateway-publication-swimlanes.png][publication swimlanes]] to locate each participant and the retained atomic
+boundary. Then use the [[file:d2/gateway-final-tasks.png][Final task decomposition]] to ask what evidence must
+exist together; finish at the proof maps to distinguish kernel guarantees,
+Host premises and deliberate counterexamples. These are different questions,
+not interchangeable render themes.
+
+| Notation | Meaning of its structure | What must not be inferred |
+|----------+--------------------------+---------------------------|
+| Workflow | Labelled alternatives; one return path per call | Every branch runs, or a returned Receipt dispatches an effect |
+| Swimlanes | One responsible participant per operation; rows give the documented call order | Separate rows are separate transactions; the callback is outside the lock |
+| Tasks | Every child is required (AND); leaves state completion requirements | Child order is execution order; a task card is a completed verification |
+| Assurance | Definitions, premises, checked lemma uses and counterexamples | Explanatory links are proof terms or authenticated external facts |
+
+The three behavior views name their scope. Profile admission is pure Lean;
+publication lanes describe the existing Rust test-owned in-memory authority;
+Final tasks assemble record-construction obligations around three reader questions. They do not represent
+production dispatch or a captured runtime trace. Workflow/Final symbols and
+defining modules are checked by the existing native Lean declaration checker.
+The Final task map also checks its complete field set against Lean structure
+metadata; omitted and substituted projections refuse, even if all remaining
+symbols are valid.
+The swimlane source is the actual Rust fixture, captured byte-for-byte.
+
+The notation binder refuses unreachable or cyclic workflows, missing terminal
+outcomes, unlabelled decision alternatives, missing/duplicate lane ownership,
+missing stages, backwards handoffs and non-tree task requirements. Source
+capture and SDK edge closure remain mandatory. These checks validate the
+authored reading model; they do not extract arbitrary program behavior or
+replace the Rust concurrency regressions.
 
 * Distinct model scopes
 
@@ -366,3 +426,19 @@ receipt before the update, then refused it with =Captured source changed= for
 SDK/Lean interpretation, Questions and layout declarations are unchanged.
 The existing cold-install, exact-source and dependency/worker/artifact recovery
 checks apply to this released source, without consuming a Release attachment.
+
+* Final task source index
+
+The primary picture uses short labels. Its SDK metadata retains these exact
+source bindings in =CedarPooSpec/Gateway/PublicationReview.lean=:
+
+| Picture label | Actual =PublicationReview.Final= field |
+|---------------+---------------------------------------|
+| Same request | =receipt= |
+| Admissible intent | =pending= |
+| Selected review | =approved= |
+| Registered evidence | =durable= |
+| Recovered registry | =recovered= |
+| Current registrar | =fenced= |
+| Current use | =current= |
+| Bound commit | =committed= |

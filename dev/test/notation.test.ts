@@ -43,3 +43,31 @@ test('quantity views require complete nonnegative SDK observations rather than c
  expect(()=>bindNotation({notation:'bars'},mapping,inventory,{},undefined,{left:2,right:3,invented:4})).toThrow('Invalid');
  expect(bindNotation({notation:'bars'},mapping,inventory,{},undefined,{left:2,right:0}).metrics).toEqual({'native-left':2,'native-right':0});
 });
+
+const activityModel:FigureModel={subjects:[...model.subjects,{id:'native-end',type:'partUsage',sourceName:'Fixture::end',label:'Refused'}],relations:[{id:'yes',src:'native-left',dst:'native-right',label:'ok'},{id:'no',src:'native-left',dst:'native-end',label:'error'}]};
+const activityMapping={...mapping,end:'native-end'};
+const activityProofs:ProofMap={...proofs,cards:[...proofs.cards,{id:'Fixture::end',role:'Definition',symbol:'Fixture.end',source:'Fixture.lean'}]};
+test('workflow semantics refuse cycles, unreachable work, unfinished outcomes and unlabelled alternatives',()=>{
+ const declared={notation:'workflow',activity:{entry:'left',decisions:['left'],terminals:['right','end']}};
+ expect(bindNotation(declared,activityMapping,activityModel,{},activityProofs).activity?.terminals).toEqual(['native-right','native-end']);
+ expect(()=>bindNotation(declared,activityMapping,{...activityModel,relations:[activityModel.relations[0]!]},{},activityProofs)).toThrow('Unreachable');
+ expect(()=>bindNotation(declared,activityMapping,{...activityModel,relations:activityModel.relations.map(edge=>({...edge,label:''}))},{},activityProofs)).toThrow('labelled');
+ expect(()=>bindNotation({...declared,activity:{...declared.activity,terminals:['right']}},activityMapping,activityModel,{},activityProofs)).toThrow('successor');
+ expect(()=>bindNotation(declared,activityMapping,{...activityModel,relations:[...activityModel.relations,{id:'cycle',src:'native-right',dst:'native-left',label:'repeat'}]},{},activityProofs)).toThrow();
+ expect(()=>bindNotation(declared,activityMapping,activityModel,{})).toThrow('captured Lean');
+});
+test('swimlanes need one owner and one ordered stage for every operation; backwards handoffs refuse',()=>{
+ const declared={notation:'swimlanes',groups:[{title:'Caller',subjects:['left']},{title:'Authority',subjects:['right']}],activity:{stages:[{title:'Prepare',subjects:['left']},{title:'Commit',subjects:['right']}]}};
+ expect(bindNotation(declared,mapping,model,{}).activity?.stages).toHaveLength(2);
+ expect(()=>bindNotation({...declared,groups:[{title:'Both',subjects:['left','left']}]},mapping,model,{})).toThrow('exactly one');
+ expect(()=>bindNotation({...declared,activity:{stages:[{title:'Only',subjects:['left']}]}},mapping,model,{})).toThrow('one stage');
+ expect(()=>bindNotation({...declared,activity:{stages:[...declared.activity.stages].reverse()}},mapping,model,{})).toThrow('advance');
+ expect(()=>bindNotation({...declared,activity:{stages:declared.activity.stages,terminals:['right']}},mapping,model,{})).toThrow('stages');
+});
+test('task requirements are a rooted AND tree, not branching outcomes or completion claims',()=>{
+ const requirements={...model,relations:model.relations.map(edge=>({...edge,label:'requires'}))};
+ expect(bindNotation({notation:'tasks',groups:[{title:'Required',subjects:['right']}],activity:{entry:'left'}},mapping,requirements,{},proofs).notation).toBe('tasks');
+ expect(()=>bindNotation({notation:'tasks',groups:[{title:'Required',subjects:['right']}],activity:{entry:'left'}},mapping,model,{},proofs)).toThrow('requires');
+ expect(()=>bindNotation({notation:'tasks',groups:[{title:'Required',subjects:['right']}],activity:{entry:'left',terminals:['right']}},mapping,requirements,{},proofs)).toThrow('conjunctive');
+ expect(()=>bindNotation({notation:'catalogue',groups:[{title:'All',subjects:['left','right']}],activity:{entry:'left'}},mapping,{...model,relations:[]},{})).toThrow('Static');
+});

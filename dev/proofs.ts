@@ -6,7 +6,7 @@ import * as v from 'valibot';
 export const ProofViewSchema=v.object({proofs:v.optional(v.strictObject({namespace:v.pipe(v.string(),v.minLength(1))}))});
 const Role=v.picklist(['Definition','KernelLaw','KernelCounterexample','HostPremise']);
 export interface ProofCard {readonly id:string;readonly role:v.InferOutput<typeof Role>;readonly symbol:string;readonly source:string;}
-export interface ProofMap {readonly modelHash:string;readonly cards:readonly ProofCard[];readonly uses:readonly {dependency:string;target:string}[];}
+export interface ProofMap {readonly modelHash:string;readonly cards:readonly ProofCard[];readonly uses:readonly {dependency:string;target:string}[];readonly record?:{readonly symbol:string;readonly fields:readonly string[]};}
 const identifier=(name:string)=>name.length>0&&[...name].every((c,i)=>c==='_'||c>='A'&&c<='Z'||c>='a'&&c<='z'||i>0&&c>='0'&&c<='9');
 const theorem=(card:ProofCard)=>card.role==='KernelLaw'||card.role==='KernelCounterexample';
 function string(value:SysMLValue):string{
@@ -48,7 +48,13 @@ export async function readProofMap(model:Model,namespace:string):Promise<ProofMa
    uses.push({dependency:dependency.symbol,target:target.symbol});
   }
  }
- return{modelHash:model.hash,cards,uses};
+ const complete=children.find(symbol=>symbol.id===namespace+'::completeStructure');
+ if(!complete)return{modelHash:model.hash,cards,uses};
+ const owner=byId.get((await model.symbol(string(await model.eval(complete.id)))).id);
+ if(!owner||owner.role!=='Definition')throw new Error('Complete structure needs a declared definition');
+ const fields=cards.filter(card=>edges.has(JSON.stringify([owner.id,card.id]))).map(card=>card.symbol);
+ if(!fields.length)throw new Error('Complete structure has no field requirements');
+ return{modelHash:model.hash,cards,uses,record:{symbol:owner.symbol,fields}};
 }
 /** Native Lean owns declaration kinds, defining modules and proof-term inspection. */
 export function leanProofCheck(map:ProofMap):string{
@@ -74,6 +80,11 @@ run_cmd do
       unless info.value.getUsedConstants.contains dependency do
         throwError "diagram lemma edge absent from proof term: {dependency} -> {name}"
     | _ => throwError "diagram target is not a theorem: {name}"
+  for (name, expected) in ([${map.record?'('+name(map.record.symbol)+', ['+map.record.fields.map(name).join(', ')+'])':''}] : List (Lean.Name × List Lean.Name)) do
+    let some info := Lean.getStructureInfo? env name | throwError "diagram task is not a structure: {name}"
+    let actual := (List.range info.fieldNames.size).filterMap fun i => info.getProjFn? i
+    unless actual.length == expected.length && actual.all expected.contains do
+      throwError "diagram task fields are incomplete or substituted: {name}"
   Lean.logInfo "PROOF-FIGURES-LEAN-OK"
 `;
 }

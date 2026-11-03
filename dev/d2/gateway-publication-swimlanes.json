@@ -1,0 +1,728 @@
+{
+  "entry": "dev/d2/gateway-publication-swimlanes.d2",
+  "sources": {
+    "CedarPooSpec/Gateway/PublicationReview.lean": "1ddfb0a04e008bf26f34e51f54d26b01421fbf62139727ab93de4195996ce204",
+    "dev/.generated/gateway-publication-swimlanes-sdk.json": "486eb5baad6d738869033d37fa1a3625ebd3ce6dfb9b054701dfb061356c7ced",
+    "dev/artifacts.ts": "ca1096947536fbdbd5da5cbf1ce5c6f57521bd4a7b135233285dfe8fcff9859d",
+    "dev/bun.lock": "2b7060a881aad9312d122f6d01146ef78c207b3c95254aa66b7b57a9eede5acd",
+    "dev/catalog.ts": "6d65a91afcddb11de668cc668aa3c6b9076435c02e73a90323c7bf28a991965e",
+    "dev/d2/gateway-publication-swimlanes.d2": "2514b5bd6c57ada8615775b9d685286bb34630150132c7bc128d92180115e414",
+    "dev/icons.ts": "f9f59a014cfb141cc48d444396e4f88217a51c53987ca69a279b542141a10512",
+    "dev/inputs.ts": "d79d292e5652cd4c4368a754e1472485fda4aeb0fea721e8b43b3f11d5aadc3f",
+    "dev/Justfile": "364059989486f5babe149b9ab2a570e09fce7abf9f450dc03d47a0f564fa1a10",
+    "dev/notation.ts": "9f92b6f5144fe9e27bd103972574d27fa88a0d719e000227b52fe7b24cc26503",
+    "dev/package.json": "4eb137a6d73d5dfb1e43020c3041e9a42151d480b26d6e01b99ee0ebc2997d90",
+    "dev/projection.ts": "3fd049e50798aee9dce54af6cd6e6fccad45fec5ab24b994bb6a8a4b33d7252d",
+    "dev/proofs.ts": "8a9cb88dd75b807f176c1389bd3e8b4df7cf658c657ad85bbf0487d09cafedd9",
+    "dev/render.ts": "41b5ff6dfef93c5be3935198f190337c86454e358ab332eb9d908cf84b6b47e9",
+    "dev/sources.ts": "3cd11d095476ee65c9086172773813e6e37e88087c9d01ee962cec59369d7ed8",
+    "dev/sysml/gateway-activities.sysml": "8b177e554ac0e8a68e7c2929ee259530d63ec4bf67d94574e84e5603c0c51b1e",
+    "rust/runtime/tests/unit/publication_review.rs": "2d5c46dba425c64e7f0fd79bc70e17ea4ad70d8759e5c8b5c8c327e98196e10b"
+  },
+  "binaries": {},
+  "sdk": {
+    "modelHash": "9857a2aa827e5c04f66fd672f568a3c8e318d8362ccec34634a96643c3eeedcc",
+    "view": "GatewayPublicationLanes::overview",
+    "trace": {
+      "modelHash": "9857a2aa827e5c04f66fd672f568a3c8e318d8362ccec34634a96643c3eeedcc",
+      "requestedView": "GatewayPublicationLanes::overview",
+      "resolvedView": "GatewayPublicationLanes::overview",
+      "renderingSHA256": "486eb5baad6d738869033d37fa1a3625ebd3ce6dfb9b054701dfb061356c7ced",
+      "capturedRenderingJSON": "{\"modelHash\":\"9857a2aa827e5c04f66fd672f568a3c8e318d8362ccec34634a96643c3eeedcc\",\"requestedView\":\"GatewayPublicationLanes::overview\",\"rendering\":{\"view\":\"GatewayPublicationLanes::overview\",\"kind\":\"interconnection\",\"stated\":\"render asInterconnectionDiagram\",\"nodes\":[{\"id\":\"n0\",\"kind\":\"part\",\"name\":\"GatewayPublicationLanes::stepCapture\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":46,\"startCol\":2,\"endLine\":46,\"endCol\":32}},{\"id\":\"n1\",\"kind\":\"part\",\"name\":\"GatewayPublicationLanes::stepCall\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":47,\"startCol\":2,\"endLine\":47,\"endCol\":29}},{\"id\":\"n2\",\"kind\":\"part\",\"name\":\"GatewayPublicationLanes::stepCheck\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":48,\"startCol\":2,\"endLine\":48,\"endCol\":30}},{\"id\":\"n3\",\"kind\":\"part\",\"name\":\"GatewayPublicationLanes::stepAdmit\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":49,\"startCol\":2,\"endLine\":49,\"endCol\":30}},{\"id\":\"n4\",\"kind\":\"part\",\"name\":\"GatewayPublicationLanes::stepInstall\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":50,\"startCol\":2,\"endLine\":50,\"endCol\":32}},{\"id\":\"n5\",\"kind\":\"part\",\"name\":\"GatewayPublicationLanes::stepObserve\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":51,\"startCol\":2,\"endLine\":51,\"endCol\":32}},{\"id\":\"n6\",\"kind\":\"part\",\"name\":\"GatewayPublicationLanes::stepReturn\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":52,\"startCol\":2,\"endLine\":52,\"endCol\":31}}],\"edges\":[{\"from\":\"n0\",\"to\":\"n1\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":53,\"startCol\":2,\"endLine\":53,\"endCol\":51}},{\"from\":\"n1\",\"to\":\"n2\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":54,\"startCol\":2,\"endLine\":54,\"endCol\":49}},{\"from\":\"n2\",\"to\":\"n3\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":55,\"startCol\":2,\"endLine\":55,\"endCol\":50}},{\"from\":\"n3\",\"to\":\"n4\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":56,\"startCol\":2,\"endLine\":56,\"endCol\":52}},{\"from\":\"n4\",\"to\":\"n5\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":57,\"startCol\":2,\"endLine\":57,\"endCol\":54}},{\"from\":\"n5\",\"to\":\"n6\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":58,\"startCol\":2,\"endLine\":58,\"endCol\":53}}],\"columns\":[],\"rows\":[],\"notes\":[],\"notices\":[],\"shown\":[\"port-symbols\",\"compartments\",\"keywords\"]}}",
+      "nodes": [
+        {
+          "id": "n0",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/gateway-activities.sysml",
+            "startLine": 46,
+            "startCol": 2,
+            "endLine": 46,
+            "endCol": 32
+          }
+        },
+        {
+          "id": "n1",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/gateway-activities.sysml",
+            "startLine": 47,
+            "startCol": 2,
+            "endLine": 47,
+            "endCol": 29
+          }
+        },
+        {
+          "id": "n2",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/gateway-activities.sysml",
+            "startLine": 48,
+            "startCol": 2,
+            "endLine": 48,
+            "endCol": 30
+          }
+        },
+        {
+          "id": "n3",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/gateway-activities.sysml",
+            "startLine": 49,
+            "startCol": 2,
+            "endLine": 49,
+            "endCol": 30
+          }
+        },
+        {
+          "id": "n4",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/gateway-activities.sysml",
+            "startLine": 50,
+            "startCol": 2,
+            "endLine": 50,
+            "endCol": 32
+          }
+        },
+        {
+          "id": "n5",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/gateway-activities.sysml",
+            "startLine": 51,
+            "startCol": 2,
+            "endLine": 51,
+            "endCol": 32
+          }
+        },
+        {
+          "id": "n6",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/gateway-activities.sysml",
+            "startLine": 52,
+            "startCol": 2,
+            "endLine": 52,
+            "endCol": 31
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "edge:0",
+          "index": 0,
+          "from": "n0",
+          "to": "n1",
+          "fromPort": "",
+          "toPort": "",
+          "kind": "connection",
+          "origin": {
+            "file": "dev/sysml/gateway-activities.sysml",
+            "startLine": 53,
+            "startCol": 2,
+            "endLine": 53,
+            "endCol": 51
+          }
+        },
+        {
+          "id": "edge:1",
+          "index": 1,
+          "from": "n1",
+          "to": "n2",
+          "fromPort": "",
+          "toPort": "",
+          "kind": "connection",
+          "origin": {
+            "file": "dev/sysml/gateway-activities.sysml",
+            "startLine": 54,
+            "startCol": 2,
+            "endLine": 54,
+            "endCol": 49
+          }
+        },
+        {
+          "id": "edge:2",
+          "index": 2,
+          "from": "n2",
+          "to": "n3",
+          "fromPort": "",
+          "toPort": "",
+          "kind": "connection",
+          "origin": {
+            "file": "dev/sysml/gateway-activities.sysml",
+            "startLine": 55,
+            "startCol": 2,
+            "endLine": 55,
+            "endCol": 50
+          }
+        },
+        {
+          "id": "edge:3",
+          "index": 3,
+          "from": "n3",
+          "to": "n4",
+          "fromPort": "",
+          "toPort": "",
+          "kind": "connection",
+          "origin": {
+            "file": "dev/sysml/gateway-activities.sysml",
+            "startLine": 56,
+            "startCol": 2,
+            "endLine": 56,
+            "endCol": 52
+          }
+        },
+        {
+          "id": "edge:4",
+          "index": 4,
+          "from": "n4",
+          "to": "n5",
+          "fromPort": "",
+          "toPort": "",
+          "kind": "connection",
+          "origin": {
+            "file": "dev/sysml/gateway-activities.sysml",
+            "startLine": 57,
+            "startCol": 2,
+            "endLine": 57,
+            "endCol": 54
+          }
+        },
+        {
+          "id": "edge:5",
+          "index": 5,
+          "from": "n5",
+          "to": "n6",
+          "fromPort": "",
+          "toPort": "",
+          "kind": "connection",
+          "origin": {
+            "file": "dev/sysml/gateway-activities.sysml",
+            "startLine": 58,
+            "startCol": 2,
+            "endLine": 58,
+            "endCol": 53
+          }
+        }
+      ]
+    },
+    "diagnostics": [],
+    "observations": []
+  },
+  "renderer": {
+    "specifier": "git+https://github.com/hardenedlinux/deterministic-engineering.git#1fe20380441a0cd85055695c2adcc55ce699a369",
+    "name": "@deterministic-engineering/render",
+    "version": "1.0.2"
+  },
+  "receipt": {
+    "attribution": {
+      "copyright": [
+        "2026 hardenedlinux Linux Team and Contributors",
+        "2016 The Inter Project Authors (https://github.com/rsms/inter)"
+      ],
+      "license": "Apache-2.0 AND OFL-1.1"
+    },
+    "observation": {
+      "canvas": {
+        "x": 0,
+        "y": 0,
+        "width": 1800,
+        "height": 1618
+      },
+      "subjects": [
+        {
+          "id": "n0",
+          "role": "default",
+          "x": 339.9375,
+          "y": 229,
+          "width": 455.015625,
+          "height": 104
+        },
+        {
+          "id": "n1",
+          "role": "default",
+          "x": 339.9375,
+          "y": 427,
+          "width": 455.015625,
+          "height": 104
+        },
+        {
+          "id": "n2",
+          "role": "default",
+          "x": 819.953125,
+          "y": 625,
+          "width": 455.015625,
+          "height": 104
+        },
+        {
+          "id": "n3",
+          "role": "default",
+          "x": 819.953125,
+          "y": 823,
+          "width": 455.015625,
+          "height": 104
+        },
+        {
+          "id": "n4",
+          "role": "default",
+          "x": 819.953125,
+          "y": 1021,
+          "width": 455.015625,
+          "height": 104
+        },
+        {
+          "id": "n5",
+          "role": "default",
+          "x": 1299.96875,
+          "y": 1219,
+          "width": 455.03125,
+          "height": 104
+        },
+        {
+          "id": "n6",
+          "role": "default",
+          "x": 339.9375,
+          "y": 1417,
+          "width": 455.015625,
+          "height": 104
+        }
+      ],
+      "relations": [
+        "edge:0",
+        "edge:1",
+        "edge:2",
+        "edge:3",
+        "edge:4",
+        "edge:5"
+      ],
+      "headings": [
+        {
+          "role": "title",
+          "x": 32,
+          "y": 32,
+          "width": 1736,
+          "height": 37
+        },
+        {
+          "role": "question",
+          "x": 32,
+          "y": 79,
+          "width": 1736,
+          "height": 34
+        },
+        {
+          "role": "note",
+          "x": 32,
+          "y": 123,
+          "width": 1736,
+          "height": 22
+        },
+        {
+          "role": "classification",
+          "x": 45,
+          "y": 178,
+          "width": 269.9375,
+          "height": 26
+        },
+        {
+          "role": "heading",
+          "x": 339.9375,
+          "y": 178,
+          "width": 455.015625,
+          "height": 26
+        },
+        {
+          "role": "heading",
+          "x": 819.953125,
+          "y": 178,
+          "width": 455.015625,
+          "height": 26
+        },
+        {
+          "role": "heading",
+          "x": 1299.96875,
+          "y": 178,
+          "width": 455.03125,
+          "height": 26
+        },
+        {
+          "role": "classification",
+          "x": 45,
+          "y": 229,
+          "width": 269.9375,
+          "height": 26
+        },
+        {
+          "role": "note",
+          "x": 45,
+          "y": 255,
+          "width": 269.9375,
+          "height": 22
+        },
+        {
+          "role": "heading",
+          "x": 354.9375,
+          "y": 244,
+          "width": 425.015625,
+          "height": 30
+        },
+        {
+          "role": "note",
+          "x": 354.9375,
+          "y": 274,
+          "width": 425.015625,
+          "height": 22
+        },
+        {
+          "role": "note",
+          "x": 354.9375,
+          "y": 296,
+          "width": 425.015625,
+          "height": 22
+        },
+        {
+          "role": "classification",
+          "x": 339.9375,
+          "y": 354,
+          "width": 455.015625,
+          "height": 26
+        },
+        {
+          "role": "note",
+          "x": 339.9375,
+          "y": 380,
+          "width": 455.015625,
+          "height": 22
+        },
+        {
+          "role": "classification",
+          "x": 45,
+          "y": 427,
+          "width": 269.9375,
+          "height": 26
+        },
+        {
+          "role": "note",
+          "x": 45,
+          "y": 453,
+          "width": 269.9375,
+          "height": 22
+        },
+        {
+          "role": "heading",
+          "x": 354.9375,
+          "y": 442,
+          "width": 425.015625,
+          "height": 30
+        },
+        {
+          "role": "note",
+          "x": 354.9375,
+          "y": 472,
+          "width": 425.015625,
+          "height": 22
+        },
+        {
+          "role": "note",
+          "x": 354.9375,
+          "y": 494,
+          "width": 425.015625,
+          "height": 22
+        },
+        {
+          "role": "classification",
+          "x": 339.9375,
+          "y": 552,
+          "width": 455.015625,
+          "height": 26
+        },
+        {
+          "role": "note",
+          "x": 339.9375,
+          "y": 578,
+          "width": 455.015625,
+          "height": 22
+        },
+        {
+          "role": "classification",
+          "x": 45,
+          "y": 625,
+          "width": 269.9375,
+          "height": 26
+        },
+        {
+          "role": "note",
+          "x": 45,
+          "y": 651,
+          "width": 269.9375,
+          "height": 22
+        },
+        {
+          "role": "heading",
+          "x": 834.953125,
+          "y": 640,
+          "width": 425.015625,
+          "height": 30
+        },
+        {
+          "role": "note",
+          "x": 834.953125,
+          "y": 670,
+          "width": 425.015625,
+          "height": 22
+        },
+        {
+          "role": "note",
+          "x": 834.953125,
+          "y": 692,
+          "width": 425.015625,
+          "height": 22
+        },
+        {
+          "role": "classification",
+          "x": 819.953125,
+          "y": 750,
+          "width": 455.015625,
+          "height": 26
+        },
+        {
+          "role": "note",
+          "x": 819.953125,
+          "y": 776,
+          "width": 455.015625,
+          "height": 22
+        },
+        {
+          "role": "classification",
+          "x": 45,
+          "y": 823,
+          "width": 269.9375,
+          "height": 26
+        },
+        {
+          "role": "note",
+          "x": 45,
+          "y": 849,
+          "width": 269.9375,
+          "height": 22
+        },
+        {
+          "role": "heading",
+          "x": 834.953125,
+          "y": 838,
+          "width": 425.015625,
+          "height": 30
+        },
+        {
+          "role": "note",
+          "x": 834.953125,
+          "y": 868,
+          "width": 425.015625,
+          "height": 22
+        },
+        {
+          "role": "note",
+          "x": 834.953125,
+          "y": 890,
+          "width": 425.015625,
+          "height": 22
+        },
+        {
+          "role": "classification",
+          "x": 819.953125,
+          "y": 948,
+          "width": 455.015625,
+          "height": 26
+        },
+        {
+          "role": "note",
+          "x": 819.953125,
+          "y": 974,
+          "width": 455.015625,
+          "height": 22
+        },
+        {
+          "role": "classification",
+          "x": 45,
+          "y": 1021,
+          "width": 269.9375,
+          "height": 26
+        },
+        {
+          "role": "note",
+          "x": 45,
+          "y": 1047,
+          "width": 269.9375,
+          "height": 22
+        },
+        {
+          "role": "heading",
+          "x": 834.953125,
+          "y": 1036,
+          "width": 425.015625,
+          "height": 30
+        },
+        {
+          "role": "note",
+          "x": 834.953125,
+          "y": 1066,
+          "width": 425.015625,
+          "height": 22
+        },
+        {
+          "role": "note",
+          "x": 834.953125,
+          "y": 1088,
+          "width": 425.015625,
+          "height": 22
+        },
+        {
+          "role": "classification",
+          "x": 819.953125,
+          "y": 1146,
+          "width": 455.015625,
+          "height": 26
+        },
+        {
+          "role": "note",
+          "x": 819.953125,
+          "y": 1172,
+          "width": 455.015625,
+          "height": 22
+        },
+        {
+          "role": "classification",
+          "x": 45,
+          "y": 1219,
+          "width": 269.9375,
+          "height": 26
+        },
+        {
+          "role": "note",
+          "x": 45,
+          "y": 1245,
+          "width": 269.9375,
+          "height": 22
+        },
+        {
+          "role": "heading",
+          "x": 1314.96875,
+          "y": 1234,
+          "width": 425.03125,
+          "height": 30
+        },
+        {
+          "role": "note",
+          "x": 1314.96875,
+          "y": 1264,
+          "width": 425.03125,
+          "height": 22
+        },
+        {
+          "role": "note",
+          "x": 1314.96875,
+          "y": 1286,
+          "width": 425.03125,
+          "height": 22
+        },
+        {
+          "role": "classification",
+          "x": 1299.96875,
+          "y": 1344,
+          "width": 455.03125,
+          "height": 26
+        },
+        {
+          "role": "note",
+          "x": 1299.96875,
+          "y": 1370,
+          "width": 455.03125,
+          "height": 22
+        },
+        {
+          "role": "classification",
+          "x": 45,
+          "y": 1417,
+          "width": 269.9375,
+          "height": 26
+        },
+        {
+          "role": "note",
+          "x": 45,
+          "y": 1443,
+          "width": 269.9375,
+          "height": 22
+        },
+        {
+          "role": "heading",
+          "x": 354.9375,
+          "y": 1432,
+          "width": 425.015625,
+          "height": 30
+        },
+        {
+          "role": "note",
+          "x": 354.9375,
+          "y": 1462,
+          "width": 425.015625,
+          "height": 22
+        },
+        {
+          "role": "note",
+          "x": 354.9375,
+          "y": 1484,
+          "width": 425.015625,
+          "height": 22
+        },
+        {
+          "role": "note",
+          "x": 32,
+          "y": 1554,
+          "width": 1736,
+          "height": 22
+        }
+      ]
+    },
+    "canvas": {
+      "background": "rgb(240, 245, 247)",
+      "transparent": false
+    },
+    "readability": {
+      "minimumTextSize": 13,
+      "samples": 56,
+      "requiredMinimum": 12
+    },
+    "inputSHA256": "8408cf7dd0e283cc1e439e92577d8a123846546400e4a39506e853ea7d771d9d",
+    "scenes": [],
+    "svgSHA256": [
+      "efa5b5d916f8b50bfdb7cd2846f0100b2d4dfd68a121389903c25fdc1dafc26b"
+    ],
+    "composedHTMLSHA256": "00edb823bb51cdd36aba51fcecab3aa809480b7351241f07512b2e9e82d9bcbb",
+    "dependencies": {
+      "@fontsource/inter": "5.3.0",
+      "@fontsource/kalam": "5.3.0",
+      "@terrastruct/d2": "0.1.33",
+      "@xyflow/system": "0.0.83",
+      "elkjs": "0.12.1",
+      "parse5": "8.0.1",
+      "roughjs": "4.6.6",
+      "valibot": "1.2.0",
+      "web-worker": "1.5.0"
+    },
+    "regionSHA256": {},
+    "htmlSHA256": "9caa625cf150e7715e58e6dea585074ac4f6c983451c41005095f2c5a06151c0",
+    "drawing": "precise",
+    "routing": "none",
+    "assetSHA256": {
+      "@fontsource/inter/files/inter-latin-400-normal.woff2": "8909904ab6c872eb994093482a88a28eca2cd95912d7b6fecd72103b0dc07edc",
+      "@fontsource/inter/files/inter-latin-700-normal.woff2": "6f56409fd3d64bb85f7d070bce20749db2d66b6d63cec586cc22d1c761be2491"
+    },
+    "pngSHA256": "744d9e52ce2d8399bbf1a455d503ba3aaff99ea44383ebf43dd5e3638f2ca5fe",
+    "browser": "156.0.8078.4",
+    "width": 2700,
+    "height": 2427,
+    "scale": 1.5,
+    "bounds": {}
+  }
+}

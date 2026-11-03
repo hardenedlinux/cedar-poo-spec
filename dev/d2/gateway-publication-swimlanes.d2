@@ -1,0 +1,168 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: Apache-2.0
+
+vars: {d2-config: {data: {figure: |json
+{
+  "purpose": "architecture",
+  "language": "en",
+  "width": 1800,
+  "primary": "purpose",
+  "themes": [
+    "blueprint",
+    "comfortable"
+  ],
+  "icons": [
+    "engineering"
+  ],
+  "basis": {
+    "captureRef": "development-source-observation",
+    "modelRefs": [],
+    "obligationRefs": [],
+    "evidenceRefs": []
+  },
+  "title": "Gateway: who owns the simulated publication boundary?",
+  "kind": "swimlanes",
+  "questions": [
+    {
+      "ref": "purpose",
+      "text": "Which participant acts, and when must the authority retain its lock?",
+      "focusRefs": [
+        "sysml",
+        "sourceCode"
+      ]
+    }
+  ],
+  "references": {
+    "source": "dev/d2/gateway-publication-swimlanes.d2",
+    "sysml": "dev/sysml/gateway-activities.sysml",
+    "sourceCode": "rust/runtime/tests/unit/publication_review.rs",
+    "contract": "CedarPooSpec/Gateway/PublicationReview.lean"
+  },
+  "copy": {
+    "description": "Columns are responsibility lanes; rows are call order on the successful test-owned path. Refused paths return before installation/observation. capture runs at the authority on behalf of the caller.",
+    "status": "Source reading of the existing Rust in-memory control fixture, not a production Host or runtime trace. Check / prepare / install / observe share one lock scope; rows do not imply separate transactions."
+  },
+  "presentation": {
+    "notation": "swimlanes",
+    "columns": 3,
+    "groups": [
+      {
+        "title": "Caller",
+        "subjects": [
+          "stepCapture",
+          "stepCall",
+          "stepReturn"
+        ]
+      },
+      {
+        "title": "Shared authority / Mutex",
+        "subjects": [
+          "stepCheck",
+          "stepAdmit",
+          "stepInstall"
+        ]
+      },
+      {
+        "title": "Commit observer",
+        "subjects": [
+          "stepObserve"
+        ]
+      }
+    ],
+    "activity": {
+      "stages": [
+        {
+          "title": "Prepare",
+          "subjects": [
+            "stepCapture"
+          ]
+        },
+        {
+          "title": "Invoke",
+          "subjects": [
+            "stepCall"
+          ]
+        },
+        {
+          "title": "Validate; Mutex acquired",
+          "subjects": [
+            "stepCheck"
+          ]
+        },
+        {
+          "title": "Recheck Delta",
+          "subjects": [
+            "stepAdmit"
+          ]
+        },
+        {
+          "title": "Install",
+          "subjects": [
+            "stepInstall"
+          ]
+        },
+        {
+          "title": "Observe; then unlock",
+          "subjects": [
+            "stepObserve"
+          ]
+        },
+        {
+          "title": "Return locally",
+          "subjects": [
+            "stepReturn"
+          ]
+        }
+      ]
+    }
+  },
+  "sysml": {
+    "source": "dev/sysml/gateway-activities.sysml",
+    "view": "GatewayPublicationLanes::overview",
+    "bindings": {
+      "stepCapture": {
+        "name": "GatewayPublicationLanes::stepCapture",
+        "icon": "evidence"
+      },
+      "stepCall": {
+        "name": "GatewayPublicationLanes::stepCall",
+        "icon": "evidence"
+      },
+      "stepCheck": {
+        "name": "GatewayPublicationLanes::stepCheck",
+        "icon": "evidence"
+      },
+      "stepAdmit": {
+        "name": "GatewayPublicationLanes::stepAdmit",
+        "icon": "evidence"
+      },
+      "stepInstall": {
+        "name": "GatewayPublicationLanes::stepInstall",
+        "icon": "evidence"
+      },
+      "stepObserve": {
+        "name": "GatewayPublicationLanes::stepObserve",
+        "icon": "evidence"
+      },
+      "stepReturn": {
+        "name": "GatewayPublicationLanes::stepReturn",
+        "icon": "evidence"
+      }
+    }
+  }
+}
+|
+}}}
+stepCapture: "Request a captured ticket\nAuthority::capture\nOwner identity + current generation"
+stepCall: "Request publication\nAuthority::publish(ticket, lost, observe)\nTicket is not commit permission"
+stepCheck: "Refuse missing / foreign / stale\nAcquire current Mutex after owner check\nRead current image and current review"
+stepAdmit: "Prepare the successor image\nImage::step; refuse Denied / Exhausted\nNo observer on any refused path"
+stepInstall: "Install image + generation\nChecked generation increment\nThe same Mutex remains held"
+stepObserve: "Invoke observe(&current.image)\nCallback executes inside the Mutex\nCompeting control/register writers wait"
+stepReturn: "Return Committed(reply)\nA lost reply may remain unknown\nNot proof of external delivery"
+stepCapture -> stepCall: "ticket passed to caller"
+stepCall -> stepCheck: "enter publish; error branches return immediately"
+stepCheck -> stepAdmit: "current ticket only"
+stepAdmit -> stepInstall: "admitted image + checked counter only"
+stepInstall -> stepObserve: "installed state; lock retained"
+stepObserve -> stepReturn: "callback returns; then release lock"

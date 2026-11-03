@@ -65,3 +65,20 @@ for(const[name,change,message]of negativeChecks)test('native Lean refuses '+name
  const result=check(await observe(change(await raw())));
  expect(result.code).not.toBe(0);expect(result.stdout+result.stderr).toContain(message);expect(result.stdout).not.toContain('PROOF-FIGURES-LEAN-OK');
 },30000);
+
+test('activity diagrams bind actual Lean API and Final field declarations without claiming trace extraction',async()=>{
+ for(const name of ['gateway-profile-workflow','gateway-final-tasks']){
+  const entry='dev/d2/'+name+'.d2';await verifyFigure(root.pathname,entry);
+  const receipt:{proofClaims:ProofMap}=JSON.parse(await readFile(new URL(entry.slice(0,-3)+'.json',root),'utf8'));
+  expect(receipt.proofClaims.cards.length).toBeGreaterThan(0);
+  if(name==='gateway-final-tasks'){
+   expect(receipt.proofClaims.record?.fields).toHaveLength(8);
+   const missing=check({...receipt.proofClaims,record:{symbol:receipt.proofClaims.record!.symbol,fields:receipt.proofClaims.record!.fields.slice(1)}});
+   expect(missing.code).not.toBe(0);expect(missing.stdout+missing.stderr).toContain('task fields are incomplete');
+   const substituted=check({...receipt.proofClaims,record:{symbol:receipt.proofClaims.record!.symbol,fields:receipt.proofClaims.record!.fields.map((field,index)=>index===0?'CedarPooSpec.Gateway.PublicationReview.Final.approved':field)}});
+   expect(substituted.code).not.toBe(0);expect(substituted.stdout+substituted.stderr).toContain('task fields are incomplete');
+  }
+  const result=check(receipt.proofClaims);
+  expect(result).toMatchObject({code:0,stderr:''});expect(result.stdout).toContain('PROOF-FIGURES-LEAN-OK');
+ }
+},30000);
