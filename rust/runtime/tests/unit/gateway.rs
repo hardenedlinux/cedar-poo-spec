@@ -484,3 +484,40 @@ fn gateway_operation_identity_encodes_typed_fields_without_delimiter_aliasing() 
     );
     assert!(second.prepare(&first.envelope()).is_err());
 }
+
+#[test]
+fn gateway_post_send_receipt_budget_failure_retains_unknown_without_a_false_complete() {
+    let (mut case, schema, _) = setup();
+    case.request.resource = format!("Document::\"{}\"", "x".repeat(500_000));
+    let simulator = Simulator::new(&case, Some(&schema)).unwrap();
+    let envelope = simulator.envelope();
+    let mut witness = Witness::simulation();
+    let mut provider = ProviderJournal::default();
+    let (outcome, receipt) = simulator
+        .execute(
+            simulator.prepare(&envelope).unwrap(),
+            &envelope,
+            EffectIo {
+                witness: &mut witness,
+                provider: &mut provider,
+                crash_after_send: false,
+            },
+        )
+        .unwrap();
+    assert!(outcome.admitted && outcome.precommitted && outcome.sent && outcome.unknown);
+    assert!(!outcome.receipted && receipt.is_none());
+    assert_eq!(provider.actions.len(), 1);
+    assert!(simulator.prepare(&envelope).is_err());
+    let report = reconcile(
+        &provider,
+        &[],
+        &witness.snapshot(),
+        &simulator.audit_authority(&witness),
+    );
+    assert_eq!(
+        report.unresolved_precommits,
+        vec![envelope.effect.operation.clone()]
+    );
+    assert_eq!(report.missing_receipts, vec![envelope.effect.operation]);
+    assert!(!report.invalid_log);
+}

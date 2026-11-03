@@ -71,8 +71,13 @@ mod base64url;
 pub fn public_key(bytes: &[u8]) -> Result<VerifyingKey, String> {
     VerifyingKey::from_sec1_bytes(bytes).map_err(|e| e.to_string())
 }
+pub(super) const MAX_SIGNED_PAYLOAD: usize = 1_048_576;
+
 pub(super) fn sign(value: &impl Serialize, key: &SigningKey) -> Result<Signed, String> {
     let payload = serde_json::to_vec(value).map_err(|e| e.to_string())?;
+    if payload.len() > MAX_SIGNED_PAYLOAD {
+        return Err("oversized signed payload".into());
+    }
     let signature: Signature = key.sign(&payload);
     Ok(Signed {
         payload,
@@ -81,7 +86,7 @@ pub(super) fn sign(value: &impl Serialize, key: &SigningKey) -> Result<Signed, S
 }
 /// Verify original payload bytes with a trusted key before typed decoding.
 pub fn verify<T: DeserializeOwned>(value: &Signed, key: &VerifyingKey) -> Result<T, String> {
-    if value.payload.len() > 1_048_576 {
+    if value.payload.len() > MAX_SIGNED_PAYLOAD {
         return Err("oversized signed payload".into());
     }
     let signature = Signature::from_slice(&value.signature).map_err(|e| e.to_string())?;
@@ -102,3 +107,7 @@ pub struct Envelope {
 pub(super) fn simulation_key(byte: u8) -> SigningKey {
     SigningKey::from_slice(&[byte; 32]).expect("fixed simulation scalar")
 }
+
+#[cfg(test)]
+#[path = "../../tests/unit/gateway_wire.rs"]
+mod tests;

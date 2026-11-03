@@ -337,7 +337,7 @@ impl Simulator {
             outcome.unknown = true;
             return Ok((outcome, None));
         }
-        let receipt = sign(
+        let receipt = match sign(
             &Receipt {
                 version: Version { major: 1, minor: 0 },
                 commit,
@@ -345,7 +345,13 @@ impl Simulator {
                 facts: envelope.facts.clone(),
             },
             &self.receipt_key,
-        )?;
+        ) {
+            Ok(receipt) => receipt,
+            Err(_) => {
+                outcome.unknown = true;
+                return Ok((outcome, None));
+            }
+        };
         current.unknown = false;
         outcome.receipted = true;
         Ok((outcome, Some(receipt)))

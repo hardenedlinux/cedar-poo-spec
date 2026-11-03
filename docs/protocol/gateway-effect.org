@@ -58,7 +58,10 @@ source bindings. Inventory, exact candidate bytes, source generation and time
 are still checked at every use; changed material takes the signature verifier
 again. This preparation is not a cached authorization decision. New issuer
 policy needs new preparation. A different schema or world does not acquire an
-old Cedar decision. Native word counters refuse exhaustion before mutation.
+old Cedar decision. Native word counters refuse exhaustion before mutation. Signers and public
+verifiers share the same 1 MiB payload limit, tested at the exact byte boundary.
+A post-send outcome-signing failure retains unknown exposure and issues no
+complete receipt.
 
 Current catalogue simulation supports identity revisions, whose no-gain law is
 reflexive. Nonidentity review/approval remains owned by existing
@@ -166,11 +169,14 @@ and 275 full audit reports (eleven controls for each of 25 enforcing-eligible
 manifest sides). This is 41,619 compared rows. Raw, unschematized evaluation is
 an explicit refusal control; it is not an enforcing effect profile.
 
-Nine native source/handle/recovery/audit tests and two real child-process
+Ten native source/handle/recovery/audit tests and two real child-process
 integration tests cover trusted-key selection, source lease changes, foreign
 and stale handles, concurrent use, resource replacement, damaged witness
 history, old checkpoints, wire duplication/version failures, shadow/enforce
-separation and a public-key-only audit process. The original 384 review Cases,
+separation and a public-key-only audit process. One additional wire test checks signer/verifier
+limits at the exact byte boundary; a large valid SDK resource tests post-send
+receipt-budget failure, retained unknown exposure and independent reconciliation.
+The original 384 review Cases,
 4,116 publication steps, 12,528 CAS steps and 4,064 registration steps remain
 unchanged. Whole-library proof/import, native SDK conformance and rendering
 checks retain their existing owners.

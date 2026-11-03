@@ -12,14 +12,14 @@ import Case crates or synthetic scenario inputs.
 | Package | Responsibility | Local features |
 |---------+----------------+----------------|
 | =cedar-poo-core= | Policy JSON artifacts, authority/operation ledgers and typed handoff scopes | None |
-| =cedar-poo-runtime= | Official Cedar validation, schema checks and replay | None |
+| =cedar-poo-runtime= | Official Cedar validation, schema checks and replay | =gateway= adds the shared evidence/effect simulator |
 | =cedar-poo-agentic= | Common tool-action, selection and sink boundary | None |
 | =cedar-poo-commerce= | Storage-independent signatures, claims and admission | =projection=, =admission= |
 | =cedar-poo-commerce-mandate= | Bounded pinned Checkout signature/disclosure/context binding | =ap2-checkout= (selected merchant/item constraints) |
 | =cedar-poo-pseudonymization= | Common token modes and lineage | =google-sdp= adds provider wire contracts |
 | =cedar-poo-google-sdp-host= | In-memory Cedar and Google admission reference | None |
 | =cedar-poo-disclosure-host= | In-memory language-model disclosure reference | None |
-| =cedar-poo-bridge= | JSON conformance CLI and export benchmark | None |
+| =cedar-poo-bridge= | JSON conformance CLI and export benchmark | =gateway=, =allocation-observation= |
 | =cedar-poo-python= | PyO3 native consumer of shared runtime; maturin builds the Python wheel | CPython stable ABI, minimum 3.11 |
 | =cedar-poo-commerce-case= | Independent Lean commerce fixture consumers | =projection=, =admission= |
 | =cedar-poo-pseudonymization-case= | Local crypto and Google examples | =local=, =google-contract=, =google-admission= |
@@ -54,6 +54,18 @@ it does not justify a reversed ownership edge.
 The CLI keeps its command names, JSON formats and binary name. Library consumers
 migrate directly to their owning crate; the bridge has no domain re-export
 facade or old feature aliases.
+
+* Optional evidence/effect simulation
+
+The =gateway= feature retains one [[file:runtime/src/gateway/mod.rs][shared native owner]] for trusted field
+sources, current review/effect binding, exact original consumption, signed
+witness precommits, outcome receipts and independent public-key reconciliation.
+The bridge exposes the corresponding catalogue, MCP stdio and auditor commands.
+Default runtime/bridge builds exclude P-256; isolated feature gates check this.
+=just check-effect-protocol= exercises the complete applicable catalogue and
+real native child processes. The [[file:../docs/protocol/gateway-effect.org][protocol guide]] and [[file:../docs/protocol/gateway-effect-v1.schema.json][versioned wire schema]]
+distinguish simulation evidence from deployed Host guarantees. This is not a
+second Backend or a reverse MRR dependency.
 
 * Choosing a Case and profile
 

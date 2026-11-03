@@ -23,7 +23,7 @@
     "Examples/README.org": "fd4cb20ca0b38c5f0cd7701d7978c9b78ae656d37af2f02b9b1ae269fbe1e9e5",
     "Productions/Backend.org": "5b13f15d215bd1ab90589df4605a83fcde48c8760555cea377a94e22e0e4bdde",
     "Productions/README.org": "4aaab738b8b8f5688b1eaedce19bc16d9a9a707cf07167ebedc0388599431fd7",
-    "rust/README.org": "17db1fb92973849b3140642b1c6fb1948b1e873ca0242f17858feba7d8f33b85"
+    "rust/README.org": "ea04a5f500a8480c33ac5225d6fe90ac1f6cdfcb1ea303a19d91049bf60e9cb7"
   },
   "binaries": {},
   "sdk": {
@@ -563,21 +563,21 @@
       "samples": 29,
       "requiredMinimum": 12
     },
-    "inputSHA256": "69722e98e3b75f8240976e984943ca96f3eee70232be27cc8fa5a0af41789c68",
+    "inputSHA256": "2195dde5683c0224a786706e5ce4e264f79fcb6c8b5c3b765d2bab9bb3950446",
     "scenes": [
       {
         "inputSHA256": "06030e324cc3baeda381529e9c10c29b6c64086735b79280c4173ccb16a19edf",
         "layoutSHA256": "874d0374effa756afa57d32c15fe23d529a96f287da791871f001e14aa902654",
         "nodes": 10,
         "edges": 14,
-        "milliseconds": 127.54541699999982
+        "milliseconds": 142.18166699999983
       }
     ],
     "svgSHA256": [
-      "07999c941c8044843cb3ac176ecb9e911b44bcad6c6ba434ca4737551a02aac6",
+      "d771b4da5a66d4d75d09c4144ca73c08061a0f7f80735a0cab632e82e54b5e4a",
       "047e7f6524cf182088ad8e94b842eea4af3a64119c73c218a2e845ef9e82174e"
     ],
-    "composedHTMLSHA256": "98ba70914df32be360533a56b334f37e89f113a2647cf288d78533bd59ca079c",
+    "composedHTMLSHA256": "71a390ac1353d9eaed24174e492cc76f7d180cb8e278dea43e93db028a365fc0",
     "dependencies": {
       "@fontsource/inter": "5.3.0",
       "@fontsource/kalam": "5.3.0",
@@ -590,12 +590,12 @@
       "web-worker": "1.5.0"
     },
     "regionSHA256": {},
-    "htmlSHA256": "3e498cacf1743a8f184757c12b3682650dfe5be8158fe932b4e75b227919a753",
+    "htmlSHA256": "ac2463b52ff2acc5537cf2aa31ce85b39a7705d63aa21f448b65e1a6b124a221",
     "drawing": "precise",
     "routing": "elkjs@0.12.1",
     "assetSHA256": {
-      "@fontsource/inter/files/inter-latin-400-normal.woff2": "8909904ab6c872eb994093482a88a28eca2cd95912d7b6fecd72103b0dc07edc",
-      "@fontsource/inter/files/inter-latin-700-normal.woff2": "6f56409fd3d64bb85f7d070bce20749db2d66b6d63cec586cc22d1c761be2491"
+      "@fontsource/inter/files/inter-latin-700-normal.woff2": "6f56409fd3d64bb85f7d070bce20749db2d66b6d63cec586cc22d1c761be2491",
+      "@fontsource/inter/files/inter-latin-400-normal.woff2": "8909904ab6c872eb994093482a88a28eca2cd95912d7b6fecd72103b0dc07edc"
     },
     "pngSHA256": "f49dea551c2b5f96fa6a682d50b90048d8020831d9ae4cd6d73ea4f031dbaa6e",
     "browser": "156.0.8078.4",
