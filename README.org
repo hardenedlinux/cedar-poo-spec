@@ -114,8 +114,9 @@ a deliberate dependency update is followed by =just sync= and complete checks.
 The acceptance unit includes the complete 51-entry example catalog and all nine
 materialized object families. Types, projection Contracts, semantic proofs and
 independent Rust authorization must agree. [[file:docs/functional-coverage.org][The coverage audit]]
-records the inventory and retained controls. CI separates Lean, Rust,
-Cedar conformance and authorization-delta qualification.
+records the inventory and retained controls. [[file:docs/ci-modules.org][CI module ownership]]
+separates core, Zero Trust/authorization, healthcare, financial services,
+platforms, governance, cross-module conformance, native resources and views.
 
 * Native performance
 

@@ -14,15 +14,15 @@ between source modules; the existing Lean import audit enforces that boundary.
 
 | Workflow | Owner / gate | Local entrypoints |
 |----------+--------------+-------------------|
-| =ci.yml= | Whole-library Lean integration and Rust workspace | =just check-lean=, =just check-rust= |
-| =zero-trust.yml= | Zero Trust / Gateway native simulation; generic authorization Delta | =just check-gateway-delta=, =just check-agent-trace-delta= and authorization Delta recipes |
-| =healthcare.yml= | Healthcare Cases and impact analysis | =just example health ...=, =just check-health-authorization-impact= |
-| =financial-services.yml= | Banking, claims, payment and commerce | Financial-services examples and payment/commerce recipes |
-| =platforms.yml= | Cloud and agent platform integration | Cloud, AWS AgenticPlatform and enterprise Agent examples |
-| =governance.yml= | Governance, personnel and schema evolution | Governance examples and governance recipes |
-| =conformance.yml= | Canonical artifacts and cross-module replay | Artifact, replay and schema-bound conformance recipes |
-| =native-performance.yml= | Lean/Rust benchmarks and OS observations | Existing native benchmark, cold recovery, allocation and launch recipes |
-| =views.yml= | SDK-bound render / recovery on Ubuntu and macOS | =cd dev && just render && just test= |
+| [[file:../.github/workflows/ci.yml][ci.yml]] | Whole-library Lean integration and Rust workspace | =just check-lean=, =just check-rust= |
+| [[file:../.github/workflows/zero-trust.yml][zero-trust.yml]] | Zero Trust / Gateway native simulation; generic authorization Delta | =just check-gateway-delta=, =just check-agent-trace-delta= and authorization Delta recipes |
+| [[file:../.github/workflows/healthcare.yml][healthcare.yml]] | Healthcare Cases and impact analysis | =just example health ...=, =just check-health-authorization-impact= |
+| [[file:../.github/workflows/financial-services.yml][financial-services.yml]] | Banking, claims, payment and commerce | Financial-services examples and payment/commerce recipes |
+| [[file:../.github/workflows/platforms.yml][platforms.yml]] | Cloud and agent platform integration | Cloud, AWS AgenticPlatform and enterprise Agent examples |
+| [[file:../.github/workflows/governance.yml][governance.yml]] | Governance, personnel and schema evolution | Governance examples and governance recipes |
+| [[file:../.github/workflows/conformance.yml][conformance.yml]] | Canonical artifacts and cross-module replay | Artifact, replay and schema-bound conformance recipes |
+| [[file:../.github/workflows/native-performance.yml][native-performance.yml]] | Lean/Rust benchmarks and OS observations | Existing native benchmark, cold recovery, allocation and launch recipes |
+| [[file:../.github/workflows/views.yml][views.yml]] | SDK-bound render / recovery on Ubuntu and macOS | =cd dev && just render && just test= |
 
 The full Lean integration gate is intentionally retained alongside module
 checks; module ownership does not remove the aggregate compile/proof check.
@@ -32,11 +32,11 @@ rather than hidden in one all-domain job.
 
 * Common setup, separate evidence
 
-=actions/setup-verification= installs the declared Lean toolchain, pinned uv,
+[[file:../.github/actions/setup-verification/action.yml][Shared verification setup]] installs the declared Lean toolchain, pinned uv,
 just and recipe search dependency, plus optional Rust and pinned CVC5.
 Every module executing solver-backed Delta explicitly enables CVC5; a separate
 module cannot rely on another job having installed a process or environment. It invokes the existing
-=lean-cache= owner; no new cache generation or version ladder is introduced.
+[[file:../.github/actions/lean-cache/action.yml][Lean cache owner]]; no new cache generation or version ladder is introduced.
 Each independent job restores only compiler-compatible outputs and lets Lake
 traces determine rebuilding. First runs of newly named jobs can have cache
 misses. Fixtures, receipts and observations remain fresh, never cached evidence.
