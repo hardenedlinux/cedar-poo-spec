@@ -203,10 +203,13 @@ def Host.withDeltaReview (host : Host Command Result View Parent Artifact Cut)
     (resolve : View → Command → Artifact → Option Authorization.Delta.ReviewedInteraction)
     (modelAt : View → PolicyModules.Model) (schemaAt : View → Cedar.Validation.Schema)
     (stateAt : View → Authorization.Delta.ReleaseState)
+    (frontierAt : View → Nat)
     (approveGain : View → Command → Authorization.Delta.ReviewedInteraction →
       Authorization.Delta.ReleaseState → Bool) : Host Command Result View Parent Artifact Cut :=
   { host with commit := fun before result after =>
       host.commit before result after ∧
+      (stateAt before).epoch = frontierAt before ∧
+      frontierAt after = (stateAt after).epoch ∧
       ∃ artifact reviewed policies,
         host.approvedEvidenceAt before (host.projection result).1 = some artifact ∧
         resolve before (host.projection result).1 artifact = some reviewed ∧
@@ -214,9 +217,9 @@ def Host.withDeltaReview (host : Host Command Result View Parent Artifact Cut)
 
 theorem delta_final_retains_exact_review
     {host : Host Command Result View Parent Artifact Cut}
-    {resolve modelAt schemaAt stateAt approveGain}
+    {resolve modelAt schemaAt stateAt frontierAt approveGain}
     {template : Contract Atom Command Result} {command actual}
-    (publication : Final (host.withDeltaReview resolve modelAt schemaAt stateAt approveGain)
+    (publication : Final (host.withDeltaReview resolve modelAt schemaAt stateAt frontierAt approveGain)
       template prepare command actual) :
     host.commit actual publication.receipt.result publication.receipt.state ∧
       ∃ artifact reviewed policies,
@@ -227,14 +230,27 @@ theorem delta_final_retains_exact_review
   have bound := (final_preserves_original_and_binding publication).2
   have commandBound : (host.projection publication.receipt.result).1 = command :=
     by simpa only [Host.withDeltaReview] using congrArg Prod.fst bound
-  simpa only [Host.withDeltaReview, commandBound] using publication.committed
+  exact ⟨publication.committed.1, by
+    simpa only [Host.withDeltaReview, commandBound] using publication.committed.2.2.2⟩
+
+/-- Frontier binding comes from the actual Final. Reader authenticity and
+native ordering remain Host obligations; equality alone is not durable custody. -/
+theorem delta_final_retains_frontier
+    {host : Host Command Result View Parent Artifact Cut}
+    {resolve modelAt schemaAt stateAt frontierAt approveGain}
+    {template : Contract Atom Command Result} {command actual}
+    (publication : Final (host.withDeltaReview resolve modelAt schemaAt stateAt frontierAt approveGain)
+      template prepare command actual) :
+    (stateAt actual).epoch = frontierAt actual ∧
+      frontierAt publication.receipt.state = (stateAt publication.receipt.state).epoch :=
+  ⟨publication.committed.2.1, publication.committed.2.2.1⟩
 
 theorem unresolved_delta_cannot_commit
     {host : Host Command Result View Parent Artifact Cut}
-    {resolve modelAt schemaAt stateAt approveGain}
+    {resolve modelAt schemaAt stateAt frontierAt approveGain}
     {template : Contract Atom Command Result} {command actual}
     (missing : ∀ artifact, resolve actual command artifact = none) :
-    ¬ Nonempty (Final (host.withDeltaReview resolve modelAt schemaAt stateAt approveGain)
+    ¬ Nonempty (Final (host.withDeltaReview resolve modelAt schemaAt stateAt frontierAt approveGain)
       template prepare command actual) := by
   rintro ⟨publication⟩
   obtain ⟨_, artifact, reviewed, _, _, resolved, _⟩ := delta_final_retains_exact_review publication
@@ -243,12 +259,12 @@ theorem unresolved_delta_cannot_commit
 
 theorem rejected_delta_cannot_commit
     {host : Host Command Result View Parent Artifact Cut}
-    {resolve modelAt schemaAt stateAt approveGain}
+    {resolve modelAt schemaAt stateAt frontierAt approveGain}
     {template : Contract Atom Command Result} {command actual}
     (rejected : ∀ artifact reviewed, resolve actual command artifact = some reviewed →
       (reviewed.advanceReviewed (modelAt actual) (schemaAt actual) (stateAt actual)
         (approveGain actual command)).isOk = false) :
-    ¬ Nonempty (Final (host.withDeltaReview resolve modelAt schemaAt stateAt approveGain)
+    ¬ Nonempty (Final (host.withDeltaReview resolve modelAt schemaAt stateAt frontierAt approveGain)
       template prepare command actual) := by
   rintro ⟨publication⟩
   obtain ⟨_, artifact, reviewed, policies, _, resolved, advanced⟩ := delta_final_retains_exact_review publication
@@ -261,9 +277,9 @@ caller supplies fresh approval or another model/schema. This is a statement
 about the returned image; it does not authenticate recovered storage. -/
 theorem delta_final_retires_resolved_review
     {host : Host Command Result View Parent Artifact Cut}
-    {resolve modelAt schemaAt stateAt approveGain}
+    {resolve modelAt schemaAt stateAt frontierAt approveGain}
     {template : Contract Atom Command Result} {command actual}
-    (publication : Final (host.withDeltaReview resolve modelAt schemaAt stateAt approveGain)
+    (publication : Final (host.withDeltaReview resolve modelAt schemaAt stateAt frontierAt approveGain)
       template prepare command actual) :
     ∃ artifact reviewed policies,
       host.approvedEvidenceAt actual command = some artifact ∧
@@ -289,15 +305,13 @@ committed frontier. Live-image rollback is not monotone: the later use must
 establish equality with that preserved frontier before the raw Delta check. -/
 theorem delta_final_rejects_resolved_review_after_run
     {host : Host Command Result View Parent Artifact Cut}
-    {resolve modelAt schemaAt stateAt approveGain}
+    {resolve modelAt schemaAt stateAt frontierAt approveGain}
     {template : Contract Atom Command Result} {command actual}
-    (publication : Final (host.withDeltaReview resolve modelAt schemaAt stateAt approveGain)
+    (publication : Final (host.withDeltaReview resolve modelAt schemaAt stateAt frontierAt approveGain)
       template prepare command actual)
-    (frontier : View → Nat)
-    (installedFrontier : frontier publication.receipt.state = (stateAt publication.receipt.state).epoch)
-    (monotone : ∀ before effect after, step before effect after → frontier before ≤ frontier after)
+    (monotone : ∀ before effect after, step before effect after → frontierAt before ≤ frontierAt after)
     (run : ZeroTrust.Run framework step publication.receipt.state later)
-    (current : (stateAt later).epoch = frontier later) :
+    (current : (stateAt later).epoch = frontierAt later) :
     ∃ artifact reviewed,
       host.approvedEvidenceAt actual command = some artifact ∧
       resolve actual command artifact = some reviewed ∧
@@ -305,9 +319,10 @@ theorem delta_final_rejects_resolved_review_after_run
         (reviewed.advanceReviewed otherModel otherSchema (stateAt later) otherApproval).isOk = false := by
   obtain ⟨artifact, reviewed, policies, present, resolved, epoch, installed, _⟩ :=
     delta_final_retires_resolved_review publication
-  have forward : frontier publication.receipt.state ≤ frontier later :=
+  have installedFrontier := (delta_final_retains_frontier publication).2
+  have forward : frontierAt publication.receipt.state ≤ frontierAt later :=
     ZeroTrust.run_preserves
-      (fun view => frontier publication.receipt.state ≤ frontier view)
+      (fun view => frontierAt publication.receipt.state ≤ frontierAt view)
       (fun before effect after event prior => Nat.le_trans prior (monotone before effect after event))
       (Nat.le_refl _) run
   refine ⟨artifact, reviewed, present, resolved, ?_⟩
@@ -316,5 +331,52 @@ theorem delta_final_rejects_resolved_review_after_run
   have installedEpoch := congrArg Authorization.Delta.ReleaseState.epoch installed
   dsimp only at installedEpoch
   omega
+
+/-- The actual checked Final advances its release frontier exactly once. -/
+theorem delta_final_advances_frontier
+    {host : Host Command Result View Parent Artifact Cut}
+    {resolve modelAt schemaAt stateAt frontierAt approveGain}
+    {template : Contract Atom Command Result} {command actual}
+    (publication : Final (host.withDeltaReview resolve modelAt schemaAt stateAt frontierAt approveGain)
+      template prepare command actual) :
+    frontierAt publication.receipt.state = frontierAt actual + 1 := by
+  obtain ⟨_, _, _, _, _, _, installed, _⟩ := delta_final_retires_resolved_review publication
+  have bound := delta_final_retains_frontier publication
+  have epoch := congrArg Authorization.Delta.ReleaseState.epoch installed
+  dsimp only at epoch
+  omega
+
+/-- Successive actual Finals have increasing resolved review epochs when all
+intervening writers preserve the same independent frontier. -/
+theorem successive_delta_finals_advance_review_epoch
+    {host : Host Command Result View Parent Artifact Cut}
+    {resolve modelAt schemaAt stateAt frontierAt approveGain}
+    {template : Contract Atom Command Result}
+    {firstCommand nextCommand firstView nextView}
+    (first : Final (host.withDeltaReview resolve modelAt schemaAt stateAt frontierAt approveGain)
+      template prepare firstCommand firstView)
+    (next : Final (host.withDeltaReview resolve modelAt schemaAt stateAt frontierAt approveGain)
+      template prepare nextCommand nextView)
+    (monotone : ∀ before effect after, step before effect after → frontierAt before ≤ frontierAt after)
+    (run : ZeroTrust.Run framework step first.receipt.state nextView) :
+    ∃ firstArtifact firstReview nextArtifact nextReview,
+      host.approvedEvidenceAt firstView firstCommand = some firstArtifact ∧
+      resolve firstView firstCommand firstArtifact = some firstReview ∧
+      host.approvedEvidenceAt nextView nextCommand = some nextArtifact ∧
+      resolve nextView nextCommand nextArtifact = some nextReview ∧
+      firstReview.snapshot.epoch < nextReview.snapshot.epoch := by
+  obtain ⟨firstArtifact, firstReview, _, firstPresent, firstResolved, firstEpoch, _, _⟩ :=
+    delta_final_retires_resolved_review first
+  obtain ⟨nextArtifact, nextReview, _, nextPresent, nextResolved, nextEpoch, _, _⟩ :=
+    delta_final_retires_resolved_review next
+  have firstCurrent := (delta_final_retains_frontier first).1
+  have nextCurrent := (delta_final_retains_frontier next).1
+  have advanced := delta_final_advances_frontier first
+  have forward : frontierAt first.receipt.state ≤ frontierAt nextView :=
+    ZeroTrust.run_preserves (fun view => frontierAt first.receipt.state ≤ frontierAt view)
+      (fun before effect after event prior => Nat.le_trans prior (monotone before effect after event))
+      (Nat.le_refl _) run
+  exact ⟨firstArtifact, firstReview, nextArtifact, nextReview, firstPresent, firstResolved,
+    nextPresent, nextResolved, by omega⟩
 
 end CedarPooSpec.Gateway.PublicationReview

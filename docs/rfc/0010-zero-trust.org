@@ -637,9 +637,9 @@ two-publication limit or a general registry protocol.
 
 =delta_final_rejects_resolved_review_after_run= extends the actual Final's
 resolved-review retirement across later application runs, which may use other
-reviews or approvals. Its explicit premises bind the post-commit independent
-frontier to the installed epoch, preserve that frontier for every later writer,
-and require the current live epoch to match it before the later raw Delta check.
+reviews or approvals. Its strengthened Final binds the post-commit independent
+frontier to the installed epoch. Remaining premises preserve the frontier for
+every later writer and require freshness before the later raw Delta check.
 A restored live image can rewind; that is why this law uses an independent
 frontier rather than assuming the live epoch is monotone. The companion
 registration scheduler has a kernel step law and arbitrary-finite-history
@@ -656,3 +656,28 @@ qualification and anti-rollback premises remain intact. Retaining a lost reply
 about a locally committed publication does not discharge an unresolved external
 dependency. All semantic checks remain Lean/Rust; no Python semantic owner or
 performance claim is added.
+
+** Frontier binding belongs to the actual Final
+
+=Host.withDeltaReview= now requires =frontierAt : View → Nat=. Its commit
+relation retains the original Contract and resolved Delta, and requires the
+pre-state epoch to equal that frontier and the post-frontier to equal the
+installed epoch. Callers migrate to this required reader; no default or
+compatibility adapter is added. Reader authenticity and atomic native ordering
+remain Host obligations. Reading the live epoch twice does not establish an
+independent frontier.
+
+=delta_final_retains_frontier= extracts these bindings, and
+=delta_final_advances_frontier= derives the exact one-step advance.
+=successive_delta_finals_advance_review_epoch= composes two actual Finals with an
+arbitrary forward Run and proves that their resolved review epochs increase.
+Currentness and installation come from the Finals; every-writer frontier
+preservation remains explicit. The raw-check retirement theorem still requires
+freshness at its later observation because that observation need not be a Final.
+
+Positive-control kernel fixtures keep accepted analysis and a constructible
+Final while refusing wrong pre-frontiers or omitted post-frontier installation.
+A whole-reader rollback counterexample retains the nonrollback premise. Native
+fault controls reject ahead and behind frontiers even after registration and
+recovery. These are shared adapter laws and simulated controls, not physical
+persistence, credential custody or production IO.

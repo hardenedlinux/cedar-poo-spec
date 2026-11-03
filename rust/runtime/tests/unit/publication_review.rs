@@ -344,6 +344,33 @@ fn release_epoch_exhaustion_refuses_without_changing_the_image() {
     assert_eq!(image, original);
 }
 #[test]
+fn current_review_and_registration_cannot_repair_a_mismatched_frontier() {
+    for floor in [6, 8] {
+        let review = fixture_review(true, false);
+        let authority = Authority::new(review.clone());
+        let ticket = authority.capture();
+        authority.current.lock().unwrap().image.floor = floor;
+        let original = authority.current.lock().unwrap().image.clone();
+        assert_eq!(
+            authority.publish(Some(&ticket), false, |_| panic!("frontier bypass")),
+            Attempt::Denied
+        );
+        assert_eq!(authority.current.lock().unwrap().generation, 0);
+        authority.register(Arc::new(review)).unwrap();
+        authority.control(3).unwrap();
+        assert_eq!(
+            authority.publish(Some(&authority.capture()), false, |_| panic!(
+                "frontier reset"
+            )),
+            Attempt::Denied
+        );
+        let current = authority.current.lock().unwrap();
+        assert_eq!(current.generation, 2);
+        assert_eq!(current.image, original);
+    }
+}
+
+#[test]
 fn independent_prechecks_without_atomic_install_can_duplicate() {
     let review = fixture_review(true, false);
     let initial = Image::initial(&review.base);

@@ -239,7 +239,8 @@ receipts and must not be inferred from these focused tests.
 
 =Host.withDeltaReview= strengthens the existing commit relation: the artifact
 selected by the actual deciding view must resolve to a =ReviewedInteraction=,
-and its checked advance must produce the actual committed post-state. The
+and its checked advance must produce the actual committed post-state. Its required
+=frontierAt= reader binds the pre-epoch and the installed post-frontier. The
 original Contract and all registration/current-use requirements remain intact.
 =advanceReviewed= separates governed gains from the unchanged =advanceNoGain=
 path; gain approval receives the exact review and active state and cannot bypass
@@ -297,3 +298,11 @@ epoch binding. Registration-scheduler induction proves frontier/unknown
 retention. An unfenced replacement counterexample retains the requirement that
 every relevant writer advance the cut; these tests do not supply production
 registration credentials or physical durability.
+
+The actual Delta Final retains both frontier bindings and advances the frontier
+exactly once. =successive_delta_finals_advance_review_epoch= relates two actual
+Finals across a run: resolved review epochs strictly increase when every writer
+preserves the same independent frontier. Valid analysis cannot bypass a wrong
+pre-frontier or omitted installation. Callers must supply the required reader;
+there is no default epoch. The whole-reader rollback counterexample retains the
+Host authenticity and nonrollback premises.

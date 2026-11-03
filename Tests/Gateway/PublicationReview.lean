@@ -184,9 +184,9 @@ theorem bound_review_cannot_reset_consumption :
 -- analysis is absent. The semantic adapter must still refuse publication.
 theorem matching_reference_without_analysis_is_refused
     (modelAt : View → PolicyModules.Model) (schemaAt : View → Cedar.Validation.Schema)
-    (stateAt : View → Authorization.Delta.ReleaseState) :
+    (stateAt : View → Authorization.Delta.ReleaseState) (frontierAt : View → Nat) :
     ¬ Nonempty (Final (host.withDeltaReview (fun _ _ _ => none)
-      modelAt schemaAt stateAt (fun _ _ _ _ => true)) template prepare 9 initial) :=
+      modelAt schemaAt stateAt frontierAt (fun _ _ _ _ => true)) template prepare 9 initial) :=
   unresolved_delta_cannot_commit (fun _ => rfl)
 
 #print axioms delta_final_retains_exact_review
@@ -211,7 +211,8 @@ theorem accepted_analysis_can_reach_final
     (active next : Authorization.Delta.ReleaseState) (policies : Cedar.Spec.Policies)
     (advanced : reviewed.advanceReviewed model schema active (fun _ _ => false) = .ok (next, policies)) :
     Nonempty (Final (publishingHost.withDeltaReview (fun _ _ _ => some reviewed)
-      (fun _ => model) (fun _ => schema) (activeAt active next) (fun _ _ _ _ => false))
+      (fun _ => model) (fun _ => schema) (activeAt active next)
+      (fun view => (activeAt active next view).epoch) (fun _ _ _ _ => false))
       template publish 9 initial) := by
   obtain ⟨receipt, _, sameResult, sameState⟩ :=
     Contract.invoke_accepts (contract := publishingHost.contract template 9 initial)
@@ -225,8 +226,67 @@ theorem accepted_analysis_can_reach_final
   · simp [Host.withDeltaReview, publishingHost, ZeroTrust.Framework.required, host, security, initial]
   · constructor
     · simp [publishingHost, sameState, initial]
-    · refine ⟨7, reviewed, policies, rfl, rfl, ?_⟩
+    · refine ⟨rfl, rfl, 7, reviewed, policies, rfl, rfl, ?_⟩
       simpa [sameResult, sameState, activeAt, initial] using advanced
+
+-- Accepted analysis remains a positive control for each refusal.
+theorem accepted_analysis_cannot_override_stale_frontier
+    (reviewed : Authorization.Delta.ReviewedInteraction)
+    (model : PolicyModules.Model) (schema : Cedar.Validation.Schema)
+    (active next : Authorization.Delta.ReleaseState) (policies : Cedar.Spec.Policies)
+    (advanced : reviewed.advanceReviewed model schema active (fun _ _ => false) = .ok (next, policies)) :
+    Nonempty (Final (publishingHost.withDeltaReview (fun _ _ _ => some reviewed)
+      (fun _ => model) (fun _ => schema) (activeAt active next)
+      (fun view => (activeAt active next view).epoch) (fun _ _ _ _ => false)) template publish 9 initial) ∧
+    ¬ Nonempty (Final (publishingHost.withDeltaReview (fun _ _ _ => some reviewed)
+      (fun _ => model) (fun _ => schema) (activeAt active next)
+      (fun view => (activeAt active next view).epoch + 1) (fun _ _ _ _ => false)) template publish 9 initial) := by
+  refine ⟨accepted_analysis_can_reach_final reviewed model schema active next policies advanced, ?_⟩
+  rintro ⟨publication⟩
+  have current := (delta_final_retains_frontier publication).1
+  omega
+
+theorem accepted_analysis_cannot_omit_frontier_installation
+    (reviewed : Authorization.Delta.ReviewedInteraction)
+    (model : PolicyModules.Model) (schema : Cedar.Validation.Schema)
+    (active next : Authorization.Delta.ReleaseState) (policies : Cedar.Spec.Policies)
+    (advanced : reviewed.advanceReviewed model schema active (fun _ _ => false) = .ok (next, policies)) :
+    Nonempty (Final (publishingHost.withDeltaReview (fun _ _ _ => some reviewed)
+      (fun _ => model) (fun _ => schema) (activeAt active next)
+      (fun view => (activeAt active next view).epoch) (fun _ _ _ _ => false)) template publish 9 initial) ∧
+    ¬ Nonempty (Final (publishingHost.withDeltaReview (fun _ _ _ => some reviewed)
+      (fun _ => model) (fun _ => schema) (activeAt active next)
+      (fun view => if view.cut = 4 then active.epoch else next.epoch + 1)
+      (fun _ _ _ _ => false)) template publish 9 initial) := by
+  refine ⟨accepted_analysis_can_reach_final reviewed model schema active next policies advanced, ?_⟩
+  rintro ⟨publication⟩
+  have installed := (delta_final_retains_frontier publication).2
+  have called := publication.receipt.called
+  simp only [publish, Except.ok.injEq, Prod.mk.injEq] at called
+  rw [← called.2] at installed
+  have impossible : next.epoch + 1 = next.epoch := installed
+  omega
+
+-- Restoring the complete reader violates the later-run monotonicity premise.
+theorem rolled_back_frontier_allows_same_final_counterexample
+    (reviewed : Authorization.Delta.ReviewedInteraction)
+    (model : PolicyModules.Model) (schema : Cedar.Validation.Schema)
+    (active next : Authorization.Delta.ReleaseState) (policies : Cedar.Spec.Policies)
+    (advanced : reviewed.advanceReviewed model schema active (fun _ _ => false) = .ok (next, policies)) :
+    ∃ publication : Final (publishingHost.withDeltaReview (fun _ _ _ => some reviewed)
+      (fun _ => model) (fun _ => schema) (activeAt active next)
+      (fun view => (activeAt active next view).epoch) (fun _ _ _ _ => false)) template publish 9 initial,
+      ZeroTrust.Run security (fun _ _ _ => True) publication.receipt.state initial := by
+  obtain ⟨publication⟩ := accepted_analysis_can_reach_final reviewed model schema active next policies advanced
+  exact ⟨publication, .next (effect := none) (.refl publication.receipt.state)
+    ⟨True.intro, by intro effect impossible; cases impossible⟩⟩
+
+#print axioms accepted_analysis_cannot_override_stale_frontier
+#print axioms accepted_analysis_cannot_omit_frontier_installation
+#print axioms rolled_back_frontier_allows_same_final_counterexample
+#print axioms delta_final_retains_frontier
+#print axioms delta_final_advances_frontier
+#print axioms successive_delta_finals_advance_review_epoch
 
 #print axioms accepted_analysis_can_reach_final
 #print axioms rejected_delta_cannot_commit
