@@ -7,11 +7,31 @@ import subprocess
 import sys
 import tempfile
 import unittest
+import venv
 from pathlib import Path
 
 
 @unittest.skipUnless(platform.system() in ("Darwin", "Linux"), "POSIX resource observer")
 class NativeResourceTests(unittest.TestCase):
+    def test_observer_preserves_virtual_environment_invocation(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            environment = Path(temporary) / "environment"
+            venv.EnvBuilder(with_pip=False, symlinks=True).create(environment)
+            interpreter = environment / "bin/python"
+            output = Path(temporary) / "receipt.json"
+            result = subprocess.run([
+                sys.executable, "-m", "cedar_poo_py_test.resources", "--output", str(output),
+                "--timeout-seconds", "120", str(interpreter), "-I", "-c",
+                "import sys; print(sys.prefix)",
+            ], capture_output=True, text=True, check=False)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(Path(result.stdout.strip()).resolve(), environment.resolve())
+            receipt = json.loads(output.read_text())
+            self.assertEqual(receipt["executable"], str(interpreter.resolve()))
+            self.assertEqual(receipt["invocation_executable"], str(interpreter.absolute()))
+            self.assertTrue(receipt["owned_group_quiesced"])
+            self.assertTrue(receipt["resource_observation_complete"])
+
     def test_failed_child_remains_failed_with_an_observation_receipt(self):
         with tempfile.TemporaryDirectory() as temporary:
             output = Path(temporary) / "receipt.json"

@@ -97,7 +97,8 @@ def main() -> None:
     args = parser.parse_args()
     if args.timeout_seconds is not None and (not math.isfinite(args.timeout_seconds) or args.timeout_seconds <= 0):
         parser.error("timeout-seconds must be finite and positive")
-    executable = args.executable.resolve(strict=True)
+    invocation = args.executable.absolute()
+    executable = invocation.resolve(strict=True)
     system = platform.system()
     if system not in ("Darwin", "Linux"):
         parser.error(f"unsupported resource observation platform: {system}")
@@ -107,7 +108,7 @@ def main() -> None:
             digest.update(block)
     with tempfile.TemporaryFile(mode="w+") as report:
         started = time.monotonic_ns()
-        command = ["/usr/bin/time", "-l" if system == "Darwin" else "-v", str(executable), *args.arguments]
+        command = ["/usr/bin/time", "-l" if system == "Darwin" else "-v", str(invocation), *args.arguments]
         supervision = {}
         if args.timeout_seconds is None:
             # Keep the existing ordinary measurement path unchanged.
@@ -135,6 +136,7 @@ def main() -> None:
     receipt = {
         "format": "cedar-poo-native-process-v1", "system": system,
         "architecture": platform.machine(), "executable": str(executable),
+        "invocation_executable": str(invocation),
         "executable_sha256": digest.hexdigest(), "arguments": args.arguments,
         "elapsed_ns": elapsed, "stderr_report": str(report_path.resolve()), **observed,
         "returncode": child.returncode, **supervision,
