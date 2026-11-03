@@ -929,3 +929,7 @@ fn typed_request_literals_delegate_reserved_unknown_and_invalid_forms() {
         assert!(super::literal_context(&value).is_none(), "{value}");
     }
 }
+
+#[cfg(feature = "gateway")]
+#[path = "gateway.rs"]
+mod gateway;

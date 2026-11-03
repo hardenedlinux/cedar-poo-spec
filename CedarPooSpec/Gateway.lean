@@ -6,3 +6,4 @@ import CedarPooSpec.Gateway.Consumption
 import CedarPooSpec.Gateway.AuthorizationDelta
 import CedarPooSpec.Gateway.ZeroTrust
 import CedarPooSpec.Gateway.PublicationReview
+import CedarPooSpec.Gateway.EffectProtocol

@@ -5,7 +5,8 @@
 =CedarPooSpec.Gateway= is a platform-neutral Lean library. It composes existing
 Admission, Functional compilation, PolicyModules and exact operational
 Authorization Delta capabilities. It adds no Cedar evaluator, solver semantics,
-transport service, persistence engine or Gateway Rust runtime. The AWS AgentCore
+transport service or persistence engine. The optional Rust =gateway= feature
+implements an explicitly simulated protocol adapter, not a deployed Host. The AWS AgentCore
 Gateway projection remains under =Platform/AWS/AgentCore=.
 
 Weaver owns scenario-specific Rust execution, authenticated Host adapters,
@@ -31,6 +32,7 @@ the framework's transitive import closure must not contain Gateway. See
 | Consumption | Compose original-operation admission and effect-bound grant consumption | OperationLedger and AuthorityLedger |
 | AuthorizationDelta | Prepare source-bound C4 revision, analyze gains/losses, compose conditional proofs | Exact operational Delta, policy/provenance changes, proof footprint |
 | PublicationReview | Resolve the reviewed artifact and bind the actual next release state at commit | Original EvidenceBinding Contract, durable registration, fencing and Delta Release transition |
+| EffectProtocol | Bind trusted field evidence, versioned review/effect identity and independent reconciliation | Existing typed Cedar receipt, POO requirement strengthening, optional Rust simulation |
 | ZeroTrust | Bind current Cedar admission and retain original consumption during ongoing use | Generic requirements, actual typed Receipts, profile refinement and committed history prefix |
 
 Authorization uses flat =Except= composition. Each validation step returns either
@@ -306,3 +308,11 @@ preserves the same independent frontier. Valid analysis cannot bypass a wrong
 pre-frontier or omitted installation. Callers must supply the required reader;
 there is no default epoch. The whole-reader rollback counterexample retains the
 Host authenticity and nonrollback premises.
+
+* Versioned evidence and effect simulation
+
+The [[file:../../docs/protocol/gateway-effect.org][shared protocol guide]] documents typed field authorities,
+exact effect handles, signed precommits and public reconciliation. The adjacent
+[[file:../../docs/protocol/gateway-effect-v1.schema.json][version 1.0 schema]] describes the wire representation. Run
+=just check-effect-protocol= for the complete applicable-domain matrix,
+cryptographic controls and native MCP/auditor child-process tests.

@@ -8,7 +8,7 @@
     "CedarPooSpec/Cloud/README.org": "a6d5a30acf136506b313dff1121cdfdfd0bd5330fbf34e0bda3b5d8c6b19ee08",
     "CedarPooSpec/Data/README.org": "b4f3e0ec993fe58f926ca5b5a195171fa8f12e6f9192e09ac260a00927e0dc0c",
     "CedarPooSpec/Functional/README.org": "31dfe979d62c2a65df9446631fb6bc80b72bfc3bc10399efe0de540ea3cc0385",
-    "CedarPooSpec/Gateway/README.org": "ceefb16f8436c8831a37ca5c59c6174822f4afbca51af6aeb9616c76a93dfe6a",
+    "CedarPooSpec/Gateway/README.org": "2a1f4c98bed97d579a63ad246ccccf5925c2b79598aa6394b88622bae05e38cc",
     "CedarPooSpec/Governance/README.org": "7198754819ff70820dc4c0c1394957d506bdb305ebfd881ae526d901256872c1",
     "CedarPooSpec/Pseudonymization/README.org": "389ef357ad2d9efd79da03148883fe5ee35a5da832ed012b265c98ea32c0b4f2",
     "CedarPooSpec/ZeroTrust/README.org": "92b9ef0b0ff4c0be55b8e207b993debdad077fef1daa297fe040fea13222908f",
@@ -459,12 +459,12 @@
       "samples": 28,
       "requiredMinimum": 12
     },
-    "inputSHA256": "3e6612ac4c59e7fa9b1f513f88bea65d324419458a1dbdde91d81ca8378a57bc",
+    "inputSHA256": "cb8431a31b9dac1c53e35b6c47246a2e9ea50ce2a7152f71f4fc1b1e765526f1",
     "scenes": [],
     "svgSHA256": [
-      "c8a33cf6722f058c22e9650dac9a84e8a4ad6efa8dc346c664e1da8f4cfe27b7"
+      "70edfb50ac9cc59b09876f15f1b94c094d5c3871035cd6e814a7acc5f87d6729"
     ],
-    "composedHTMLSHA256": "4e65f08885f6ab8ac151beb2e08c37b6503b40da614803b0c6cfb1ffef7d7007",
+    "composedHTMLSHA256": "b19e32da36a885bf6dcc6b302788c04d525397dd425ca739e469998b978cb22a",
     "dependencies": {
       "@fontsource/inter": "5.3.0",
       "@fontsource/kalam": "5.3.0",
@@ -477,7 +477,7 @@
       "web-worker": "1.5.0"
     },
     "regionSHA256": {},
-    "htmlSHA256": "e184775be790e01a8529f22132cfe75d68fbcac68c9af51da521a2f262040024",
+    "htmlSHA256": "0483df5e5e74707324b63f5f9c737f29387448b48fd93d311e8229657386849c",
     "drawing": "precise",
     "routing": "none",
     "assetSHA256": {

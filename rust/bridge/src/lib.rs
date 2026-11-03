@@ -12,3 +12,6 @@ mod output;
 asp_rust::asp_rust_cargo_test_gate!(mode = deny, config = asp_rust::default_asp_rust_config());
 
 mod allocation;
+
+#[cfg(feature = "gateway")]
+mod gateway;

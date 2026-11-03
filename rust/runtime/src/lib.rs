@@ -38,3 +38,9 @@ asp_rust::asp_rust_cargo_test_gate!(mode = deny, config = asp_rust::default_asp_
 
 mod source_transport;
 pub use source_transport::{CatalogSources, ResolvedPolicyArtifact};
+
+#[cfg(feature = "gateway")]
+pub mod gateway;
+
+#[cfg(feature = "gateway")]
+pub(crate) use canonical::{json_sha256, schema_sha256, value_sha256};

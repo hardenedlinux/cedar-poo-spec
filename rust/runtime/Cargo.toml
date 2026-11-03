@@ -13,6 +13,17 @@ serde_json.workspace = true
 sha2.workspace = true
 cedar-policy = { workspace = true, features = ["ipaddr", "decimal", "datetime"] }
 
+[features]
+gateway = ["dep:p256", "dep:base64"]
+
+[dependencies.base64]
+workspace = true
+optional = true
+
+[dependencies.p256]
+workspace = true
+optional = true
+
 [dev-dependencies]
 asp-rust.workspace = true
 

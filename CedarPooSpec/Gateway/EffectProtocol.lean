@@ -1,0 +1,201 @@
+import CedarPooSpec.ZeroTrust.Evidence
+import CedarPooSpec.ZeroTrust.ProfileObject
+import CedarPooSpec.Gateway.ZeroTrust
+
+/-! Versioned current-effect contract and finite simulator. It owns no backend,
+transport, credential store or alternate Cedar evaluator. Native adapters must
+realize the independent readers and serialize all writers with effect use. -/
+namespace CedarPooSpec.Gateway.EffectProtocol
+open CedarPooSpec.ZeroTrust
+
+structure Version where
+  major : Nat := 1
+  minor : Nat := 0
+  deriving DecidableEq, BEq, Repr
+
+def Version.supported (version : Version) : Bool := version == ⟨1, 0⟩
+
+structure EffectIdentity where
+  operation : String
+  object : String
+  generation : Nat
+  payload : String
+  actionSchema : String
+  audience : String
+  deriving DecidableEq, BEq, Repr
+
+/-- The independent review authority supplies this record, not a candidate's
+claim to have run an analyzer. Identical identities must name exact source bytes. -/
+structure ReviewBinding where
+  before : String
+  after : String
+  schema : String
+  source : String
+  epoch : Nat
+  report : String
+  deriving DecidableEq, BEq, Repr
+
+structure Envelope where
+  version : Version
+  effect : EffectIdentity
+  review : ReviewBinding
+  facts : List (FactBinding String String)
+  deriving DecidableEq
+
+structure Current where
+  effect : EffectIdentity
+  review : ReviewBinding
+  authority : FactAuthority String String
+  required : List String
+  enforcing : Bool
+  mapped : Bool
+  revoked : Bool
+  registered : Bool
+  consumed : Bool
+  unknown : Bool
+
+/-- Caller input never selects the trusted current image. The actual Cedar
+admission is supplied separately by the existing receipt/evaluator owner. -/
+def accepts (current : Current) (envelope : Envelope) (cedarAllowed : Bool) : Bool :=
+  envelope.version.supported && decide (envelope.effect = current.effect) &&
+    decide (envelope.review = current.review) &&
+    current.authority.acceptsAll current.required envelope.facts &&
+    current.enforcing && current.mapped && !current.revoked && current.registered &&
+    current.consumed && !current.unknown && cedarAllowed
+
+private theorem false_of_negated (value : Bool) (negated : (!value) = true) : value = false := by
+  cases value <;> simp_all
+
+theorem accepted_effect_is_exact (current : Current) (envelope : Envelope)
+    (cedarAllowed : Bool) (accepted : accepts current envelope cedarAllowed = true) :
+    envelope.effect = current.effect ∧ envelope.review = current.review ∧
+    current.authority.acceptsAll current.required envelope.facts = true ∧
+    current.enforcing = true ∧ current.mapped = true ∧ current.revoked = false ∧
+    current.registered = true ∧ current.consumed = true ∧ current.unknown = false ∧
+    cedarAllowed = true := by
+  have checked := accepted
+  simp only [accepts, Bool.and_eq_true_iff, decide_eq_true_eq] at checked
+  exact ⟨checked.1.1.1.1.1.1.1.1.1.2, checked.1.1.1.1.1.1.1.1.2,
+    checked.1.1.1.1.1.1.1.2, checked.1.1.1.1.1.1.2, checked.1.1.1.1.1.2,
+    false_of_negated _ checked.1.1.1.1.2, checked.1.1.1.2, checked.1.1.2, false_of_negated _ checked.1.2, checked.2⟩
+
+/-- POO interpretation retains the supplied original requirement and adds the
+actual evidence/effect check. Session/Contract remain with the existing owner. -/
+def requirement (original : Requirement Envelope Current) : Requirement Envelope Current :=
+  strengthen original (fun envelope current => accepts current envelope true = true)
+
+theorem requirement_preserves_original (original : Requirement Envelope Current) :
+    Refines original (requirement original) := strengthen_refines _ _
+
+structure Outcome where
+  admitted : Bool
+  precommitted : Bool
+  sent : Bool
+  receipted : Bool
+  unknown : Bool
+  deriving DecidableEq, BEq, Repr
+
+/-- Pure commit/send/outcome order; every native writer must share its boundary. -/
+def Outcome.resolve (admitted logAvailable crashAfterSend : Bool) : Outcome :=
+  let committed := admitted && logAvailable
+  let complete := committed && !crashAfterSend
+  ⟨admitted, committed, committed, complete, committed && !complete⟩
+
+theorem send_requires_precommit (admitted logAvailable crashAfterSend : Bool) :
+    (Outcome.resolve admitted logAvailable crashAfterSend).sent =
+      (Outcome.resolve admitted logAvailable crashAfterSend).precommitted := rfl
+
+theorem unknown_outcome_has_no_receipt (admitted logAvailable crashAfterSend : Bool)
+    (unknown : (Outcome.resolve admitted logAvailable crashAfterSend).unknown = true) :
+    (Outcome.resolve admitted logAvailable crashAfterSend).receipted = false := by
+  have absent := (Bool.and_eq_true_iff.mp unknown).2
+  exact false_of_negated _ absent
+
+/-- Projection of a verified outcome or an independent provider observation.
+The adapter supplies verified records; signatures are not represented by labels. -/
+structure AuditRecord where
+  operation : String
+  value : String
+  deriving DecidableEq, BEq, Repr
+
+structure AuditReport where
+  unresolvedPrecommits : List String
+  missingReceipts : List String
+  missingActions : List String
+  mismatched : List String
+  duplicates : List String
+  invalidReceipts : Nat
+  invalidLog : Bool
+  deriving DecidableEq, BEq, Repr
+
+private def ids (items : List String) : List String :=
+  items.eraseDups.mergeSort (fun a b => decide (a ≤ b))
+
+def reconcile (actions receipts : List AuditRecord) (invalid : Nat) (logValid : Bool)
+    (precommits : List String := []) : AuditReport :=
+  let actionIds := actions.map (·.operation)
+  let receiptIds := receipts.map (·.operation)
+  let lastReceipts := receipts.foldr (fun receipt selected =>
+    if selected.any (fun prior => prior.operation == receipt.operation) then selected else receipt :: selected) []
+  { unresolvedPrecommits := ids (precommits.filter (fun operation =>
+      !(actions.any (fun action => action.operation == operation && lastReceipts.contains action))))
+    missingReceipts := ids (actionIds.filter (fun name => !receiptIds.contains name))
+    missingActions := ids (receiptIds.filter (fun name => !actionIds.contains name))
+    mismatched := ids ((actions.filter fun action =>
+      lastReceipts.any (fun receipt => receipt.operation == action.operation && receipt != action)).map (·.operation))
+    duplicates := ids ((actionIds.filter (fun name => actionIds.count name > 1)) ++
+      receiptIds.filter (fun name => receiptIds.count name > 1))
+    invalidReceipts := invalid
+    invalidLog := !logValid }
+
+/-- No outcome and no independent provider observation cannot erase a logged intent. -/
+theorem precommit_without_observation_remains_unresolved (precommits : List String)
+    (invalid : Nat) (logValid : Bool) (operation : String) :
+    operation ∈ (reconcile [] [] invalid logValid precommits).unresolvedPrecommits ↔
+      operation ∈ precommits := by
+  simp [reconcile, ids]
+
+theorem missing_receipt_iff (actions receipts : List AuditRecord) (invalid : Nat)
+    (logValid : Bool) (operation : String) :
+    operation ∈ (reconcile actions receipts invalid logValid).missingReceipts ↔
+      operation ∈ actions.map (·.operation) ∧ operation ∉ receipts.map (·.operation) := by
+  simp [reconcile, ids]
+
+theorem missing_action_iff (actions receipts : List AuditRecord) (invalid : Nat)
+    (logValid : Bool) (operation : String) :
+    operation ∈ (reconcile actions receipts invalid logValid).missingActions ↔
+      operation ∈ receipts.map (·.operation) ∧ operation ∉ actions.map (·.operation) := by
+  simp [reconcile, ids]
+
+structure LineageEdge where
+  source : String
+  operation : String
+  providerObserved : Bool
+  deriving DecidableEq, BEq, Repr
+
+/-- Lineage describes evidence dependencies, never an authorization decision. -/
+def affected (edges : List LineageEdge) (sources : List String) : List String :=
+  ((edges.filter (fun edge => decide (edge.source ∈ sources))).map (·.operation)).eraseDups
+
+theorem affected_iff (edges : List LineageEdge) (sources : List String) (operation : String) :
+    operation ∈ affected edges sources ↔
+      ∃ edge ∈ edges, edge.operation = operation ∧ edge.source ∈ sources := by
+  simp [affected, and_assoc, and_left_comm, and_comm]
+
+/-- Join the protocol to the existing typed admission receipt. The protocol
+cannot manufacture Cedar Allow, schema validity or an execution capability. -/
+theorem receipt_bound_effect_is_error_free
+    {E S : Type} {project : E → S → Cedar.Spec.Request}
+    {prepared : Gateway.Prepared E S project} {model : PolicyModules.Model}
+    {effect : E} {state : S} {context : Gateway.Context}
+    {checks : List Gateway.Assessment} {entities : Cedar.Spec.Entities}
+    (receipt : Gateway.Receipt prepared model effect state context checks entities)
+    (current : Current) (envelope : Envelope)
+    (accepted : accepts current envelope receipt.cedar.allowed = true) :
+    envelope.effect = current.effect ∧ envelope.review = current.review ∧
+      Authorization.Delta.errorFreeAllow receipt.cedar.policies
+        (Cedar.Spec.Env.mk (project effect state) entities) = true := by
+  have bound := accepted_effect_is_exact current envelope receipt.cedar.allowed accepted
+  exact ⟨bound.1, bound.2.1, Gateway.admitted_actual_request_is_error_free receipt⟩
+
+end CedarPooSpec.Gateway.EffectProtocol

@@ -1,0 +1,179 @@
+#+TITLE: Source-Bound Gateway Effect Protocol 1.0
+#+LANGUAGE: en
+#+OPTIONS: toc:2
+
+* Scope and owners
+
+The [[file:gateway-effect-v1.schema.json][versioned schema]] defines the boundary representation. Native serde types
+and admission checks reject unknown/duplicate security fields and unsupported
+major/minor versions. Schema validity alone grants no authority. Facts use
+per-field source policy, not caller-selected provenance labels.
+
+[[file:../../CedarPooSpec/ZeroTrust/Evidence.lean][Generic fact evidence]] carries issuer, subject, audience, source, field,
+value commitment, source generation, origin and validity interval. The
+independent authority supplies expected bindings, required inventory and the
+verification interpretation. Claimed, unverified, omitted, duplicate, extra,
+expired and substituted fields refuse. The general theorems retain each exact
+current binding and the complete required inventory.
+
+[[file:../../CedarPooSpec/Gateway/EffectProtocol.lean][The shared effect Contract]] additionally binds protocol version, exact
+operation/object generation, request payload, action schema, audience and the
+registered review's before/after policies, schema, source, epoch and report.
+It requires enforcing mode, a mapped operation, no revocation, original
+consumption and no unresolved exposure. The native simulation consumes an
+exact-effect grant through the existing =authority_consumption::AuthorityLedger=
+owner before preparation; an envelope cannot supply its consumed count. The POO requirement strengthens the
+independently selected original; existing Contract/Session constructors remain
+the owner. The typed Cedar receipt composition retains actual error-free Allow.
+A source or review label is never a send capability.
+
+* Native module ownership
+
+The optional runtime owner remains =cedar_poo_runtime::gateway=. Its
+[[file:../../rust/runtime/src/gateway/mod.rs][public boundary]] exports typed protocol values, source authority, witness,
+audit and simulation APIs. Separate files own wire verification, immutable
+source preparation, witness history, provider observations, reconciliation,
+serialized simulation and indexed lineage. Recovery evidence and borrowed
+execution channels have explicit types. The default runtime and bridge do not
+acquire the optional P-256 dependency; isolated feature checks enforce this.
+
+* Native representation and cryptographic boundary
+
+The optional Rust =gateway= feature uses existing workspace P-256/ES256 and
+unpadded base64url. Signed payloads are exact UTF-8 JSON bytes of typed records;
+verification checks those original bytes before accepting their meaning. Field
+separators, caller public keys and self-declared verification flags are not
+accepted as authentication. Fact authorities select keys from independent
+issuer policy and require exact expected source/meaning/value/lease bindings.
+The prototype uses separate binding/context/entity source keys, a gateway key
+and a witness key. Its fixed simulation scalars are public test material and
+must never become deployed trust roots.
+
+A prepared source authority retains verified immutable bytes/signatures and
+source bindings. Inventory, exact candidate bytes, source generation and time
+are still checked at every use; changed material takes the signature verifier
+again. This preparation is not a cached authorization decision. New issuer
+policy needs new preparation. A different schema or world does not acquire an
+old Cedar decision. Native word counters refuse exhaustion before mutation.
+
+Current catalogue simulation supports identity revisions, whose no-gain law is
+reflexive. Nonidentity review/approval remains owned by existing
+=Authorization.Delta.Release= and =Gateway.PublicationReview=; their full
+existing gain/no-gain, source, frontier and registration tests remain required.
+No incoming envelope can register its own review. This implementation does not
+turn a solver report into ExactCoverage or implement a new policy analyzer.
+
+* Order, recovery and independent reconciliation
+
+Native preparation produces a private, owner-bound, by-value effect handle.
+Every model writer advances its non-reused generation. Final use checks the
+handle and current source/policy/object image under the same deciding mutex.
+The independent witness accepts a signed precommit before the provider journal
+records the simulated effect. A log failure prevents sending. A crash after
+send retains the burn and unknown exposure, with no outcome receipt. A complete
+receipt carries the signed precommit, source evidence and provider observation.
+Recovery requires independent witness and outcome/provider records; it cannot
+restart the original operation or convert a missing outcome into success.
+This is an in-memory simulation, not crash-durable storage qualification.
+
+The public auditor needs no private signer. It receives a signed checkpoint,
+public log entries, gateway receipts and independent provider observations.
+Trusted gateway/log/source keys, expected historical field bindings, observation
+time and a minimum checkpoint size come from its own configuration. The
+=minimum_size= floor must be retained or independently fetched; an old signed
+checkpoint is not proof of currentness. The verifier checks chain continuity,
+checkpoint size/root, source signatures/inventory and exact precommit/outcome
+bindings, then reports unresolved precommits, missing receipts, orphan receipts, changed effects,
+duplicates, invalid receipts and an invalid log separately.
+
+Provider enumeration completeness, real fact truth, trustworthy clock readings,
+key custody, physical durability, nonrollback storage and external IO mediation
+remain adapter obligations. A signed observation does not become a provider
+attestation. Simulation forks create disjoint test worlds; they are not live
+ledger rollback APIs. Independent reconciliation is bounded by the supplied
+provider window and independently pinned checkpoint.
+
+* MCP boundary
+
+=cedar-poo-bridge gateway-stdio MANIFEST --enforce= or =--shadow= runs a fixed
+schema-qualified simulation profile using the same native admission owner.
+The manifest and source adapter are independently configured; request
+=clientInfo= and caller provenance labels establish no identity. Arguments must
+match the profile's actual projected request. A supplied envelope is checked;
+otherwise the independent simulated source adapter supplies its own evidence.
+Unmapped tools refuse. Shadow reports =would_deny= and issues neither an
+enforcing receipt nor an effect. Mode is explicit at process startup.
+
+The implemented binding follows the official [[https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/stdio][2026-07-28 stdio specification]]:
+newline-delimited JSON-RPC, per-request version/client metadata,
+=server/discover= and typed =tools/call=. It supports =tools/list= and =ping=;
+legacy initialize negotiation is not advertised. Discovery/client metadata is
+not authentication. Security-bearing envelopes are decoded directly from the
+original frame to retain duplicate-field rejection. Frames are bounded to
+1 MiB, stdout contains only protocol messages and EOF terminates the process.
+The endpoint forwards no external traffic and implements no OS sandbox.
+
+* Whole-domain qualification and lifecycle
+
+=Productions.Gateway.EffectProtocol= owns one shared oracle, importing neither
+Examples nor Tests. It exports 64 complete effect outcomes and eleven independent
+reconciliation controls. Native catalogue qualification retains all 51 original
+entries and their original replay/cross-artifact checks. All 47 case manifests
+and both schema-evolution sides exercise the shared protocol. Raw evaluation
+without schema is retained as a refusal control. The three data/artifact entries
+keep their original validation and are explicitly classified, not granted fake
+effect credentials.
+
+=just check-effect-protocol= executes the existing canonical catalogue,
+Production oracle, native signature/handle/recovery tests and real stdio/auditor
+child processes. Rust compares complete outcomes and independent audit reports
+with Lean, preserving all faults and refusals. Native catalogue results stream
+rather than retaining a second full JSON matrix. The original 120-second process
+limit, heap/heartbeat limits and default build parallelism remain.
+
+The first debug prototype exceeded 120 seconds due to repeated signature work.
+That non-win is retained in the development observations. Prepared immutable
+source material and the optimized native executable are qualified separately;
+passing the gate is not a stable whole-application speedup claim. Existing
+Lean/Rust native benchmarks and original negative controls still run.
+
+* P2 lineage and optional transport/data integration
+
+Source-to-operation edges are built from verified precommits and independent
+provider observations. A reverse index answers affected-source queries; the
+Lean affected-set law defines exact membership. Precommitted-only and
+provider-observed edges remain distinct, including missing-outcome cases.
+The versioned graph-neutral export is an input to a consumer-owned GraphAr/Arrow
+adapter, not the GraphAr storage format or an authorization result.
+
+GraphAr remains the strategic graph storage/index layer. Optional DuckDB/Arrow,
+HTTP interception and SQL wire adapters belong to concrete consumers and share
+the existing Backend's commit/recovery contract. No new SQL backend, per-provider
+Backend or Cedar-to-MRR dependency is introduced. Physical GraphAr/Arrow IO and
+arbitrary external MCP/HTTP proxying are not implemented by this simulation.
+
+* Qualification receipt
+
+Local integrated qualification on 2026-11-03 retained all 51 canonical entries:
+48 protocol-applicable entries and three data/artifact entries with their
+original checks. The shared matrix compared 41,344 complete effect outcomes
+(1,292 real Case instances, including schema-evolution sides, times 32 faults)
+and 275 full audit reports (eleven controls for each of 25 enforcing-eligible
+manifest sides). This is 41,619 compared rows. Raw, unschematized evaluation is
+an explicit refusal control; it is not an enforcing effect profile.
+
+Eight native source/handle/recovery/audit tests and two real child-process
+integration tests cover trusted-key selection, source lease changes, foreign
+and stale handles, concurrent use, resource replacement, damaged witness
+history, old checkpoints, wire duplication/version failures, shadow/enforce
+separation and a public-key-only audit process. The original 384 review Cases,
+4,116 publication steps, 12,528 CAS steps and 4,064 registration steps remain
+unchanged. Whole-library proof/import, native SDK conformance and rendering
+checks retain their existing owners.
+
+The unoptimized diagnostic matrix exceeded the original process limit; its
+logs remain non-winning observations. Optimized whole-matrix runs completed
+inside 120 seconds. These are qualification observations, not a stable
+end-to-end speedup, an RSS bound or cold deployment evidence. Raw matrices,
+resource receipts and stderr stay outside Git under the ignored build tree or
+local evidence directory. No CSV or archive is committed.

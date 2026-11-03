@@ -113,3 +113,22 @@ bytes; [[file:../rust/runtime/src/schema.rs][Rust schema replay]] performs SDK v
 and the remaining whole-application refinement. This audit does not authorize
 merging PR #12 or claim NIST compliance, full UCON temporal mechanization,
 external-log truth, or delegated-agent discounted-MDP safety.
+
+* Integrated implementation following this audit
+
+The [[file:protocol/gateway-effect.org][shared protocol implementation]] lands the following simulation scope as one
+cross-domain path. These are implementation/qualification claims, not claims
+that an external deployment has been certified.
+
+| Stage | Shared implementation | Acceptance boundary |
+|-------+-----------------------+---------------------|
+| P0 | Typed per-field facts; independent issuer keys and required inventory; exact review/effect identity; version 1.0 wire schema | Kernel laws retain current evidence, original POO requirements and actual typed Cedar error-free Allow. Rust verifies signatures and strict wire representations. |
+| P1 | Existing exact-effect AuthorityLedger consumption; owner-bound single-use handles; mandatory signed precommit; simulated provider and outcome; independent public-key auditor; explicit MCP shadow/enforce | Complete applicable catalogue, original publication/registration corpora and native process controls. Missing outcomes remain unresolved and cannot authorize a retry. Identity revisions are used by the new catalogue adapter; nonidentity review activation keeps its existing Delta/PublicationReview owner and tests. |
+| P2 | Verified-log lineage, source-to-operation reverse index and versioned graph-neutral export | Distinguish precommitted intent from provider observation. GraphAr/Arrow physical storage and additional interception adapters remain conditional on concrete consumers; this export does not claim GraphAr conformance. |
+
+The native SDK still owns Cedar decisions. No paper supplies authenticated Host
+facts, complete provider enumeration or physical durability by implication.
+Simulation uses public test keys and an independently configured source adapter.
+The public audit CLI accepts no private signer. All source, lease, object,
+review, version, loss, corruption and duplication controls remain in the gate.
+PR #12 remains unmerged.

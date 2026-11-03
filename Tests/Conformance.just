@@ -205,3 +205,16 @@ check-python-bindings versions="3.11 3.14":
         uv run --project python --package cedar-poo-py-test --locked python -m cedar_poo_py_test.resources --timeout-seconds 120 --output "$evidence/python$version.resource.json" "$interpreter" -I python/native_tests/test_bindings.py 2>&1 | tee "$evidence/python$version.log"
         jq -e ' .returncode == 0 and .termination_reason == null and .owned_group_quiesced and .resource_observation_complete and .timeout_seconds == 120 ' "$evidence/python$version.resource.json" > /dev/null
     done
+
+# Shared model, native effects and independent public audit across every case domain.
+check-effect-protocol: check-functional-catalog
+    lake build Tests.Gateway.EffectProtocol Productions.Gateway.EffectProtocolMain Productions.Gateway.CurrentUseMain
+    timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 --run Productions/Gateway/EffectProtocolMain.lean
+    timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 --run Productions/Gateway/CurrentUseMain.lean
+    cargo test --locked -p cedar-poo-runtime --features gateway --lib gateway::
+    timeout --signal=TERM --kill-after=3s 120s cargo test --locked -p cedar-poo-bridge --features gateway --test gateway -- --include-ignored
+    cargo build --locked --release -p cedar-poo-bridge --features gateway
+    mkdir -p .lake/build/resources
+    timeout --signal=TERM --kill-after=3s 120s uv run --project python --package cedar-poo-py-test --locked python -m cedar_poo_py_test.resources --timeout-seconds 120 --output .lake/build/resources/gateway-effect.json rust/target/release/cedar-poo-bridge gateway-replay-catalog .lake/build/gateway-effect-protocol.json < .lake/build/functional-catalog.json > .lake/build/gateway-effect-results.json
+    jq -e '.returncode == 0 and .termination_reason == null and .owned_group_quiesced and .resource_observation_complete and .timeout_seconds == 120' .lake/build/resources/gateway-effect.json > /dev/null
+    jq -c '{format_version,catalogue_entries,outcome_count,applicable_entries:(.covered_entries|length),data_or_artifact_entries}' .lake/build/gateway-effect-results.json

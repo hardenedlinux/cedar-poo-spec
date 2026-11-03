@@ -24,6 +24,8 @@ jobs:
         cvc5: 'true'
     - run: lake build Tests.ZeroTrust.Functional Tests.ZeroTrust.ProfileObject Tests.ZeroTrust.UsageControl Tests.ZeroTrust.ImportBoundary
     - run: just check-gateway-delta
+    - name: Shared evidence, effect protocol and independent reconciliation
+      run: just check-effect-protocol
     - run: just check-agent-trace-delta
   authorization-delta:
     runs-on: ubuntu-latest

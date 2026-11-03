@@ -178,6 +178,16 @@ algorithm timings, full-process wall time, CPU, allocations and RSS are separate
 observations. Generated tables/logs belong in ignored build directories or CI
 artifacts, not the source history.
 
+** Evidence-bound effects and independent audit
+
+[[file:docs/protocol/gateway-effect.org][The versioned Gateway protocol]] connects independently trusted field sources,
+review/publication identities and exact effect generations to the shared
+Zero Trust Contract. Its Lean model and optional Rust simulator cover the
+applicable catalogue with signed precommits, outcome receipts and independent
+provider reconciliation. [[file:docs/protocol/gateway-effect-v1.schema.json][Wire schema]] and
+[[file:docs/external-security-audit.org][external research audit]] distinguish simulated guarantees from deployment
+obligations. Validate with =just check-effect-protocol=.
+
 * Design and evidence
 
 - [[file:docs/rfc/0001-certified-authorization.org][Certified authorization]] and [[file:docs/rfc/0002-policy-module-composition.org][policy composition]] define the core integration.

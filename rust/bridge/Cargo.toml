@@ -19,4 +19,10 @@ asp-rust.workspace = true
 
 
 [features]
+gateway = ["cedar-poo-runtime/gateway"]
 allocation-observation = ["dep:libc"]
+
+[[test]]
+name = "gateway"
+path = "tests/integration/main.rs"
+required-features = ["gateway"]
