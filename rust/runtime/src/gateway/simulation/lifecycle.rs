@@ -2,8 +2,8 @@
 use super::{Current, Simulator, field_inventory};
 use crate::gateway::wire::sign;
 use crate::gateway::{FactAuthority, FactBinding, FactStatement, Origin, Signed, Version};
-use crate::{Case, ReplayReceipt, ValidatedManifest, json_sha256, replay_validated_manifest};
-use cedar_poo_core::{JsonSourceIdentity, SchemaSourceJson};
+use crate::{Case, ReplayReceipt, ValidatedProgram, json_sha256};
+use cedar_poo_core::JsonSourceIdentity;
 use p256::ecdsa::SigningKey;
 use serde::Serialize;
 use std::{collections::BTreeMap, sync::Arc};
@@ -32,7 +32,7 @@ pub(super) struct SourceWindow {
 struct RefreshSnapshot {
     generation: u64,
     fact_generation: u64,
-    schema: Option<SchemaSourceJson>,
+    program: Option<ValidatedProgram>,
     now: u64,
     payload: String,
 }
@@ -170,16 +170,12 @@ impl Simulator {
         expires_at: u64,
     ) -> Result<(u64, ReplayReceipt, Sources), String> {
         let snapshot = self.begin_refresh(candidate)?;
-        let schema = snapshot
-            .schema
+        let cedar = snapshot
+            .program
             .as_ref()
-            .ok_or("unqualified source refresh")?;
-        let cedar = replay_validated_manifest(&ValidatedManifest {
-            schema: schema.clone(),
-            cases: vec![candidate.clone()],
-        })?
-        .remove(0)
-        .replay;
+            .ok_or("unqualified source refresh")?
+            .replay(candidate)?
+            .replay;
         if cedar.request_sha256 != snapshot.payload {
             return Err("source refresh changed the original effect".into());
         }
@@ -226,7 +222,7 @@ impl Simulator {
         Ok(RefreshSnapshot {
             generation: snapshot.generation,
             fact_generation: snapshot.fact_generation,
-            schema: snapshot.schema.clone(),
+            program: snapshot.program.clone(),
             now: snapshot.authority.now,
             payload: snapshot.effect.payload.clone(),
         })

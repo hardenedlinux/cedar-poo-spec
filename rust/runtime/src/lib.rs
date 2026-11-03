@@ -31,7 +31,7 @@ pub use schema::{
     replay_validated_manifest_measured, verify_schema_only_revision,
     verify_validated_replay_receipts,
 };
-pub use schema_preparation::SchemaPreparation;
+pub use schema_preparation::{SchemaPreparation, ValidatedProgram};
 
 #[cfg(test)]
 asp_rust::asp_rust_cargo_test_gate!(mode = deny, config = asp_rust::default_asp_rust_config());
@@ -43,7 +43,7 @@ pub use source_transport::{CatalogSources, ResolvedPolicyArtifact};
 pub mod gateway;
 
 #[cfg(feature = "gateway")]
-pub(crate) use canonical::{json_sha256, schema_sha256, value_sha256};
+pub(crate) use canonical::{json_sha256, value_sha256};
 
 /// Canonical immutable-source digest shared by native simulation fixture consumers.
 #[cfg(feature = "gateway")]

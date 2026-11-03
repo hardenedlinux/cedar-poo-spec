@@ -1,3 +1,4 @@
+import CedarPooSpec.Functional.Capabilities
 import CedarPooSpec.Gateway.Lifecycle
 #print axioms CedarPooSpec.Gateway.Lifecycle.invocation_is_exact
 #print axioms CedarPooSpec.Gateway.Lifecycle.old_handle_after_renew
@@ -23,3 +24,5 @@ import CedarPooSpec.Gateway.Lifecycle
 #print axioms CedarPooSpec.ZeroTrust.accepted_statements_cover_exact_inventory
 
 #print axioms CedarPooSpec.Gateway.Lifecycle.source_invocation_preserves_field_admission
+
+#print axioms CedarPooSpec.Functional.Ready.reuse_at_current_worlds

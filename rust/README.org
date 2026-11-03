@@ -281,7 +281,7 @@ limits. No incoming MCP argument can certify a review or approve expansion.
 * Current sources, revocation and recovery
 
 The trusted simulated adapter exposes =refresh_facts=, =advance_time= and
-=revoke= on the existing Simulator owner. Refresh re-runs strict SDK preparation
+=revoke= on the existing Simulator owner. Refresh evaluates fresh inputs under the exact strictly validated SDK sources
 while retaining the exact original request, policies, Schema and consumed grant.
 The new inventory has a current lease, a newer source generation and the actual
 world commitment. Old evidence, handles and pending publication tickets refuse.
@@ -318,3 +318,61 @@ no signature, current lease or generation check is removed. The native benchmark
 retains per-Case samples in generated JSON and labels hot preparation, fresh
 source preparation, full regression wall time and launch diagnostics separately.
 See [[file:../docs/protocol/gateway-effect.org][the protocol and source preparation proof boundary]].
+
+
+* Live Schema/Policy program ownership
+
+=ValidatedProgram::prepare(schema, case)= validates the exact immutable source
+pair and evaluates its first Case once, returning the owner and its receipt.
+=replay(case)= accepts only the complete original policy source and evaluates
+fresh Entities, context, request, expectations and both independent authorizers.
+It reuses the existing Case evaluator and receipt constructor directly, without
+rebuilding a source lookup map for a known single revision. =revise(case)=
+shares the immutable Schema, validates a changed policy source before returning
+a replacement owner, and evaluates that candidate afresh. A different Schema
+requires a new preparation. Revision names, policy IDs and old Allow decisions
+are never sufficient cache identities. Full source equality includes annotations
+and signed-zero distinctions.
+
+The original finite =SchemaPreparation= / =CatalogPreparation= APIs retain their
+per-manifest validation behavior. The live owner is a separate explicit lifetime:
+the simulator retains its current program, pending publication and in-flight
+readers. Explicit caller-owned programs may also outlive individual operations. Dropping the last owner releases its parsed Schema
+and policies; there is no unbounded process-wide source or request cache. Tests
+observe actual Arc retirement, not just an entry-count estimate. Program objects
+are not serialized checkpoints or execution capabilities.
+
+=Simulator::with_prepared_release= constructs a new logical operation from an
+explicitly supplied source owner, replays its current Case and binds the original
+release as before. The deciding lock installs the new program with the reviewed
+Case, SDK receipt and epoch. Renewal retains sticky controls, closes sources
+before replay and checks generation again before installing fresh signed facts.
+These source optimizations preserve the existing current-use/source Contracts.
+The Lean =Functional.Ready.reuse_at_current_worlds= law joins actual typed Cedar
+validation with independent evaluation at two supplied worlds. Native differential
+checks compare complete receipts and signed initial operation state.
+
+The seven pre-existing fixed simulation keys and the three-source key inventory
+now have explicit process ownership, so each operation does not derive the same
+provider keys again. This retains the same separate issuer identities and exact
+signature checks. Facts, leases, world generations, availability and grants stay
+operation-local. Real provider credential rotation and custody are not supplied
+by these fixed mock keys.
+
+=bench-gateway-runtime= retains fresh-source preparation and constructor samples,
+and adds =program.prepare=, =sdk.replay.prepared= and
+=operation.construct.shared-program=. Program bootstrap includes its first SDK
+evaluation and is reported separately. All 211 group bootstrap samples and all
+1,253 per-Case samples remain in native JSON and timing-only CI logs. The distinct
+1,024-operation append control shares one explicit program while evaluating each
+operation afresh. Its single bootstrap sample is not a latency distribution.
+The expanded API process has a different workload from the earlier observer;
+whole-process comparisons use the unchanged complete lifecycle command instead.
+
+
+The matched lifecycle sample set retained three complete before/after pairs with
+identical output bytes. User CPU fell in all three pairs, but one wall sample
+regressed (43.636 to 45.335 seconds). Its OS process elapsed also grew; the outer
+observer gap was only about 65 ms. That is not evidence of stable wall-time
+acceleration. Full results and resource limitations are recorded in the protocol
+guide; failed and non-winning samples are not selectively rerun or omitted.

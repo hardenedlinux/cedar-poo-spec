@@ -2,10 +2,10 @@
 use super::{Bundle, Case, Prepared, activate_prepared, coverage, prepare, validate_refusals};
 use cedar_poo_core::SchemaSourceJson;
 use cedar_poo_runtime::gateway::{
-    EffectIo, Envelope, ProviderJournal, Receipt, ReviewAuthority, Simulator, Witness, reconcile,
-    verify,
+    EffectIo, Envelope, ProviderJournal, Receipt, ReleaseIdentity, ReviewAuthority, Simulator,
+    Witness, reconcile, verify,
 };
-use cedar_poo_runtime::{ValidatedManifest, replay_validated_manifest};
+use cedar_poo_runtime::{ValidatedManifest, ValidatedProgram, replay_validated_manifest};
 use serde_json::{Value, json};
 use std::{collections::BTreeMap, io::Write, time::Instant};
 
@@ -23,6 +23,7 @@ struct Measurements {
     blocked: usize,
     scale: Option<(Case, SchemaSourceJson)>,
     samples: Vec<Value>,
+    program_samples: Vec<Value>,
 }
 fn measure<T>(
     data: &mut Measurements,
@@ -94,6 +95,7 @@ fn qualify_case(
     index: usize,
     entry: &str,
     group: usize,
+    program: &ValidatedProgram,
 ) -> Result<(), String> {
     let starts: BTreeMap<_, _> = data
         .times
@@ -109,9 +111,20 @@ fn qualify_case(
             cases: vec![before.clone()],
         })
     })?;
-    let sim = measure(data, "operation.construct", || {
+    let cold = measure(data, "operation.construct", || {
         Simulator::with_release(before, &prepared.before.schema, prepared.release.clone())
     })?;
+    measure(data, "sdk.replay.prepared", || program.replay(before))?;
+    let sim = measure(data, "operation.construct.shared-program", || {
+        Simulator::with_prepared_release(before, program, prepared.release.clone())
+    })?;
+    if cold.lifecycle_view()? != sim.lifecycle_view()?
+        || serde_json::to_value(cold.envelope()).map_err(|e| e.to_string())?
+            != serde_json::to_value(sim.envelope()).map_err(|e| e.to_string())?
+    {
+        return Err("shared program changed initial operation state or signed evidence".into());
+    }
+    drop(cold);
     measure(data, "review.publish.two", || {
         activate_prepared(&sim, prepared, index)
     })?;
@@ -185,8 +198,29 @@ fn qualify_entry(
     coverage::check(&bundle, canonical, name)?;
     for (index, group) in bundle.groups.iter().enumerate() {
         let prepared = prepare(group, &raw["groups"][index], &ReviewAuthority::simulation())?;
+        let first = prepared
+            .before
+            .cases
+            .first()
+            .ok_or("empty prepared runtime group")?;
+        let (program, receipt) = measure(data, "program.prepare", || {
+            ValidatedProgram::prepare(&prepared.before.schema, first)
+        })?;
+        if receipt.replay
+            != replay_validated_manifest(&ValidatedManifest {
+                schema: prepared.before.schema.clone(),
+                cases: vec![first.clone()],
+            })?
+            .remove(0)
+            .replay
+        {
+            return Err("program bootstrap changed the independent SDK receipt".into());
+        }
+        data.program_samples.push(
+            json!({"entry":name,"group":index,"elapsed_ns":data.times["program.prepare"].last()}),
+        );
         for case in 0..prepared.before.cases.len() {
-            qualify_case(data, &prepared, case, name, index)?;
+            qualify_case(data, &prepared, case, name, index, &program)?;
         }
     }
     data.refusals += validate_refusals(&bundle)?;
@@ -200,6 +234,13 @@ fn growing_log(data: &mut Measurements) -> Result<(), String> {
         .as_ref()
         .ok_or("missing actual allow scale seed")?
         .clone();
+    let (program, _) = measure(data, "program.prepare", || {
+        ValidatedProgram::prepare(&schema, &case)
+    })?;
+    let release = ReleaseIdentity {
+        root: case.revision.clone(),
+        source: super::policy_hash(&case.policies)?,
+    };
     let mut witness = Witness::simulation();
     let mut provider = ProviderJournal::default();
     let mut receipts = Vec::new();
@@ -208,7 +249,7 @@ fn growing_log(data: &mut Measurements) -> Result<(), String> {
         let mut operation = case.clone();
         // Distinct logical operations over one actual Cedar world; no grant is reused.
         operation.name = format!("runtime-append-{index}");
-        let sim = Simulator::new(&operation, Some(&schema))?;
+        let sim = Simulator::with_prepared_release(&operation, &program, release.clone())?;
         let phase = match index {
             0..16 => "execute.log-0-15",
             16..64 => "execute.log-16-63",
@@ -268,7 +309,7 @@ fn report(data: &mut Measurements, output: &mut impl Write) -> Result<(), String
     }
     serde_json::to_writer(&mut *output, &json!({"kind":"gateway-runtime-api","build_profile":"release",
         "entries":data.entries,"cases":data.cases,"refusals":data.refusals,"allowed":data.allowed,"blocked":data.blocked,
-        "serial_per_case":SERIAL,"workers":WORKERS,"per_worker":PER_WORKER,"scale_operations":0,"samples":data.samples,
+        "serial_per_case":SERIAL,"workers":WORKERS,"per_worker":PER_WORKER,"scale_operations":0,"samples":data.samples,"program_samples":data.program_samples,
         "scope":"decoded typed native API inputs, simulated issuers/provider, same-image preparation contention; no RPC/network latency or production SLO", "phases":phases})).map_err(|e|e.to_string())?;
     writeln!(output).map_err(|e| e.to_string())
 }
@@ -348,7 +389,7 @@ fn benchmark_append(
     }
     serde_json::to_writer(&mut *output, &json!({"kind":"gateway-append-scale","build_profile":"release",
         "source":provenance,"operations":SCALE,"phases":phases,"samples_ns":data.times,
-        "scope":"distinct logical operations over one real Cedar world, one shared append-only witness/provider; independent full-log reconciliation after timing"})).map_err(|e|e.to_string())?;
+        "scope":"distinct logical operations over one real Cedar world, one explicit shared SDK program and append-only witness/provider; fresh evaluation per operation; independent full-log reconciliation after timing"})).map_err(|e|e.to_string())?;
     writeln!(output).map_err(|e| e.to_string())
 }
 

@@ -522,3 +522,87 @@ against the historical observation. The native API population and the distinct
 1,024-operation append population also completed under their separate unchanged
 120-second watchdogs; per-Case observations and non-winning samples remain in
 native JSON and timing-only logs. Exact-head remote CI is required separately.
+
+* SDK preparation reuse and provider lifetime
+
+The native runtime now retains a =ValidatedProgram= bound to the complete
+Schema/Policy pair. Source preparation uses the original strict validation,
+independent rendered-policy parse and first Case evaluation. Successful source
+validation is reusable because these exact sources are immutable; request/world
+admission is still computed on every use. Replays reject a different policy
+source, parse Entities and current request/context again, check expected policy
+IDs/diagnostics and execute both authorizers. Changed policies require fresh
+validation against the owned Schema. A different Schema requires a new owner.
+Neither a revision label nor a digest alone selects a prepared policy hit.
+
+The same sealed owner is installed with a reviewed publication and captured by
+a source refresh. Publication/refresh generation checks, pinned-world checks,
+retired-owner fencing, consumed/burned authority and unresolved exposure remain
+unchanged. The previous redundant Schema field is removed from current simulator
+state; its source owner supplies the authoritative Schema. Snapshot copies share
+only immutable source data. Old parsed policies retire after the last current,
+pending or in-flight owner releases them, as verified by native Weak references.
+
+The existing typed Lean =Functional.Ready= already carries validation for its
+actual Schema and policies. Its new =reuse_at_current_worlds= theorem states both
+that validation witness and fresh Cedar responses for two independently supplied
+requests/worlds. Existing POO source/current-use Contracts and C4 compilation
+proofs remain in force. These are Lean model laws plus independent native
+conformance evidence, not a proof of the Rust implementation or of cached Allow.
+
+Provider reuse is confined to the existing fixed simulation credentials and
+source-key inventory. Every operation still issues and independently verifies its
+own facts, lease and generation; per-witness availability is not shared. The
+public program/operation constructors expose source ownership rather than a new
+global cache manager. The original finite catalog planner remains separate.
+
+The native API benchmark separately records fresh setup, shared-program replay,
+fresh/shared operation construction and source renewal over all applicable
+Cases. All program setup and per-Case observations, maxima and non-wins are
+retained. It performs extra cold/shared controls, so its process total is not
+comparable to the earlier API workload. Matched complete-lifecycle runs retain
+the same command, inputs, 1,253 Cases, 16,289 outcomes, complete output bytes and
+120-second deadlines to assess whole-process CPU/RSS separately from Runtime
+latency. Intrusive CPU/launch diagnostics remain separate observations.
+
+** Matched complete-process and Runtime observations
+
+All three pairs use the preserved 84b5b6e ordinary executable and the new ordinary
+executable, the same complete catalog/sidecars, the same 120-second deadlines and
+the same native lifecycle command. Every before/after output was byte-identical,
+including all 51 entries, 1,253 Cases, 39 refusals, 16,289 state outcomes and 3,759
+publications. Every run exited naturally with complete resource observation.
+These are ordinary process observations, not sampled/instrumented CPU profiles.
+
+| Pair | Before wall s | After wall s | Before user CPU s | After user CPU s | Before peak RSS MiB | After peak RSS MiB |
+|------+---------------+--------------+-------------------+------------------+---------------------+--------------------|
+| 1 | 42.439 | 35.783 | 41.05 | 34.86 | 105.469 | 103.078 |
+| 2 | 43.636 | 45.335 | 42.53 | 36.88 | 105.078 | 104.516 |
+| 3 | 49.191 | 35.788 | 43.20 | 35.22 | 105.516 | 103.516 |
+
+Pair 2 is a retained wall-time non-win despite lower CPU and RSS. Its OS elapsed
+is 45.270 seconds, versus 45.335 externally observed, and its user+system CPU is
+37.180 seconds. Therefore the roughly eight-second non-CPU interval is inside
+the measured process interval rather than an eight-second Python observer delay.
+It has no major page faults and 34,393 involuntary context switches; those counters
+do not identify a particular scheduling, IO or kernel waiting cause. The third
+baseline also has a material non-CPU interval. Neither is discarded, repaired
+by a tolerance, or assigned wholesale to pre-main without matched OS evidence.
+The three lower peak-RSS observations support this workload's bounded-owner
+implementation, not a universal retained-heap bound or a production memory SLO.
+
+The final native API run retains 211 explicit program bootstrap samples and all
+1,253 Case observations. Fresh setup is separate from shared-owner invocation.
+
+| In-process operation | Samples | p50 ms | p95 ms | p99 ms | max ms |
+|----------------------+---------+--------+--------+--------+--------|
+| Fresh operation construction | 1,253 | 1.659 | 2.943 | 3.559 | 7.862 |
+| Shared-program operation construction | 1,253 | 1.296 | 1.856 | 1.968 | 3.304 |
+| Source renewal with fresh world evaluation | 1,253 | 1.353 | 1.896 | 2.152 | 5.919 |
+
+The expanded API process also measures the extra cold/shared control paths, so
+its elapsed time is not a matched comparison against the earlier API command.
+Warm admission, blocked paths, concurrent paths, bootstrap, SDK replay and send
+samples remain in the native output, including all slower maxima. These are
+local native simulation measurements with decoded inputs, not deployed RPC or
+real-provider latency. Intrusive cold-launch/CPU diagnostics remain separate.

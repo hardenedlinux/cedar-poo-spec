@@ -5,9 +5,7 @@ use crate::gateway::{
     AnalysisKind, PublicationDelivery, PublicationRecord, PublicationView, ReleaseIdentity,
     ReviewBinding, ReviewRecord, Signed, Version, verify_publications,
 };
-use crate::{
-    Case, ReplayReceipt, ValidatedManifest, json_sha256, replay_validated_manifest, value_sha256,
-};
+use crate::{Case, ReplayReceipt, json_sha256, value_sha256};
 use cedar_poo_core::SchemaSourceJson;
 use std::sync::Arc;
 
@@ -24,6 +22,7 @@ pub(super) struct RegisteredReview {
     pub(super) approval: Option<Signed>,
     pub(super) candidate: Case,
     pub(super) cedar: ReplayReceipt,
+    pub(super) program: crate::ValidatedProgram,
 }
 /// Private owner/generation capability for one exact registered review.
 pub struct PublicationTicket {
@@ -39,6 +38,21 @@ impl Simulator {
         release: ReleaseIdentity,
     ) -> Result<Self, String> {
         let simulator = Self::new(case, Some(schema))?;
+        {
+            let mut current = simulator.current.lock().map_err(|_| "poisoned authority")?;
+            current.release_root = release.root;
+            current.model_source = release.source;
+        }
+        Ok(simulator)
+    }
+    /// Reuse an explicitly owned immutable SDK program, evaluating this operation
+    /// afresh before binding its independently captured original release identity.
+    pub fn with_prepared_release(
+        case: &Case,
+        program: &crate::ValidatedProgram,
+        release: ReleaseIdentity,
+    ) -> Result<Self, String> {
+        let simulator = Self::with_program(case, program)?;
         {
             let mut current = simulator.current.lock().map_err(|_| "poisoned authority")?;
             current.release_root = release.root;
@@ -76,13 +90,12 @@ impl Simulator {
         {
             return Err("candidate is not the reviewed policy at the original operation".into());
         }
-        let schema = snapshot.schema.as_ref().ok_or("unqualified schema")?;
-        let cedar = replay_validated_manifest(&ValidatedManifest {
-            schema: schema.clone(),
-            cases: vec![input.candidate.clone()],
-        })?
-        .remove(0)
-        .replay;
+        let (program, receipt) = snapshot
+            .program
+            .as_ref()
+            .ok_or("unqualified schema")?
+            .revise(input.candidate)?;
+        let cedar = receipt.replay;
         if cedar.request_sha256 != snapshot.effect.payload {
             return Err("publication changed the effect payload".into());
         }
@@ -94,6 +107,7 @@ impl Simulator {
                 approval: input.approval.cloned(),
                 candidate: input.candidate.clone(),
                 cedar,
+                program,
             },
         ))
     }
@@ -181,6 +195,7 @@ impl Simulator {
         current.release_root = registered.record.after_root;
         current.case = registered.candidate;
         current.cedar = registered.cedar;
+        current.program = Some(registered.program);
         current.publications.push(signed);
         current.pending_review = None;
         current.publication_unknown = delivery == PublicationDelivery::LostReply;

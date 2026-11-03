@@ -254,7 +254,8 @@ bench-gateway-runtime:
     timeout --signal=TERM --kill-after=3s 120s uv run --project python --package cedar-poo-py-test --locked python -m cedar_poo_py_test.resources --timeout-seconds 120 --output .lake/build/resources/gateway-runtime-api.json rust/target/release/cedar-poo-bridge benchmark-gateway-runtime .lake/build/reviewed-effects < .lake/build/functional-catalog.json > .lake/build/gateway-runtime-api.jsonl
     jq -e '.returncode == 0 and .termination_reason == null and .owned_group_quiesced and .resource_observation_complete and .timeout_seconds == 120' .lake/build/resources/gateway-runtime-api.json > /dev/null
     tail -n 1 .lake/build/gateway-runtime-api.jsonl > .lake/build/gateway-runtime-api.json
-    jq -c 'del(.samples)' .lake/build/gateway-runtime-api.json
+    jq -c 'del(.samples,.program_samples)' .lake/build/gateway-runtime-api.json
+    jq -c '.program_samples[] | {kind:"native-program-setup", observation:.}' .lake/build/gateway-runtime-api.json
     jq -c '.samples[] | {kind:"native-api-samples", observation:.}' .lake/build/gateway-runtime-api.json
     timeout --signal=TERM --kill-after=3s 120s uv run --project python --package cedar-poo-py-test --locked python -m cedar_poo_py_test.resources --timeout-seconds 120 --output .lake/build/resources/gateway-append-scale.json rust/target/release/cedar-poo-bridge benchmark-gateway-append .lake/build/reviewed-effects < .lake/build/functional-catalog.json > .lake/build/gateway-append-scale.json
     jq -e '.returncode == 0 and .termination_reason == null and .owned_group_quiesced and .resource_observation_complete and .timeout_seconds == 120' .lake/build/resources/gateway-append-scale.json > /dev/null

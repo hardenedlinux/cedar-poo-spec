@@ -406,3 +406,10 @@ satisfies the actual Functional source Contract and full source-value law.
 The public JSON APIs remain output projections and independent test references.
 Their batch projection and typed batch production share one ordered root traversal
 with arbitrary-renderer value/first-error equality.
+
+
+=Ready.reuse_at_current_worlds= exposes the source-owner boundary directly:
+the actual Schema/policy validation witness survives reuse, and each pair of
+current request/entity inputs produces its own Cedar responses. This law does
+not retain a prior Allow. The Rust =ValidatedProgram= API implements the matching
+source lifetime and is checked by complete-receipt differential replay.

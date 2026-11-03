@@ -88,6 +88,19 @@ theorem Ready.allowed_pair (ready : Ready context) (first second : Request) (ent
         (ready.authorize [second] entities).allowed) := by
   simp [Ready.allowed_eq]
 
+/-- A reused source owner carries validation for its exact typed Schema/policies,
+while each invocation evaluates the supplied current world independently. -/
+theorem Ready.reuse_at_current_worlds (ready : Ready context)
+    (first second : Request) (firstWorld secondWorld : Entities) :
+    Cedar.Validation.validate ready.checked.policies context.schema = .ok () ∧
+      (ready.authorize [first] firstWorld).responses =
+        [isAuthorized first firstWorld ready.checked.policies] ∧
+      (ready.authorize [second] secondWorld).responses =
+        [isAuthorized second secondWorld ready.checked.policies] := by
+  exact ⟨ready.checked.policyValid,
+    by simpa using ready.aligned [first] firstWorld,
+    by simpa using ready.aligned [second] secondWorld⟩
+
 def constructUsing (context : Context) (data : Data context) (contract : Coherent context data)
     (prepared : LeanPoo.C4.Prepared context.model.graph)
     (facts : SchemaFacts context.schema) :

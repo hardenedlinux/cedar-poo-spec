@@ -3,9 +3,7 @@ use super::lifecycle::{SourceWindow, prepare_facts};
 use super::{Current, Simulator};
 use crate::gateway::wire::simulation_key;
 use crate::gateway::{EffectIdentity, Envelope, ReviewBinding, Version};
-use crate::{
-    Case, Manifest, ReplayReceipt, ValidatedManifest, replay_manifest, replay_validated_manifest,
-};
+use crate::{Case, Manifest, ReplayReceipt, ValidatedProgram, replay_manifest};
 use crate::{json_sha256, value_sha256};
 use cedar_poo_core::SchemaSourceJson;
 use cedar_poo_core::authority_consumption::{AuthorityGrant, AuthorityId, AuthorityLedger};
@@ -13,34 +11,46 @@ use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 impl Simulator {
     pub fn new(case: &Case, schema: Option<&SchemaSourceJson>) -> Result<Self, String> {
-        let cedar = if let Some(schema) = schema {
-            replay_validated_manifest(&ValidatedManifest {
-                schema: schema.clone(),
-                cases: vec![case.clone()],
-            })?
-            .remove(0)
-            .replay
+        let (program, cedar) = if let Some(schema) = schema {
+            let (program, receipt) = ValidatedProgram::prepare(schema, case)?;
+            (Some(program), receipt.replay)
         } else {
-            replay_manifest(&Manifest {
-                cases: vec![case.clone()],
-            })?
-            .remove(0)
+            (
+                None,
+                replay_manifest(&Manifest {
+                    cases: vec![case.clone()],
+                })?
+                .remove(0),
+            )
         };
-        Self::bind_simulated_sources(case, schema, cedar)
+        Self::bind_simulated_sources(case, program, cedar)
+    }
+
+    pub(super) fn with_program(case: &Case, program: &ValidatedProgram) -> Result<Self, String> {
+        let receipt = program.replay(case)?;
+        Self::bind_simulated_sources(case, Some(program.clone()), receipt.replay)
     }
     fn bind_simulated_sources(
         case: &Case,
-        schema: Option<&SchemaSourceJson>,
+        program: Option<ValidatedProgram>,
         cedar: ReplayReceipt,
     ) -> Result<Self, String> {
-        let source_keys: BTreeMap<_, _> = [
-            ("binding-authority".to_owned(), simulation_key(1)),
-            ("context-authority".to_owned(), simulation_key(4)),
-            ("entity-authority".to_owned(), simulation_key(5)),
-        ]
-        .into();
-        let schema_id = schema
-            .map(crate::schema_sha256)
+        static SOURCES: std::sync::LazyLock<Arc<BTreeMap<String, p256::ecdsa::SigningKey>>> =
+            std::sync::LazyLock::new(|| {
+                Arc::new(
+                    [
+                        ("binding-authority".to_owned(), simulation_key(1)),
+                        ("context-authority".to_owned(), simulation_key(4)),
+                        ("entity-authority".to_owned(), simulation_key(5)),
+                    ]
+                    .into(),
+                )
+            });
+        let source_keys = SOURCES.clone();
+        let enforcing = program.is_some();
+        let schema_id = program
+            .as_ref()
+            .map(|p| p.schema_sha256().map(str::to_owned))
             .transpose()?
             .unwrap_or_else(|| "unvalidated".into());
         let sources = prepare_facts(
@@ -106,8 +116,8 @@ impl Simulator {
                 facts: sources.facts,
                 world: sources.world,
                 case: case.clone(),
-                schema: schema.cloned(),
                 cedar,
+                program,
                 release_root: case.revision.clone(),
                 model_source: review.after.clone(),
                 pending_review: None,
@@ -116,7 +126,7 @@ impl Simulator {
                 effect,
                 review,
                 authority: sources.authority,
-                enforcing: schema.is_some(),
+                enforcing,
                 mapped: true,
                 revoked: false,
                 registered: true,
@@ -124,7 +134,7 @@ impl Simulator {
                 unknown: false,
                 spent: false,
             })),
-            source_keys: Arc::new(source_keys),
+            source_keys,
             receipt_key: simulation_key(3),
             review_trust: crate::gateway::ReviewTrust::simulation(),
             initial,

@@ -10,7 +10,6 @@ use crate::gateway::{
 use crate::gateway::{Origin, Receipt};
 use crate::{Case, ReplayReceipt};
 use crate::{json_sha256, value_sha256};
-use cedar_poo_core::SchemaSourceJson;
 use cedar_poo_core::authority_consumption::AuthorityLedger;
 use p256::ecdsa::{SigningKey, VerifyingKey};
 use serde::{Deserialize, Serialize};
@@ -97,8 +96,8 @@ pub(super) struct Current {
     pub(super) facts: Vec<Signed>,
     pub(super) world: String,
     pub(super) case: Case,
-    pub(super) schema: Option<SchemaSourceJson>,
     pub(super) cedar: ReplayReceipt,
+    pub(super) program: Option<crate::ValidatedProgram>,
     pub(super) release_root: String,
     pub(super) model_source: String,
     pub(super) pending_review: Option<RegisteredReview>,

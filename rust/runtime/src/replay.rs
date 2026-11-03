@@ -149,33 +149,77 @@ pub(crate) fn check_manifest_with_entities<'input>(
         )
         .map_err(|error| format!("{}: {error}", case.name))?;
         if collect_receipts {
-            let started = metrics.as_ref().map(|_| Instant::now());
-            let error_free_allow =
-                observed.decision == "allow" && observed.error_policy_ids.is_empty();
-            receipts.push(ReplayReceipt {
-                format_version: 1,
-                cedar_policy_version: cedar_policy::get_sdk_version().to_string(),
-                cedar_language_version: cedar_policy::get_lang_version().to_string(),
-                case_name: case.name.clone(),
-                revision: case.revision.clone(),
-                policies_sha256: revision
-                    .policy_sha256
-                    .as_ref()
-                    .ok_or("missing policy digest for replay receipt")?
-                    .clone(),
-                entities_sha256: entities.receipt_digest(&case.entities, metrics.as_deref_mut())?,
-                request_sha256: json_sha256(&case.request)?,
-                decision: observed.decision,
-                reasons: observed.reasons,
-                error_policy_ids: observed.error_policy_ids,
-                error_free_allow,
-            });
-            if let (Some(stats), Some(started)) = (metrics.as_deref_mut(), started) {
-                stats.receipt_ns += started.elapsed().as_nanos();
-            }
+            receipts.push(receipt_for(
+                case,
+                revision,
+                &mut entities,
+                observed,
+                metrics.as_deref_mut(),
+            )?);
         }
     }
     Ok(receipts)
+}
+
+fn receipt_for<'input>(
+    case: &'input Case,
+    revision: &CheckedRevision,
+    entities: &mut EntitySlot<'_, 'input>,
+    observed: crate::bridge::ObservedDecision,
+    mut metrics: Option<&mut ReplayMetrics>,
+) -> Result<ReplayReceipt, String> {
+    let started = metrics.as_ref().map(|_| Instant::now());
+    let error_free_allow = observed.decision == "allow" && observed.error_policy_ids.is_empty();
+    let receipt = ReplayReceipt {
+        format_version: 1,
+        cedar_policy_version: cedar_policy::get_sdk_version().to_string(),
+        cedar_language_version: cedar_policy::get_lang_version().to_string(),
+        case_name: case.name.clone(),
+        revision: case.revision.clone(),
+        policies_sha256: revision
+            .policy_sha256
+            .as_ref()
+            .ok_or("missing policy digest for replay receipt")?
+            .clone(),
+        entities_sha256: entities.receipt_digest(&case.entities, metrics.as_deref_mut())?,
+        request_sha256: json_sha256(&case.request)?,
+        decision: observed.decision,
+        reasons: observed.reasons,
+        error_policy_ids: observed.error_policy_ids,
+        error_free_allow,
+    };
+    if let (Some(stats), Some(started)) = (metrics, started) {
+        stats.receipt_ns += started.elapsed().as_nanos();
+    }
+    Ok(receipt)
+}
+
+/// A sealed source owner already supplies one exact checked revision. Keep the
+/// original Case evaluator and receipt constructor, without rebuilding a source
+/// map or reparsing UIDs/requests from any previous invocation.
+pub(crate) fn replay_checked_case(
+    case: &Case,
+    revision: &CheckedRevision,
+    schema: &Schema,
+    mut metrics: Option<&mut ReplayMetrics>,
+) -> Result<ReplayReceipt, String> {
+    if !valid_revision_name(&case.revision) {
+        return Err(format!("{}: invalid revision name", case.name));
+    }
+    if !revision.source.same_source(&case.policies) {
+        return Err("prepared program policy source changed".into());
+    }
+    let mut entities = EntitySlot::new(Some(schema));
+    let mut preparation = PreparedReplay::default();
+    let observed = check_case(
+        case,
+        revision,
+        &mut entities,
+        metrics.as_deref_mut(),
+        Some(&mut preparation),
+    )
+    .map_err(|error| format!("{}: {error}", case.name))?;
+    receipt_for(case, revision, &mut entities, observed, metrics)
 }
 
 /// Recompute official Cedar decisions and reject any drift from stored records.
