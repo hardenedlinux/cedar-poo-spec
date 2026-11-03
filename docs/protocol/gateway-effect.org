@@ -661,9 +661,10 @@ remain separate from this runtime question.
 
 A subsequent System Trace attached to the unchanged native lifecycle executable.
 The full command exited naturally and its complete protocol output matched the
-ordinary run byte for byte. The trace's target thread has a 7.124-second Unknown
-prefix while scheduler capture was being established; it is not an identified
-blocked interval. Its observable scheduler portion contains about 2.813 seconds
+ordinary run byte for byte. The retained recorder metadata declares Windowed
+(5 seconds), rather than complete process-history retention. The exported target
+thread has a 7.124-second Unknown prefix; its origin cannot be assigned to
+recorder startup or target blocking from that label. Its observable scheduler portion contains about 2.813 seconds
 Running, 45.848 ms Preempted, 13.778 ms Interrupted, 2.388 ms Blocked and 0.044 ms
 Runnable. The longest observed Blocked interval is about 1.151 ms; the longest
 Preempted interval is about 2.190 ms. Context-switch narratives identify competing
@@ -726,3 +727,26 @@ and is a failed intrusive diagnostic, not a native workload pass or a reproducti
 of the ordinary eight-second gap. No limit was widened and no replacement
 successful sample conceals this failure. Identifying the original waiting object
 and waker remains open; a working capture must first demonstrate target coverage.
+
+** Recorder coverage correction
+
+The System Trace template's declared recording mode is Windowed (5 seconds).
+A successful target exit and complete protocol output do not establish complete
+scheduler retention. A launch-mode run using ordinary file descriptors completed
+with exit(0) and identical full output, but retained the same five-second rolling
+configuration. Its exported scheduler slice spans 2.789 seconds, with about
+2.440 seconds Running and 332.439 ms Preempted; the largest observed preemption
+is 34.716 ms. It provides no eight-second blocking interval or original waker.
+The prior Unknown prefix must not be interpreted as measured recorder setup.
+
+A final bounded diagnostic explicitly requests a 90-second retention horizon
+for its existing 90-second recording window, within the unchanged 120-second
+outer watchdog. This corrects trace retention rather than increasing the native
+workload's budget. The earlier failed launch and partial traces remain retained.
+
+The final recorder log reports target exit and the complete output compares
+byte-identically with the ordinary lifecycle. However, the recorder did not
+finish saving before the unchanged 120-second outer watchdog and ended with
+status 124. No completed scheduler export was admitted. This is a retained
+collection failure, not a native timeout, a complete trace or wait attribution.
+Further recording attempts and budget increases are not part of this result.
