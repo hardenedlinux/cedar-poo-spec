@@ -178,9 +178,8 @@ check-claim-settlement-replay: build-examples
 
 # Build one native wheel, install it in isolated interpreters, and compare actual
 # extension receipts with the existing Rust CLI for every applicable Lean entry.
-[script]
+[script("bash")]
 check-python-bindings versions="3.11 3.14":
-    #!/usr/bin/env bash
     set -euo pipefail
     lake build caseManifestsNative
     .lake/build/bin/caseManifestsNative all
