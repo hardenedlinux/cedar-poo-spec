@@ -1,38 +1,41 @@
 {
   "entry": "dev/d2/zero-trust-object-proofs.d2",
   "sources": {
+    "CedarPooSpec/Gateway/PublicationReview.lean": "1ddfb0a04e008bf26f34e51f54d26b01421fbf62139727ab93de4195996ce204",
     "CedarPooSpec/Gateway/ZeroTrust.lean": "6ef9abbec130ae27ac17f7fb3b2b4426193e6dcb862b11847abeb370612b69a0",
     "CedarPooSpec/ZeroTrust/Composition.lean": "ebab914cf26a6d08662fb58dea452985673e3ab3e7f6ee3c97abb572b840984e",
     "CedarPooSpec/ZeroTrust/Continuous.lean": "42c1453d6de90b4e09ae3c3270de4ddf4bb5b6509055761a6c5574fe8755a89f",
     "CedarPooSpec/ZeroTrust/Model.lean": "bf9827dc36c52cfc41f63fd1ee9ff83b325972c41504b41444e2134d635519a2",
     "CedarPooSpec/ZeroTrust/ProfileObject.lean": "5b78e3ea7c418c0dd44339f8c05dcad659a4f1763313be32768ee3a589c57580",
     "CedarPooSpec/ZeroTrust/UsageControl.lean": "e8198fb65cd7be9ca9fbaf9260857054c7480ed22e0766b8103dc6c60d67c27d",
-    "dev/.generated/zero-trust-object-proofs-sdk.json": "6e4d344026c742b81f268d26a3d6028440fc59cb94e18676c11543452b9d8d59",
+    "dev/.generated/zero-trust-object-proofs-sdk.json": "2a0b7f0402c7bbb8d9821105e9dc7de315af8a9dfdc4d7d49dd7ff1adb1586ff",
     "dev/artifacts.ts": "ca1096947536fbdbd5da5cbf1ce5c6f57521bd4a7b135233285dfe8fcff9859d",
     "dev/bun.lock": "2b7060a881aad9312d122f6d01146ef78c207b3c95254aa66b7b57a9eede5acd",
     "dev/catalog.ts": "6d65a91afcddb11de668cc668aa3c6b9076435c02e73a90323c7bf28a991965e",
-    "dev/d2/zero-trust-object-proofs.d2": "4cc1b2cea918c37cff09abd8206d4bba6d35fe455f7e3e92a0e8f19af583e511",
+    "dev/d2/zero-trust-object-proofs.d2": "56123362e1b30fee7bf01916587c2eb26d980f5c6b7529c180513c41e925669c",
     "dev/inputs.ts": "8ccc4bd7ceda2013d5fd86b37d2565beb60f1a8761004d67be77d0c2acd1265e",
-    "dev/Justfile": "a13b2b6ef2cabfdd03841bbdc3da89fa70245071abf15f653c0095ae3defba7b",
+    "dev/Justfile": "364059989486f5babe149b9ab2a570e09fce7abf9f450dc03d47a0f564fa1a10",
+    "dev/notation.ts": "b055ce745406e30035d0b6ebfa71a9ed929aae5c5d60dbf5ab70c9a7e8446251",
     "dev/package.json": "4eb137a6d73d5dfb1e43020c3041e9a42151d480b26d6e01b99ee0ebc2997d90",
     "dev/projection.ts": "3fd049e50798aee9dce54af6cd6e6fccad45fec5ab24b994bb6a8a4b33d7252d",
     "dev/proofs.ts": "7ecca5b114869cbf7ea212bfeb7982c04a3015ea47d0e34a136b022d097d8d2f",
-    "dev/render.ts": "1b07616b3a05602676ea0101546ab66f20fd73943326382fda0ebafef2735201",
+    "dev/render.ts": "41b5ff6dfef93c5be3935198f190337c86454e358ab332eb9d908cf84b6b47e9",
     "dev/sources.ts": "3cd11d095476ee65c9086172773813e6e37e88087c9d01ee962cec59369d7ed8",
-    "dev/sysml/zero-trust-proofs.sysml": "3f2700293031473da7118ff382402badc8beba9a90b4715170e18d65c08fb814",
+    "dev/sysml/zero-trust-proofs.sysml": "a7faf29ec9ad026add45e1f0306c921f5a7e607b312ffd6df3a2a3f5bafafc38",
+    "Tests/Gateway/PublicationReview.lean": "f1eaae149b4ec1b2bed1a9daabf01996e48d93d29d417e987197cb06a0f4a398",
     "Tests/ZeroTrust/Functional.lean": "9c582d2438fa1b0f01d7c5c31f590487e37fc01588b32829d2e732187c349494",
     "Tests/ZeroTrust/ProfileObject.lean": "afc35d973cc630dc87228e8117d3c99f377c9cc117bd0402d1bc95c928838615"
   },
   "binaries": {},
   "sdk": {
-    "modelHash": "6a9c913577b89f0f8a3b37a2d480ed38bb40a67f9c393f2c7fdda9272c73d54a",
+    "modelHash": "55219ff868e7f1f7ba508290bc077ccd54c334aff7b94d40e346c608ee067f63",
     "view": "ZeroTrustProofs::objects",
     "trace": {
-      "modelHash": "6a9c913577b89f0f8a3b37a2d480ed38bb40a67f9c393f2c7fdda9272c73d54a",
+      "modelHash": "55219ff868e7f1f7ba508290bc077ccd54c334aff7b94d40e346c608ee067f63",
       "requestedView": "ZeroTrustProofs::objects",
       "resolvedView": "ZeroTrustProofs::objects",
-      "renderingSHA256": "6e4d344026c742b81f268d26a3d6028440fc59cb94e18676c11543452b9d8d59",
-      "capturedRenderingJSON": "{\"modelHash\":\"6a9c913577b89f0f8a3b37a2d480ed38bb40a67f9c393f2c7fdda9272c73d54a\",\"requestedView\":\"ZeroTrustProofs::objects\",\"rendering\":{\"view\":\"ZeroTrustProofs::objects\",\"kind\":\"interconnection\",\"stated\":\"render asInterconnectionDiagram\",\"nodes\":[{\"id\":\"n0\",\"kind\":\"part\",\"name\":\"ZeroTrustProofs::profile\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":40,\"startCol\":2,\"endLine\":40,\"endCol\":28}},{\"id\":\"n1\",\"kind\":\"part\",\"name\":\"ZeroTrustProofs::session\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":43,\"startCol\":2,\"endLine\":43,\"endCol\":28}},{\"id\":\"n2\",\"kind\":\"part\",\"name\":\"ZeroTrustProofs::counter\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":46,\"startCol\":2,\"endLine\":46,\"endCol\":38}},{\"id\":\"n3\",\"kind\":\"part\",\"name\":\"ZeroTrustProofs::joined\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":49,\"startCol\":2,\"endLine\":49,\"endCol\":27}},{\"id\":\"n4\",\"kind\":\"part\",\"name\":\"ZeroTrustProofs::preserved\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":52,\"startCol\":2,\"endLine\":52,\"endCol\":29}},{\"id\":\"n5\",\"kind\":\"part\",\"name\":\"ZeroTrustProofs::prefix\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":55,\"startCol\":2,\"endLine\":55,\"endCol\":28}},{\"id\":\"n6\",\"kind\":\"part\",\"name\":\"ZeroTrustProofs::continuing\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":58,\"startCol\":2,\"endLine\":58,\"endCol\":30}}],\"edges\":[{\"from\":\"n0\",\"to\":\"n1\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":93,\"startCol\":2,\"endLine\":93,\"endCol\":53}},{\"from\":\"n0\",\"to\":\"n2\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":94,\"startCol\":2,\"endLine\":94,\"endCol\":53}},{\"from\":\"n1\",\"to\":\"n3\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":95,\"startCol\":2,\"endLine\":95,\"endCol\":52}},{\"from\":\"n2\",\"to\":\"n3\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":96,\"startCol\":2,\"endLine\":96,\"endCol\":52}},{\"from\":\"n3\",\"to\":\"n4\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":97,\"startCol\":2,\"endLine\":97,\"endCol\":54}},{\"from\":\"n4\",\"to\":\"n6\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":98,\"startCol\":2,\"endLine\":98,\"endCol\":58}},{\"from\":\"n5\",\"to\":\"n6\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":99,\"startCol\":2,\"endLine\":99,\"endCol\":55}}],\"columns\":[],\"rows\":[],\"notes\":[],\"notices\":[],\"shown\":[\"port-symbols\",\"compartments\",\"keywords\"]}}",
+      "renderingSHA256": "2a0b7f0402c7bbb8d9821105e9dc7de315af8a9dfdc4d7d49dd7ff1adb1586ff",
+      "capturedRenderingJSON": "{\"modelHash\":\"55219ff868e7f1f7ba508290bc077ccd54c334aff7b94d40e346c608ee067f63\",\"requestedView\":\"ZeroTrustProofs::objects\",\"rendering\":{\"view\":\"ZeroTrustProofs::objects\",\"kind\":\"interconnection\",\"stated\":\"render asInterconnectionDiagram\",\"nodes\":[{\"id\":\"n0\",\"kind\":\"part\",\"name\":\"ZeroTrustProofs::profile\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":40,\"startCol\":2,\"endLine\":40,\"endCol\":28}},{\"id\":\"n1\",\"kind\":\"part\",\"name\":\"ZeroTrustProofs::session\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":43,\"startCol\":2,\"endLine\":43,\"endCol\":28}},{\"id\":\"n2\",\"kind\":\"part\",\"name\":\"ZeroTrustProofs::counter\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":46,\"startCol\":2,\"endLine\":46,\"endCol\":38}},{\"id\":\"n3\",\"kind\":\"part\",\"name\":\"ZeroTrustProofs::joined\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":49,\"startCol\":2,\"endLine\":49,\"endCol\":27}},{\"id\":\"n4\",\"kind\":\"part\",\"name\":\"ZeroTrustProofs::preserved\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":52,\"startCol\":2,\"endLine\":52,\"endCol\":29}},{\"id\":\"n5\",\"kind\":\"part\",\"name\":\"ZeroTrustProofs::prefix\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":55,\"startCol\":2,\"endLine\":55,\"endCol\":28}},{\"id\":\"n6\",\"kind\":\"part\",\"name\":\"ZeroTrustProofs::continuing\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":58,\"startCol\":2,\"endLine\":58,\"endCol\":30}},{\"id\":\"n7\",\"kind\":\"part\",\"name\":\"ZeroTrustProofs::deltaHost\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":62,\"startCol\":2,\"endLine\":62,\"endCol\":30}},{\"id\":\"n8\",\"kind\":\"part\",\"name\":\"ZeroTrustProofs::frontier\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":65,\"startCol\":2,\"endLine\":65,\"endCol\":28}},{\"id\":\"n9\",\"kind\":\"part\",\"name\":\"ZeroTrustProofs::successive\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":68,\"startCol\":2,\"endLine\":68,\"endCol\":30}},{\"id\":\"n10\",\"kind\":\"part\",\"name\":\"ZeroTrustProofs::finalRollback\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":71,\"startCol\":2,\"endLine\":71,\"endCol\":44}}],\"edges\":[{\"from\":\"n0\",\"to\":\"n1\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":106,\"startCol\":2,\"endLine\":106,\"endCol\":53}},{\"from\":\"n0\",\"to\":\"n2\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":107,\"startCol\":2,\"endLine\":107,\"endCol\":53}},{\"from\":\"n1\",\"to\":\"n3\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":108,\"startCol\":2,\"endLine\":108,\"endCol\":52}},{\"from\":\"n2\",\"to\":\"n3\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":109,\"startCol\":2,\"endLine\":109,\"endCol\":52}},{\"from\":\"n3\",\"to\":\"n4\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":110,\"startCol\":2,\"endLine\":110,\"endCol\":54}},{\"from\":\"n4\",\"to\":\"n6\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":111,\"startCol\":2,\"endLine\":111,\"endCol\":58}},{\"from\":\"n5\",\"to\":\"n6\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":112,\"startCol\":2,\"endLine\":112,\"endCol\":55}},{\"from\":\"n7\",\"to\":\"n8\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":113,\"startCol\":2,\"endLine\":113,\"endCol\":56}},{\"from\":\"n8\",\"to\":\"n9\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":114,\"startCol\":2,\"endLine\":114,\"endCol\":57}},{\"from\":\"n10\",\"to\":\"n9\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/zero-trust-proofs.sysml\",\"startLine\":115,\"startCol\":2,\"endLine\":115,\"endCol\":62}}],\"columns\":[],\"rows\":[],\"notes\":[],\"notices\":[],\"shown\":[\"port-symbols\",\"compartments\",\"keywords\"]}}",
       "nodes": [
         {
           "id": "n0",
@@ -110,6 +113,50 @@
             "endLine": 58,
             "endCol": 30
           }
+        },
+        {
+          "id": "n7",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/zero-trust-proofs.sysml",
+            "startLine": 62,
+            "startCol": 2,
+            "endLine": 62,
+            "endCol": 30
+          }
+        },
+        {
+          "id": "n8",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/zero-trust-proofs.sysml",
+            "startLine": 65,
+            "startCol": 2,
+            "endLine": 65,
+            "endCol": 28
+          }
+        },
+        {
+          "id": "n9",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/zero-trust-proofs.sysml",
+            "startLine": 68,
+            "startCol": 2,
+            "endLine": 68,
+            "endCol": 30
+          }
+        },
+        {
+          "id": "n10",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/zero-trust-proofs.sysml",
+            "startLine": 71,
+            "startCol": 2,
+            "endLine": 71,
+            "endCol": 44
+          }
         }
       ],
       "edges": [
@@ -123,9 +170,9 @@
           "kind": "connection",
           "origin": {
             "file": "dev/sysml/zero-trust-proofs.sysml",
-            "startLine": 93,
+            "startLine": 106,
             "startCol": 2,
-            "endLine": 93,
+            "endLine": 106,
             "endCol": 53
           }
         },
@@ -139,9 +186,9 @@
           "kind": "connection",
           "origin": {
             "file": "dev/sysml/zero-trust-proofs.sysml",
-            "startLine": 94,
+            "startLine": 107,
             "startCol": 2,
-            "endLine": 94,
+            "endLine": 107,
             "endCol": 53
           }
         },
@@ -155,9 +202,9 @@
           "kind": "connection",
           "origin": {
             "file": "dev/sysml/zero-trust-proofs.sysml",
-            "startLine": 95,
+            "startLine": 108,
             "startCol": 2,
-            "endLine": 95,
+            "endLine": 108,
             "endCol": 52
           }
         },
@@ -171,9 +218,9 @@
           "kind": "connection",
           "origin": {
             "file": "dev/sysml/zero-trust-proofs.sysml",
-            "startLine": 96,
+            "startLine": 109,
             "startCol": 2,
-            "endLine": 96,
+            "endLine": 109,
             "endCol": 52
           }
         },
@@ -187,9 +234,9 @@
           "kind": "connection",
           "origin": {
             "file": "dev/sysml/zero-trust-proofs.sysml",
-            "startLine": 97,
+            "startLine": 110,
             "startCol": 2,
-            "endLine": 97,
+            "endLine": 110,
             "endCol": 54
           }
         },
@@ -203,9 +250,9 @@
           "kind": "connection",
           "origin": {
             "file": "dev/sysml/zero-trust-proofs.sysml",
-            "startLine": 98,
+            "startLine": 111,
             "startCol": 2,
-            "endLine": 98,
+            "endLine": 111,
             "endCol": 58
           }
         },
@@ -219,10 +266,58 @@
           "kind": "connection",
           "origin": {
             "file": "dev/sysml/zero-trust-proofs.sysml",
-            "startLine": 99,
+            "startLine": 112,
             "startCol": 2,
-            "endLine": 99,
+            "endLine": 112,
             "endCol": 55
+          }
+        },
+        {
+          "id": "edge:7",
+          "index": 7,
+          "from": "n7",
+          "to": "n8",
+          "fromPort": "",
+          "toPort": "",
+          "kind": "connection",
+          "origin": {
+            "file": "dev/sysml/zero-trust-proofs.sysml",
+            "startLine": 113,
+            "startCol": 2,
+            "endLine": 113,
+            "endCol": 56
+          }
+        },
+        {
+          "id": "edge:8",
+          "index": 8,
+          "from": "n8",
+          "to": "n9",
+          "fromPort": "",
+          "toPort": "",
+          "kind": "connection",
+          "origin": {
+            "file": "dev/sysml/zero-trust-proofs.sysml",
+            "startLine": 114,
+            "startCol": 2,
+            "endLine": 114,
+            "endCol": 57
+          }
+        },
+        {
+          "id": "edge:9",
+          "index": 9,
+          "from": "n10",
+          "to": "n9",
+          "fromPort": "",
+          "toPort": "",
+          "kind": "connection",
+          "origin": {
+            "file": "dev/sysml/zero-trust-proofs.sysml",
+            "startLine": 115,
+            "startCol": 2,
+            "endLine": 115,
+            "endCol": 62
           }
         }
       ]
@@ -231,7 +326,7 @@
     "observations": []
   },
   "proofClaims": {
-    "modelHash": "6a9c913577b89f0f8a3b37a2d480ed38bb40a67f9c393f2c7fdda9272c73d54a",
+    "modelHash": "55219ff868e7f1f7ba508290bc077ccd54c334aff7b94d40e346c608ee067f63",
     "cards": [
       {
         "id": "ZeroTrustProofs::required",
@@ -334,6 +429,30 @@
         "role": "KernelLaw",
         "symbol": "CedarPooSpec.Gateway.ZeroTrust.continuing_objects_preserve_parent_and_consumption",
         "source": "CedarPooSpec/Gateway/ZeroTrust.lean"
+      },
+      {
+        "id": "ZeroTrustProofs::deltaHost",
+        "role": "Definition",
+        "symbol": "CedarPooSpec.Gateway.PublicationReview.Host.withDeltaReview",
+        "source": "CedarPooSpec/Gateway/PublicationReview.lean"
+      },
+      {
+        "id": "ZeroTrustProofs::frontier",
+        "role": "KernelLaw",
+        "symbol": "CedarPooSpec.Gateway.PublicationReview.delta_final_retains_frontier",
+        "source": "CedarPooSpec/Gateway/PublicationReview.lean"
+      },
+      {
+        "id": "ZeroTrustProofs::successive",
+        "role": "KernelLaw",
+        "symbol": "CedarPooSpec.Gateway.PublicationReview.successive_delta_finals_advance_review_epoch",
+        "source": "CedarPooSpec/Gateway/PublicationReview.lean"
+      },
+      {
+        "id": "ZeroTrustProofs::finalRollback",
+        "role": "KernelCounterexample",
+        "symbol": "CedarPooSpec.Gateway.PublicationReviewTest.rolled_back_frontier_allows_same_final_counterexample",
+        "source": "Tests/Gateway/PublicationReview.lean"
       }
     ],
     "uses": [
@@ -348,6 +467,10 @@
       {
         "dependency": "CedarPooSpec.ZeroTrust.ProfileObject.composed_preserves_actual_parent_and_original",
         "target": "CedarPooSpec.Gateway.ZeroTrust.continuing_objects_preserve_parent_and_consumption"
+      },
+      {
+        "dependency": "CedarPooSpec.Gateway.PublicationReview.delta_final_retains_frontier",
+        "target": "CedarPooSpec.Gateway.PublicationReview.successive_delta_finals_advance_review_epoch"
       }
     ]
   },
@@ -360,7 +483,7 @@
     "attribution": {
       "copyright": [
         "2026 hardenedlinux Linux Team and Contributors",
-        "2014 Indian Type Foundry (info@indiantypefoundry.com)"
+        "2016 The Inter Project Authors (https://github.com/rsms/inter)"
       ],
       "license": "Apache-2.0 AND OFL-1.1"
     },
@@ -368,229 +491,794 @@
       "canvas": {
         "x": 0,
         "y": 0,
-        "width": 1280,
-        "height": 1903
+        "width": 1800,
+        "height": 1570
       },
       "subjects": [
         {
           "id": "n0",
           "role": "default",
-          "x": 595.8243408203125,
-          "y": 180.19061279296875,
-          "width": 324.552734375,
-          "height": 121.878173828125
+          "x": 49,
+          "y": 206,
+          "width": 531.328125,
+          "height": 141
         },
         {
           "id": "n1",
           "role": "default",
-          "x": 657,
-          "y": 436.5800476074219,
-          "width": 311.16552734375,
-          "height": 121.61636352539062
-        },
-        {
-          "id": "n2",
-          "role": "default",
-          "x": 301.4620361328125,
-          "y": 420.7611389160156,
-          "width": 331.5379638671875,
-          "height": 147.84445190429688
+          "x": 49,
+          "y": 359,
+          "width": 531.328125,
+          "height": 229
         },
         {
           "id": "n3",
           "role": "default",
-          "x": 594.104736328125,
-          "y": 692.423583984375,
-          "width": 324.5394287109375,
-          "height": 116.3775634765625
+          "x": 49,
+          "y": 600,
+          "width": 531.328125,
+          "height": 317
         },
         {
           "id": "n4",
           "role": "default",
-          "x": 616.5,
-          "y": 932.6063842773438,
-          "width": 280.18035888671875,
-          "height": 212.32073974609375
+          "x": 49,
+          "y": 929,
+          "width": 531.328125,
+          "height": 293
+        },
+        {
+          "id": "n2",
+          "role": "default",
+          "x": 49,
+          "y": 1234,
+          "width": 531.328125,
+          "height": 255
         },
         {
           "id": "n5",
           "role": "default",
-          "x": 301.0575866699219,
-          "y": 996.3423461914062,
-          "width": 292.1661682128906,
-          "height": 148.37713623046875
+          "x": 634.328125,
+          "y": 205,
+          "width": 531.328125,
+          "height": 161
         },
         {
           "id": "n6",
           "role": "default",
-          "x": 565.3150634765625,
-          "y": 1268.8616943359375,
-          "width": 286.66015625,
-          "height": 211.1953125
+          "x": 634.328125,
+          "y": 378,
+          "width": 531.328125,
+          "height": 381
+        },
+        {
+          "id": "n7",
+          "role": "default",
+          "x": 1219.65625,
+          "y": 205,
+          "width": 531.328125,
+          "height": 163
+        },
+        {
+          "id": "n8",
+          "role": "default",
+          "x": 1219.65625,
+          "y": 380,
+          "width": 531.328125,
+          "height": 249
+        },
+        {
+          "id": "n9",
+          "role": "default",
+          "x": 1219.65625,
+          "y": 641,
+          "width": 531.328125,
+          "height": 359
+        },
+        {
+          "id": "n10",
+          "role": "default",
+          "x": 1219.65625,
+          "y": 1012,
+          "width": 531.328125,
+          "height": 189
         }
       ],
       "relations": [
         "edge:0",
-        "edge:1",
         "edge:2",
         "edge:3",
         "edge:4",
+        "edge:1",
         "edge:5",
-        "edge:6"
+        "edge:6",
+        "edge:7",
+        "edge:8",
+        "edge:9"
       ],
       "headings": [
         {
           "role": "title",
-          "x": 20,
-          "y": 20,
-          "width": 1240,
-          "height": 48
+          "x": 32,
+          "y": 32,
+          "width": 1736,
+          "height": 37
         },
         {
           "role": "question",
-          "x": 20,
-          "y": 78,
-          "width": 1240,
+          "x": 32,
+          "y": 79,
+          "width": 1736,
           "height": 34
         },
         {
           "role": "note",
-          "x": 20,
-          "y": 122,
-          "width": 1240,
-          "height": 27
+          "x": 32,
+          "y": 123,
+          "width": 1736,
+          "height": 22
         },
         {
           "role": "heading",
-          "x": 20,
-          "y": 1518,
-          "width": 612,
-          "height": 31
+          "x": 49,
+          "y": 172,
+          "width": 531.328125,
+          "height": 24
         },
         {
-          "role": "note",
-          "x": 20,
-          "y": 1553,
-          "width": 612,
-          "height": 27
-        },
-        {
-          "role": "heading",
-          "x": 648,
-          "y": 1518,
-          "width": 612,
-          "height": 31
-        },
-        {
-          "role": "note",
-          "x": 648,
-          "y": 1553,
-          "width": 612,
-          "height": 27
+          "role": "classification",
+          "x": 64,
+          "y": 221,
+          "width": 501.328125,
+          "height": 23
         },
         {
           "role": "heading",
-          "x": 20,
-          "y": 1600,
-          "width": 612,
-          "height": 31
+          "x": 64,
+          "y": 244,
+          "width": 501.328125,
+          "height": 44
         },
         {
           "role": "note",
-          "x": 20,
-          "y": 1635,
-          "width": 612,
-          "height": 27
+          "x": 64,
+          "y": 288,
+          "width": 501.328125,
+          "height": 22
+        },
+        {
+          "role": "note",
+          "x": 64,
+          "y": 310,
+          "width": 501.328125,
+          "height": 22
+        },
+        {
+          "role": "classification",
+          "x": 64,
+          "y": 374,
+          "width": 501.328125,
+          "height": 23
         },
         {
           "role": "heading",
-          "x": 648,
-          "y": 1600,
-          "width": 612,
-          "height": 31
+          "x": 64,
+          "y": 397,
+          "width": 501.328125,
+          "height": 44
         },
         {
           "role": "note",
-          "x": 648,
-          "y": 1635,
-          "width": 612,
-          "height": 27
+          "x": 64,
+          "y": 441,
+          "width": 501.328125,
+          "height": 22
+        },
+        {
+          "role": "note",
+          "x": 64,
+          "y": 463,
+          "width": 501.328125,
+          "height": 22
+        },
+        {
+          "role": "classification",
+          "x": 64,
+          "y": 506,
+          "width": 501.328125,
+          "height": 23
+        },
+        {
+          "role": "note",
+          "x": 64,
+          "y": 529,
+          "width": 501.328125,
+          "height": 22
+        },
+        {
+          "role": "note",
+          "x": 64,
+          "y": 551,
+          "width": 501.328125,
+          "height": 22
+        },
+        {
+          "role": "classification",
+          "x": 64,
+          "y": 615,
+          "width": 501.328125,
+          "height": 23
         },
         {
           "role": "heading",
-          "x": 20,
-          "y": 1682,
-          "width": 612,
-          "height": 31
+          "x": 64,
+          "y": 638,
+          "width": 501.328125,
+          "height": 44
         },
         {
           "role": "note",
-          "x": 20,
-          "y": 1717,
-          "width": 612,
-          "height": 27
+          "x": 64,
+          "y": 682,
+          "width": 501.328125,
+          "height": 22
+        },
+        {
+          "role": "note",
+          "x": 64,
+          "y": 704,
+          "width": 501.328125,
+          "height": 22
+        },
+        {
+          "role": "classification",
+          "x": 64,
+          "y": 747,
+          "width": 501.328125,
+          "height": 23
+        },
+        {
+          "role": "note",
+          "x": 64,
+          "y": 770,
+          "width": 501.328125,
+          "height": 22
+        },
+        {
+          "role": "note",
+          "x": 64,
+          "y": 792,
+          "width": 501.328125,
+          "height": 22
+        },
+        {
+          "role": "classification",
+          "x": 64,
+          "y": 835,
+          "width": 501.328125,
+          "height": 23
+        },
+        {
+          "role": "note",
+          "x": 64,
+          "y": 858,
+          "width": 501.328125,
+          "height": 22
+        },
+        {
+          "role": "note",
+          "x": 64,
+          "y": 880,
+          "width": 501.328125,
+          "height": 22
+        },
+        {
+          "role": "classification",
+          "x": 64,
+          "y": 944,
+          "width": 501.328125,
+          "height": 23
         },
         {
           "role": "heading",
-          "x": 648,
-          "y": 1682,
-          "width": 612,
-          "height": 31
+          "x": 64,
+          "y": 967,
+          "width": 501.328125,
+          "height": 42
         },
         {
           "role": "note",
-          "x": 648,
-          "y": 1717,
-          "width": 612,
-          "height": 27
+          "x": 64,
+          "y": 1009,
+          "width": 501.328125,
+          "height": 22
+        },
+        {
+          "role": "note",
+          "x": 64,
+          "y": 1031,
+          "width": 501.328125,
+          "height": 22
+        },
+        {
+          "role": "note",
+          "x": 64,
+          "y": 1053,
+          "width": 501.328125,
+          "height": 22
+        },
+        {
+          "role": "note",
+          "x": 64,
+          "y": 1075,
+          "width": 501.328125,
+          "height": 22
+        },
+        {
+          "role": "note",
+          "x": 64,
+          "y": 1097,
+          "width": 501.328125,
+          "height": 22
+        },
+        {
+          "role": "classification",
+          "x": 64,
+          "y": 1140,
+          "width": 501.328125,
+          "height": 23
+        },
+        {
+          "role": "note",
+          "x": 64,
+          "y": 1163,
+          "width": 501.328125,
+          "height": 22
+        },
+        {
+          "role": "note",
+          "x": 64,
+          "y": 1185,
+          "width": 501.328125,
+          "height": 22
+        },
+        {
+          "role": "classification",
+          "x": 64,
+          "y": 1249,
+          "width": 501.328125,
+          "height": 23
         },
         {
           "role": "heading",
-          "x": 20,
-          "y": 1764,
-          "width": 612,
-          "height": 31
+          "x": 64,
+          "y": 1272,
+          "width": 501.328125,
+          "height": 48
         },
         {
           "role": "note",
-          "x": 20,
-          "y": 1799,
-          "width": 612,
-          "height": 27
+          "x": 64,
+          "y": 1320,
+          "width": 501.328125,
+          "height": 22
         },
         {
           "role": "note",
-          "x": 20,
-          "y": 1846,
-          "width": 1240,
-          "height": 27
+          "x": 64,
+          "y": 1342,
+          "width": 501.328125,
+          "height": 22
+        },
+        {
+          "role": "note",
+          "x": 64,
+          "y": 1364,
+          "width": 501.328125,
+          "height": 22
+        },
+        {
+          "role": "classification",
+          "x": 64,
+          "y": 1407,
+          "width": 501.328125,
+          "height": 23
+        },
+        {
+          "role": "note",
+          "x": 64,
+          "y": 1430,
+          "width": 501.328125,
+          "height": 22
+        },
+        {
+          "role": "note",
+          "x": 64,
+          "y": 1452,
+          "width": 501.328125,
+          "height": 22
+        },
+        {
+          "role": "heading",
+          "x": 634.328125,
+          "y": 172,
+          "width": 531.328125,
+          "height": 23
+        },
+        {
+          "role": "classification",
+          "x": 649.328125,
+          "y": 220,
+          "width": 501.328125,
+          "height": 23
+        },
+        {
+          "role": "heading",
+          "x": 649.328125,
+          "y": 243,
+          "width": 501.328125,
+          "height": 42
+        },
+        {
+          "role": "note",
+          "x": 649.328125,
+          "y": 285,
+          "width": 501.328125,
+          "height": 22
+        },
+        {
+          "role": "note",
+          "x": 649.328125,
+          "y": 307,
+          "width": 501.328125,
+          "height": 22
+        },
+        {
+          "role": "note",
+          "x": 649.328125,
+          "y": 329,
+          "width": 501.328125,
+          "height": 22
+        },
+        {
+          "role": "classification",
+          "x": 649.328125,
+          "y": 393,
+          "width": 501.328125,
+          "height": 23
+        },
+        {
+          "role": "heading",
+          "x": 649.328125,
+          "y": 416,
+          "width": 501.328125,
+          "height": 42
+        },
+        {
+          "role": "note",
+          "x": 649.328125,
+          "y": 458,
+          "width": 501.328125,
+          "height": 22
+        },
+        {
+          "role": "note",
+          "x": 649.328125,
+          "y": 480,
+          "width": 501.328125,
+          "height": 22
+        },
+        {
+          "role": "note",
+          "x": 649.328125,
+          "y": 502,
+          "width": 501.328125,
+          "height": 22
+        },
+        {
+          "role": "note",
+          "x": 649.328125,
+          "y": 524,
+          "width": 501.328125,
+          "height": 22
+        },
+        {
+          "role": "note",
+          "x": 649.328125,
+          "y": 546,
+          "width": 501.328125,
+          "height": 22
+        },
+        {
+          "role": "classification",
+          "x": 649.328125,
+          "y": 589,
+          "width": 501.328125,
+          "height": 23
+        },
+        {
+          "role": "note",
+          "x": 649.328125,
+          "y": 612,
+          "width": 501.328125,
+          "height": 22
+        },
+        {
+          "role": "note",
+          "x": 649.328125,
+          "y": 634,
+          "width": 501.328125,
+          "height": 22
+        },
+        {
+          "role": "classification",
+          "x": 649.328125,
+          "y": 677,
+          "width": 501.328125,
+          "height": 23
+        },
+        {
+          "role": "note",
+          "x": 649.328125,
+          "y": 700,
+          "width": 501.328125,
+          "height": 22
+        },
+        {
+          "role": "note",
+          "x": 649.328125,
+          "y": 722,
+          "width": 501.328125,
+          "height": 22
+        },
+        {
+          "role": "heading",
+          "x": 1219.65625,
+          "y": 172,
+          "width": 531.328125,
+          "height": 23
+        },
+        {
+          "role": "classification",
+          "x": 1234.65625,
+          "y": 220,
+          "width": 501.328125,
+          "height": 23
+        },
+        {
+          "role": "heading",
+          "x": 1234.65625,
+          "y": 243,
+          "width": 501.328125,
+          "height": 44
+        },
+        {
+          "role": "note",
+          "x": 1234.65625,
+          "y": 287,
+          "width": 501.328125,
+          "height": 22
+        },
+        {
+          "role": "note",
+          "x": 1234.65625,
+          "y": 309,
+          "width": 501.328125,
+          "height": 22
+        },
+        {
+          "role": "note",
+          "x": 1234.65625,
+          "y": 331,
+          "width": 501.328125,
+          "height": 22
+        },
+        {
+          "role": "classification",
+          "x": 1234.65625,
+          "y": 395,
+          "width": 501.328125,
+          "height": 23
+        },
+        {
+          "role": "heading",
+          "x": 1234.65625,
+          "y": 418,
+          "width": 501.328125,
+          "height": 42
+        },
+        {
+          "role": "note",
+          "x": 1234.65625,
+          "y": 460,
+          "width": 501.328125,
+          "height": 22
+        },
+        {
+          "role": "note",
+          "x": 1234.65625,
+          "y": 482,
+          "width": 501.328125,
+          "height": 22
+        },
+        {
+          "role": "note",
+          "x": 1234.65625,
+          "y": 504,
+          "width": 501.328125,
+          "height": 22
+        },
+        {
+          "role": "classification",
+          "x": 1234.65625,
+          "y": 547,
+          "width": 501.328125,
+          "height": 23
+        },
+        {
+          "role": "note",
+          "x": 1234.65625,
+          "y": 570,
+          "width": 501.328125,
+          "height": 22
+        },
+        {
+          "role": "note",
+          "x": 1234.65625,
+          "y": 592,
+          "width": 501.328125,
+          "height": 22
+        },
+        {
+          "role": "classification",
+          "x": 1234.65625,
+          "y": 656,
+          "width": 501.328125,
+          "height": 23
+        },
+        {
+          "role": "heading",
+          "x": 1234.65625,
+          "y": 679,
+          "width": 501.328125,
+          "height": 42
+        },
+        {
+          "role": "note",
+          "x": 1234.65625,
+          "y": 721,
+          "width": 501.328125,
+          "height": 22
+        },
+        {
+          "role": "note",
+          "x": 1234.65625,
+          "y": 743,
+          "width": 501.328125,
+          "height": 22
+        },
+        {
+          "role": "note",
+          "x": 1234.65625,
+          "y": 765,
+          "width": 501.328125,
+          "height": 22
+        },
+        {
+          "role": "note",
+          "x": 1234.65625,
+          "y": 787,
+          "width": 501.328125,
+          "height": 22
+        },
+        {
+          "role": "classification",
+          "x": 1234.65625,
+          "y": 830,
+          "width": 501.328125,
+          "height": 23
+        },
+        {
+          "role": "note",
+          "x": 1234.65625,
+          "y": 853,
+          "width": 501.328125,
+          "height": 22
+        },
+        {
+          "role": "note",
+          "x": 1234.65625,
+          "y": 875,
+          "width": 501.328125,
+          "height": 22
+        },
+        {
+          "role": "classification",
+          "x": 1234.65625,
+          "y": 918,
+          "width": 501.328125,
+          "height": 23
+        },
+        {
+          "role": "note",
+          "x": 1234.65625,
+          "y": 941,
+          "width": 501.328125,
+          "height": 22
+        },
+        {
+          "role": "note",
+          "x": 1234.65625,
+          "y": 963,
+          "width": 501.328125,
+          "height": 22
+        },
+        {
+          "role": "classification",
+          "x": 1234.65625,
+          "y": 1027,
+          "width": 501.328125,
+          "height": 23
+        },
+        {
+          "role": "heading",
+          "x": 1234.65625,
+          "y": 1050,
+          "width": 501.328125,
+          "height": 48
+        },
+        {
+          "role": "note",
+          "x": 1234.65625,
+          "y": 1098,
+          "width": 501.328125,
+          "height": 22
+        },
+        {
+          "role": "note",
+          "x": 1234.65625,
+          "y": 1120,
+          "width": 501.328125,
+          "height": 22
+        },
+        {
+          "role": "note",
+          "x": 1234.65625,
+          "y": 1142,
+          "width": 501.328125,
+          "height": 22
+        },
+        {
+          "role": "note",
+          "x": 1234.65625,
+          "y": 1164,
+          "width": 501.328125,
+          "height": 22
+        },
+        {
+          "role": "note",
+          "x": 32,
+          "y": 1506,
+          "width": 1736,
+          "height": 22
         }
       ]
     },
     "canvas": {
-      "background": "rgb(250, 247, 238)",
+      "background": "rgb(250, 250, 247)",
       "transparent": false
     },
     "readability": {
-      "minimumTextSize": 12,
-      "samples": 55,
+      "minimumTextSize": 13,
+      "samples": 96,
       "requiredMinimum": 12
     },
-    "inputSHA256": "cf40934fc24be3746517036322d071faf26a643611f87ebb40604021a7d4b3d0",
-    "scenes": [
-      {
-        "inputSHA256": "95042781c56cf061e6e24692d229b9b803f8f105cd7589ecf382872e43e67564",
-        "layoutSHA256": "44c74cde850c0814de853925b0a9ac92d2ac6d21f8e77d1ede01a86c4404cda7",
-        "nodes": 7,
-        "edges": 7,
-        "milliseconds": 175.5376670000005
-      }
-    ],
+    "inputSHA256": "fabfb278a23810f946bfd1fe45410962855f7fd9411f88ed5957edf55434d897",
+    "scenes": [],
     "svgSHA256": [
-      "e3c18c27dcf6e2b525671f2fed6fddc3ec58e837f0e924586dae9ffe0883b772",
-      "2d48780605cb63ba88423abd05f3862549f3652c8324326bfb22c3bf3b6e8d0d"
+      "cf27e7be4236927aaf00c4b55a75369722b708dea203f2d895ed5aa570099deb"
     ],
-    "composedHTMLSHA256": "34a2fe664da292e6f5313d665fd1f9a066e507f7803336529d71148ba93c05a4",
+    "composedHTMLSHA256": "81b755f640680abd81c6e09a5f20055b7394bacef3f08a59eacab510be4ec982",
     "dependencies": {
       "@fontsource/inter": "5.3.0",
       "@fontsource/kalam": "5.3.0",
@@ -603,17 +1291,17 @@
       "web-worker": "1.5.0"
     },
     "regionSHA256": {},
-    "htmlSHA256": "7f67e7e1aede6ebc9824a191e8466dcde267779662feb1540b4f1a56f96ac341",
-    "drawing": "roughjs@4.6.6",
-    "routing": "elkjs@0.12.1",
+    "htmlSHA256": "90c665c733b4ea971973276ad69643515107187d7fc833cfb2e2b0157e19e81d",
+    "drawing": "precise",
+    "routing": "none",
     "assetSHA256": {
-      "@fontsource/kalam/files/kalam-latin-400-normal.woff2": "954410601a823f37e219f7930b7446f86afa15621326a7078d56fb9c910135cb",
-      "@fontsource/kalam/files/kalam-latin-700-normal.woff2": "252063af6ade8b9a744cde4ddad0fc21ea53b8ba711eed121a0c2e8610ea9c93"
+      "@fontsource/inter/files/inter-latin-400-normal.woff2": "8909904ab6c872eb994093482a88a28eca2cd95912d7b6fecd72103b0dc07edc",
+      "@fontsource/inter/files/inter-latin-700-normal.woff2": "6f56409fd3d64bb85f7d070bce20749db2d66b6d63cec586cc22d1c761be2491"
     },
-    "pngSHA256": "317bfdcf688d2a6d1be278d5ed883514118ee7bf65f3d08ada9a718a4a3635e6",
+    "pngSHA256": "72458a70f10fa61e50a9e362a3f9d4a3e1a4318492ac22c99a94680654d64bbe",
     "browser": "156.0.8078.4",
-    "width": 1920,
-    "height": 2855,
+    "width": 2700,
+    "height": 2355,
     "scale": 1.5,
     "bounds": {}
   }

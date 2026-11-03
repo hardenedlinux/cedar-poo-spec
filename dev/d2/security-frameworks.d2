@@ -5,10 +5,10 @@ vars: {d2-config: {data: {figure: |json
 {
   "purpose": "architecture",
   "language": "en",
-  "width": 1120,
+  "width": 1600,
   "primary": "purpose",
   "themes": [
-    "sketchbook",
+    "blueprint",
     "compact"
   ],
   "icons": [
@@ -20,12 +20,12 @@ vars: {d2-config: {data: {figure: |json
     "obligationRefs": [],
     "evidenceRefs": []
   },
-  "title": "Zero Trust Component: requirements and interpretation",
+  "title": "Zero Trust: semantic responsibilities",
   "kind": "responsibility-map",
   "questions": [
     {
       "ref": "purpose",
-      "text": "How does the Zero Trust Component retain requirements in selected consumers?",
+      "text": "Which layer supplies semantics, refinement or application binding?",
       "focusRefs": [
         "sysml",
         "lean"
@@ -39,15 +39,11 @@ vars: {d2-config: {data: {figure: |json
   },
   "copy": {
     "description": "This is the Zero Trust Component detail, not the repository architecture or a map of vertical industries.",
-    "status": "Logical specification handoffs; this diagram is not an import proof or an authorization decision."
+    "status": "Each row identifies a responsibility; the final column retains its actual outgoing SDK relationships."
   },
   "presentation": {
-    "options": {
-      "elk.direction": "DOWN",
-      "elk.layered.spacing.nodeNodeBetweenLayers": "42"
-    },
-    "edgeLabels": false,
-    "legend": true
+    "notation": "matrix",
+    "columns": 2
   },
   "sysml": {
     "source": "dev/sysml/security-frameworks.sysml",

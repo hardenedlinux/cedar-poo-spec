@@ -59,6 +59,19 @@ package ZeroTrustProofs {
  attribute continuingSymbol : String = "CedarPooSpec.Gateway.ZeroTrust.continuing_objects_preserve_parent_and_consumption";
  attribute continuingSource : String = "CedarPooSpec/Gateway/ZeroTrust.lean";
  attribute continuingUses : String[0..*] = ("ZeroTrustProofs::preserved");
+ part deltaHost : Definition;
+ attribute deltaHostSymbol : String = "CedarPooSpec.Gateway.PublicationReview.Host.withDeltaReview";
+ attribute deltaHostSource : String = "CedarPooSpec/Gateway/PublicationReview.lean";
+ part frontier : KernelLaw;
+ attribute frontierSymbol : String = "CedarPooSpec.Gateway.PublicationReview.delta_final_retains_frontier";
+ attribute frontierSource : String = "CedarPooSpec/Gateway/PublicationReview.lean";
+ part successive : KernelLaw;
+ attribute successiveSymbol : String = "CedarPooSpec.Gateway.PublicationReview.successive_delta_finals_advance_review_epoch";
+ attribute successiveSource : String = "CedarPooSpec/Gateway/PublicationReview.lean";
+ part finalRollback : KernelCounterexample;
+ attribute finalRollbackSymbol : String = "CedarPooSpec.Gateway.PublicationReviewTest.rolled_back_frontier_allows_same_final_counterexample";
+ attribute finalRollbackSource : String = "Tests/Gateway/PublicationReview.lean";
+ attribute successiveUses : String[0..*] = ("ZeroTrustProofs::frontier");
  connection modelEdge0 connect required to refinement;
  connection modelEdge1 connect required to observed;
  connection modelEdge2 connect required to mediated;
@@ -97,6 +110,9 @@ package ZeroTrustProofs {
  connection objectsEdge4 connect joined to preserved;
  connection objectsEdge5 connect preserved to continuing;
  connection objectsEdge6 connect prefix to continuing;
+ connection objectsEdge7 connect deltaHost to frontier;
+ connection objectsEdge8 connect frontier to successive;
+ connection objectsEdge9 connect finalRollback to successive;
  view objects {
   expose profile;
   expose session;
@@ -104,14 +120,14 @@ package ZeroTrustProofs {
   expose joined;
   expose preserved;
   expose prefix;
-  expose continuing;
+  expose continuing; expose deltaHost; expose frontier; expose successive; expose finalRollback;
   expose objectsEdge0;
   expose objectsEdge1;
   expose objectsEdge2;
   expose objectsEdge3;
   expose objectsEdge4;
   expose objectsEdge5;
-  expose objectsEdge6;
+  expose objectsEdge6; expose objectsEdge7; expose objectsEdge8; expose objectsEdge9;
   render asInterconnectionDiagram;
  }
 }

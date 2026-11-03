@@ -47,11 +47,10 @@ Those premises cannot be replaced by an earlier Allow or an empty solver report.
 
 The view checks evaluate each SysML symbol through the actual SDK, then ask Lean
 whether every law/counterexample is a theorem declaration and every source path
-matches its actual compiled Lean module. The two arrows explicitly claiming lemma
-use are additionally checked against constants in the compiled proof terms. Other
-arrows describe premises or design motivation, not an extracted proof dependency.
-The existing Lean
-modules/tests compile their proofs independently; drawing a card issues no evidence.
+matches its actual compiled Lean module. Each basis item labelled /checked lemma dependency/ must occur in the actual
+Lean proof term. Other basis items describe premises or design motivation.
+The panels organize the argument by topic and proof role; their positions do
+not specify an execution order.
 
 * Module ownership
 

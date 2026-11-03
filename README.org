@@ -26,6 +26,10 @@ LeanPoo, Cedar semantics or the vertical libraries.
 [[file:CedarPooSpec/ZeroTrust/README.org][Zero Trust proof maps and premises]] ·
 [[file:dev/README.org][Model sources and rendering]]
 
+Each view follows its question: the overview maps responsibilities and declared
+interfaces, inventories classify capabilities and export forms, and proof panels
+separate assumptions, kernel results and counterexamples.
+
 Proof maps read declarations and roles through the OpenSysML SDK; Lean checks
 source modules, theorem kinds and declared lemma uses. D2 owns localized catalog
 captions, while the shared projection preserves model identities and topology.

@@ -5,10 +5,10 @@ vars: {d2-config: {data: {figure: |json
 {
   "purpose": "architecture",
   "language": "en",
-  "width": 1280,
+  "width": 1600,
   "primary": "purpose",
   "themes": [
-    "sketchbook",
+    "blueprint",
     "compact"
   ],
   "icons": [
@@ -20,12 +20,12 @@ vars: {d2-config: {data: {figure: |json
     "obligationRefs": [],
     "evidenceRefs": []
   },
-  "title": "Cedar model: Components, domains and consumers",
+  "title": "Architecture: responsibilities, boundaries and interfaces",
   "kind": "responsibility-map",
   "questions": [
     {
       "ref": "purpose",
-      "text": "How are reusable Components composed into distinct consumers?",
+      "text": "Which responsibilities belong to the library, its consumers and the runtime?",
       "focusRefs": [
         "sysml",
         "library"
@@ -47,15 +47,47 @@ vars: {d2-config: {data: {figure: |json
   },
   "copy": {
     "description": "Zero Trust is an explicit model Component. Industry controls and platform projections remain distinct.",
-    "status": "Arrows describe selected composition and ownership handoffs, not mandatory imports or deployed effects."
+    "status": "Responsibility groups and interface entries retain the declared SDK model relationships."
   },
   "presentation": {
-    "options": {
-      "elk.direction": "DOWN",
-      "elk.layered.spacing.nodeNodeBetweenLayers": "42"
-    },
-    "edgeLabels": false,
-    "legend": true
+    "notation": "components",
+    "columns": 2,
+    "groups": [
+      {
+        "title": "Foundations",
+        "subjects": [
+          "leanPoo",
+          "cedar"
+        ],
+        "columns": 2
+      },
+      {
+        "title": "Shared specification responsibilities",
+        "subjects": [
+          "model",
+          "zeroTrust",
+          "verticalControls",
+          "platformProjections"
+        ],
+        "columns": 2
+      },
+      {
+        "title": "Independent consuming declarations",
+        "subjects": [
+          "production",
+          "examples"
+        ],
+        "columns": 2
+      },
+      {
+        "title": "Native and runtime responsibilities",
+        "subjects": [
+          "rust",
+          "host"
+        ],
+        "columns": 2
+      }
+    ]
   },
   "sysml": {
     "source": "dev/sysml/architecture.sysml",

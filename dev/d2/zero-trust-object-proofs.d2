@@ -5,11 +5,11 @@ vars: {d2-config: {data: {figure: |json
 {
   "purpose": "architecture",
   "language": "en",
-  "width": 1280,
+  "width": 1800,
   "primary": "purpose",
   "themes": [
-    "sketchbook",
-    "compact"
+    "editorial",
+    "comfortable"
   ],
   "icons": [
     "engineering"
@@ -20,12 +20,12 @@ vars: {d2-config: {data: {figure: |json
     "obligationRefs": [],
     "evidenceRefs": []
   },
-  "title": "Zero Trust: objects, retained requirements and use",
+  "title": "Zero Trust: object composition and publication assurance",
   "kind": "proof-reading-map",
   "questions": [
     {
       "ref": "purpose",
-      "text": "Why is root preservation insufficient, and what does composition prove?",
+      "text": "Which original requirements and publication frontiers do the actual Contracts preserve?",
       "focusRefs": [
         "sysml",
         "core"
@@ -42,19 +42,50 @@ vars: {d2-config: {data: {figure: |json
     "joinedSource": "CedarPooSpec/ZeroTrust/ProfileObject.lean",
     "preservedSource": "CedarPooSpec/ZeroTrust/ProfileObject.lean",
     "prefixSource": "CedarPooSpec/Gateway/ZeroTrust.lean",
-    "continuingSource": "CedarPooSpec/Gateway/ZeroTrust.lean"
+    "continuingSource": "CedarPooSpec/Gateway/ZeroTrust.lean",
+    "deltaHostSource": "CedarPooSpec/Gateway/PublicationReview.lean",
+    "frontierSource": "CedarPooSpec/Gateway/PublicationReview.lean",
+    "successiveSource": "CedarPooSpec/Gateway/PublicationReview.lean",
+    "finalRollbackSource": "Tests/Gateway/PublicationReview.lean"
   },
   "copy": {
     "description": "Definitions, premises, kernel laws and counterexamples are distinct. Each card names its actual Lean declaration.",
-    "status": "Authored proof-reading map. Arrows label premises or lemma use; a conditional theorem is not native Host enforcement."
+    "status": "Reading groups organize the argument. Checked lemma dependencies are validated against Lean proof terms; other links are explanatory model relationships."
   },
   "presentation": {
-    "options": {
-      "elk.direction": "DOWN",
-      "elk.layered.spacing.nodeNodeBetweenLayers": "48"
-    },
-    "edgeLabels": true,
-    "legend": true
+    "notation": "assurance",
+    "columns": 3,
+    "groups": [
+      {
+        "title": "Original-parent composition",
+        "subjects": [
+          "profile",
+          "session",
+          "joined",
+          "preserved",
+          "counter"
+        ],
+        "columns": 1
+      },
+      {
+        "title": "Current use and consumption",
+        "subjects": [
+          "prefix",
+          "continuing"
+        ],
+        "columns": 1
+      },
+      {
+        "title": "Publication frontier Contract",
+        "subjects": [
+          "deltaHost",
+          "frontier",
+          "successive",
+          "finalRollback"
+        ],
+        "columns": 1
+      }
+    ]
   },
   "sysml": {
     "source": "dev/sysml/zero-trust-proofs.sysml",
@@ -87,6 +118,22 @@ vars: {d2-config: {data: {figure: |json
       "continuing": {
         "name": "ZeroTrustProofs::continuing",
         "icon": "evidence"
+      },
+      "deltaHost": {
+        "name": "ZeroTrustProofs::deltaHost",
+        "icon": "library"
+      },
+      "frontier": {
+        "name": "ZeroTrustProofs::frontier",
+        "icon": "evidence"
+      },
+      "successive": {
+        "name": "ZeroTrustProofs::successive",
+        "icon": "evidence"
+      },
+      "finalRollback": {
+        "name": "ZeroTrustProofs::finalRollback",
+        "icon": "decision"
       }
     }
   },
@@ -110,3 +157,11 @@ counter -> joined: "Design motivation; not a proof-term dependency"
 joined -> preserved: "Accepted conjunction is a theorem premise"
 preserved -> continuing: "Actual lemma used by Gateway proof"
 prefix -> continuing: "Additional continuing framework premises"
+
+deltaHost: "Delta Host [definition]\nHost.withDeltaReview\nfrontierAt is a required reader\ncommit binds pre / post epochs"
+frontier: "Final frontier [kernel law]\ndelta_final_retains_frontier\ngiven an actual Delta Final\nthen: current epoch + installed frontier"
+successive: "Successive Finals [kernel law]\nsuccessive_delta_finals_\nadvance_review_epoch\ngiven two Finals + monotone forward Run\nthen: resolved review epochs increase"
+finalRollback: "Whole-reader rollback [counterexample]\nrolled_back_frontier_allows_\nsame_final_counterexample\nrestore the complete fixture reader\nthen: the same Final applies again"
+deltaHost -> frontier: "Extract mandatory pre / post bindings"
+frontier -> successive: "Uses delta_final_retains_frontier"
+finalRollback -> successive: "Every-writer monotonicity remains required"

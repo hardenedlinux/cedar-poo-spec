@@ -7,7 +7,7 @@ import {fileURLToPath} from 'node:url';
 import * as v from 'valibot';
 import {connectWasm,type Model} from '@openmbee/opensysml';
 import {chromium,type Browser} from 'playwright';
-import {composeFigure,composeDiagram,modelDiagram,composeHeading,defineDesign,type FigureInput,type FigureComposer} from '@deterministic-engineering/render';
+import {composeFigure,composeHeading,defineDesign,type FigureInput,type FigureComposer} from '@deterministic-engineering/render';
 import {captureOpenSysMLView} from '@deterministic-engineering/render/opensysml';
 import {exportFigure} from '@deterministic-engineering/render/export';
 import {ProjectionSchema,bindView} from './projection';
@@ -15,19 +15,19 @@ import {observeCatalog,catalogSysML,catalogCaptions,CatalogViewSchema} from './c
 import {ProofViewSchema,readProofMap} from './proofs';
 import {captureFiles,repositoryPath,rendererDependency,sha} from './sources';
 import rendererPackage from '@deterministic-engineering/render/package.json' with {type:'json'};
+import {extendPresentationTheme,defaultPresentationTheme} from '@deterministic-engineering/render/presentation-theme';
 import {figureSource,hostSources} from './inputs';
 import {publishFigure} from './artifacts';
+import {bindNotation,composeNotation} from './notation';
 const text=v.pipe(v.string(),v.minLength(1));
 const compose:FigureComposer=context=>{
  if(!context.model)throw new Error('Missing projected SDK model');
- const diagram=composeDiagram(context,modelDiagram(context.model,context.presentation));
+ const diagram=composeNotation(context);
  const notes:ReturnType<typeof composeHeading>[]=[];
  const heading=(text:string,role:string,questionRef?:string)=>{const part=composeHeading(context,{role,text,questionRef});notes.push(part);return part.markup;};
  const header=heading(context.view.title,'title')+context.questions.map(question=>heading(question.text,'question',question.ref)).join('')+heading(context.copy('description'),'note');
- const label=(id:string)=>context.model!.subjects.find(node=>node.id===id)!.label?.split('\n')[0]??id;
- const legend=context.presentation&&typeof context.presentation==='object'&&'legend'in context.presentation&&context.presentation.legend===true?'<section class="legend">'+context.model.relations.map(edge=>'<div data-relation="'+context.text(edge.id)+'">'+heading(edge.label,'heading')+heading(label(edge.src)+' → '+label(edge.dst),'note')+'</div>').join('')+'</section>':'';
  const footer=heading(context.copy('status'),'note');
- return{markup:header+diagram.markup+legend+footer,css:diagram.css+notes.map(note=>note.css).join('\n')+'[data-figure]{padding:var(--gutter)}[data-figure]>svg{margin-bottom:10px}.legend{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:16px 0}.legend svg{margin-bottom:4px}'};
+ return{markup:header+diagram.markup+footer,css:diagram.css+notes.map(note=>note.css).join('\n')+'[data-figure]{padding:var(--gutter)}[data-figure]>svg{margin-bottom:10px}'};
 };
 const root=fileURLToPath(new URL('../',import.meta.url));
 const inputPath=resolve(process.argv[2]??new URL('.generated/lean-catalog.json',import.meta.url).pathname);
@@ -80,7 +80,14 @@ try{browser=await chromium.launch();for(const file of entries){
   if(Object.hasOwn(sources,path))continue;
   sources[path]=await readFile(await repositoryPath(root,path),'utf8');
  }
- const input:FigureInput={...author,sources,references:{...author.references,sdk:capturePath,...(lean?{catalog:lean.path}:{})},model:linked.model,modelSource:{ref:'sdk',modelHash:model.hash,view:projection.view},modelTrace:linked.trace,presentation:{...(typeof author.presentation==='object'&&author.presentation?author.presentation:{}),icons:linked.icons},design:defineDesign({audience:'Cedar Library developers',medium:'repository documentation',message:author.view.title,questionRefs:author.questions.map(question=>question.ref),requiredSubjects:linked.model.subjects.map(node=>node.id),requiredRelations:linked.model.relations.map(edge=>edge.id),focalSubjects:[]})};
+ const metricBindings=v.parse(CatalogViewSchema,metadata).catalog?.counts??{};
+ const metrics=Object.fromEntries(Object.entries(metricBindings).map(([id,binding])=>{
+  const observed=observations.find(item=>item.expression===binding.expression);
+  if(!observed)throw new Error('Missing SDK metric observation: '+id);
+  return[id,Number(observed.value)];
+ }));
+ const presentation=bindNotation(author.presentation,linked.mapping,linked.model,linked.icons,proofClaims,metrics);
+ const input:FigureInput={...author,theme:extendPresentationTheme(author.theme??defaultPresentationTheme,{typography:{labelSize:'13px'}}),sources,references:{...author.references,sdk:capturePath,...(lean?{catalog:lean.path}:{})},model:linked.model,modelSource:{ref:'sdk',modelHash:model.hash,view:projection.view},modelTrace:linked.trace,presentation,design:defineDesign({audience:'Cedar Library developers',medium:'repository documentation',message:author.view.title,questionRefs:author.questions.map(question=>question.ref),requiredSubjects:linked.model.subjects.map(node=>node.id),requiredRelations:linked.model.relations.map(edge=>edge.id),focalSubjects:[]})};
  const figure=composeFigure(input,compose);
  const fontRights:Readonly<Record<string,string>>={Kalam:'2014 Indian Type Foundry (info@indiantypefoundry.com)',Inter:'2016 The Inter Project Authors (https://github.com/rsms/inter)'};
  const fonts=[...new Set(figure.fonts.map(font=>font.family))];

@@ -5,11 +5,11 @@ vars: {d2-config: {data: {figure: |json
 {
   "purpose": "architecture",
   "language": "en",
-  "width": 1920,
+  "width": 1800,
   "primary": "purpose",
   "themes": [
-    "sketchbook",
-    "compact"
+    "editorial",
+    "comfortable"
   ],
   "icons": [
     "engineering"
@@ -20,7 +20,7 @@ vars: {d2-config: {data: {figure: |json
     "obligationRefs": [],
     "evidenceRefs": []
   },
-  "title": "Zero Trust: conditional model proofs",
+  "title": "Zero Trust: requirements, laws and counterexamples",
   "kind": "proof-reading-map",
   "questions": [
     {
@@ -49,15 +49,41 @@ vars: {d2-config: {data: {figure: |json
   },
   "copy": {
     "description": "Definitions, premises, kernel laws and counterexamples are distinct. Each card names its actual Lean declaration.",
-    "status": "Authored proof-reading map. Arrows label premises or lemma use; a conditional theorem is not native Host enforcement."
+    "status": "Reading groups organize the argument. Checked lemma dependencies are validated against Lean proof terms; other links are explanatory model relationships."
   },
   "presentation": {
-    "options": {
-      "elk.direction": "DOWN",
-      "elk.layered.spacing.nodeNodeBetweenLayers": "48"
-    },
-    "edgeLabels": true,
-    "legend": true
+    "notation": "assurance",
+    "columns": 3,
+    "groups": [
+      {
+        "title": "Requirements and refinement",
+        "subjects": [
+          "meanings",
+          "required",
+          "refinement"
+        ],
+        "columns": 1
+      },
+      {
+        "title": "Current effect and continuing use",
+        "subjects": [
+          "observed",
+          "mediated",
+          "usage",
+          "recovery"
+        ],
+        "columns": 1
+      },
+      {
+        "title": "Forward history and retirement",
+        "subjects": [
+          "monotone",
+          "retired",
+          "rollback"
+        ],
+        "columns": 1
+      }
+    ]
   },
   "sysml": {
     "source": "dev/sysml/zero-trust-proofs.sysml",

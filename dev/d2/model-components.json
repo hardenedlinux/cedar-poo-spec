@@ -8,21 +8,22 @@
     "CedarPooSpec/Cloud/README.org": "a6d5a30acf136506b313dff1121cdfdfd0bd5330fbf34e0bda3b5d8c6b19ee08",
     "CedarPooSpec/Data/README.org": "b4f3e0ec993fe58f926ca5b5a195171fa8f12e6f9192e09ac260a00927e0dc0c",
     "CedarPooSpec/Functional/README.org": "31dfe979d62c2a65df9446631fb6bc80b72bfc3bc10399efe0de540ea3cc0385",
-    "CedarPooSpec/Gateway/README.org": "fd6fa2d729f2d5e67cd8ffb4551cb0d88c947152ebace4f895b593754fe3b931",
+    "CedarPooSpec/Gateway/README.org": "ceefb16f8436c8831a37ca5c59c6174822f4afbca51af6aeb9616c76a93dfe6a",
     "CedarPooSpec/Governance/README.org": "7198754819ff70820dc4c0c1394957d506bdb305ebfd881ae526d901256872c1",
     "CedarPooSpec/Pseudonymization/README.org": "389ef357ad2d9efd79da03148883fe5ee35a5da832ed012b265c98ea32c0b4f2",
-    "CedarPooSpec/ZeroTrust/README.org": "66ec49adc9eb26cd70d13c59ed8a53d563a7fe9143b4255b97b2d2ccdb93be3e",
+    "CedarPooSpec/ZeroTrust/README.org": "92b9ef0b0ff4c0be55b8e207b993debdad077fef1daa297fe040fea13222908f",
     "dev/.generated/model-components-sdk.json": "c6ce5891a562db16dfeb81066d31f6970341215b59d80e6872edc7911b84059b",
     "dev/artifacts.ts": "ca1096947536fbdbd5da5cbf1ce5c6f57521bd4a7b135233285dfe8fcff9859d",
     "dev/bun.lock": "2b7060a881aad9312d122f6d01146ef78c207b3c95254aa66b7b57a9eede5acd",
     "dev/catalog.ts": "6d65a91afcddb11de668cc668aa3c6b9076435c02e73a90323c7bf28a991965e",
-    "dev/d2/model-components.d2": "bd1f5e867012261c03c011e9f3f2f60ba5acfa112a27b2cc6354c4a16e0bd91f",
+    "dev/d2/model-components.d2": "29cda28f6019cfb22d182faeaef552212776347683914a2a3275c863d5911330",
     "dev/inputs.ts": "8ccc4bd7ceda2013d5fd86b37d2565beb60f1a8761004d67be77d0c2acd1265e",
-    "dev/Justfile": "a13b2b6ef2cabfdd03841bbdc3da89fa70245071abf15f653c0095ae3defba7b",
+    "dev/Justfile": "364059989486f5babe149b9ab2a570e09fce7abf9f450dc03d47a0f564fa1a10",
+    "dev/notation.ts": "b055ce745406e30035d0b6ebfa71a9ed929aae5c5d60dbf5ab70c9a7e8446251",
     "dev/package.json": "4eb137a6d73d5dfb1e43020c3041e9a42151d480b26d6e01b99ee0ebc2997d90",
     "dev/projection.ts": "3fd049e50798aee9dce54af6cd6e6fccad45fec5ab24b994bb6a8a4b33d7252d",
     "dev/proofs.ts": "7ecca5b114869cbf7ea212bfeb7982c04a3015ea47d0e34a136b022d097d8d2f",
-    "dev/render.ts": "1b07616b3a05602676ea0101546ab66f20fd73943326382fda0ebafef2735201",
+    "dev/render.ts": "41b5ff6dfef93c5be3935198f190337c86454e358ab332eb9d908cf84b6b47e9",
     "dev/sources.ts": "3cd11d095476ee65c9086172773813e6e37e88087c9d01ee962cec59369d7ed8",
     "dev/sysml/architecture.sysml": "8a526add85cfc800df512e08a18eeed84591daaf944fdb350a90a4cd1576efb8"
   },
@@ -162,7 +163,7 @@
     "attribution": {
       "copyright": [
         "2026 hardenedlinux Linux Team and Contributors",
-        "2014 Indian Type Foundry (info@indiantypefoundry.com)"
+        "2016 The Inter Project Authors (https://github.com/rsms/inter)"
       ],
       "license": "Apache-2.0 AND OFL-1.1"
     },
@@ -170,147 +171,369 @@
       "canvas": {
         "x": 0,
         "y": 0,
-        "width": 1120,
-        "height": 937
+        "width": 1600,
+        "height": 929
       },
       "subjects": [
         {
           "id": "n0",
           "role": "default",
-          "x": 177.82435607910156,
-          "y": 739.1906127929688,
-          "width": 287.74957275390625,
-          "height": 121.878173828125
+          "x": 49,
+          "y": 205,
+          "width": 464.65625,
+          "height": 118
         },
         {
           "id": "n1",
           "role": "default",
-          "x": 473.5,
-          "y": 600.5800170898438,
-          "width": 286.1595458984375,
-          "height": 121.61639404296875
+          "x": 49,
+          "y": 335,
+          "width": 464.65625,
+          "height": 116
         },
         {
           "id": "n2",
           "role": "default",
-          "x": 177.9620361328125,
-          "y": 461.7611389160156,
-          "width": 267.3858642578125,
-          "height": 115.65017700195312
-        },
-        {
-          "id": "n3",
-          "role": "default",
-          "x": 696.104736328125,
-          "y": 183.42356872558594,
-          "width": 245.8106689453125,
-          "height": 116.37757873535156
+          "x": 49,
+          "y": 463,
+          "width": 464.65625,
+          "height": 119
         },
         {
           "id": "n4",
           "role": "default",
-          "x": 178.5,
-          "y": 183.6358184814453,
-          "width": 226.45449829101562,
-          "height": 115.79417419433594
+          "x": 567.65625,
+          "y": 205,
+          "width": 464.671875,
+          "height": 119
         },
         {
           "id": "n5",
           "role": "default",
-          "x": 428.0575866699219,
-          "y": 183.3423309326172,
-          "width": 244.69107055664062,
-          "height": 115.78330993652344
+          "x": 567.65625,
+          "y": 336,
+          "width": 464.671875,
+          "height": 119
         },
         {
           "id": "n6",
           "role": "default",
-          "x": 467.981689453125,
-          "y": 461.2838439941406,
-          "width": 270.83837890625,
-          "height": 116.17630004882812
+          "x": 567.65625,
+          "y": 467,
+          "width": 464.671875,
+          "height": 119
+        },
+        {
+          "id": "n3",
+          "role": "default",
+          "x": 567.65625,
+          "y": 598,
+          "width": 464.671875,
+          "height": 119
         },
         {
           "id": "n7",
           "role": "default",
-          "x": 178.35691833496094,
-          "y": 323,
-          "width": 250.7274932861328,
-          "height": 115.31634521484375
+          "x": 567.65625,
+          "y": 729,
+          "width": 464.671875,
+          "height": 119
         },
         {
           "id": "n8",
           "role": "default",
-          "x": 452.5,
-          "y": 322.5283203125,
-          "width": 262.4124755859375,
-          "height": 116.208740234375
+          "x": 1086.328125,
+          "y": 205,
+          "width": 464.65625,
+          "height": 119
         },
         {
           "id": "n9",
           "role": "default",
-          "x": 177.858642578125,
-          "y": 600.570068359375,
-          "width": 275.9060363769531,
-          "height": 120.98272705078125
+          "x": 1086.328125,
+          "y": 336,
+          "width": 464.65625,
+          "height": 119
         }
       ],
       "relations": [],
       "headings": [
         {
           "role": "title",
-          "x": 20,
-          "y": 20,
-          "width": 1080,
-          "height": 48
+          "x": 32,
+          "y": 32,
+          "width": 1536,
+          "height": 37
         },
         {
           "role": "question",
-          "x": 20,
-          "y": 78,
-          "width": 1080,
+          "x": 32,
+          "y": 79,
+          "width": 1536,
           "height": 34
         },
         {
           "role": "note",
-          "x": 20,
-          "y": 122,
-          "width": 1080,
-          "height": 27
+          "x": 32,
+          "y": 123,
+          "width": 1536,
+          "height": 22
+        },
+        {
+          "role": "heading",
+          "x": 49,
+          "y": 172,
+          "width": 464.65625,
+          "height": 23
+        },
+        {
+          "role": "heading",
+          "x": 64,
+          "y": 220,
+          "width": 434.65625,
+          "height": 44
         },
         {
           "role": "note",
-          "x": 20,
-          "y": 880,
-          "width": 1080,
-          "height": 27
+          "x": 64,
+          "y": 264,
+          "width": 434.65625,
+          "height": 22
+        },
+        {
+          "role": "note",
+          "x": 64,
+          "y": 286,
+          "width": 434.65625,
+          "height": 22
+        },
+        {
+          "role": "heading",
+          "x": 64,
+          "y": 350,
+          "width": 434.65625,
+          "height": 42
+        },
+        {
+          "role": "note",
+          "x": 64,
+          "y": 392,
+          "width": 434.65625,
+          "height": 22
+        },
+        {
+          "role": "note",
+          "x": 64,
+          "y": 414,
+          "width": 434.65625,
+          "height": 22
+        },
+        {
+          "role": "heading",
+          "x": 64,
+          "y": 478,
+          "width": 434.65625,
+          "height": 45
+        },
+        {
+          "role": "note",
+          "x": 64,
+          "y": 523,
+          "width": 434.65625,
+          "height": 22
+        },
+        {
+          "role": "note",
+          "x": 64,
+          "y": 545,
+          "width": 434.65625,
+          "height": 22
+        },
+        {
+          "role": "heading",
+          "x": 567.65625,
+          "y": 172,
+          "width": 464.671875,
+          "height": 23
+        },
+        {
+          "role": "heading",
+          "x": 582.65625,
+          "y": 220,
+          "width": 434.671875,
+          "height": 45
+        },
+        {
+          "role": "note",
+          "x": 582.65625,
+          "y": 265,
+          "width": 434.671875,
+          "height": 22
+        },
+        {
+          "role": "note",
+          "x": 582.65625,
+          "y": 287,
+          "width": 434.671875,
+          "height": 22
+        },
+        {
+          "role": "heading",
+          "x": 582.65625,
+          "y": 351,
+          "width": 434.671875,
+          "height": 45
+        },
+        {
+          "role": "note",
+          "x": 582.65625,
+          "y": 396,
+          "width": 434.671875,
+          "height": 22
+        },
+        {
+          "role": "note",
+          "x": 582.65625,
+          "y": 418,
+          "width": 434.671875,
+          "height": 22
+        },
+        {
+          "role": "heading",
+          "x": 582.65625,
+          "y": 482,
+          "width": 434.671875,
+          "height": 45
+        },
+        {
+          "role": "note",
+          "x": 582.65625,
+          "y": 527,
+          "width": 434.671875,
+          "height": 22
+        },
+        {
+          "role": "note",
+          "x": 582.65625,
+          "y": 549,
+          "width": 434.671875,
+          "height": 22
+        },
+        {
+          "role": "heading",
+          "x": 582.65625,
+          "y": 613,
+          "width": 434.671875,
+          "height": 45
+        },
+        {
+          "role": "note",
+          "x": 582.65625,
+          "y": 658,
+          "width": 434.671875,
+          "height": 22
+        },
+        {
+          "role": "note",
+          "x": 582.65625,
+          "y": 680,
+          "width": 434.671875,
+          "height": 22
+        },
+        {
+          "role": "heading",
+          "x": 582.65625,
+          "y": 744,
+          "width": 434.671875,
+          "height": 45
+        },
+        {
+          "role": "note",
+          "x": 582.65625,
+          "y": 789,
+          "width": 434.671875,
+          "height": 22
+        },
+        {
+          "role": "note",
+          "x": 582.65625,
+          "y": 811,
+          "width": 434.671875,
+          "height": 22
+        },
+        {
+          "role": "heading",
+          "x": 1086.328125,
+          "y": 172,
+          "width": 464.65625,
+          "height": 23
+        },
+        {
+          "role": "heading",
+          "x": 1101.328125,
+          "y": 220,
+          "width": 434.65625,
+          "height": 45
+        },
+        {
+          "role": "note",
+          "x": 1101.328125,
+          "y": 265,
+          "width": 434.65625,
+          "height": 22
+        },
+        {
+          "role": "note",
+          "x": 1101.328125,
+          "y": 287,
+          "width": 434.65625,
+          "height": 22
+        },
+        {
+          "role": "heading",
+          "x": 1101.328125,
+          "y": 351,
+          "width": 434.65625,
+          "height": 45
+        },
+        {
+          "role": "note",
+          "x": 1101.328125,
+          "y": 396,
+          "width": 434.65625,
+          "height": 22
+        },
+        {
+          "role": "note",
+          "x": 1101.328125,
+          "y": 418,
+          "width": 434.65625,
+          "height": 22
+        },
+        {
+          "role": "note",
+          "x": 32,
+          "y": 865,
+          "width": 1536,
+          "height": 22
         }
       ]
     },
     "canvas": {
-      "background": "rgb(250, 247, 238)",
+      "background": "rgb(250, 250, 247)",
       "transparent": false
     },
     "readability": {
-      "minimumTextSize": 12,
-      "samples": 35,
+      "minimumTextSize": 13,
+      "samples": 38,
       "requiredMinimum": 12
     },
-    "inputSHA256": "88930511def7c4f140beaa7faa467f7ff11b68b78a48b004b0a773666e7e1a8a",
-    "scenes": [
-      {
-        "inputSHA256": "b371b5b26dcbcba234f8bbdcfd7a35ec56b8e29e9569178e7062765811be850e",
-        "layoutSHA256": "247803d29825952be1f5a1c64dd0d2fa8e118580d7765225cf5e4f55ddd73a57",
-        "nodes": 10,
-        "edges": 0,
-        "milliseconds": 265.10333300000093
-      }
-    ],
+    "inputSHA256": "88883609f9b0d0dbc2a69a55e7c29194e27866182a923bfdbc921c25e72de21f",
+    "scenes": [],
     "svgSHA256": [
-      "2dcc32ad928de05a91fa853ab5c36599615171fe277549a9ba6f8aea7420b916",
-      "4dbbdd37dd28ee2307b642190a55105116f079e05b886a21f639f968dd51c21b"
+      "296fa3120c2639f076706249d055d477cb03d5025b81fea363f98c90dae4f760"
     ],
-    "composedHTMLSHA256": "8c3ff4f84df8864f0738a590361b2fefe034b590106bc271eaf97a630d0b7dca",
+    "composedHTMLSHA256": "d0146ade6f1cdeb1458c237738d8762b51e70a943664bf529791b7a242f082c2",
     "dependencies": {
       "@fontsource/inter": "5.3.0",
       "@fontsource/kalam": "5.3.0",
@@ -323,17 +546,17 @@
       "web-worker": "1.5.0"
     },
     "regionSHA256": {},
-    "htmlSHA256": "8b702181febd9caea1c04613c58c5541810d2dc54b7ece5e47be085df07e4bce",
-    "drawing": "roughjs@4.6.6",
-    "routing": "elkjs@0.12.1",
+    "htmlSHA256": "14ef5409150ebdf5feca84f4928684b0eb07bea20bb3fb3c690f0e56d6e68594",
+    "drawing": "precise",
+    "routing": "none",
     "assetSHA256": {
-      "@fontsource/kalam/files/kalam-latin-400-normal.woff2": "954410601a823f37e219f7930b7446f86afa15621326a7078d56fb9c910135cb",
-      "@fontsource/kalam/files/kalam-latin-700-normal.woff2": "252063af6ade8b9a744cde4ddad0fc21ea53b8ba711eed121a0c2e8610ea9c93"
+      "@fontsource/inter/files/inter-latin-700-normal.woff2": "6f56409fd3d64bb85f7d070bce20749db2d66b6d63cec586cc22d1c761be2491",
+      "@fontsource/inter/files/inter-latin-400-normal.woff2": "8909904ab6c872eb994093482a88a28eca2cd95912d7b6fecd72103b0dc07edc"
     },
-    "pngSHA256": "3b6c4263bcf53e0d9c6ceec3e4ff82c8973e721a4a0bc7900107bbb5b3e84486",
+    "pngSHA256": "9459a5694454f26fad54a00cc6202175891be5d0385bef6cd1ef1bc889b5168d",
     "browser": "156.0.8078.4",
-    "width": 1680,
-    "height": 1406,
+    "width": 2400,
+    "height": 1394,
     "scale": 1.5,
     "bounds": {}
   }

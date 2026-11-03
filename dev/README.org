@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 # SPDX-License-Identifier: Apache-2.0
 
-#+title: Lean JSON, SysML and hand-drawn engineering views
+#+title: Source-bound engineering views
 #+language: en
 
 * One development path
@@ -30,10 +30,29 @@ to match an actual SDK connection. Missing, additional or drifting relationships
 refuse. Captions do not replace topology. These are logical specification handoffs,
 not physical networking links or a proof that Lean import boundaries conform.
 
-The installed deterministic-engineering renderer owns typed composition, font
-measurement, ELK layout, Rough.js strokes and PNG/SVG/HTML exports. Long connection
-labels become a readable source-bound legend; actual text must remain at least
-12 CSS pixels. This local condition does not assert aesthetic acceptance.
+The installed renderer owns vector annotations, declared surfaces, measured
+text and PNG/SVG/HTML export. This project selects a notation from the question
+being answered. It no longer sends every view through one directed-graph
+compositor. The original 12 CSS pixel readability gate remains in force.
+
+| View | Expression | What it communicates |
+|------+------------+----------------------|
+| Architecture overview | Responsibility regions and interface entries | Library, independent consumers and runtime boundaries; static relationships |
+| Model Components | Grouped capability catalogue | Composition/control, operation/information and cross-industry capabilities |
+| Verticals and platforms | Two-column classification | Industry controls and separate platform projections |
+| Zero Trust detail | Compact responsibility table | Which layer supplies semantics, refinement or binding to another |
+| Transport inventory | Quantitative distribution | Native entry counts, checked through the SDK |
+| Model proofs | Assurance panels | Requirements, current-use laws, history laws and counterexamples |
+| Object proofs | Assurance panels | Original-parent composition, continuing use and publication-frontier Contracts |
+
+Reading groups are authored presentation, not additional SysML containment or
+execution stages. Every captured subject still appears exactly once, and every
+captured relationship stays visible as an interface entry, matrix cell or basis
+item. Proof labels distinguish native-checked lemma dependencies from authored
+reading relationships. The bars consume already verified numeric SDK observations,
+not numbers parsed from prose. No industry/platform coverage cross-product is
+invented. Temporal flow or sequence notation belongs to a view with actual
+ordered events; these static responsibility and proof views do not assert one.
 
 * Distinct model scopes
 
@@ -121,8 +140,10 @@ carry in-file SPDX headers. =../LICENSES= contains the canonical licenses this d
 The host discovers top-level =d2/*.d2= declarations; it contains no figure-name
 switch. Questions, themes, icons, layout options and model/name bindings stay in
 D2. The existing Render Library owns D2 compilation, SDK display projection,
-ELK, font measurement, Rough.js and output serialization. The local composer
-adds only Cedar's heading/legend composition; it implements no layout solver.
+ELK, font measurement, Rough.js and output serialization. The local composer selects responsibility regions, catalogues, compact
+relationship tables, quantity charts or assurance panels from each view's
+question. Browser grid/table layout and native vector annotations express these
+structures; no replacement layout solver or universal flow template is added.
 
 The finite catalog categories and format 2 describe the existing Lean wire
 contract, not a second policy parser or version registry. Source pools remain

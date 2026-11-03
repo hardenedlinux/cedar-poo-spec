@@ -5,11 +5,11 @@ vars: {d2-config: {data: {figure: |json
 {
   "purpose": "architecture",
   "language": "en",
-  "width": 1120,
+  "width": 1600,
   "primary": "purpose",
   "themes": [
-    "sketchbook",
-    "compact"
+    "editorial",
+    "comfortable"
   ],
   "icons": [
     "engineering"
@@ -20,7 +20,7 @@ vars: {d2-config: {data: {figure: |json
     "obligationRefs": [],
     "evidenceRefs": []
   },
-  "title": "Reusable model Components",
+  "title": "Composable capability inventory",
   "kind": "responsibility-map",
   "questions": [
     {
@@ -52,12 +52,38 @@ vars: {d2-config: {data: {figure: |json
     "status": "An inventory of implemented library families, not a claim that every profile selects every Component."
   },
   "presentation": {
-    "options": {
-      "elk.algorithm": "box",
-      "elk.aspectRatio": "1.8"
-    },
-    "edgeLabels": false,
-    "legend": false
+    "notation": "catalogue",
+    "columns": 3,
+    "groups": [
+      {
+        "title": "Composition and continuous control",
+        "subjects": [
+          "functional",
+          "zeroTrust",
+          "authorization"
+        ],
+        "columns": 1
+      },
+      {
+        "title": "Operation and information controls",
+        "subjects": [
+          "admission",
+          "governance",
+          "gateway",
+          "pseudonymization",
+          "data"
+        ],
+        "columns": 1
+      },
+      {
+        "title": "Cross-industry capabilities",
+        "subjects": [
+          "cloud",
+          "agenticAI"
+        ],
+        "columns": 1
+      }
+    ]
   },
   "sysml": {
     "source": "dev/sysml/architecture.sysml",

@@ -5,11 +5,11 @@ vars: {d2-config: {data: {figure: |json
 {
   "purpose": "architecture",
   "language": "en",
-  "width": 1120,
+  "width": 1280,
   "primary": "purpose",
   "themes": [
-    "sketchbook",
-    "compact"
+    "editorial",
+    "comfortable"
   ],
   "icons": [
     "engineering"
@@ -46,12 +46,26 @@ vars: {d2-config: {data: {figure: |json
     "status": "Vehicle, procurement and other scenario families remain Examples; this view does not invent industry implementations."
   },
   "presentation": {
-    "options": {
-      "elk.algorithm": "box",
-      "elk.aspectRatio": "1.8"
-    },
-    "edgeLabels": false,
-    "legend": false
+    "notation": "catalogue",
+    "columns": 2,
+    "groups": [
+      {
+        "title": "Implemented industry controls",
+        "subjects": [
+          "health",
+          "finance"
+        ],
+        "columns": 1
+      },
+      {
+        "title": "Platform-specific projections",
+        "subjects": [
+          "aws",
+          "google"
+        ],
+        "columns": 1
+      }
+    ]
   },
   "sysml": {
     "source": "dev/sysml/architecture.sysml",

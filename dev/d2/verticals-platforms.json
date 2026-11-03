@@ -10,13 +10,14 @@
     "dev/artifacts.ts": "ca1096947536fbdbd5da5cbf1ce5c6f57521bd4a7b135233285dfe8fcff9859d",
     "dev/bun.lock": "2b7060a881aad9312d122f6d01146ef78c207b3c95254aa66b7b57a9eede5acd",
     "dev/catalog.ts": "6d65a91afcddb11de668cc668aa3c6b9076435c02e73a90323c7bf28a991965e",
-    "dev/d2/verticals-platforms.d2": "e81ccf945900c7a6fa0ffc08aca2119d8ea23245db03a2e576b08d27f2b10e03",
+    "dev/d2/verticals-platforms.d2": "87b40cb7344bf851928342f069c473071096fcc9c9f40e7ce54b822667b88e77",
     "dev/inputs.ts": "8ccc4bd7ceda2013d5fd86b37d2565beb60f1a8761004d67be77d0c2acd1265e",
-    "dev/Justfile": "a13b2b6ef2cabfdd03841bbdc3da89fa70245071abf15f653c0095ae3defba7b",
+    "dev/Justfile": "364059989486f5babe149b9ab2a570e09fce7abf9f450dc03d47a0f564fa1a10",
+    "dev/notation.ts": "b055ce745406e30035d0b6ebfa71a9ed929aae5c5d60dbf5ab70c9a7e8446251",
     "dev/package.json": "4eb137a6d73d5dfb1e43020c3041e9a42151d480b26d6e01b99ee0ebc2997d90",
     "dev/projection.ts": "3fd049e50798aee9dce54af6cd6e6fccad45fec5ab24b994bb6a8a4b33d7252d",
     "dev/proofs.ts": "7ecca5b114869cbf7ea212bfeb7982c04a3015ea47d0e34a136b022d097d8d2f",
-    "dev/render.ts": "1b07616b3a05602676ea0101546ab66f20fd73943326382fda0ebafef2735201",
+    "dev/render.ts": "41b5ff6dfef93c5be3935198f190337c86454e358ab332eb9d908cf84b6b47e9",
     "dev/sources.ts": "3cd11d095476ee65c9086172773813e6e37e88087c9d01ee962cec59369d7ed8",
     "dev/sysml/architecture.sysml": "8a526add85cfc800df512e08a18eeed84591daaf944fdb350a90a4cd1576efb8"
   },
@@ -90,7 +91,7 @@
     "attribution": {
       "copyright": [
         "2026 hardenedlinux Linux Team and Contributors",
-        "2014 Indian Type Foundry (info@indiantypefoundry.com)"
+        "2016 The Inter Project Authors (https://github.com/rsms/inter)"
       ],
       "license": "Apache-2.0 AND OFL-1.1"
     },
@@ -98,99 +99,188 @@
       "canvas": {
         "x": 0,
         "y": 0,
-        "width": 1120,
-        "height": 798
+        "width": 1280,
+        "height": 536
       },
       "subjects": [
         {
           "id": "n0",
           "role": "default",
-          "x": 422.8243408203125,
-          "y": 322.19061279296875,
-          "width": 264.8077392578125,
-          "height": 121.878173828125
+          "x": 49,
+          "y": 205,
+          "width": 564,
+          "height": 119
         },
         {
           "id": "n1",
           "role": "default",
-          "x": 423.5,
-          "y": 461.5800476074219,
-          "width": 275.66265869140625,
-          "height": 121.61636352539062
+          "x": 49,
+          "y": 336,
+          "width": 564,
+          "height": 119
         },
         {
           "id": "n2",
           "role": "default",
-          "x": 422.9620361328125,
-          "y": 183.76113891601562,
-          "width": 260.265869140625,
-          "height": 115.65017700195312
+          "x": 667,
+          "y": 205,
+          "width": 564,
+          "height": 119
         },
         {
           "id": "n3",
           "role": "default",
-          "x": 423.104736328125,
-          "y": 600.423583984375,
-          "width": 274.67724609375,
-          "height": 116.3775634765625
+          "x": 667,
+          "y": 336,
+          "width": 564,
+          "height": 119
         }
       ],
       "relations": [],
       "headings": [
         {
           "role": "title",
-          "x": 20,
-          "y": 20,
-          "width": 1080,
-          "height": 48
+          "x": 32,
+          "y": 32,
+          "width": 1216,
+          "height": 37
         },
         {
           "role": "question",
-          "x": 20,
-          "y": 78,
-          "width": 1080,
+          "x": 32,
+          "y": 79,
+          "width": 1216,
           "height": 34
         },
         {
           "role": "note",
-          "x": 20,
-          "y": 122,
-          "width": 1080,
-          "height": 27
+          "x": 32,
+          "y": 123,
+          "width": 1216,
+          "height": 22
+        },
+        {
+          "role": "heading",
+          "x": 49,
+          "y": 172,
+          "width": 564,
+          "height": 23
+        },
+        {
+          "role": "heading",
+          "x": 64,
+          "y": 220,
+          "width": 534,
+          "height": 45
         },
         {
           "role": "note",
-          "x": 20,
-          "y": 741,
-          "width": 1080,
-          "height": 27
+          "x": 64,
+          "y": 265,
+          "width": 534,
+          "height": 22
+        },
+        {
+          "role": "note",
+          "x": 64,
+          "y": 287,
+          "width": 534,
+          "height": 22
+        },
+        {
+          "role": "heading",
+          "x": 64,
+          "y": 351,
+          "width": 534,
+          "height": 45
+        },
+        {
+          "role": "note",
+          "x": 64,
+          "y": 396,
+          "width": 534,
+          "height": 22
+        },
+        {
+          "role": "note",
+          "x": 64,
+          "y": 418,
+          "width": 534,
+          "height": 22
+        },
+        {
+          "role": "heading",
+          "x": 667,
+          "y": 172,
+          "width": 564,
+          "height": 23
+        },
+        {
+          "role": "heading",
+          "x": 682,
+          "y": 220,
+          "width": 534,
+          "height": 45
+        },
+        {
+          "role": "note",
+          "x": 682,
+          "y": 265,
+          "width": 534,
+          "height": 22
+        },
+        {
+          "role": "note",
+          "x": 682,
+          "y": 287,
+          "width": 534,
+          "height": 22
+        },
+        {
+          "role": "heading",
+          "x": 682,
+          "y": 351,
+          "width": 534,
+          "height": 45
+        },
+        {
+          "role": "note",
+          "x": 682,
+          "y": 396,
+          "width": 534,
+          "height": 22
+        },
+        {
+          "role": "note",
+          "x": 682,
+          "y": 418,
+          "width": 534,
+          "height": 22
+        },
+        {
+          "role": "note",
+          "x": 32,
+          "y": 472,
+          "width": 1216,
+          "height": 22
         }
       ]
     },
     "canvas": {
-      "background": "rgb(250, 247, 238)",
+      "background": "rgb(250, 250, 247)",
       "transparent": false
     },
     "readability": {
-      "minimumTextSize": 12,
-      "samples": 17,
+      "minimumTextSize": 13,
+      "samples": 19,
       "requiredMinimum": 12
     },
-    "inputSHA256": "da873105736a3ed8cc9792ab5de9d467e4ad7fbb7d4aa113284cc44663463b7e",
-    "scenes": [
-      {
-        "inputSHA256": "b17be10ff64f7605949d442d1a1115f2e8d5ab11a936d8aae0cda4782a5ae6d7",
-        "layoutSHA256": "220ef9222adb0ce6d1392c0722d333a50c38bac327d166ce1d923e2adfb768c4",
-        "nodes": 4,
-        "edges": 0,
-        "milliseconds": 99.90491699999984
-      }
-    ],
+    "inputSHA256": "ac01a692c806fa2b1a13e69999d90921aeefe8c7baa9d1b936dd49971dd67117",
+    "scenes": [],
     "svgSHA256": [
-      "522542d29d5a45d04f26a0a57c0131d21dfee9c573193e0e8cd93355e6baa1f5",
-      "6b5e3c7c76f12616be1d28a45782d37c9e431484a4bafd9e0c3f5a29b51a6b2c"
+      "4845e2d7bf87adf4b0d05e7ec2804997ad269ef7bfeaf1786102438d852da218"
     ],
-    "composedHTMLSHA256": "70d8cbf24755ac08482503c6532006411706ef165624c97f5b0a225a2d325c1a",
+    "composedHTMLSHA256": "e6e1b472daef350ef3e8c9ddd411bb887475d7e3abcd9ce179bcac13f47bef09",
     "dependencies": {
       "@fontsource/inter": "5.3.0",
       "@fontsource/kalam": "5.3.0",
@@ -203,17 +293,17 @@
       "web-worker": "1.5.0"
     },
     "regionSHA256": {},
-    "htmlSHA256": "bf575a475a0cd0fe749430a83e11df81c1a81ea2e51c133cd77f15529bcb5bf4",
-    "drawing": "roughjs@4.6.6",
-    "routing": "elkjs@0.12.1",
+    "htmlSHA256": "4a294991aeed94f470d8e47d3aa2accbfb308d1343610dbe4599045622059b03",
+    "drawing": "precise",
+    "routing": "none",
     "assetSHA256": {
-      "@fontsource/kalam/files/kalam-latin-400-normal.woff2": "954410601a823f37e219f7930b7446f86afa15621326a7078d56fb9c910135cb",
-      "@fontsource/kalam/files/kalam-latin-700-normal.woff2": "252063af6ade8b9a744cde4ddad0fc21ea53b8ba711eed121a0c2e8610ea9c93"
+      "@fontsource/inter/files/inter-latin-400-normal.woff2": "8909904ab6c872eb994093482a88a28eca2cd95912d7b6fecd72103b0dc07edc",
+      "@fontsource/inter/files/inter-latin-700-normal.woff2": "6f56409fd3d64bb85f7d070bce20749db2d66b6d63cec586cc22d1c761be2491"
     },
-    "pngSHA256": "873a72cc6884ff0ffc6ac29c3c7155e357cbed65e82b33d8620626f2beaf3c05",
+    "pngSHA256": "adcd49e900de3f5d05cb6a3a8964028627c7cb308d6391861aa3d5157b694dd2",
     "browser": "156.0.8078.4",
-    "width": 1680,
-    "height": 1197,
+    "width": 1920,
+    "height": 804,
     "scale": 1.5,
     "bounds": {}
   }
