@@ -39,4 +39,5 @@ pub struct Receipt {
     pub commit: Signed,
     pub action: ProviderAction,
     pub facts: Vec<Signed>,
+    pub publications: Vec<Signed>,
 }

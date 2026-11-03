@@ -15,3 +15,6 @@ mod allocation;
 
 #[cfg(feature = "gateway")]
 mod gateway;
+
+#[cfg(feature = "gateway")]
+mod reviewed;

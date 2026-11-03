@@ -342,6 +342,26 @@ impl McpSimulation {
             enforce,
         })
     }
+    pub(crate) fn from_profiles(
+        profiles: Vec<(Case, Simulator)>,
+        enforce: bool,
+    ) -> Result<Self, String> {
+        let mut selected = BTreeMap::new();
+        for (case, simulator) in profiles {
+            if selected
+                .insert(case.name.clone(), (case, simulator))
+                .is_some()
+            {
+                return Err("duplicate reviewed tool name".into());
+            }
+        }
+        Ok(Self {
+            profiles: selected,
+            witness: Witness::simulation(),
+            provider: ProviderJournal::default(),
+            enforce,
+        })
+    }
     pub(crate) fn handle(&mut self, line: &str) -> Option<Value> {
         let request: Rpc = match serde_json::from_str(line) {
             Ok(v) => v,
@@ -448,7 +468,9 @@ fn error(id: Value, code: i64, message: &str) -> Value {
 pub(crate) fn stdio(path: &str, enforce: bool) -> Result<(), String> {
     let manifest = serde_json::from_str(&std::fs::read_to_string(path).map_err(|e| e.to_string())?)
         .map_err(|e| e.to_string())?;
-    let mut server = McpSimulation::new(manifest, enforce)?;
+    serve(McpSimulation::new(manifest, enforce)?)
+}
+pub(crate) fn serve(mut server: McpSimulation) -> Result<(), String> {
     let input = std::io::stdin();
     let mut input = input.lock();
     let mut output = std::io::stdout().lock();
@@ -483,6 +505,8 @@ struct AuditTrust {
     facts: Vec<cedar_poo_runtime::gateway::FactBinding>,
     source_keys: BTreeMap<String, Vec<u8>>,
     observed_at: u64,
+    review_key: Option<Vec<u8>>,
+    approval_key: Option<Vec<u8>>,
 }
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -513,6 +537,14 @@ pub(crate) fn audit(input: &str, trust_path: &str) -> Result<Value, String> {
         log_key,
         facts,
         minimum_size: trust.minimum_size,
+        review_trust: match (trust.review_key, trust.approval_key) {
+            (None, None) => None,
+            (Some(review), Some(approval)) => Some(cedar_poo_runtime::gateway::ReviewTrust {
+                review_key: cedar_poo_runtime::gateway::public_key(&review)?,
+                approval_key: cedar_poo_runtime::gateway::public_key(&approval)?,
+            }),
+            _ => return Err("both independent review and approval keys are required".into()),
+        },
     };
     serde_json::to_value(cedar_poo_runtime::gateway::reconcile(
         &input.journal,

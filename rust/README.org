@@ -261,3 +261,19 @@ source-bound and retires with its declared input uses. Strict policy validation,
 Contexts, Requests and authorizers execute independently. See the
 [[file:../docs/native-schema-representation.org][complete schema/representation audit]] for source identity, parser error ordering,
 allocator observations and the required full-domain proof/replay gates.
+
+* Reviewed nonidentity effects
+
+=just check-reviewed-effects= runs actual Lean C4 Delta analysis and POO Contract
+transitions, then the shared native review/publication/effect simulation for all
+applicable domains. The configured mock review authority and a separate gain
+approval authority bind source, Schema, policy roots, compiled policies and
+epochs. Opaque publication tickets install the actual candidate SDK receipt;
+current effects never reuse the predecessor's Allow decision. Witness precommits
+bind the complete signed publication prefix. Public audit and reviewed recovery
+retain both that prefix and the original consumption/unknown-exposure state.
+
+=cedar-poo-bridge gateway-reviewed-stdio BUNDLE GROUP_INDEX --enforce|--shadow=
+uses trusted startup analyzer output with the existing MCP owner. The
+[[file:../docs/protocol/gateway-effect.org][protocol guide]] documents trust assumptions, refusal coverage and simulation
+limits. No incoming MCP argument can certify a review or approve expansion.

@@ -14,6 +14,7 @@ pub struct Commit {
     pub effect: EffectIdentity,
     pub review: ReviewBinding,
     pub facts: Vec<String>,
+    pub publications: Vec<String>,
 }
 /// Signed witness head; currentness requires an independent minimum size.
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -112,12 +113,13 @@ impl Witness {
         )
         .map(|_| ())
     }
-    pub(super) fn append(
-        &mut self,
-        effect: &EffectIdentity,
-        review: &ReviewBinding,
-        facts: &[FactBinding],
-    ) -> Result<Signed, String> {
+    pub(super) fn append(&mut self, input: PrecommitInput<'_>) -> Result<Signed, String> {
+        let PrecommitInput {
+            effect,
+            review,
+            facts,
+            publications,
+        } = input;
         if !self.available {
             return Err("precommit unavailable".into());
         }
@@ -141,6 +143,10 @@ impl Witness {
             effect: effect.clone(),
             review: review.clone(),
             facts: facts.iter().map(json_sha256).collect::<Result<_, _>>()?,
+            publications: publications
+                .iter()
+                .map(json_sha256)
+                .collect::<Result<_, _>>()?,
         };
         let signed = sign(&entry, &self.key)?;
         let committed_root = json_sha256(&signed)?;
@@ -161,4 +167,11 @@ impl Witness {
         self.entries.push(signed.clone());
         Ok(signed)
     }
+}
+
+pub(super) struct PrecommitInput<'a> {
+    pub(super) effect: &'a EffectIdentity,
+    pub(super) review: &'a ReviewBinding,
+    pub(super) facts: &'a [FactBinding],
+    pub(super) publications: &'a [Signed],
 }

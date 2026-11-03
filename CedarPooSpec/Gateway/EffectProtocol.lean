@@ -95,6 +95,11 @@ structure Outcome where
   unknown : Bool
   deriving DecidableEq, BEq, Repr
 
+def Outcome.toJson (outcome : Outcome) : Lean.Json := Lean.Json.mkObj [
+  ("admitted", Lean.toJson outcome.admitted), ("precommitted", Lean.toJson outcome.precommitted),
+  ("sent", Lean.toJson outcome.sent), ("receipted", Lean.toJson outcome.receipted),
+  ("unknown", Lean.toJson outcome.unknown)]
+
 /-- Pure commit/send/outcome order; every native writer must share its boundary. -/
 def Outcome.resolve (admitted logAvailable crashAfterSend : Bool) : Outcome :=
   let committed := admitted && logAvailable

@@ -41,7 +41,7 @@ private def prepareManifest (value : Manifest) : Encode EncodedJson := do
   let mut fields := [("cases", EncodedJson.array rows.toList),
     ("revision_sources", EncodedJson.nativeObject (bindings.toList.map fun (key, index) => (key, Lean.toJson index)))]
   if let some schema := value.schema then
-    let ref ← schemaRef schema
+    let ref ← schemaRef schema.toSourceSnapshot
     fields := fields ++ [("schema_ref", EncodedJson.native (Lean.toJson ref.index)), ("manifest_kind", EncodedJson.native (Lean.toJson "schema-bound"))]
   else
     fields := fields ++ [("manifest_kind", EncodedJson.native (Lean.toJson "raw"))]

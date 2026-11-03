@@ -24,6 +24,7 @@ pub struct AuditAuthority {
     pub log_key: VerifyingKey,
     pub facts: FactAuthority,
     pub minimum_size: u64,
+    pub review_trust: Option<super::ReviewTrust>,
 }
 /// External auditor entrypoint: no private signer or gateway state is required.
 pub fn reconcile(
@@ -46,6 +47,37 @@ pub fn reconcile(
             let receipt: Receipt = verify(signed, &authority.gateway_key)?;
             let commit: Commit = verify(&receipt.commit, &authority.log_key)?;
             let facts = authority.facts.accepts(&receipt.facts)?;
+            if commit.publications
+                != receipt
+                    .publications
+                    .iter()
+                    .map(json_sha256)
+                    .collect::<Result<Vec<_>, _>>()?
+            {
+                return Err("publication evidence changed".into());
+            }
+            if receipt.publications.is_empty() {
+                let mut identity = commit.review.clone();
+                identity.report.clear();
+                if identity.before != identity.after
+                    || json_sha256(&identity)? != commit.review.report
+                {
+                    return Err("nonidentity effect omitted its publication evidence".into());
+                }
+            }
+            if !receipt.publications.is_empty() {
+                let trust = authority
+                    .review_trust
+                    .as_ref()
+                    .ok_or("missing independent review trust")?;
+                let last = super::verify_publications(
+                    &receipt.publications,
+                    &authority.gateway_key,
+                    trust,
+                )?
+                .ok_or("missing publication prefix")?;
+                super::publication_matches(&commit.review, &last)?;
+            }
             if commit.facts
                 != facts
                     .iter()

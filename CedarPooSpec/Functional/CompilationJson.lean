@@ -31,7 +31,11 @@ def Compilation.case (compiler : Compilation model)
   | .error error => .error (reprStr error)
   | .ok json => .ok {
       name, revision
-      policy := { policies := compiled.policies, snapshot := Transport.SourceSnapshot.ofJson json, aligned := h }
+      policy := {
+        policies := compiled.policies
+        snapshot := Transport.SourceSnapshot.ofJson json
+        aligned := h
+        origin := some { model := model, root := root, compiled := compiled.compiled } }
       request, entities
       response := Thunk.mk fun _ => isAuthorized request entities compiled.policies
       evaluated := rfl }

@@ -310,7 +310,12 @@ def Ready.case (ready : Ready context) (name revision : String)
       policies := publication.policies
       snapshot := publication.snapshot
       aligned := by simpa only [publication.snapshot_value] using publication.serialized
-      identifiers := publication.identifiers }
+      identifiers := publication.identifiers
+      origin := some {
+        model := context.model
+        root := context.root
+        compiled := by simpa only [same] using ready.checked.compiled
+        schema := some context.schema } }
     request, entities
     response := Thunk.mk fun _ => (ready.authorizeLayer request entities).response
     evaluated := by

@@ -125,6 +125,14 @@ impl Simulator {
             owner: Arc::new(()),
             current: Mutex::new(Current {
                 generation: 0,
+                case: case.clone(),
+                schema: schema.cloned(),
+                cedar,
+                release_root: case.revision.clone(),
+                model_source: value_sha256(&case.policies)?,
+                pending_review: None,
+                publications: vec![],
+                publication_unknown: false,
                 effect,
                 review,
                 authority,
@@ -138,7 +146,7 @@ impl Simulator {
             }),
             source_keys: Arc::new(source_keys),
             receipt_key: simulation_key(3),
-            cedar,
+            review_trust: crate::gateway::ReviewTrust::simulation(),
             initial,
         })
     }

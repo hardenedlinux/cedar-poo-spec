@@ -4,6 +4,7 @@
 mod audit;
 mod lineage;
 mod provider;
+mod review;
 mod simulation;
 mod sources;
 mod wire;
@@ -11,10 +12,21 @@ mod witness;
 pub use audit::{AuditAuthority, Reconciliation, reconcile};
 pub use lineage::{Lineage, LineageBatch, LineageEdge, LineageState};
 pub use provider::{ProviderAction, ProviderJournal, Receipt};
-pub use simulation::{EffectIo, Fault, Outcome, PreparedEffect, RecoveryEvidence, Simulator};
+pub use simulation::{
+    EffectIo, Fault, Outcome, PreparedEffect, PublicationTicket, RecoveryEvidence,
+    ReviewSubmission, Simulator,
+};
 pub use sources::FactAuthority;
 pub use wire::{
     EffectIdentity, Envelope, FactBinding, Origin, ReviewBinding, Signed, Version, public_key,
     verify,
 };
 pub use witness::{Checkpoint, Commit, LogSnapshot, Witness, verify_log};
+
+pub use review::{
+    AnalysisKind, GainApproval, PublicationDelivery, PublicationRecord, PublicationView,
+    ReleaseIdentity, ReviewAuthority, ReviewRecord, ReviewTrust, publication_matches,
+    verify_publications,
+};
+
+pub use simulation::ReviewedRecovery;

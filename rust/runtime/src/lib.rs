@@ -44,3 +44,7 @@ pub mod gateway;
 
 #[cfg(feature = "gateway")]
 pub(crate) use canonical::{json_sha256, schema_sha256, value_sha256};
+
+/// Canonical immutable-source digest shared by native simulation fixture consumers.
+#[cfg(feature = "gateway")]
+pub use canonical::json_sha256 as gateway_source_sha256;

@@ -48,6 +48,17 @@ fn run_with_observation(observe: bool) -> Result<(), String> {
     {
         return crate::gateway::stdio(path, mode == "--enforce");
     }
+    #[cfg(feature = "gateway")]
+    if let [command, path, index, mode] = args.as_slice()
+        && command == "gateway-reviewed-stdio"
+        && (mode == "--enforce" || mode == "--shadow")
+    {
+        return crate::reviewed::stdio(
+            path,
+            index.parse::<usize>().map_err(|e| e.to_string())?,
+            mode == "--enforce",
+        );
+    }
     let input_started = (args == ["benchmark-catalog"]).then(std::time::Instant::now);
     let mut input = String::new();
     io::stdin()
@@ -69,6 +80,13 @@ fn dispatch(
     if let [command, path] = args {
         if command == "gateway-replay-catalog" {
             return crate::gateway::replay(
+                input,
+                path,
+                &mut std::io::BufWriter::new(std::io::stdout().lock()),
+            );
+        }
+        if command == "gateway-reviewed-catalog" {
+            return crate::reviewed::replay(
                 input,
                 path,
                 &mut std::io::BufWriter::new(std::io::stdout().lock()),

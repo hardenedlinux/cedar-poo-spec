@@ -27,6 +27,19 @@ jobs:
     - name: Shared evidence, effect protocol and independent reconciliation
       run: just check-effect-protocol
     - run: just check-agent-trace-delta
+  reviewed-effects:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      with:
+        persist-credentials: false
+    - uses: ./.github/actions/setup-verification
+      with:
+        rust: 'true'
+        cvc5: 'true'
+    - name: Actual C4 reviews, bound publications and current effects across all domains
+      run: just check-reviewed-effects
   authorization-delta:
     runs-on: ubuntu-latest
     timeout-minutes: 20

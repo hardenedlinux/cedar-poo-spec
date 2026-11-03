@@ -4,7 +4,8 @@ use serde_json::Value;
 use sha2::{Digest, Sha256};
 use std::io::{self, Write};
 
-pub(crate) fn json_sha256(value: &impl Serialize) -> Result<String, String> {
+/// Hash the existing canonical JSON encoding; a digest alone grants no authority.
+pub fn json_sha256(value: &impl Serialize) -> Result<String, String> {
     let value = serde_json::to_value(value).map_err(|error| error.to_string())?;
     value_sha256(&value)
 }

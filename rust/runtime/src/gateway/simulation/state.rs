@@ -1,5 +1,8 @@
 //! Serialized current-effect admission, owner-bound handles and recovery simulation.
+use super::RegisteredReview;
+use crate::gateway::ReviewTrust;
 use crate::gateway::wire::sign;
+use crate::gateway::witness::PrecommitInput;
 use crate::gateway::{
     AuditAuthority, Commit, EffectIdentity, Envelope, FactAuthority, FactBinding, ProviderJournal,
     Reconciliation, ReviewBinding, Signed, Version, Witness, reconcile, verify,
@@ -86,6 +89,14 @@ impl Outcome {
 #[derive(Clone)]
 pub(super) struct Current {
     pub(super) generation: u64,
+    pub(super) case: Case,
+    pub(super) schema: Option<SchemaSourceJson>,
+    pub(super) cedar: ReplayReceipt,
+    pub(super) release_root: String,
+    pub(super) model_source: String,
+    pub(super) pending_review: Option<RegisteredReview>,
+    pub(super) publications: Vec<Signed>,
+    pub(super) publication_unknown: bool,
     pub(super) effect: EffectIdentity,
     pub(super) review: ReviewBinding,
     pub(super) authority: FactAuthority,
@@ -110,7 +121,7 @@ pub struct Simulator {
     pub(super) current: Mutex<Current>,
     pub(super) source_keys: Arc<BTreeMap<String, SigningKey>>,
     pub(super) receipt_key: SigningKey,
-    pub(super) cedar: ReplayReceipt,
+    pub(super) review_trust: ReviewTrust,
     pub(super) initial: Envelope,
 }
 pub(super) fn field_inventory(case: &Case) -> Result<BTreeMap<String, String>, String> {
@@ -155,14 +166,26 @@ impl Simulator {
         schema: Option<&SchemaSourceJson>,
         evidence: RecoveryEvidence<'_>,
     ) -> Result<Self, String> {
+        let recovered = Self::new(case, schema)?;
+        for signed in &evidence.witness.entries {
+            let commit: Commit = verify(signed, &evidence.witness.verifying_key())?;
+            if commit.effect.operation == recovered.initial.effect.operation
+                && !commit.publications.is_empty()
+            {
+                return Err("reviewed effects require reviewed recovery".into());
+            }
+        }
+        recovered.restore_effects(evidence)?;
+        Ok(recovered)
+    }
+    pub(super) fn restore_effects(&self, evidence: RecoveryEvidence<'_>) -> Result<(), String> {
         let RecoveryEvidence {
             witness,
             receipts,
             provider,
         } = evidence;
         witness.verify_history()?;
-        let recovered = Self::new(case, schema)?;
-        let operation = recovered.initial.effect.operation.clone();
+        let operation = self.initial.effect.operation.clone();
         let mut committed = false;
         for entry in &witness.entries {
             let commit: Commit = verify(entry, &witness.verifying_key())?;
@@ -175,29 +198,29 @@ impl Simulator {
                 provider,
                 receipts,
                 &witness.snapshot(),
-                &recovered.audit_authority(witness),
+                &self.audit_authority(witness),
             );
             let independently_matched = report == Reconciliation::default()
                 && provider
                     .actions
                     .iter()
-                    .any(|action| action.effect == recovered.initial.effect);
+                    .any(|action| action.effect == self.initial.effect);
             let complete = independently_matched
                 && receipts.iter().any(|signed| {
-                    let Ok(receipt) = verify::<Receipt>(signed, &recovered.verifying_key()) else {
+                    let Ok(receipt) = verify::<Receipt>(signed, &self.verifying_key()) else {
                         return false;
                     };
-                    receipt.action.effect == recovered.initial.effect
+                    receipt.action.effect == self.initial.effect
                         && witness.entries.iter().any(|entry| {
                             entry.payload == receipt.commit.payload
                                 && entry.signature == receipt.commit.signature
                         })
                 });
-            let mut current = recovered.current.lock().map_err(|_| "poisoned authority")?;
+            let mut current = self.current.lock().map_err(|_| "poisoned authority")?;
             current.spent = true;
             current.unknown = !complete;
         }
-        Ok(recovered)
+        Ok(())
     }
     /// A resource writer invalidates mediation until fresh source preparation.
     pub fn replace_resource(&self, object: String, generation: u64) -> Result<(), String> {
@@ -224,12 +247,18 @@ impl Simulator {
             ),
             source_keys: Arc::clone(&self.source_keys),
             receipt_key: self.receipt_key.clone(),
-            cedar: self.cedar.clone(),
+            review_trust: self.review_trust.clone(),
             initial: self.initial.clone(),
         })
     }
     pub fn envelope(&self) -> Envelope {
-        self.initial.clone()
+        let current = self.current.lock().expect("poisoned simulation authority");
+        Envelope {
+            version: self.initial.version.clone(),
+            effect: current.effect.clone(),
+            review: current.review.clone(),
+            facts: self.initial.facts.clone(),
+        }
     }
     pub fn fact_authority(&self) -> FactAuthority {
         self.current
@@ -245,7 +274,12 @@ impl Simulator {
             log_key: witness.verifying_key(),
             facts: self.fact_authority(),
             minimum_size: witness.minimum_size(),
+            review_trust: Some(self.review_trust.clone()),
         }
+    }
+    /// Public trust material for independent review and approval verification.
+    pub fn review_trust(&self) -> ReviewTrust {
+        self.review_trust.clone()
     }
     pub fn verifying_key(&self) -> VerifyingKey {
         *self.receipt_key.verifying_key()
@@ -272,7 +306,8 @@ impl Simulator {
                     && grant.max_uses == 1 && grant.used == 1)
             || current.unknown
             || current.spent
-            || !self.cedar.error_free_allow
+            || current.publication_unknown
+            || !current.cedar.error_free_allow
         {
             return Err("current effect admission refused".into());
         }
@@ -318,7 +353,12 @@ impl Simulator {
             receipted: false,
             unknown: false,
         };
-        let Ok(commit) = witness.append(&current.effect, &current.review, &facts) else {
+        let Ok(commit) = witness.append(PrecommitInput {
+            effect: &current.effect,
+            review: &current.review,
+            facts: &facts,
+            publications: &current.publications,
+        }) else {
             return Ok((outcome, None));
         };
         current.generation = next;
@@ -343,6 +383,7 @@ impl Simulator {
                 commit,
                 action,
                 facts: envelope.facts.clone(),
+                publications: current.publications.clone(),
             },
             &self.receipt_key,
         ) {

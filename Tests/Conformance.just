@@ -212,9 +212,35 @@ check-effect-protocol: check-functional-catalog
     timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 --run Productions/Gateway/EffectProtocolMain.lean
     timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 --run Productions/Gateway/CurrentUseMain.lean
     cargo test --locked -p cedar-poo-runtime --features gateway --lib gateway::
-    timeout --signal=TERM --kill-after=3s 120s cargo test --locked -p cedar-poo-bridge --features gateway --test gateway -- --include-ignored
+    timeout --signal=TERM --kill-after=3s 120s cargo test --locked -p cedar-poo-bridge --features gateway --test gateway gateway:: -- --include-ignored
     cargo build --locked --release -p cedar-poo-bridge --features gateway
     mkdir -p .lake/build/resources
     timeout --signal=TERM --kill-after=3s 120s uv run --project python --package cedar-poo-py-test --locked python -m cedar_poo_py_test.resources --timeout-seconds 120 --output .lake/build/resources/gateway-effect.json rust/target/release/cedar-poo-bridge gateway-replay-catalog .lake/build/gateway-effect-protocol.json < .lake/build/functional-catalog.json > .lake/build/gateway-effect-results.json
     jq -e '.returncode == 0 and .termination_reason == null and .owned_group_quiesced and .resource_observation_complete and .timeout_seconds == 120' .lake/build/resources/gateway-effect.json > /dev/null
     jq -c '{format_version,catalogue_entries,outcome_count,applicable_entries:(.covered_entries|length),data_or_artifact_entries}' .lake/build/gateway-effect-results.json
+
+# Actual C4 nonidentity review -> publication -> current SDK effect, all domains.
+[script("bash")]
+check-reviewed-effects: check-functional-catalog
+    set -euo pipefail
+    lake build Tests.Gateway.ReviewedEffect Examples.Gateway.ReviewedEffects
+    mkdir -p .lake/build/reviewed-effects .lake/build/resources
+    jq -r '.entries | keys[]' .lake/build/functional-catalog.json > .lake/build/reviewed-effects/entries.txt
+    status=0
+    while IFS= read -r entry; do
+        if timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 --run Examples/Gateway/ReviewedEffects.lean "$entry" > ".lake/build/reviewed-effects/$entry.json" 2> ".lake/build/reviewed-effects/$entry.log"; then
+            echo "REVIEWED-PRODUCER-OK: $entry"
+        else
+            code=$?
+            echo "REVIEWED-PRODUCER-FAILED: $entry; status=$code" >&2
+            cat ".lake/build/reviewed-effects/$entry.log" >&2
+            status=1
+        fi
+    done < .lake/build/reviewed-effects/entries.txt
+    test "$status" -eq 0
+    cargo test --locked -p cedar-poo-bridge --features gateway --lib reviewed -- --include-ignored
+    timeout --signal=TERM --kill-after=3s 120s cargo test --locked -p cedar-poo-bridge --features gateway --test gateway reviewed:: -- --include-ignored
+    cargo build --locked --release -p cedar-poo-bridge --features gateway
+    timeout --signal=TERM --kill-after=3s 120s uv run --project python --package cedar-poo-py-test --locked python -m cedar_poo_py_test.resources --timeout-seconds 120 --output .lake/build/resources/gateway-reviewed-effects.json rust/target/release/cedar-poo-bridge gateway-reviewed-catalog .lake/build/reviewed-effects < .lake/build/functional-catalog.json > .lake/build/gateway-reviewed-effects.jsonl
+    jq -e '.returncode == 0 and .termination_reason == null and .owned_group_quiesced and .resource_observation_complete and .timeout_seconds == 120' .lake/build/resources/gateway-reviewed-effects.json > /dev/null
+    tail -n 1 .lake/build/gateway-reviewed-effects.jsonl | jq -c .

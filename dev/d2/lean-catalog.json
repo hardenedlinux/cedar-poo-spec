@@ -1,7 +1,7 @@
 {
   "entry": "dev/d2/lean-catalog.d2",
   "sources": {
-    "CedarPooSpec/Transport/SourceCatalog.lean": "cd42b311663736f3b31c3bbafbb860b61821fe94778e314181a6ff12ee9a1b38",
+    "CedarPooSpec/Transport/SourceCatalog.lean": "63ceeb81692386922611215aae54e976bf01aff465a0874c5b5d8a1b68214b6d",
     "dev/.generated/lean-catalog-sdk.json": "753379a05389491ce2c0871239106ba5422fb279c6b12de9670bf05273456abf",
     "dev/.generated/lean-catalog.json": "c6856fdb9e8b2d36407b8605756659e8a1c02fca09ce628bc41c845f0e376657",
     "dev/artifacts.ts": "ca1096947536fbdbd5da5cbf1ce5c6f57521bd4a7b135233285dfe8fcff9859d",
@@ -24,7 +24,7 @@
     "lean-toolchain": "ca5f1f601d34c49079e38d7e7041eb0f2a9c227fbc1df0f404820069a052330c"
   },
   "binaries": {
-    ".lake/build/bin/caseManifestsNative": "9cf0fb5bbde22694b6a446de777d0c6a29f16066b2ecd9d262d73a04d0cc2b01"
+    ".lake/build/bin/caseManifestsNative": "c38cb27fcf23e663f531f720bb718217e5ab1f4496a6561d11757f6302e80a9e"
   },
   "sdk": {
     "modelHash": "665d61c642370cfe88a2c7e787417b4a2d132e45b98c4d2faf82b05cdd669043",
@@ -239,12 +239,12 @@
       "samples": 18,
       "requiredMinimum": 12
     },
-    "inputSHA256": "a181307b4c6267f39abbb54ef684afc8ff19ddfb1897e2ece747bbf09f7baf61",
+    "inputSHA256": "c64f18bf21ea1c65e878a6282f89f1375163334fe4b151326caeb75da03ab17c",
     "scenes": [],
     "svgSHA256": [
-      "0a4d1328138c1ad71f715165c829edeb2add6701a227ca0542de79361b5afde7"
+      "034922554e568a14ccc6e08c9a36515664d35ceec001c196fefc174592b526cf"
     ],
-    "composedHTMLSHA256": "77de3c2275cf059ec01e66558716ed49de378565822934a767adcf5f13e9fda4",
+    "composedHTMLSHA256": "08078234132af023654806521367949041d563e44576eb63141bc50beb2042aa",
     "dependencies": {
       "@fontsource/inter": "5.3.0",
       "@fontsource/kalam": "5.3.0",
@@ -257,7 +257,7 @@
       "web-worker": "1.5.0"
     },
     "regionSHA256": {},
-    "htmlSHA256": "b4b9bd9989b8d9c0a838b02c09d17cc9ca67cf2b12554ef034cb3f95d19b1558",
+    "htmlSHA256": "806c3a4e519b4f02319a620c93e5d6929ee3150e4354f7561d2082eecc3fcce3",
     "drawing": "precise",
     "routing": "none",
     "assetSHA256": {

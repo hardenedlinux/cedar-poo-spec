@@ -218,6 +218,12 @@
           "items": {
             "type": "string"
           }
+        },
+        "publications": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       },
       "required": [
@@ -226,7 +232,8 @@
         "previous",
         "effect",
         "review",
-        "facts"
+        "facts",
+        "publications"
       ],
       "additionalProperties": false
     },
@@ -263,13 +270,20 @@
           "items": {
             "$ref": "#/$defs/signed"
           }
+        },
+        "publications": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/signed"
+          }
         }
       },
       "required": [
         "version",
         "commit",
         "action",
-        "facts"
+        "facts",
+        "publications"
       ],
       "additionalProperties": false
     },
@@ -403,6 +417,148 @@
         "invalid_receipts",
         "invalid_log",
         "unresolved_precommits"
+      ],
+      "additionalProperties": false
+    },
+    "review_record": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "$ref": "#/$defs/version"
+        },
+        "before_root": {
+          "type": "string"
+        },
+        "after_root": {
+          "type": "string"
+        },
+        "before": {
+          "type": "string"
+        },
+        "after": {
+          "type": "string"
+        },
+        "schema": {
+          "type": "string"
+        },
+        "source": {
+          "type": "string"
+        },
+        "epoch": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "analysis": {
+          "enum": [
+            "noGain",
+            "branchGain",
+            "jointGain"
+          ]
+        },
+        "evidence": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "version",
+        "before_root",
+        "after_root",
+        "before",
+        "after",
+        "schema",
+        "source",
+        "epoch",
+        "analysis",
+        "evidence"
+      ],
+      "additionalProperties": false
+    },
+    "gain_approval": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "$ref": "#/$defs/version"
+        },
+        "review": {
+          "type": "string"
+        },
+        "epoch": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        }
+      },
+      "required": [
+        "version",
+        "review",
+        "epoch"
+      ],
+      "additionalProperties": false
+    },
+    "publication_record": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "$ref": "#/$defs/version"
+        },
+        "review": {
+          "$ref": "#/$defs/signed"
+        },
+        "approval": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/signed"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "previous": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "epoch": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "world": {
+          "type": "string"
+        },
+        "policies": {
+          "type": "object",
+          "description": "Compiled Cedar policy JSON; the Cedar SDK owns strict semantic validation."
+        }
+      },
+      "required": [
+        "version",
+        "review",
+        "approval",
+        "previous",
+        "epoch",
+        "world",
+        "policies"
+      ],
+      "additionalProperties": false
+    },
+    "release_identity": {
+      "type": "object",
+      "properties": {
+        "root": {
+          "type": "string"
+        },
+        "source": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "root",
+        "source"
       ],
       "additionalProperties": false
     }

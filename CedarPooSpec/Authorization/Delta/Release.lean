@@ -133,7 +133,7 @@ structure ReleaseState where
   activePolicies : Policies
   executionMode : ExecutionMode
   epoch : Nat
-  deriving BEq, Repr
+  deriving DecidableEq, BEq, Repr
 
 /-- Compare an independently read active release with the exact policy snapshot
 and context epoch used for current admission. This is publication coherence,

@@ -316,3 +316,18 @@ exact effect handles, signed precommits and public reconciliation. The adjacent
 [[file:../../docs/protocol/gateway-effect-v1.schema.json][version 1.0 schema]] describes the wire representation. Run
 =just check-effect-protocol= for the complete applicable-domain matrix,
 cryptographic controls and native MCP/auditor child-process tests.
+
+* Reviewed release to current effect
+
+[[file:ReviewedEffect.lean][ReviewedEffect]] defines the POO Contract around the existing exact
+=ReviewedInteraction.advanceReviewed= successor. Kernel composition laws retain
+its installed policies, actual current Cedar receipt, and the existing
+=PublicationReview.Final= original Contract and Zero Trust premises. They do not
+certify external fact truth or symbolic solver completeness.
+
+The shared [[file:../../Productions/Gateway/ReviewedEffects.lean][Production workload]] preserves original C4 declarations and native Schema.
+It adds a real deny/restore diamond, analyzes each leg, and compares the same
+review/publication/current-effect chain in Rust. Run =just check-reviewed-effects=
+for all-domain replay, independent approval, stale-use refusal, public audit,
+reviewed recovery and actual MCP child processes. See the
+[[file:../../docs/protocol/gateway-effect.org][protocol guide]] for exact authority and physical durability boundaries.

@@ -63,12 +63,37 @@ verifiers share the same 1 MiB payload limit, tested at the exact byte boundary.
 A post-send outcome-signing failure retains unknown exposure and issues no
 complete receipt.
 
-Current catalogue simulation supports identity revisions, whose no-gain law is
-reflexive. Nonidentity review/approval remains owned by existing
-=Authorization.Delta.Release= and =Gateway.PublicationReview=; their full
-existing gain/no-gain, source, frontier and registration tests remain required.
-No incoming envelope can register its own review. This implementation does not
-turn a solver report into ExactCoverage or implement a new policy analyzer.
+Nonidentity activation now uses the existing =Authorization.Delta.Release=
+and =Gateway.PublicationReview= owners in the same shared simulation as current
+effects. [[file:../../CedarPooSpec/Gateway/ReviewedEffect.lean][The reviewed-publication POO Contract]] checks the exact =advanceReviewed=
+successor. Its kernel laws join that successor, the actual installed policies
+and the current typed Cedar receipt. A separate theorem retains the existing
+=PublicationReview.Final= original Contract, registration and Zero Trust
+premises. These are conditional composition laws: authenticated Host facts and
+solver completeness do not follow from them.
+
+Each real Case retains its proof-bound original C4 model/root. =SchemaSource=
+retains the native Schema with an encoding equality proof. These semantic fields
+do not alter the existing wire representation. The Production workload appends
+a fresh C4 diamond that adds an unconditional forbid, then a second diamond
+that removes it on one branch. Original declarations, parent order, edits and
+policy IDs remain intact. The ordinary =Delta.analyzeAndCapture= analyzes both
+legs against the real Schema; the Rust SDK independently replays gain witnesses.
+The simulation's review authority signs this exact analyzer output. A distinct
+mock authority approves expansions, binding the complete signed review and its
+epoch. A caller-supplied classification, approval bit or MCP argument cannot
+supply either authority. This does not turn a solver report into ExactCoverage
+or implement a new policy analyzer.
+
+Registration authenticates the original C4 source, current root/policies,
+Schema, world and epoch, then prepares the actual candidate with the SDK.
+A private owner/generation ticket binds publication to that registration.
+Publication installs the candidate Case and its SDK receipt under the same
+mutex used for current effects, advances the policy epoch, and invalidates old
+prepared handles. The original =AuthorityLedger= consumption is retained.
+Restoring equal policy bytes does not reactivate an old review: the C4 root and
+epoch have advanced. The fixed mock keys are independently assigned to facts,
+review, gain approval, gateway and witness; none are deployment credentials.
 
 * Order, recovery and independent reconciliation
 
@@ -78,10 +103,21 @@ handle and current source/policy/object image under the same deciding mutex.
 The independent witness accepts a signed precommit before the provider journal
 records the simulated effect. A log failure prevents sending. A crash after
 send retains the burn and unknown exposure, with no outcome receipt. A complete
-receipt carries the signed precommit, source evidence and provider observation.
+receipt carries the signed precommit, source evidence, signed publication prefix
+and provider observation. The witness commits the publication digests before
+the effect. The public auditor checks each review, independent expansion
+approval, successor policies and contiguous publication epoch/prefix; it refuses
+missing review trust and nonidentity receipts without their publication history.
 Recovery requires independent witness and outcome/provider records; it cannot
 restart the original operation or convert a missing outcome into success.
-This is an in-memory simulation, not crash-durable storage qualification.
+Publication reply loss and effect outcome loss are separate exposures. A lost
+publication reply leaves the actual successor installed and blocks further use;
+only an exact authenticated prefix read clears that publication exposure. It
+cannot clear an unresolved effect. =recover_reviewed= reconstructs the actual
+policy epoch and complete signed publication history before restoring consumed
+or unresolved effects. Identity recovery refuses to discard a same-operation
+nonidentity history. This is an in-memory simulation, not crash-durable storage
+qualification.
 
 The public auditor needs no private signer. It receives a signed checkpoint,
 public log entries, gateway receipts and independent provider observations.
@@ -110,6 +146,12 @@ match the profile's actual projected request. A supplied envelope is checked;
 otherwise the independent simulated source adapter supplies its own evidence.
 Unmapped tools refuse. Shadow reports =would_deny= and issues neither an
 enforcing receipt nor an effect. Mode is explicit at process startup.
+
+=gateway-reviewed-stdio BUNDLE GROUP_INDEX --enforce|--shadow= loads trusted
+Lean analysis at startup, publishes both real nonidentity revisions, and serves
+the same MCP admission owner with the installed successor. Startup fixtures are
+an administrative input, never =tools/call= arguments. Enforce and shadow child
+processes verify the two-publication receipt and read-only shadow behavior.
 
 The implemented binding follows the official [[https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/stdio][2026-07-28 stdio specification]]:
 newline-delimited JSON-RPC, per-request version/client metadata,
@@ -187,3 +229,48 @@ inside 120 seconds. These are qualification observations, not a stable
 end-to-end speedup, an RSS bound or cold deployment evidence. Raw matrices,
 resource receipts and stderr stay outside Git under the ignored build tree or
 local evidence directory. No CSV or archive is committed.
+
+* Nonidentity qualification
+
+=just check-reviewed-effects= is a separate job in the Zero Trust workflow.
+It keeps all 51 canonical entries and all 1,292 Case instances accounted for.
+The current strict adapter produces 211 actual C4 review groups: 1,253 qualified
+Cases complete 2,506 nonidentity publications, including 208 gain reports.
+There are 39 explicit refusals, including compile-only sources without a
+Schema and malformed strict requests. Raw fixtures with a retained native
+Schema can participate through the new explicit schema-qualified representation;
+the original raw manifests remain unchanged refusal controls. The three
+non-Case data/artifact entries retain their original validation.
+
+For every qualified Case Rust compares publication eligibility without/with
+approval and the complete post-publication effect with the actual Lean result.
+It checks the held deny, stale preparation, wrong-review approval and retired
+review, then independently reconciles the current effect. Native tests add
+signature/source substitutions, foreign/replaced tickets, reply loss, reviewed
+recovery and retained effect exposure. A real stdio child checks that the
+executed receipt is at epoch 9 and includes both publications. The original
+identity protocol matrix and publication/registration corpora remain required.
+No success is inferred from a count alone.
+
+Generation retains each failed entry and refuses the gate; no Case is removed
+to meet the original per-process 120-second bound. Lean owns workload creation,
+Contract evaluation and proof checks; Rust owns typed SDK replay, signature and
+admission assertions. Python only observes the external process and resources.
+Evidence stays in ignored build outputs and CI logs; no raw bundle is committed.
+
+Local complete native observation on 2026-11-03 (Darwin arm64) completed naturally
+in 33.258 seconds, with 31.49 seconds user CPU and 84,246,528 bytes process peak
+RSS. All 1,253 qualified outcomes and 39 refusals were retained, and every
+canonical Case identity was checked for omission, duplication and substitution.
+The 120-second process bound was unchanged. This is one full-chain qualification
+observation, not evidence of a stable performance improvement. Resource output,
+full streamed results, producer stderr and earlier failed controls remain in
+ignored local build outputs. Six native review/recovery/coverage tests and the
+reviewed stdio child complement the original protocol tests.
+
+The retained original 41,619-row protocol run also passed unchanged. Its local
+observation was 102.097 seconds wall, 42.93 seconds user CPU and 28,360,704 bytes
+peak RSS while rendering and other qualification work overlapped. This slower
+wall sample is retained; the observation does not establish which competing
+work caused the wait, or support a speedup claim. It still completed naturally
+inside the unchanged 120-second process boundary.

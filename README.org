@@ -186,7 +186,12 @@ Zero Trust Contract. Its Lean model and optional Rust simulator cover the
 applicable catalogue with signed precommits, outcome receipts and independent
 provider reconciliation. [[file:docs/protocol/gateway-effect-v1.schema.json][Wire schema]] and
 [[file:docs/external-security-audit.org][external research audit]] distinguish simulated guarantees from deployment
-obligations. Validate with =just check-effect-protocol=.
+obligations. Validate with =just check-effect-protocol= and =just check-reviewed-effects=.
+The latter joins actual C4 nonidentity Delta review, separate expansion approval,
+publication and current SDK execution across the catalogue. The
+[[file:CedarPooSpec/Gateway/ReviewedEffect.lean][reviewed-publication Contract and kernel laws]] retain the exact installed
+successor and existing Zero Trust premises; signed publication history is
+checked again by the independent auditor.
 
 * Design and evidence
 
