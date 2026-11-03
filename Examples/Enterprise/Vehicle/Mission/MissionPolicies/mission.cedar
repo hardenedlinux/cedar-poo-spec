@@ -14,7 +14,7 @@ forbid(
   action == Action::"proceed",
   resource
 ) when {
-  !(context.successorMissionFeasible)
+  !context.successorMissionFeasible
 };
 
 // POO policy ID: nominal-route

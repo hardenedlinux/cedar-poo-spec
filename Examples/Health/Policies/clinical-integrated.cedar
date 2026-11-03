@@ -5,7 +5,7 @@ permit(
   action == Action::"read",
   resource
 ) when {
-  ((context.breakGlassGranted) && ((context.sessionActive) && ((context.patientUnableToConsent) && ((context.treatmentPurpose) && ((context.sessionPatient) == (resource.patient)))))) && (context.deviceTrusted)
+  context.breakGlassGranted && (context.sessionActive && (context.patientUnableToConsent && (context.treatmentPurpose && (context.sessionPatient == resource.patient)))) && context.deviceTrusted
 };
 
 // POO policy ID: restricted-record
@@ -14,7 +14,7 @@ forbid(
   action == Action::"read",
   resource
 ) when {
-  (resource.restricted) && (!((context.breakGlassGranted) && ((context.sessionActive) && ((context.patientUnableToConsent) && ((context.treatmentPurpose) && ((context.sessionPatient) == (resource.patient)))))))
+  resource.restricted && (!(context.breakGlassGranted && (context.sessionActive && (context.patientUnableToConsent && (context.treatmentPurpose && (context.sessionPatient == resource.patient))))))
 };
 
 // POO policy ID: routine-read
@@ -23,7 +23,7 @@ permit(
   action == Action::"read",
   resource
 ) when {
-  ((principal.facility) == (resource.facility)) && (context.deviceTrusted)
+  (principal.facility == resource.facility) && context.deviceTrusted
 };
 
 // POO policy ID: untrusted-device-or-identity
@@ -32,5 +32,5 @@ forbid(
   action == Action::"read",
   resource
 ) when {
-  (!(context.deviceTrusted)) || (!(context.strongAuth))
+  (!context.deviceTrusted) || (!context.strongAuth)
 };

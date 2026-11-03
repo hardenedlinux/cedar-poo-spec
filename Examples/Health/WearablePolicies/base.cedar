@@ -5,7 +5,7 @@ permit(
   action == Action::"analyze",
   resource
 ) when {
-  ((resource.category) == "vital-signs") && (context.treatmentPurpose)
+  (resource.category == "vital-signs") && context.treatmentPurpose
 };
 
 // POO policy ID: release-alert
@@ -14,5 +14,5 @@ permit(
   action == Action::"release-alert",
   resource
 ) when {
-  ((principal.facility) == (resource.facility)) && (context.treatmentPurpose)
+  (principal.facility == resource.facility) && context.treatmentPurpose
 };

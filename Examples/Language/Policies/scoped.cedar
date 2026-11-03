@@ -5,5 +5,5 @@ permit(
   action == Action::"view",
   resource is Document in Folder::"public"
 ) when {
-  ((principal.email) like "*@example.org") && ((resource has meta) && ((resource.meta) has tag))
+  (principal.email like "*@example.org") && (resource has meta.tag)
 };

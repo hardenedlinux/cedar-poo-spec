@@ -14,5 +14,5 @@ permit(
   action == Action::"prepare",
   resource in PaymentGroup::"Operations"
 ) when {
-  (principal == (resource.preparedBy)) && ((resource.matched) && ((resource.amount).greaterThan(decimal("0.0000"))))
+  (principal == resource.preparedBy) && (resource.matched && resource.amount.greaterThan(decimal("0.0000")))
 };

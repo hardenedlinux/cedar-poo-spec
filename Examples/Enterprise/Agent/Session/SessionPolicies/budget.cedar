@@ -23,5 +23,5 @@ forbid(
   action == Action::"send",
   resource
 ) when {
-  (resource.external) && (!((context.usedExports) < (context.maxExports)))
+  resource.external && (!(context.usedExports < context.maxExports))
 };

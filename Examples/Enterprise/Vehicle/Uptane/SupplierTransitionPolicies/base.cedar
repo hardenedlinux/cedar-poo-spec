@@ -5,7 +5,7 @@ permit(
   action == Action::"assign-target",
   resource
 ) when {
-  (context.metadataAuthenticated) && ((resource.retiredSupplier) && (resource.compatible))
+  context.metadataAuthenticated && (resource.retiredSupplier && resource.compatible)
 };
 
 // POO policy ID: old-image-delegation
@@ -14,7 +14,7 @@ permit(
   action == Action::"publish-image",
   resource
 ) when {
-  (context.delegationValid) && ((context.metadataAuthenticated) && ((resource.retiredSupplier) && (resource.compatible)))
+  context.delegationValid && (context.metadataAuthenticated && (resource.retiredSupplier && resource.compatible))
 };
 
 // POO policy ID: primary-version-manifest

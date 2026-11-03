@@ -5,7 +5,7 @@ permit(
   action == Action::"delegate",
   resource
 ) when {
-  (((context.depth) <= 3) && ((resource.capabilities).containsAll(context.requestedCaps))) && ((3 <= (principal.trust)) && ((principal.capabilities).contains("delegate")))
+  (context.depth <= 3) && resource.capabilities.containsAll(context.requestedCaps) && ((3 <= principal.trust) && principal.capabilities.contains("delegate"))
 };
 
 // POO policy ID: origin-user
@@ -14,5 +14,5 @@ permit(
   action == Action::"verify-origin",
   resource == Tool::"delete-records"
 ) when {
-  (((context.origin) in Role::"Admin") && ((context.origin).mfa)) && ((context.depth) <= 3)
+  (context.origin in Role::"Admin") && context.origin.mfa && (context.depth <= 3)
 };

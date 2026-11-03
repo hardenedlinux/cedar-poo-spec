@@ -23,5 +23,5 @@ forbid(
   action == Action::"send",
   resource
 ) when {
-  !((context.intent) == (context.delegatedIntent))
+  !(context.intent == context.delegatedIntent)
 };

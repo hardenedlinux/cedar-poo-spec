@@ -14,5 +14,5 @@ forbid(
   action == Action::"send",
   resource == Endpoint::"external-report"
 ) when {
-  !((context.localUsed) < (context.localMax))
+  !(context.localUsed < context.localMax)
 };

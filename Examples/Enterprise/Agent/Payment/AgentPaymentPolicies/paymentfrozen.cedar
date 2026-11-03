@@ -23,7 +23,7 @@ forbid(
   action == Action::"transfer",
   resource
 ) when {
-  !(((context.amount).greaterThan(decimal("0.0000"))) && ((context.amount).lessThanOrEqual(decimal("100.0000"))))
+  !(context.amount.greaterThan(decimal("0.0000")) && context.amount.lessThanOrEqual(decimal("100.0000")))
 };
 
 // POO policy ID: unapproved-account
@@ -41,5 +41,5 @@ forbid(
   action == Action::"transfer",
   resource
 ) when {
-  !(((context.origin) in Role::"Admin") && ((context.origin).mfa))
+  !((context.origin in Role::"Admin") && context.origin.mfa)
 };

@@ -14,5 +14,5 @@ forbid(
   action == Action::"send",
   resource == Endpoint::"external-report"
 ) when {
-  !((context.sharedUsed) < (context.sharedMax))
+  !(context.sharedUsed < context.sharedMax)
 };

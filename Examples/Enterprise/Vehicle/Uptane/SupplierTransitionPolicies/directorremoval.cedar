@@ -5,7 +5,7 @@ permit(
   action == Action::"publish-image",
   resource
 ) when {
-  (context.delegationValid) && ((context.metadataAuthenticated) && ((resource.retiredSupplier) && (resource.compatible)))
+  context.delegationValid && (context.metadataAuthenticated && (resource.retiredSupplier && resource.compatible))
 };
 
 // POO policy ID: primary-version-manifest

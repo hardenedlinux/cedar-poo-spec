@@ -5,7 +5,7 @@ forbid(
   action == Action::"approve",
   resource is PurchaseOrder
 ) when {
-  principal == (resource.requester)
+  principal == resource.requester
 };
 
 // POO policy ID: operations-approval

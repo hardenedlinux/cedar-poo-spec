@@ -5,7 +5,7 @@ permit(
   action == Action::"read",
   resource
 ) when {
-  (context.breakGlassGranted) && ((context.sessionPatient) == (resource.patient))
+  context.breakGlassGranted && (context.sessionPatient == resource.patient)
 };
 
 // POO policy ID: legacy-broad-read
@@ -23,5 +23,5 @@ permit(
   action == Action::"read",
   resource
 ) when {
-  ((principal.facility) == (resource.facility)) && (context.deviceTrusted)
+  (principal.facility == resource.facility) && context.deviceTrusted
 };

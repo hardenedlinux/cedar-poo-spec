@@ -5,7 +5,7 @@ permit(
   action == Action::"read",
   resource == Ticket::"ticket-a"
 ) when {
-  (resource.status) == "OPEN"
+  resource.status == "OPEN"
 };
 
 // POO policy ID: bob-ticket-a
@@ -14,7 +14,7 @@ permit(
   action == Action::"read",
   resource == Ticket::"ticket-a"
 ) when {
-  (resource.status) == "OPEN"
+  resource.status == "OPEN"
 };
 
 // POO policy ID: bob-ticket-b
@@ -23,5 +23,5 @@ permit(
   action == Action::"read",
   resource == Ticket::"ticket-b"
 ) when {
-  (resource.status) == "OPEN"
+  resource.status == "OPEN"
 };

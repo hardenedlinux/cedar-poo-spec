@@ -5,7 +5,7 @@ permit(
   action == Action::"read",
   resource == Ticket::"ticket-a"
 ) when {
-  ((resource.status) == "OPEN") && (context.deviceTrusted)
+  (resource.status == "OPEN") && context.deviceTrusted
 };
 
 // POO policy ID: bob-ticket-a
@@ -14,5 +14,5 @@ permit(
   action == Action::"read",
   resource == Ticket::"ticket-a"
 ) when {
-  (resource.status) == "OPEN"
+  resource.status == "OPEN"
 };

@@ -5,7 +5,7 @@ forbid(
   action == Action::"submit-prior-authorization",
   resource == PayerEndpoint::"payer-a"
 ) when {
-  !((context.codePresent) && ((context.durationPresent) && (context.followUpPresent)))
+  !(context.codePresent && (context.durationPresent && context.followUpPresent))
 };
 
 // POO policy ID: billing-evidence-missing
@@ -14,7 +14,7 @@ forbid(
   action == Action::"submit-prior-authorization",
   resource == PayerEndpoint::"payer-a"
 ) when {
-  !(context.billingSeen)
+  !context.billingSeen
 };
 
 // POO policy ID: clinical-evidence-missing
@@ -23,7 +23,7 @@ forbid(
   action == Action::"submit-prior-authorization",
   resource == PayerEndpoint::"payer-a"
 ) when {
-  !(context.clinicalSeen)
+  !context.clinicalSeen
 };
 
 // POO policy ID: delegation-expired
@@ -32,7 +32,7 @@ forbid(
   action in [Action::"read-clinical",Action::"read-billing",Action::"submit-prior-authorization"],
   resource
 ) when {
-  !(context.delegationActive)
+  !context.delegationActive
 };
 
 // POO policy ID: patient-misbinding
@@ -41,7 +41,7 @@ forbid(
   action in [Action::"read-clinical",Action::"read-billing"],
   resource
 ) when {
-  !((context.expectedPatient) == (resource.patient))
+  !(context.expectedPatient == resource.patient)
 };
 
 // POO policy ID: payer-requirements-stale
@@ -50,7 +50,7 @@ forbid(
   action == Action::"submit-prior-authorization",
   resource == PayerEndpoint::"payer-a"
 ) when {
-  !(context.payerRequirementsCurrent)
+  !context.payerRequirementsCurrent
 };
 
 // POO policy ID: raw-record-in-draft
@@ -68,7 +68,7 @@ permit(
   action == Action::"read-billing",
   resource
 ) when {
-  ((resource.kind) == "billing") && (((context.expectedPatient) == (resource.patient)) && (context.delegationActive))
+  (resource.kind == "billing") && ((context.expectedPatient == resource.patient) && context.delegationActive)
 };
 
 // POO policy ID: read-clinical
@@ -77,7 +77,7 @@ permit(
   action == Action::"read-clinical",
   resource
 ) when {
-  ((resource.kind) == "clinical") && (((context.expectedPatient) == (resource.patient)) && (context.delegationActive))
+  (resource.kind == "clinical") && ((context.expectedPatient == resource.patient) && context.delegationActive)
 };
 
 // POO policy ID: submit-draft
@@ -86,5 +86,5 @@ permit(
   action == Action::"submit-prior-authorization",
   resource == PayerEndpoint::"payer-a"
 ) when {
-  (context.clinicalSeen) && ((context.billingSeen) && ((context.codePresent) && ((context.durationPresent) && ((context.followUpPresent) && ((!(context.rawRecordIncluded)) && ((context.payerRequirementsCurrent) && (context.delegationActive)))))))
+  context.clinicalSeen && (context.billingSeen && (context.codePresent && (context.durationPresent && (context.followUpPresent && ((!context.rawRecordIncluded) && (context.payerRequirementsCurrent && context.delegationActive))))))
 };

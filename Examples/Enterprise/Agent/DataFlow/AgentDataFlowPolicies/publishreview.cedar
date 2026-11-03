@@ -5,7 +5,7 @@ permit(
   action == Action::"publish-document",
   resource
 ) when {
-  (resource.tenant) == ((context.source).tenant)
+  resource.tenant == context.source.tenant
 };
 
 // POO policy ID: public-review
@@ -14,5 +14,5 @@ forbid(
   action == Action::"publish-document",
   resource
 ) when {
-  (!((resource.visibility) == "internal")) && (!((context.approved) && (((context.reviewer) in Role::"Security") && (((context.reviewer).mfa) && (!((context.reviewer) == (context.origin)))))))
+  (!(resource.visibility == "internal")) && (!(context.approved && ((context.reviewer in Role::"Security") && (context.reviewer.mfa && (!(context.reviewer == context.origin))))))
 };

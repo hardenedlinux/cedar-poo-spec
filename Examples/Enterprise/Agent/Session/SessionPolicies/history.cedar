@@ -23,5 +23,5 @@ forbid(
   action == Action::"send",
   resource
 ) when {
-  (context.sensitiveSeen) && (resource.external)
+  context.sensitiveSeen && resource.external
 };

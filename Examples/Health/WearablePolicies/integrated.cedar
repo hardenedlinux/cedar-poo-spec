@@ -5,7 +5,7 @@ permit(
   action == Action::"analyze",
   resource
 ) when {
-  (((resource.category) == "vital-signs") && (context.treatmentPurpose)) && (context.modelApproved)
+  (resource.category == "vital-signs") && context.treatmentPurpose && context.modelApproved
 };
 
 // POO policy ID: consent-withdrawn
@@ -14,7 +14,7 @@ forbid(
   action,
   resource
 ) when {
-  !(resource.consentActive)
+  !resource.consentActive
 };
 
 // POO policy ID: release-alert
@@ -23,7 +23,7 @@ permit(
   action == Action::"release-alert",
   resource
 ) when {
-  (((principal.facility) == (resource.facility)) && (context.treatmentPurpose)) && (context.clinicianReviewed)
+  (principal.facility == resource.facility) && context.treatmentPurpose && context.clinicianReviewed
 };
 
 // POO policy ID: untrusted-monitor
@@ -32,5 +32,5 @@ forbid(
   action,
   resource
 ) when {
-  !(context.deviceTrusted)
+  !context.deviceTrusted
 };

@@ -5,7 +5,7 @@ forbid(
   action == Action::"query",
   resource
 ) when {
-  !((context.attestationVerified) && ((context.attestationFresh) && ((context.measurement) == (resource.measurement))))
+  !(context.attestationVerified && (context.attestationFresh && (context.measurement == resource.measurement)))
 };
 
 // POO policy ID: network-boundary
@@ -14,7 +14,7 @@ forbid(
   action == Action::"query",
   resource
 ) when {
-  !((context.sourceIp).isInRange(ip("10.0.0.0/8")))
+  !context.sourceIp.isInRange(ip("10.0.0.0/8"))
 };
 
 // POO policy ID: owner-approval
@@ -23,7 +23,7 @@ forbid(
   action == Action::"query",
   resource
 ) when {
-  !((context.ownerApproved) && (!((principal.operator) == (context.approver))))
+  !(context.ownerApproved && (!(principal.operator == context.approver)))
 };
 
 // POO policy ID: project-subscription
@@ -32,7 +32,7 @@ permit(
   action == Action::"query",
   resource
 ) when {
-  ((principal.project) == (resource.project)) && ((context.subscriptionActive) && ((context.purpose) == "analytics"))
+  (principal.project == resource.project) && (context.subscriptionActive && (context.purpose == "analytics"))
 };
 
 // POO policy ID: region-boundary
@@ -41,5 +41,5 @@ forbid(
   action == Action::"query",
   resource
 ) when {
-  !((context.region) == (resource.region))
+  !(context.region == resource.region)
 };

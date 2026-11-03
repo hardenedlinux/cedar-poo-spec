@@ -12,5 +12,5 @@ permit(
   action == Action::"read",
   resource
 ) when {
-  ((principal.tenant) == (resource.tenant)) && (context.deviceTrusted)
+  (principal.tenant == resource.tenant) && context.deviceTrusted
 };

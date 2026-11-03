@@ -14,7 +14,7 @@ forbid(
   action == Action::"proceed",
   resource
 ) when {
-  !(context.successorMissionFeasible)
+  !context.successorMissionFeasible
 };
 
 // POO policy ID: nominal-route
@@ -23,7 +23,7 @@ permit(
   action == Action::"proceed",
   resource
 ) when {
-  (context.routeApproved) && (context.successorPlatformSafe)
+  context.routeApproved && context.successorPlatformSafe
 };
 
 // POO policy ID: unbound-successor-witness
@@ -32,5 +32,5 @@ forbid(
   action == Action::"proceed",
   resource
 ) when {
-  !(((context.proposalId) == (context.witnessProposalId)) && (((context.missionVersion) == (context.witnessMissionVersion)) && ((context.vehicleStateId) == (context.witnessVehicleStateId))))
+  !((context.proposalId == context.witnessProposalId) && ((context.missionVersion == context.witnessMissionVersion) && (context.vehicleStateId == context.witnessVehicleStateId)))
 };

@@ -5,5 +5,5 @@ permit(
   action == Action::"view",
   resource == Document::"doc"
 ) when {
-  (context.value) == (duration("-2h"))
+  context.value == duration("-2h")
 };

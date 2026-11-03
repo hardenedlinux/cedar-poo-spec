@@ -5,7 +5,7 @@ permit(
   action == Action::"publish-document",
   resource
 ) when {
-  (resource.tenant) == ((context.source).tenant)
+  resource.tenant == context.source.tenant
 };
 
 // POO policy ID: classification-boundary
@@ -14,5 +14,5 @@ forbid(
   action == Action::"publish-document",
   resource
 ) when {
-  !(((resource.visibility) == "internal") || (((context.source).classification) == "public"))
+  !((resource.visibility == "internal") || (context.source.classification == "public"))
 };
