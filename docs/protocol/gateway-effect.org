@@ -606,3 +606,123 @@ Warm admission, blocked paths, concurrent paths, bootstrap, SDK replay and send
 samples remain in the native output, including all slower maxima. These are
 local native simulation measurements with decoded inputs, not deployed RPC or
 real-provider latency. Intrusive cold-launch/CPU diagnostics remain separate.
+
+* Exact-intent reconciliation and conservative recovery
+
+A signed outcome must identify one exact signed precommit. Operation identity
+alone is insufficient: a valid later receipt previously resolved every logged
+intent carrying that operation name, even when an earlier intent had no outcome.
+The failing native regression used real gateway/log signatures, an authentic
+append-only history and an independently observed provider window. It exposed a
+false complete recovery, rather than a signature-verification failure.
+
+The auditor now binds each verified outcome to its exact signed precommit
+and full provider action. Resolution requires equality of the complete signed
+payload and signature with the particular history entry, equality of its effect,
+and an independently observed full provider action. Repeated operation names in
+precommit history are reported as duplicates. Earlier-only and later-only
+receipt controls both retain the other unresolved intent. These intentionally
+ambiguous observation windows are qualification controls; the live provider's
+single-operation guard remains in force.
+
+The shared Lean model distinguishes =CommitRef=, =AuditReceipt= and provider
+=AuditRecord=. =resolved_commit_is_exact= proves exact identity and independent
+observation for the actual resolution predicate.
+=another_receipt_cannot_hide_precommit= and =duplicate_precommit_is_reported=
+bind those properties to the actual reconciliation report. The typed
+=recoverAudited= composition follows native recovery: a complete independent
+audit and exact observed effect are required before uncertainty may clear.
+=unclean_audit_retains_unknown= and =audited_recovery_preserves_burn= establish
+conservative uncertainty and consumption. Existing POO current-use and
+publication Contracts still require fresh authorization and retain their
+original meaning; historical completion cannot mint a new capability.
+
+This is a refinement of the existing Zero Trust / authorization Delta / Gateway
+boundary. It does not prove signature unforgeability, authentic external IO,
+provider availability or eventual recovery. The native verifier and surviving
+trusted state remain explicit premises. A verified historical receipt remains
+historical evidence, not current Cedar Allow.
+
+Borrowed ordered indexes replace repeated full log-anchor and provider scans.
+Complete signed-byte equality selects a canonical position in the immutable
+verified log; outcomes retain that position instead of another payload copy.
+The indexes retain no process-global cache and preserve
+all signature, source, publication and log-floor checks. Index construction and
+full-byte comparison have a cost; this change is not evidence of a stable
+whole-process latency win. Original controls remain unchanged, with two shared
+ambiguity controls added across every enforcing-eligible catalog domain.
+
+* Runtime waiting evidence, separate from pre-main scanning
+
+The retained ordinary lifecycle non-win contains about 8.09 seconds of elapsed
+non-CPU time. That difference is an aggregate accounting gap, not proof of one
+continuous eight-second wait. Existing pre-main path/PID/scan/wake observations
+remain separate from this runtime question.
+
+A subsequent System Trace attached to the unchanged native lifecycle executable.
+The full command exited naturally and its complete protocol output matched the
+ordinary run byte for byte. The trace's target thread has a 7.124-second Unknown
+prefix while scheduler capture was being established; it is not an identified
+blocked interval. Its observable scheduler portion contains about 2.813 seconds
+Running, 45.848 ms Preempted, 13.778 ms Interrupted, 2.388 ms Blocked and 0.044 ms
+Runnable. The longest observed Blocked interval is about 1.151 ms; the longest
+Preempted interval is about 2.190 ms. Context-switch narratives identify competing
+threads for some preemptions, which are not blocking objects or wake senders.
+
+This partial intrusive observation neither reproduces nor attributes the
+original non-CPU tail. It does not identify that sample's wait object or waker,
+and does not justify assigning its missing time to XProtect, allocation or any
+one competing process. Raw scheduler captures and complete native outputs stay
+in the ignored local build tree. No baseline sample is discarded, no deadline
+is increased, and no system security setting is changed. Further attribution
+requires scheduler coverage of the actual slow interval, including a matching
+block/unblock or runnable/preempted interval; these boundaries must remain
+separate from the already matched pre-main scan records.
+
+** Qualification and ordinary-process follow-up
+
+All 51 canonical producers retain their original bytes. The complete catalog
+still has 211 preparation groups, 1,253 Cases and 39 refusals. Continuous use
+retains 16,289 state outcomes and 3,759 publications. All original 41,619
+effect/audit rows and the original 64 effect / 11 audit oracle controls compare
+identically; the two new controls add 50 rows across the 25 enforcing-eligible
+domains, for 41,669 total. The complete workspace/package isolation, strict
+Clippy, formatting and tests pass, including 94 Runtime tests; ignored corpus
+controls are executed by the standard full-domain gates.
+
+Lean compiled profile/reuse/root-scale and nine object-family workloads pass.
+Rust retains 211 bootstrap and 1,253 per-Case samples plus all 1,024 append-scale
+samples. Shared-construction p95/p99 is 1.838/1.997 ms; prepared SDK replay is
+0.293/0.337 ms. Shared-construction p99 and maximum (3.841 ms) are higher than the
+preceding observation (1.968/3.304 ms). The largest append bucket retains a
+17.849 ms maximum. These non-wins remain in the native samples; no population
+or slower observation is removed.
+
+One new ordinary matched full-lifecycle pair compares the preserved 93863f9
+release executable with the exact-intent refinement. Complete protocol bytes
+match each other and the earlier lifecycle output. Both exit naturally under
+the same 120-second watchdog with complete OS resource observations.
+
+| Observation | Before | After |
+|-------------+--------+-------|
+| Whole-process wall seconds | 37.020 | 36.112 |
+| User CPU seconds | 35.850 | 35.450 |
+| System CPU seconds | 0.270 | 0.160 |
+| Peak RSS MiB | 102.422 | 105.484 |
+
+The RSS increase is a retained non-win. This single pair does not establish
+allocator attribution, stable wall-time improvement or a memory bound. The
+borrowed audit indexes exist only during reconciliation; that lifetime alone
+does not establish a lower OS high-water RSS. No eight-second non-CPU interval
+was reproduced in this pair. Earlier slow samples and launch evidence remain
+intact and are not substituted by the new observations.
+
+A subsequent launch-mode System Trace attempted to establish collection before
+starting the same ordinary native executable with the complete catalog input.
+It reached its 90-second recording window with no protocol output and exited
+with recorder status 54. The retained export contains no scheduler intervals
+for the launched target PID. Its output therefore fails complete-byte acceptance
+and is a failed intrusive diagnostic, not a native workload pass or a reproduction
+of the ordinary eight-second gap. No limit was widened and no replacement
+successful sample conceals this failure. Identifying the original waiting object
+and waker remains open; a working capture must first demonstrate target coverage.

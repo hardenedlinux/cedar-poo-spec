@@ -46,6 +46,10 @@ impl AuditAuthority {
         }
     }
 }
+struct VerifiedOutcome {
+    action: super::ProviderAction,
+    commit_index: usize,
+}
 /// External auditor entrypoint: no private signer or gateway state is required.
 pub fn reconcile(
     journal: &ProviderJournal,
@@ -58,6 +62,20 @@ pub fn reconcile(
         invalid_log: history.is_err(),
         ..Reconciliation::default()
     };
+    // Borrow complete identities; canonical positions avoid retaining another
+    // signed payload per verified outcome. History validation remains mandatory.
+    let anchors: BTreeMap<_, _> = snapshot
+        .entries
+        .iter()
+        .enumerate()
+        .map(|(index, entry)| {
+            (
+                (entry.payload.as_slice(), entry.signature.as_slice()),
+                index,
+            )
+        })
+        .collect();
+    let observed: BTreeSet<_> = journal.actions.iter().collect();
     let mut verified = BTreeMap::new();
     for signed in receipts {
         let checked = (|| {
@@ -106,19 +124,25 @@ pub fn reconcile(
             if receipt.version != (Version { major: 1, minor: 0 })
                 || commit.version != receipt.version
                 || commit.effect != receipt.action.effect
-                || !snapshot.entries.iter().any(|entry| {
-                    entry.payload == receipt.commit.payload
-                        && entry.signature == receipt.commit.signature
-                })
             {
                 return Err("unanchored outcome".into());
             }
-            Ok::<_, String>(receipt)
+            let commit_index = *anchors
+                .get(&(
+                    receipt.commit.payload.as_slice(),
+                    receipt.commit.signature.as_slice(),
+                ))
+                .ok_or("unanchored outcome")?;
+            Ok::<_, String>((receipt, commit_index))
         })();
         match checked {
-            Ok(receipt) => {
+            Ok((receipt, commit_index)) => {
                 let operation = receipt.action.effect.operation.clone();
-                if verified.insert(operation.clone(), receipt.action).is_some() {
+                let outcome = VerifiedOutcome {
+                    action: receipt.action,
+                    commit_index,
+                };
+                if verified.insert(operation.clone(), outcome).is_some() {
                     report.duplicates.push(operation);
                 }
             }
@@ -133,20 +157,26 @@ pub fn reconcile(
         }
         match verified.get(operation) {
             None => report.missing_receipts.push(operation.clone()),
-            Some(receipt) if receipt != action => report.mismatched.push(operation.clone()),
+            Some(receipt) if &receipt.action != action => report.mismatched.push(operation.clone()),
             Some(_) => (),
         }
     }
     if let Ok(commits) = history {
-        report
-            .unresolved_precommits
-            .extend(commits.into_iter().filter_map(|commit| {
-                let operation = commit.effect.operation;
-                let resolved = verified
-                    .get(&operation)
-                    .is_some_and(|receipt| journal.actions.iter().any(|action| action == receipt));
-                (!resolved).then_some(operation)
-            }));
+        let mut intents = BTreeSet::new();
+        for (commit_index, commit) in commits.iter().enumerate() {
+            let operation = &commit.effect.operation;
+            if !intents.insert(operation) {
+                report.duplicates.push(operation.clone());
+            }
+            let resolved = verified.get(operation).is_some_and(|outcome| {
+                outcome.action.effect == commit.effect
+                    && outcome.commit_index == commit_index
+                    && observed.contains(&outcome.action)
+            });
+            if !resolved {
+                report.unresolved_precommits.push(operation.clone());
+            }
+        }
     }
     report
         .missing_actions

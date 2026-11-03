@@ -83,18 +83,21 @@ private def auditReportJson (report : AuditReport) : Lean.Json := Lean.Json.mkOb
   ("mismatched", Lean.toJson report.mismatched), ("duplicates", Lean.toJson report.duplicates),
   ("invalid_receipts", Lean.toJson report.invalidReceipts), ("invalid_log", Lean.toJson report.invalidLog)]
 
-def auditCases : List (String × List AuditRecord × List AuditRecord × Nat × Bool) :=
+def auditCases : List (String × List AuditRecord × List AuditReceipt × Nat × Bool) :=
   let original : AuditRecord := ⟨"operation", "original"⟩
-  [("clean", [original], [original], 0, true),
+  let receipt : AuditReceipt := ⟨original, ⟨"operation", [0], [1]⟩⟩
+  [("clean", [original], [receipt], 0, true),
    ("precommitOnly", [], [], 0, true),
-   ("missingReceipt", [original], [], 0, true), ("missingAction", [], [original], 0, true),
-   ("mismatch", [{original with value := "changed"}], [original], 0, true),
-   ("duplicateAction", [original,original], [original], 0, true),
-   ("duplicateReceipt", [original], [original,original], 0, true),
+   ("missingReceipt", [original], [], 0, true), ("missingAction", [], [receipt], 0, true),
+   ("mismatch", [{original with value := "changed"}], [receipt], 0, true),
+   ("duplicateAction", [original,original], [receipt], 0, true),
+   ("duplicateReceipt", [original], [receipt,receipt], 0, true),
    ("invalidReceipt", [original], [], 1, true),
    ("unanchoredReceipt", [original], [], 1, true),
    ("rewrittenLog", [original], [], 1, false),
-   ("truncatedLog", [original], [], 1, false)]
+   ("truncatedLog", [original], [], 1, false),
+   ("duplicatePrecommit", [original], [{receipt with commit := ⟨"operation", [2], [3]⟩}], 0, true),
+   ("supersededPrecommit", [original], [receipt], 0, true)]
 
 private def outcomeJson (outcome : Outcome) : Lean.Json := Lean.Json.mkObj [
   ("admitted", Lean.toJson outcome.admitted), ("precommitted", Lean.toJson outcome.precommitted),
@@ -107,7 +110,10 @@ def fixture : Lean.Json := Lean.Json.mkObj [
   ("audit_cases", Lean.toJson (auditCases.map fun (fault, actions, receipts, invalid, logValid) =>
     Lean.Json.mkObj [("fault", Lean.toJson fault),
       ("expected", auditReportJson (reconcile actions receipts invalid logValid
-        (if logValid && fault != "unanchoredReceipt" then ["operation"] else [])))])),
+        (if !logValid || fault == "unanchoredReceipt" then []
+         else if fault == "duplicatePrecommit" || fault == "supersededPrecommit" then
+           [⟨"operation", [0], [1]⟩, ⟨"operation", [2], [3]⟩]
+         else [⟨"operation", [0], [1]⟩])))])),
   ("cases", Lean.toJson ([false, true].flatMap fun allowed => faults.map fun fault =>
     Lean.Json.mkObj [("fault", Lean.toJson ((reprStr fault).splitOn ".").getLast!),
       ("cedar_allowed", Lean.toJson allowed), ("expected", outcomeJson (simulate fault allowed))]))]

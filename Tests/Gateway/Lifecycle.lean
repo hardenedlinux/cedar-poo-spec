@@ -26,3 +26,6 @@ import CedarPooSpec.Gateway.Lifecycle
 #print axioms CedarPooSpec.Gateway.Lifecycle.source_invocation_preserves_field_admission
 
 #print axioms CedarPooSpec.Functional.Ready.reuse_at_current_worlds
+
+#print axioms CedarPooSpec.Gateway.Lifecycle.unclean_audit_retains_unknown
+#print axioms CedarPooSpec.Gateway.Lifecycle.audited_recovery_preserves_burn

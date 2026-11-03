@@ -134,11 +134,26 @@ theorem unknown_outcome_has_no_receipt (admitted logAvailable crashAfterSend : B
   have absent := (Bool.and_eq_true_iff.mp unknown).2
   exact false_of_negated _ absent
 
-/-- Projection of a verified outcome or an independent provider observation.
-The adapter supplies verified records; signatures are not represented by labels. -/
+/-- Independently observed provider action. The verifier supplies this projection;
+labels do not establish authenticity. -/
 structure AuditRecord where
   operation : String
   value : String
+  deriving DecidableEq, BEq, Repr
+
+/-- Exact signed precommit bytes from the verified append-only history.
+Operation names or digests alone are insufficient to identify a log entry. -/
+structure CommitRef where
+  operation : String
+  payload : List UInt8
+  signature : List UInt8
+  deriving DecidableEq, BEq, Repr
+
+/-- Verified outcome and its exact signed precommit, kept separate from the
+provider observation. Cryptographic verification remains with the native owner. -/
+structure AuditReceipt where
+  action : AuditRecord
+  commit : CommitRef
   deriving DecidableEq, BEq, Repr
 
 structure AuditReport where
@@ -154,41 +169,75 @@ structure AuditReport where
 private def ids (items : List String) : List String :=
   items.eraseDups.mergeSort (fun a b => decide (a ≤ b))
 
-def reconcile (actions receipts : List AuditRecord) (invalid : Nat) (logValid : Bool)
-    (precommits : List String := []) : AuditReport :=
+/-- A receipt resolves only its exact commit and independently observed action. -/
+def resolves (actions : List AuditRecord) (receipt : AuditReceipt) (commit : CommitRef) : Bool :=
+  decide (receipt.commit = commit) && decide (receipt.action.operation = commit.operation) &&
+    actions.any (fun action => decide (action = receipt.action))
+
+theorem resolved_commit_is_exact (actions : List AuditRecord) (receipt : AuditReceipt)
+    (commit : CommitRef) (resolved : resolves actions receipt commit = true) :
+    receipt.commit = commit ∧ receipt.action.operation = commit.operation ∧
+      receipt.action ∈ actions := by
+  simpa [resolves, Bool.and_eq_true_iff, List.any_eq_true, and_assoc] using resolved
+
+theorem different_commit_cannot_resolve (actions : List AuditRecord) (receipt : AuditReceipt)
+    (commit : CommitRef) (different : receipt.commit ≠ commit) :
+    resolves actions receipt commit = false := by
+  simp [resolves, different]
+
+def reconcile (actions : List AuditRecord) (receipts : List AuditReceipt)
+    (invalid : Nat) (logValid : Bool) (precommits : List CommitRef := []) : AuditReport :=
   let actionIds := actions.map (·.operation)
-  let receiptIds := receipts.map (·.operation)
+  let receiptIds := receipts.map (·.action.operation)
+  let commitIds := precommits.map (·.operation)
   let lastReceipts := receipts.foldr (fun receipt selected =>
-    if selected.any (fun prior => prior.operation == receipt.operation) then selected else receipt :: selected) []
-  { unresolvedPrecommits := ids (precommits.filter (fun operation =>
-      !(actions.any (fun action => action.operation == operation && lastReceipts.contains action))))
+    if selected.any (fun prior => prior.action.operation == receipt.action.operation) then selected else receipt :: selected) []
+  { unresolvedPrecommits := ids ((precommits.filter (fun commit =>
+      !(lastReceipts.any (fun receipt => resolves actions receipt commit)))).map (·.operation))
     missingReceipts := ids (actionIds.filter (fun name => !receiptIds.contains name))
     missingActions := ids (receiptIds.filter (fun name => !actionIds.contains name))
     mismatched := ids ((actions.filter fun action =>
-      lastReceipts.any (fun receipt => receipt.operation == action.operation && receipt != action)).map (·.operation))
+      lastReceipts.any (fun receipt => receipt.action.operation == action.operation && receipt.action != action)).map (·.operation))
     duplicates := ids ((actionIds.filter (fun name => actionIds.count name > 1)) ++
-      receiptIds.filter (fun name => receiptIds.count name > 1))
+      (receiptIds.filter (fun name => receiptIds.count name > 1)) ++
+      commitIds.filter (fun name => commitIds.count name > 1))
     invalidReceipts := invalid
     invalidLog := !logValid }
 
 /-- No outcome and no independent provider observation cannot erase a logged intent. -/
-theorem precommit_without_observation_remains_unresolved (precommits : List String)
+theorem precommit_without_observation_remains_unresolved (precommits : List CommitRef)
     (invalid : Nat) (logValid : Bool) (operation : String) :
     operation ∈ (reconcile [] [] invalid logValid precommits).unresolvedPrecommits ↔
-      operation ∈ precommits := by
+      operation ∈ precommits.map (·.operation) := by
   simp [reconcile, ids]
 
-theorem missing_receipt_iff (actions receipts : List AuditRecord) (invalid : Nat)
-    (logValid : Bool) (operation : String) :
+theorem missing_receipt_iff (actions : List AuditRecord) (receipts : List AuditReceipt)
+    (invalid : Nat) (logValid : Bool) (operation : String) :
     operation ∈ (reconcile actions receipts invalid logValid).missingReceipts ↔
-      operation ∈ actions.map (·.operation) ∧ operation ∉ receipts.map (·.operation) := by
+      operation ∈ actions.map (·.operation) ∧ operation ∉ receipts.map (·.action.operation) := by
   simp [reconcile, ids]
 
-theorem missing_action_iff (actions receipts : List AuditRecord) (invalid : Nat)
-    (logValid : Bool) (operation : String) :
+theorem missing_action_iff (actions : List AuditRecord) (receipts : List AuditReceipt)
+    (invalid : Nat) (logValid : Bool) (operation : String) :
     operation ∈ (reconcile actions receipts invalid logValid).missingActions ↔
-      operation ∈ receipts.map (·.operation) ∧ operation ∉ actions.map (·.operation) := by
+      operation ∈ receipts.map (·.action.operation) ∧ operation ∉ actions.map (·.operation) := by
   simp [reconcile, ids]
+
+theorem another_receipt_cannot_hide_precommit (actions : List AuditRecord)
+    (receipt : AuditReceipt) (commit : CommitRef) (invalid : Nat) (logValid : Bool)
+    (different : receipt.commit ≠ commit) :
+    commit.operation ∈ (reconcile actions [receipt] invalid logValid [commit]).unresolvedPrecommits := by
+  simp [reconcile, resolves, different, ids]
+
+theorem duplicate_precommit_is_reported (earlier later : CommitRef)
+    (same : earlier.operation = later.operation) :
+    earlier.operation ∈ (reconcile [] [] 0 true [earlier, later]).duplicates := by
+  simp [reconcile, ids, same]
+
+/-- Recovery requires the entire independent audit to be clean, not merely a
+matching operation label or the absence of signature errors. -/
+def AuditReport.clean (report : AuditReport) : Bool :=
+  decide (report = ⟨[], [], [], [], [], 0, false⟩)
 
 structure LineageEdge where
   source : String

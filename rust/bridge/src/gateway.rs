@@ -44,7 +44,7 @@ pub(crate) fn replay(
     if oracle.format_version != 1
         || oracle.protocol.major != 1
         || oracle.protocol.minor != 0
-        || (oracle.cases.len() != 64 || oracle.audit_cases.len() != 11)
+        || (oracle.cases.len() != 64 || oracle.audit_cases.len() != 13)
     {
         return Err("unsupported/incomplete protocol oracle".into());
     }
@@ -250,6 +250,27 @@ fn qualify_audits(
             "mismatch" => provider.actions[0].effect.payload = "changed".into(),
             "duplicateAction" => provider.actions.push(provider.actions[0].clone()),
             "duplicateReceipt" => receipts.push(receipts[0].clone()),
+            "duplicatePrecommit" | "supersededPrecommit" => {
+                // Independent observed windows deliberately expose ambiguous
+                // signed intents; one outcome must never resolve both entries.
+                let next = base.fork_simulation()?;
+                let next_envelope = next.envelope();
+                let mut next_provider = ProviderJournal::default();
+                let (_, next_receipt) = next.execute(
+                    next.prepare(&next_envelope)?,
+                    &next_envelope,
+                    EffectIo {
+                        witness: &mut witness,
+                        provider: &mut next_provider,
+                        crash_after_send: false,
+                    },
+                )?;
+                if sample.fault == "duplicatePrecommit" {
+                    receipts = vec![next_receipt.ok_or("missing later outcome")?];
+                    provider = next_provider;
+                }
+                observed_snapshot = witness.snapshot();
+            }
             "invalidReceipt" => receipts[0].signature[0] ^= 1,
             "unanchoredReceipt" => {
                 // This control is a separately trusted empty log, not rollback

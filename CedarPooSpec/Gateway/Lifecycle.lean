@@ -108,6 +108,22 @@ def recover (state : State) (committed complete : Bool) : State :=
     current := { state.current with unknown :=
       if spent || state.current.unknown then !(committed && complete) else state.current.unknown } }
 
+/-- Compose verified reconciliation with recovery. The independent provider
+must also observe the exact current effect, as in the native recovery owner. -/
+def recoverAudited (state : State) (committed observed : Bool) (report : AuditReport) : State :=
+  recover state committed (observed && report.clean)
+
+theorem unclean_audit_retains_unknown (state : State) (committed observed : Bool)
+    (report : AuditReport) (unclean : report.clean = false)
+    (unknown : state.current.unknown = true) :
+    (recoverAudited state committed observed report).current.unknown = true := by
+  simp [recoverAudited, recover, unclean, unknown]
+
+theorem audited_recovery_preserves_burn (state : State) (committed observed : Bool)
+    (report : AuditReport) (spent : state.spent = true) :
+    (recoverAudited state committed observed report).spent = true := by
+  simp [recoverAudited, recover, spent]
+
 /-- A live publication strengthens the existing exact-successor Contract using
 current source evidence and its pinned publication world. -/
 def publicationGuard (state : State) (pinned : String) (envelope : Envelope) : Bool :=

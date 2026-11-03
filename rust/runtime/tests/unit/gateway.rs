@@ -698,3 +698,73 @@ fn gateway_source_statements_preserve_independent_field_authority_and_exact_cove
     .unwrap();
     assert!(changed_keys.accepts(&evidence).is_err());
 }
+
+#[test]
+fn gateway_an_outcome_resolves_only_its_exact_precommit_and_duplicate_intents_quarantine_recovery()
+{
+    for changed_effect in [false, true] {
+        check_ambiguous_intent_recovery(changed_effect);
+    }
+}
+
+fn check_ambiguous_intent_recovery(changed_effect: bool) {
+    let (case, schema, first) = setup();
+    let mut witness = Witness::simulation();
+    let mut earlier_provider = ProviderJournal::default();
+    let first_envelope = first.envelope();
+    first
+        .execute(
+            first.prepare(&first_envelope).unwrap(),
+            &first_envelope,
+            EffectIo {
+                witness: &mut witness,
+                provider: &mut earlier_provider,
+                crash_after_send: true,
+            },
+        )
+        .unwrap();
+    assert!(first.lifecycle_view().unwrap().unknown);
+    let mut later_case = case;
+    if changed_effect {
+        later_case.request.resource = "Document::\"two\"".into();
+    }
+    let second = Simulator::new(&later_case, Some(&schema)).unwrap();
+    let envelope = second.envelope();
+    assert_eq!(first_envelope.effect.operation, envelope.effect.operation);
+    assert_eq!(first_envelope.effect == envelope.effect, !changed_effect);
+    let mut observed = ProviderJournal::default();
+    let (_, receipt) = second
+        .execute(
+            second.prepare(&envelope).unwrap(),
+            &envelope,
+            EffectIo {
+                witness: &mut witness,
+                provider: &mut observed,
+                crash_after_send: false,
+            },
+        )
+        .unwrap();
+    let receipts = vec![receipt.unwrap()];
+    let audit = second.audit_authority(&witness);
+    let report = reconcile(&observed, &receipts, &witness.snapshot(), &audit);
+    assert!(!report.invalid_log);
+    assert_eq!(report.invalid_receipts, 0);
+    assert_eq!(
+        report.unresolved_precommits,
+        vec![envelope.effect.operation.clone()]
+    );
+    assert_eq!(report.duplicates, vec![envelope.effect.operation]);
+    let recovered = Simulator::recover(
+        &first,
+        RecoveryEvidence {
+            witness: &witness,
+            publications: &[],
+            audit: &audit,
+            receipts: &receipts,
+            provider: &observed,
+        },
+    )
+    .unwrap();
+    assert!(recovered.lifecycle_view().unwrap().unknown);
+    assert!(recovered.prepare(&recovered.envelope()).is_err());
+}

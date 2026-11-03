@@ -2,7 +2,7 @@
 use super::{EffectIdentity, Signed, Version};
 use serde::{Deserialize, Serialize};
 /// Independent provider observation of one exact simulated effect.
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 #[serde(deny_unknown_fields)]
 pub struct ProviderAction {
     pub effect: EffectIdentity,

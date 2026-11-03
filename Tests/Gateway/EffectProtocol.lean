@@ -5,12 +5,23 @@ open Gateway.EffectProtocol CedarPooSpec.ZeroTrust CedarPooSpec.Production.Effec
 
 #guard faults.length == 32
 #guard faults.eraseDups.length == 32
-#guard auditCases.length == 11
-#guard (auditCases.map (fun row => row.1)).eraseDups.length == 11
+#guard auditCases.length == 13
+#guard (auditCases.map (fun row => row.1)).eraseDups.length == 13
 #guard ((faults.map (simulate · true)).filter (·.sent)).length == 2
 #guard (faults.map (simulate · false)).all (fun outcome => outcome == ⟨false,false,false,false,false⟩)
 #guard simulate .logFailure true == ⟨true,false,false,false,false⟩
 #guard simulate .crashAfterSend true == ⟨true,true,true,false,true⟩
+
+private def earlier : CommitRef := ⟨"operation", [0], [1]⟩
+private def later : CommitRef := ⟨"operation", [2], [3]⟩
+private def action : AuditRecord := ⟨"operation", "original"⟩
+private def ambiguousReport := reconcile [action] [⟨action, later⟩] 0 true [earlier, later]
+#guard ambiguousReport.unresolvedPrecommits == ["operation"]
+#guard ambiguousReport.duplicates == ["operation"]
+#guard !ambiguousReport.clean
+#guard resolves [action] ⟨action, later⟩ later
+#guard !resolves [action] ⟨action, later⟩ earlier
+#guard !resolves [] ⟨action, later⟩ later
 
 private def original : Requirement Envelope Current := fun envelope current =>
   accepts current envelope true = true
@@ -35,6 +46,10 @@ example : ambiguous "a" "b|c" = ambiguous "a|b" "c" := by decide
 
 #print axioms receipt_bound_effect_is_error_free
 #print axioms precommit_without_observation_remains_unresolved
+#print axioms another_receipt_cannot_hide_precommit
+#print axioms duplicate_precommit_is_reported
+#print axioms resolved_commit_is_exact
+#print axioms different_commit_cannot_resolve
 #print axioms missing_receipt_iff
 #print axioms affected_iff
 #print axioms missing_action_iff

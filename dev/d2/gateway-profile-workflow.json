@@ -401,7 +401,7 @@
         "layoutSHA256": "65753ad6db6214224a0f3fe8f1087ae0093abd7d64c15874592447740d7b7fd2",
         "nodes": 6,
         "edges": 8,
-        "milliseconds": 182.97220800000014
+        "milliseconds": 125.82470899999953
       }
     ],
     "svgSHA256": [
@@ -425,8 +425,8 @@
     "drawing": "precise",
     "routing": "elkjs@0.12.1",
     "assetSHA256": {
-      "@fontsource/inter/files/inter-latin-400-normal.woff2": "8909904ab6c872eb994093482a88a28eca2cd95912d7b6fecd72103b0dc07edc",
-      "@fontsource/inter/files/inter-latin-700-normal.woff2": "6f56409fd3d64bb85f7d070bce20749db2d66b6d63cec586cc22d1c761be2491"
+      "@fontsource/inter/files/inter-latin-700-normal.woff2": "6f56409fd3d64bb85f7d070bce20749db2d66b6d63cec586cc22d1c761be2491",
+      "@fontsource/inter/files/inter-latin-400-normal.woff2": "8909904ab6c872eb994093482a88a28eca2cd95912d7b6fecd72103b0dc07edc"
     },
     "pngSHA256": "56332b47cad679ebe52ad7a5f556671f6e49c996e9c6ba6f28f39b6c590ca235",
     "browser": "156.0.8078.4",
