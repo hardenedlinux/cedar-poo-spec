@@ -91,7 +91,7 @@ of any one AgenticAI example.
 | [[file:Tests/README.org][Tests/]] | Proof regressions, rejection controls and conformance fixtures. |
 | [[file:rust/README.org][rust/]] | Cargo workspace, crate ownership and feature/profile selection; packages live directly under =rust/*=. |
 | [[file:Benchmarks/README.org][Benchmarks/]] | Lean/Rust native workloads and separate process/resource observation. |
-| =python/packages/= | Scoped Python packages for external testing and process observation. |
+| =python/packages/= | Rust-built Python API plus separate external testing/process tools. |
 | =docs/= | RFCs, integration contracts, coverage and performance audits. |
 
 * Build and verify
@@ -116,7 +116,7 @@ materialized object families. Types, projection Contracts, semantic proofs and
 independent Rust authorization must agree. [[file:docs/functional-coverage.org][The coverage audit]]
 records the inventory and retained controls. [[file:docs/ci-modules.org][CI module ownership]]
 separates core, Zero Trust/authorization, healthcare, financial services,
-platforms, governance, cross-module conformance, native resources and views.
+platforms, governance, cross-module conformance, native Python wheels, resources and views.
 
 * Native performance
 
@@ -127,7 +127,8 @@ just bench-functional-catalog
 
 Lean owns source construction, Program preparation, serialization workloads,
 correctness checks and native timers. Rust owns SDK replay and allocation
-counters. Python is limited to necessary external process/resource observation.
+counters. [[file:docs/python-native.org][Native Python APIs]] are built from Rust with maturin/PyO3;
+the separate testing package retains necessary external process/resource observation.
 The [[file:Benchmarks/README.org][benchmark guide]] documents fixed workloads,
 entrypoints and evidence handling. Keep all samples, including regressions;
 algorithm timings, full-process wall time, CPU, allocations and RSS are separate

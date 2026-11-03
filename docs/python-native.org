@@ -1,0 +1,73 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: Apache-2.0
+
+#+title: Native Rust Python boundary
+
+* API ownership
+
+=python/packages/bridge= is a mixed Rust/Python project built by pinned
+=maturin 1.16.0=. Its =cedar_poo_bridge._native= module is compiled from
+=rust/python= with pinned PyO3 0.30.1 and the CPython stable ABI, minimum 3.11.
+Python imports the native functions directly. There is no Python policy parser,
+Cargo invocation, subprocess or alternative decision implementation in this API.
+Rust deserializes the existing public manifest types and invokes the same
+=cedar-poo-runtime= validation/replay owner used by the CLI. Work detaches from
+the Python interpreter, then returns serialized receipt bytes. Runtime errors
+become =ValueError=; incompatible Python argument types refuse as =TypeError=.
+
+| Python function | Shared Rust owner | Output |
+|-----------------+-------------------+--------|
+| =replay_receipts(bytes)= | =replay_manifest= | Raw manifest receipt JSON bytes |
+| =replay_validated_receipts(bytes)= | =replay_validated_manifest= | Strict schema-bound receipt JSON bytes |
+| =replay_schema_only_revision(bytes)= | =replay_schema_only_revision= | Schema revision receipt JSON bytes |
+
+The installed API is native. The thin =__init__.py= selects exports and =.pyi=
+files describe signatures for tooling; neither evaluates Cedar semantics.
+
+The existing uv build cache keys include the Python package sources, Cargo
+lock/configuration and the three local Rust owners (binding/runtime/core).
+Changing Rust code therefore invalidates the editable build without a new cache
+namespace or an always-reinstall workaround. These keys follow the
+[[https://docs.astral.sh/uv/concepts/cache/][official uv local-source cache contract]].
+
+* Process observations remain separate
+
+The former =cedar_poo_bridge.process= adapter now belongs to
+=cedar_poo_py_test.process=. Artifact/scenario process orchestration imports that
+owner directly. It retains exact stdin/stdout bytes and refuses failed child
+processes before writing receipts. There is no compatibility re-export from the
+native API. The testing package has no dependency on the native bridge, so a
+process/resource observer need not build or load Cedar into its own process.
+This preserves the original outer-process evidence boundary and benchmarks.
+The observer hashes the resolved executable but launches its original absolute
+invocation path; resolving a venv symlink for execution would silently lose
+the installed environment. A real-venv regression preserves that distinction.
+
+* Build and qualification
+
+#+begin_src sh
+uv build --project python/packages/bridge --wheel
+just check-python-bindings
+#+end_src
+
+The standard check builds one wheel and installs that artifact in isolated
+CPython 3.11 and 3.14 environments. Tests use =python -I= and verify that the
+loaded module is a binary extension inside the new interpreter's site-packages.
+The existing Lean producer exports every original entry once. All 48 applicable
+receipt-bearing entries (24 raw, 23 schema-bound, one schema evolution) compare
+complete native-binding output bytes with the original Rust CLI in independent
+processes. Artifact/data entries have no receipt API here; the original complete
+51-entry Rust catalog gate still qualifies those entries. No Case is replaced
+by a Python semantic assertion. Invalid bytes, wrong input types and parallel
+calls are covered separately. Each installed-interpreter check uses the existing
+120-second owned-process supervisor with a fixed three-second termination grace;
+its resource receipt must finish with the child group quiescent. These are interface/packaging controls, not a
+throughput benchmark or a claim of universal thread safety.
+
+The [[file:../.github/workflows/python-bindings.yml][native Python workflow]] runs this entrypoint on Ubuntu and macOS.
+Existing Rust workspace/profile checks still inspect the new crate; existing
+Lean, domain and native-performance workflows retain their owners and limits.
+No Cargo job-count override, remote provider or production Host is introduced.
+The [[https://www.maturin.rs/project_layout.html][official maturin project layout]] and
+[[https://www.maturin.rs/bindings.html][binding/ABI documentation]] define packaging; the full Python package is
+not generated source code, and Python orchestration remains explicit glue.

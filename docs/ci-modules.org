@@ -22,6 +22,7 @@ between source modules; the existing Lean import audit enforces that boundary.
 | [[file:../.github/workflows/governance.yml][governance.yml]] | Governance, personnel and schema evolution | Governance examples and governance recipes |
 | [[file:../.github/workflows/conformance.yml][conformance.yml]] | Canonical artifacts and cross-module replay | Artifact, replay and schema-bound conformance recipes |
 | [[file:../.github/workflows/native-performance.yml][native-performance.yml]] | Lean/Rust benchmarks and OS observations | Existing native benchmark, cold recovery, allocation and launch recipes |
+| [[file:../.github/workflows/python-bindings.yml][python-bindings.yml]] | Native Rust/Python wheel and FFI boundary on Ubuntu/macOS | =just check-python-bindings= |
 | [[file:../.github/workflows/views.yml][views.yml]] | SDK-bound render / recovery on Ubuntu and macOS | =cd dev && just render && just test= |
 
 The full Lean integration gate is intentionally retained alongside module

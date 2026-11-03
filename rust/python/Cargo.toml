@@ -1,0 +1,20 @@
+[package]
+name = "cedar-poo-python"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Native Python bindings to the shared Cedar runtime"
+
+[lib]
+name = "_native"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+cedar-poo-runtime.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+pyo3 = { version = "=0.30.1", features = ["abi3-py311"] }
+
+[dev-dependencies]
+asp-rust.workspace = true

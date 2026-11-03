@@ -27,9 +27,6 @@ source = { editable = "packages/bridge" }
 name = "cedar-poo-py-test"
 version = "0.1.0"
 source = { editable = "packages/testing" }
-dependencies = [
-    { name = "cedar-poo-bridge" },
-]
 
 [package.optional-dependencies]
 ap2-sdk = [
@@ -41,7 +38,6 @@ ap2-sdk = [
 
 [package.metadata]
 requires-dist = [
-    { name = "cedar-poo-bridge", editable = "packages/bridge" },
     { name = "cryptography", marker = "extra == 'ap2-sdk'", specifier = "==46.0.5" },
     { name = "jwcrypto", marker = "extra == 'ap2-sdk'", specifier = "==1.5.6" },
     { name = "pydantic", marker = "extra == 'ap2-sdk'", specifier = "==2.12.5" },

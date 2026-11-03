@@ -20,6 +20,7 @@ import Case crates or synthetic scenario inputs.
 | =cedar-poo-google-sdp-host= | In-memory Cedar and Google admission reference | None |
 | =cedar-poo-disclosure-host= | In-memory language-model disclosure reference | None |
 | =cedar-poo-bridge= | JSON conformance CLI and export benchmark | None |
+| =cedar-poo-python= | PyO3 native consumer of shared runtime; maturin builds the Python wheel | CPython stable ABI, minimum 3.11 |
 | =cedar-poo-commerce-case= | Independent Lean commerce fixture consumers | =projection=, =admission= |
 | =cedar-poo-pseudonymization-case= | Local crypto and Google examples | =local=, =google-contract=, =google-admission= |
 | =cedar-poo-disclosure-case= | Language-model disclosure scenario | None |

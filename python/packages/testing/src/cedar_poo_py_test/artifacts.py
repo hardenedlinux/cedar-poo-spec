@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from cedar_poo_bridge import RustBridge
+from cedar_poo_py_test.process import RustBridge
 
 
 ARTIFACTS = (

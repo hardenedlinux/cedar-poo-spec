@@ -3,7 +3,7 @@ name = "cedar-poo-py-test"
 version = "0.1.0"
 description = "Conformance and proof-probe runner for Cedar POO"
 requires-python = ">=3.11"
-dependencies = ["cedar-poo-bridge==0.1.0"]
+dependencies = []
 
 [project.optional-dependencies]
 ap2-sdk = [
@@ -15,9 +15,6 @@ ap2-sdk = [
 
 [project.scripts]
 cedar-poo-py-test = "cedar_poo_py_test.cli:main"
-
-[tool.uv.sources]
-cedar-poo-bridge = { workspace = true }
 
 [build-system]
 requires = ["uv_build==0.11.3"]

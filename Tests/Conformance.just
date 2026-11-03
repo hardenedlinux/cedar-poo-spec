@@ -175,3 +175,32 @@ check-claim-settlement-replay: build-examples
     timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 --run Examples/Manifests.lean catalog claim-settlement-claims claim-settlement-banking claim-settlement-handoff > .lake/build/claim-settlement-catalog.json
     cargo run --locked --quiet -p cedar-poo-bridge --manifest-path Cargo.toml -- replay-catalog < .lake/build/claim-settlement-catalog.json > .lake/build/claim-settlement-receipts.json
     jq -e 'length == 3 and (."claim-settlement-handoff".scenarios | length) == 14 and ([."claim-settlement-handoff".scenarios[] | select(.admitted) | .name] == ["ready"])' .lake/build/claim-settlement-receipts.json > /dev/null
+
+# Build one native wheel, install it in isolated interpreters, and compare actual
+# extension receipts with the existing Rust CLI for every applicable Lean entry.
+[script]
+check-python-bindings versions="3.11 3.14":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    lake build caseManifestsNative
+    .lake/build/bin/caseManifestsNative all
+    .lake/build/bin/caseManifestsNative catalog > .lake/build/functional-catalog.json
+    cargo build --locked -p cedar-poo-bridge
+    mkdir -p .lake/build/python-bindings
+    evidence=$(mktemp -d .lake/build/python-bindings/run.XXXXXX)
+    evidence=$(cd "$evidence" && pwd)
+    { git rev-parse HEAD; git status --porcelain=v1; sha256sum Cargo.lock python/uv.lock python/packages/bridge/pyproject.toml rust/python/Cargo.toml rust/python/src/lib.rs rust/python/src/bindings.rs; } > "$evidence/provenance.txt"
+    uv build --project python/packages/bridge --wheel --out-dir "$evidence/wheels"
+    wheels=("$evidence"/wheels/*.whl)
+    test "${#wheels[@]}" -eq 1
+    sha256sum "${wheels[0]}" > "$evidence/wheel.sha256"
+    native_venvs=$(mktemp -d)
+    trap 'rm -rf "$native_venvs"' EXIT
+    read -r -a requested_versions <<< {{quote(versions)}}
+    for version in "${requested_versions[@]}"; do
+        uv venv --python "$version" "$native_venvs/python$version"
+        interpreter="$native_venvs/python$version/bin/python"
+        uv pip install --python "$interpreter" "${wheels[0]}"
+        uv run --project python --package cedar-poo-py-test --locked python -m cedar_poo_py_test.resources --timeout-seconds 120 --output "$evidence/python$version.resource.json" "$interpreter" -I python/native_tests/test_bindings.py 2>&1 | tee "$evidence/python$version.log"
+        jq -e ' .returncode == 0 and .termination_reason == null and .owned_group_quiesced and .resource_observation_complete and .timeout_seconds == 120 ' "$evidence/python$version.resource.json" > /dev/null
+    done
