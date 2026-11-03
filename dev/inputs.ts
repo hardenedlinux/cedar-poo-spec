@@ -7,7 +7,7 @@ import {compileModel,readD2Figure} from '@deterministic-engineering/render';
 import {captureFiles} from './sources';
 import {engineeringIcons} from '@deterministic-engineering/render/icons';
 import {cedarIcons} from './icons';
-const resources={iconPacks:{engineering:engineeringIcons,cedar:cedarIcons}};
+export const resources={iconPacks:{engineering:engineeringIcons,cedar:cedarIcons}};
 
 /** References already belong to D2. The official compiler enforces a closed virtual FS. */
 export async function figureSource(root:string,inventory:Readonly<Record<string,string>>,entry:string){

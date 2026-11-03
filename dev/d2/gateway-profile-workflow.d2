@@ -21,12 +21,12 @@ vars: {d2-config: {data: {figure: |json
     "obligationRefs": [],
     "evidenceRefs": []
   },
-  "title": "Gateway: can this request use the published profile?",
+  "title": "May this request use the published profile?",
   "kind": "workflow",
   "questions": [
     {
       "ref": "purpose",
-      "text": "Where does the request continue, and where must it stop?",
+      "text": "Which check continues the request, and which one stops it?",
       "focusRefs": [
         "sysml",
         "sourceCode"
@@ -41,8 +41,8 @@ vars: {d2-config: {data: {figure: |json
     "admission": "CedarPooSpec/Gateway/Admission.lean"
   },
   "copy": {
-    "description": "Follow the arrows from the profile to the bound receipt. Each check has an explicit refusal route.",
-    "status": "Pure admission, not dispatch. The Host supplies the authoritative publication; Lean checks the API bindings."
+    "description": "Follow the upper route to a receipt. Every failed check joins Stop.",
+    "status": "A receipt permits final-use checks; it does not dispatch an effect."
   },
   "presentation": {
     "notation": "workflow",
@@ -67,7 +67,7 @@ vars: {d2-config: {data: {figure: |json
     "bindings": {
       "stepSession": {
         "name": "GatewayProfileFlow::stepSession",
-        "icon": "current"
+        "icon": "branch"
       },
       "stepCapture": {
         "name": "GatewayProfileFlow::stepCapture",
@@ -79,7 +79,7 @@ vars: {d2-config: {data: {figure: |json
       },
       "stepBind": {
         "name": "GatewayProfileFlow::stepBind",
-        "icon": "capture"
+        "icon": "evidence"
       },
       "stepAccepted": {
         "name": "GatewayProfileFlow::stepAccepted",
@@ -87,7 +87,7 @@ vars: {d2-config: {data: {figure: |json
       },
       "stepRefused": {
         "name": "GatewayProfileFlow::stepRefused",
-        "icon": "gate"
+        "icon": "warning"
       }
     }
   },
@@ -97,12 +97,12 @@ vars: {d2-config: {data: {figure: |json
 }
 |
 }}}
-stepSession: "Profile still fits?\nOriginal checks retained"
-stepCapture: "Profile selected?\nRead the actual object"
-stepAuthorize: "Allowed now?\nCurrent context + Cedar"
-stepBind: "Same publication?\nExact profile + context"
-stepAccepted: "Bound receipt\nReady for final-use checks"
-stepRefused: "Stop\nReturn the typed error"
+stepSession: "Rule retained?\nOriginal checks"
+stepCapture: "Profile selected?\nActual object"
+stepAuthorize: "Allowed now?\nCurrent Cedar input"
+stepBind: "Publication matches?\nProfile + context"
+stepAccepted: "Bound receipt\nNext: final-use checks"
+stepRefused: "Stop\nTyped error"
 stepSession -> stepCapture: "fits"
 stepSession -> stepRefused: "invalid"
 stepCapture -> stepAuthorize: "selected"

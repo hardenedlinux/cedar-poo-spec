@@ -5,14 +5,15 @@ vars: {d2-config: {data: {figure: |json
 {
   "purpose": "architecture",
   "language": "en",
-  "width": 1280,
+  "width": 1200,
   "primary": "purpose",
   "themes": [
     "blueprint",
     "compact"
   ],
   "icons": [
-    "engineering"
+    "engineering",
+    "cedar"
   ],
   "basis": {
     "captureRef": "development-source-observation",
@@ -20,12 +21,12 @@ vars: {d2-config: {data: {figure: |json
     "obligationRefs": [],
     "evidenceRefs": []
   },
-  "title": "Native catalog: transport forms",
+  "title": "What does the native catalog contain?",
   "kind": "catalog-overview",
   "questions": [
     {
       "ref": "purpose",
-      "text": "Which transport forms does the native Lean catalog publish?",
+      "text": "How many entries use each transport form?",
       "focusRefs": [
         "sysml",
         "producer"
@@ -38,8 +39,8 @@ vars: {d2-config: {data: {figure: |json
     "producer": "CedarPooSpec/Transport/SourceCatalog.lean"
   },
   "copy": {
-    "description": "These categories describe JSON transport forms, not vertical industries or model Components. Counts are checked through the SDK.",
-    "status": "Expected allow/deny values are test expectations, not newly issued authorization results."
+    "description": "Counts come from the captured Lean catalog. Bar lengths share the same zero baseline.",
+    "status": "Transport inventory, not industry coverage or issued permissions."
   },
   "presentation": {
     "notation": "bars",
@@ -51,23 +52,23 @@ vars: {d2-config: {data: {figure: |json
     "bindings": {
       "raw": {
         "name": "LeanCatalog::group0",
-        "icon": "document"
+        "icon": "request"
       },
       "schema_bound": {
         "name": "LeanCatalog::group1",
-        "icon": "obligation"
+        "icon": "rules"
       },
       "evolution": {
         "name": "LeanCatalog::group2",
-        "icon": "decision"
+        "icon": "recovery"
       },
       "artifacts": {
         "name": "LeanCatalog::group3",
-        "icon": "library"
+        "icon": "evidence"
       },
       "data": {
         "name": "LeanCatalog::group4",
-        "icon": "model"
+        "icon": "registry"
       }
     }
   },

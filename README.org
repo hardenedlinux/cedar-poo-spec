@@ -25,7 +25,8 @@ LeanPoo, Cedar semantics or the vertical libraries.
 [[file:dev/d2/verticals-platforms.png][Vertical controls and platform projections]] ·
 [[file:CedarPooSpec/ZeroTrust/README.org][Zero Trust proof maps and premises]] ·
 [[file:dev/README.org::*A reading path for people][Workflow, responsibility lanes and Final requirements]] ·
-[[file:dev/README.org][Model sources and rendering]]
+[[file:dev/README.org][Model sources and rendering]] ·
+[[file:docs/diagram-review.org][Student-perspective diagram audit]]
 
 Each view follows its question: the overview maps responsibilities and declared
 interfaces, inventories classify capabilities and export forms, and proof panels

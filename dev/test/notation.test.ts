@@ -20,20 +20,22 @@ test('reading groups cannot invent, duplicate or omit captured subjects',()=>{
  expect(()=>bindNotation({notation:'components',groups:[{title:'Duplicate',subjects:['left','left']}]},mapping,model,{})).toThrow('exactly one');
  expect(()=>bindNotation({notation:'components',groups:[{title:'Invented',subjects:['left','missing']}]},mapping,model,{})).toThrow('Unknown');
 });
-test('inventories refuse relationships; the responsibility matrix preserves direction and complete design coverage',()=>{
+test('inventories refuse relationships; the responsibility view preserves direction and complete design coverage',()=>{
  expect(()=>bindNotation({notation:'catalogue',groups:[{title:'Both',subjects:['left','right']}]},mapping,model,{})).toThrow('discard');
- const rendered=html(bindNotation({notation:'matrix'},mapping,model,{}));
- expect(rendered).toContain('<table class="responsibilities">');
- expect(rendered).toContain('data-relation="native-link" data-from="native-left" data-to="native-right"');
- expect(rendered).not.toContain('data-from="native-right" data-to="native-left"');
+ const rendered=html(bindNotation({notation:'dependencies'},mapping,model,{}));
+ expect(rendered).toContain('data-scene-edge');
+ expect(rendered).not.toContain('<table');
+ expect(rendered).toContain('data-scene-edge="native-link"');
+ expect(rendered).toContain('data-source-id="native-left" data-target-id="native-right"');
+ expect(rendered).not.toContain('data-source-id="native-right" data-target-id="native-left"');
 });
 test('assurance distinguishes checked lemma dependencies from explanatory links using the captured proof map',()=>{
  const actual=bindNotation({...grouped,proofDependencies:['invented']},mapping,model,{},proofs);
  expect(actual.proofDependencies).toEqual(['native-link']);
- expect(html(actual)).toContain('CHECKED LEMMA DEPENDENCY');
+ expect(html(actual)).toContain('PROOF A1 → A2');
  const explanatory=bindNotation(grouped,mapping,model,{}, {...proofs,uses:[]});
- expect(html(explanatory)).toContain('READING RELATION');
- expect(html(explanatory)).not.toContain('CHECKED LEMMA DEPENDENCY');
+ expect(html(explanatory)).toContain('CONTEXT A1 → A2');
+ expect(html(explanatory)).not.toContain('PROOF A1 → A2');
  expect(()=>bindNotation(grouped,mapping,model,{})).toThrow('proof map');
 });
 test('quantity views require complete nonnegative SDK observations rather than caption-derived numbers',()=>{

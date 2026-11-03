@@ -5,14 +5,15 @@ vars: {d2-config: {data: {figure: |json
 {
   "purpose": "architecture",
   "language": "en",
-  "width": 1800,
+  "width": 1700,
   "primary": "purpose",
   "themes": [
     "editorial",
     "comfortable"
   ],
   "icons": [
-    "engineering"
+    "engineering",
+    "cedar"
   ],
   "basis": {
     "captureRef": "development-source-observation",
@@ -20,12 +21,12 @@ vars: {d2-config: {data: {figure: |json
     "obligationRefs": [],
     "evidenceRefs": []
   },
-  "title": "Zero Trust: object composition and publication assurance",
+  "title": "Keep the parent rule; retire the old publication",
   "kind": "proof-reading-map",
   "questions": [
     {
       "ref": "purpose",
-      "text": "Which original requirements and publication frontiers do the actual Contracts preserve?",
+      "text": "What prevents weaker children, duplicate use and reused reviews?",
       "focusRefs": [
         "sysml",
         "core"
@@ -49,41 +50,44 @@ vars: {d2-config: {data: {figure: |json
     "finalRollbackSource": "Tests/Gateway/PublicationReview.lean"
   },
   "copy": {
-    "description": "Definitions, premises, kernel laws and counterexamples are distinct. Each card names its actual Lean declaration.",
-    "status": "Reading groups organize the argument. Checked lemma dependencies are validated against Lean proof terms; other links are explanatory model relationships."
+    "description": "Three arguments: inherited rules, ongoing consumption, and publication epochs.",
+    "status": "PROOF marks a checked lemma dependency; CONTEXT explains the model. Authentic readers and every-writer ordering remain premises."
   },
   "presentation": {
     "notation": "assurance",
-    "columns": 3,
+    "columns": 1,
     "groups": [
       {
-        "title": "Original-parent composition",
+        "title": "Retain both object rules",
+        "icon": "branch",
         "subjects": [
           "profile",
           "session",
+          "counter",
           "joined",
-          "preserved",
-          "counter"
+          "preserved"
         ],
-        "columns": 1
+        "columns": 5
       },
       {
-        "title": "Current use and consumption",
+        "title": "Do not consume twice",
+        "icon": "registry",
         "subjects": [
           "prefix",
           "continuing"
         ],
-        "columns": 1
+        "columns": 2
       },
       {
-        "title": "Publication frontier Contract",
+        "title": "Advance the publication frontier",
+        "icon": "gate",
         "subjects": [
           "deltaHost",
           "frontier",
-          "successive",
-          "finalRollback"
+          "finalRollback",
+          "successive"
         ],
-        "columns": 1
+        "columns": 4
       }
     ]
   },
@@ -93,19 +97,19 @@ vars: {d2-config: {data: {figure: |json
     "bindings": {
       "profile": {
         "name": "ZeroTrustProofs::profile",
-        "icon": "library"
+        "icon": "puzzle"
       },
       "session": {
         "name": "ZeroTrustProofs::session",
-        "icon": "library"
+        "icon": "request"
       },
       "counter": {
         "name": "ZeroTrustProofs::counter",
-        "icon": "decision"
+        "icon": "warning"
       },
       "joined": {
         "name": "ZeroTrustProofs::joined",
-        "icon": "library"
+        "icon": "branch"
       },
       "preserved": {
         "name": "ZeroTrustProofs::preserved",
@@ -113,19 +117,19 @@ vars: {d2-config: {data: {figure: |json
       },
       "prefix": {
         "name": "ZeroTrustProofs::prefix",
-        "icon": "obligation"
+        "icon": "registry"
       },
       "continuing": {
         "name": "ZeroTrustProofs::continuing",
-        "icon": "evidence"
+        "icon": "current"
       },
       "deltaHost": {
         "name": "ZeroTrustProofs::deltaHost",
-        "icon": "library"
+        "icon": "gate"
       },
       "frontier": {
         "name": "ZeroTrustProofs::frontier",
-        "icon": "evidence"
+        "icon": "pending"
       },
       "successive": {
         "name": "ZeroTrustProofs::successive",
@@ -133,7 +137,7 @@ vars: {d2-config: {data: {figure: |json
       },
       "finalRollback": {
         "name": "ZeroTrustProofs::finalRollback",
-        "icon": "decision"
+        "icon": "warning"
       }
     }
   },
@@ -143,25 +147,25 @@ vars: {d2-config: {data: {figure: |json
 }
 |
 }}}
-profile: "Type-indexed Profile [definition]\noriginal requirement is an index\nrefines : selected implies original"
-session: "Session / Contract [definition]\nactual source-bound object reads\nshape checks do not select authority"
-counter: "Root-only is insufficient [proved]\nroot <= 10; parent <= 5\nraw override accepts value 8\nthe stricter parent can be lost"
-joined: "Composed acceptance [premise]\nrequired-parent AND selected\nat the actual effect and view"
-preserved: "Composition [kernel law]\ncomposed_preserves_actual_\nparent_and_original\ngiven: composed requirement holds\nthen: both actual reads + both rules\nand the original requirement"
-prefix: "Ongoing evidence [premises]\ncurrent continuing acceptance\ninstalled CommittedPrefix\nauthentic required-parent selection"
-continuing: "Continuing use [kernel law]\ncontinuing_objects_preserve_\nparent_and_consumption\ngiven: composition accepted\nthen: parent + current + prefix\noriginal operation cannot reconsume"
-profile -> session: "Typed projection and actual source reads"
-profile -> counter: "Counterexample to parent preservation inference"
-session -> joined: "Retain independent parent and selected Sessions"
-counter -> joined: "Design motivation; not a proof-term dependency"
-joined -> preserved: "Accepted conjunction is a theorem premise"
-preserved -> continuing: "Actual lemma used by Gateway proof"
-prefix -> continuing: "Additional continuing framework premises"
+profile: "Profile\nSelected rule implies original"
+session: "Session / Contract\nRead the actual source object"
+counter: "Root-only check loses a rule\nRoot ≤ 10; parent ≤ 5\nValue 8 passes root, fails parent"
+joined: "Require both rules\nParent AND selected\nAt the same effect and view"
+preserved: "Composition keeps both\nIf: composed acceptance holds\nThen: actual reads + both rules"
+prefix: "Retain the consumed prefix\nAssume: current acceptance\nAnd: authentic parent + history"
+continuing: "Continue without reconsuming\nIf: composed use is accepted\nThen: current + prefix + parent\nOriginal operation is refused again"
+profile -> session: "Typed reads"
+profile -> counter: "Parent-loss counterexample"
+session -> joined: "Retain both Sessions"
+counter -> joined: "Motivates conjunction"
+joined -> preserved: "Accepted conjunction"
+preserved -> continuing: "Keeps parent rule"
+prefix -> continuing: "Current + prefix"
 
-deltaHost: "Delta Host [definition]\nHost.withDeltaReview\nfrontierAt is a required reader\ncommit binds pre / post epochs"
-frontier: "Final frontier [kernel law]\ndelta_final_retains_frontier\ngiven an actual Delta Final\nthen: current epoch + installed frontier"
-successive: "Successive Finals [kernel law]\nsuccessive_delta_finals_\nadvance_review_epoch\ngiven two Finals + monotone forward Run\nthen: resolved review epochs increase"
-finalRollback: "Whole-reader rollback [counterexample]\nrolled_back_frontier_allows_\nsame_final_counterexample\nrestore the complete fixture reader\nthen: the same Final applies again"
-deltaHost -> frontier: "Extract mandatory pre / post bindings"
-frontier -> successive: "Uses delta_final_retains_frontier"
-finalRollback -> successive: "Every-writer monotonicity remains required"
+deltaHost: "Bind the actual frontier\nRequired pre/post epoch reader"
+frontier: "Final installs its successor\nIf: an actual Delta Final exists\nThen: epochs match its frontier"
+successive: "Later Finals advance\nIf: two Finals + monotone Run\nThen: review epochs increase"
+finalRollback: "Whole-reader rollback fails\nRestore every authority reader\nThe same Final can apply again"
+deltaHost -> frontier: "Pre/post binding"
+frontier -> successive: "Frontier law"
+finalRollback -> successive: "Every writer required"

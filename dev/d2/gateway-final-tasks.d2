@@ -5,7 +5,7 @@ vars: {d2-config: {data: {figure: |json
 {
   "purpose": "architecture",
   "language": "en",
-  "width": 1600,
+  "width": 1500,
   "primary": "purpose",
   "themes": [
     "blueprint",
@@ -21,12 +21,12 @@ vars: {d2-config: {data: {figure: |json
     "obligationRefs": [],
     "evidenceRefs": []
   },
-  "title": "Gateway: eight requirements, one publication gate",
+  "title": "Eight requirements, one publication gate",
   "kind": "tasks",
   "questions": [
     {
       "ref": "purpose",
-      "text": "What must come together before a Final can exist?",
+      "text": "What must be present together before Final exists?",
       "focusRefs": [
         "sysml",
         "sourceCode"
@@ -39,8 +39,8 @@ vars: {d2-config: {data: {figure: |json
     "sourceCode": "CedarPooSpec/Gateway/PublicationReview.lean"
   },
   "copy": {
-    "description": "Read the three questions below. Each item is required at the same deciding view.",
-    "status": "Requirements, not completed tasks. Lean checks the field bindings; authentic authority and atomic execution remain Host obligations."
+    "description": "Three questions organize all eight fields. Every field is required in the same deciding view.",
+    "status": "AND requirements, not run order. Lean checks field binding; Host authority and atomic execution remain obligations."
   },
   "presentation": {
     "notation": "tasks",
@@ -124,15 +124,15 @@ vars: {d2-config: {data: {figure: |json
 }
 |
 }}}
-stepFinal: "Admissible publication\nAll required evidence in one Final"
-stepReceipt: "Same request\nBound original Contract"
-stepPending: "Admissible intent\nPending state fits this command"
+stepFinal: "One admissible publication\nAll eight requirements together"
+stepReceipt: "Same request\nOriginal Contract"
+stepPending: "Admissible intent\nThis command fits pending state"
 stepApproved: "Selected review\nChosen by the authority"
 stepDurable: "Registered evidence\nExact artifact is committed"
 stepRecovered: "Recovered registry\nAuthority record is available"
 stepFenced: "Current registrar\nCorrect authority incarnation"
-stepCurrent: "Current use\nSecurity requirements hold now"
-stepCommitted: "Bound commit\nResult and next state stay bound"
+stepCurrent: "Current use\nSecurity holds at use"
+stepCommitted: "Bound commit\nResult + next state bound"
 stepFinal -> stepReceipt: requires
 stepFinal -> stepPending: requires
 stepFinal -> stepApproved: requires

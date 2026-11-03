@@ -8,11 +8,11 @@
     "dev/artifacts.ts": "ca1096947536fbdbd5da5cbf1ce5c6f57521bd4a7b135233285dfe8fcff9859d",
     "dev/bun.lock": "2b7060a881aad9312d122f6d01146ef78c207b3c95254aa66b7b57a9eede5acd",
     "dev/catalog.ts": "6d65a91afcddb11de668cc668aa3c6b9076435c02e73a90323c7bf28a991965e",
-    "dev/d2/gateway-profile-workflow.d2": "7af47052aaf8b55e277d27a6b7a68d268d129fe6f7241b1cd90c182dee33f2f0",
-    "dev/icons.ts": "45340ca1d19794f8fe48b849630a2691f564f546cc45c87c1424f314ff14e044",
-    "dev/inputs.ts": "d79d292e5652cd4c4368a754e1472485fda4aeb0fea721e8b43b3f11d5aadc3f",
+    "dev/d2/gateway-profile-workflow.d2": "f1ef21981435e443bcd345097ba1ee7f792eda4c39b72146c657487b6f86f215",
+    "dev/icons.ts": "0053a84dd7875949ffd03f8a067037353f3519f9f0875914fcbda1fb39f79764",
+    "dev/inputs.ts": "5da4f7a946a9bd87cdca04a0a0406f5f4cddae906f6375a4636aa3fa22f77bf5",
     "dev/Justfile": "364059989486f5babe149b9ab2a570e09fce7abf9f450dc03d47a0f564fa1a10",
-    "dev/notation.ts": "229ed638b34821729d1472ace8e46237ba593669057fc86521296e435cf5bec7",
+    "dev/notation.ts": "ac907119b44c174367e8668143d2f787849340f47a28beb71cb08074da0dd1ec",
     "dev/package.json": "4eb137a6d73d5dfb1e43020c3041e9a42151d480b26d6e01b99ee0ebc2997d90",
     "dev/projection.ts": "3fd049e50798aee9dce54af6cd6e6fccad45fec5ab24b994bb6a8a4b33d7252d",
     "dev/proofs.ts": "8a9cb88dd75b807f176c1389bd3e8b4df7cf658c657ad85bbf0487d09cafedd9",
@@ -292,56 +292,56 @@
         "x": 0,
         "y": 0,
         "width": 1900,
-        "height": 549.71875
+        "height": 543.65625
       },
       "subjects": [
         {
           "id": "n0",
           "role": "default",
-          "x": 59.51518249511719,
-          "y": 362.59967041015625,
-          "width": 244.6009063720703,
-          "height": 90.3746337890625
+          "x": 136.5260772705078,
+          "y": 354.3269348144531,
+          "width": 217.99302673339844,
+          "height": 91.99703979492188
         },
         {
           "id": "n1",
           "role": "default",
-          "x": 417.0843811035156,
-          "y": 317.412353515625,
-          "width": 233.79525756835938,
-          "height": 90.3746337890625
+          "x": 437.51641845703125,
+          "y": 308.32843017578125,
+          "width": 237.99237060546875,
+          "height": 91.99703979492188
         },
         {
           "id": "n2",
           "role": "default",
-          "x": 797.2472534179688,
-          "y": 272.2250671386719,
-          "width": 244.60089111328125,
-          "height": 90.3746337890625
+          "x": 792.5050659179688,
+          "y": 262.32989501953125,
+          "width": 219.992919921875,
+          "height": 91.9970703125
         },
         {
           "id": "n3",
           "role": "default",
-          "x": 1183.3040771484375,
-          "y": 212.6302032470703,
-          "width": 248.5302734375,
-          "height": 90.37461853027344
+          "x": 1124.494384765625,
+          "y": 213.664794921875,
+          "width": 277.9910888671875,
+          "height": 91.9970703125
         },
         {
           "id": "n4",
           "role": "default",
-          "x": 1579.1842041015625,
-          "y": 182.5053253173828,
-          "width": 261.3006591796875,
-          "height": 90.37461853027344
+          "x": 1526.4815673828125,
+          "y": 182.9990997314453,
+          "width": 236.9923095703125,
+          "height": 91.99705505371094
         },
         {
           "id": "n5",
           "role": "default",
-          "x": 1579.1842041015625,
-          "y": 323.4373474121094,
-          "width": 235.760009765625,
-          "height": 90.3746337890625
+          "x": 1526.4815673828125,
+          "y": 314.4615478515625,
+          "width": 169.9945068359375,
+          "height": 91.9970703125
         }
       ],
       "relations": [
@@ -379,7 +379,7 @@
         {
           "role": "note",
           "x": 32,
-          "y": 485.71875,
+          "y": 479.65625,
           "width": 1836,
           "height": 22
         }
@@ -390,25 +390,25 @@
       "transparent": false
     },
     "readability": {
-      "minimumTextSize": 12.770328356157915,
+      "minimumTextSize": 12.999583312849897,
       "samples": 25,
       "requiredMinimum": 12
     },
-    "inputSHA256": "0c54ef196a860722184feebcc5e84bc468784c9d9a5cb1ab8b18edd609244213",
+    "inputSHA256": "067e5647bfbaba5749ad77b8fe436d8aa47f3d6eb19b3a67733d41d5dea183d8",
     "scenes": [
       {
-        "inputSHA256": "ac40188f9ce4ca428e0c97598cd9b2aab862428d05d756adba14324f98e508c6",
-        "layoutSHA256": "3745a929129bb69874ee0763f0c279d32e51bf1f3beab64885e9357de9082c06",
+        "inputSHA256": "54b8fb86bd88b598f340a99bf649687b574c1e7257b09caf067fa3a7760e85c1",
+        "layoutSHA256": "65753ad6db6214224a0f3fe8f1087ae0093abd7d64c15874592447740d7b7fd2",
         "nodes": 6,
         "edges": 8,
-        "milliseconds": 138.69658299999992
+        "milliseconds": 255.76429199999984
       }
     ],
     "svgSHA256": [
-      "27e2d792ff174346e8cc2f921d878775ca70e79270a90234fb3e419ef0650f51",
-      "949967723c091cc3803eb709bae66dd17d37141190bee0bec1b3b87447b79f98"
+      "69afd14db62993e622016d35cd83e01ff37ca8c94e4e9c3d6301bf73b05f3870",
+      "743b6f1f5e16090f681b47611fe1d31fecfb4bfb992265b08c5600ed4b2a4b1d"
     ],
-    "composedHTMLSHA256": "c7f380a1e8f35d4f7ecbb34bd829794c941ad34dbcba0a05fd40af5abfb887b7",
+    "composedHTMLSHA256": "32aee4bd0411c50f178f542d3fa6cc65e5f361dcd983d82cb8dcaf0f2df7eade",
     "dependencies": {
       "@fontsource/inter": "5.3.0",
       "@fontsource/kalam": "5.3.0",
@@ -421,17 +421,17 @@
       "web-worker": "1.5.0"
     },
     "regionSHA256": {},
-    "htmlSHA256": "b7cfb6c28c54b339adf7464a3ad1d17e818ae22401684676710a7bfab6d7b224",
+    "htmlSHA256": "a4fc1bbd88a4ad9f7b22f0884ec2785ca4aedba1c8c3497751501828054aaee8",
     "drawing": "precise",
     "routing": "elkjs@0.12.1",
     "assetSHA256": {
       "@fontsource/inter/files/inter-latin-700-normal.woff2": "6f56409fd3d64bb85f7d070bce20749db2d66b6d63cec586cc22d1c761be2491",
       "@fontsource/inter/files/inter-latin-400-normal.woff2": "8909904ab6c872eb994093482a88a28eca2cd95912d7b6fecd72103b0dc07edc"
     },
-    "pngSHA256": "74e2cc485753905413f05c002956dbde93ea6c8a09e663e0ccf77c6e31a242f5",
+    "pngSHA256": "56332b47cad679ebe52ad7a5f556671f6e49c996e9c6ba6f28f39b6c590ca235",
     "browser": "156.0.8078.4",
     "width": 2850,
-    "height": 825,
+    "height": 816,
     "scale": 1.5,
     "bounds": {}
   }

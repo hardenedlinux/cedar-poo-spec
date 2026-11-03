@@ -5,7 +5,7 @@ vars: {d2-config: {data: {figure: |json
 {
   "purpose": "architecture",
   "language": "en",
-  "width": 1550,
+  "width": 1450,
   "primary": "purpose",
   "themes": [
     "blueprint",
@@ -21,12 +21,12 @@ vars: {d2-config: {data: {figure: |json
     "obligationRefs": [],
     "evidenceRefs": []
   },
-  "title": "Gateway: one publication, three responsibilities",
+  "title": "Who does what at publication?",
   "kind": "swimlanes",
   "questions": [
     {
       "ref": "purpose",
-      "text": "Who acts, and what stays inside the shared lock?",
+      "text": "What is checked before the lock, and what stays inside it?",
       "focusRefs": [
         "sysml",
         "sourceCode"
@@ -40,8 +40,8 @@ vars: {d2-config: {data: {figure: |json
     "contract": "CedarPooSpec/Gateway/PublicationReview.lean"
   },
   "copy": {
-    "description": "Read down the lanes. Check, prepare, install and observation share one lock scope.",
-    "status": "Successful path of the Rust in-memory fixture. Refusals stop before install or observation; a local reply does not prove delivery."
+    "description": "Read down the three roles. The dashed region is one shared critical section.",
+    "status": "Rust in-memory fixture, not a deployed Host. A local reply does not prove remote delivery."
   },
   "presentation": {
     "notation": "swimlanes",
@@ -177,14 +177,14 @@ vars: {d2-config: {data: {figure: |json
 }
 |
 }}}
-stepOwner: "Check ticket ownership\nMissing / foreign: stop before lock"
-stepCapture: "Capture ticket\nOwner + current generation"
-stepCall: "Request publication\nTicket grants no commit right"
-stepCheck: "Check current generation\nStale ticket: stop"
-stepAdmit: "Review and counters fit?\nDenied / exhausted: stop"
+stepOwner: "Check owner\nMissing / foreign: stop"
+stepCapture: "Capture ticket\nOwner + generation"
+stepCall: "Request publication\nTicket is not a commit right"
+stepCheck: "Check generation\nStale: stop"
+stepAdmit: "Recheck review + counters\nDenied / exhausted: stop"
 stepInstall: "Install successor\nAdvance image + generation"
-stepObserve: "Observe installed state\nCallback under lock; then unlock"
-stepReturn: "Receive local reply\nLost replies may remain unknown"
+stepObserve: "Observe installed state\nUnder lock; then unlock"
+stepReturn: "Receive local reply\nLost reply stays unknown"
 stepCapture -> stepCall: "ticket passed to caller"
 stepCall -> stepOwner: "enter publish; error branches return immediately"
 stepCheck -> stepAdmit: "current ticket only"

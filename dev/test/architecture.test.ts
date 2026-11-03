@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 // SPDX-License-Identifier: Apache-2.0
 import {test,expect} from 'bun:test';
+import {resources} from '../inputs';
 import {readFile,readdir} from 'node:fs/promises';
 import {compileModel,readD2Figure} from '@deterministic-engineering/render';
 import * as v from 'valibot';
@@ -9,7 +10,7 @@ const root=new URL('../../',import.meta.url);
 async function declaration(name:string){
  const file=`dev/d2/${name}.d2`,raw=await readFile(new URL(file,root),'utf8');
  const compiled=await compileModel({[file]:raw},file);
- return {author:readD2Figure(compiled,{[file]:raw}),projection:v.parse(ProjectionSchema,JSON.parse(v.parse(v.object({figure:v.string()}),compiled.data).figure)).sysml};
+ return {author:readD2Figure(compiled,{[file]:raw},resources),projection:v.parse(ProjectionSchema,JSON.parse(v.parse(v.object({figure:v.string()}),compiled.data).figure)).sysml};
 }
 test('Zero Trust is a model Component; diagram scopes do not promote it to the object foundation',async()=>{
  const overview=await declaration('architecture-overview'),components=await declaration('model-components');

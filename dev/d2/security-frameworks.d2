@@ -5,14 +5,15 @@ vars: {d2-config: {data: {figure: |json
 {
   "purpose": "architecture",
   "language": "en",
-  "width": 1600,
+  "width": 1400,
   "primary": "purpose",
   "themes": [
     "blueprint",
     "compact"
   ],
   "icons": [
-    "engineering"
+    "engineering",
+    "cedar"
   ],
   "basis": {
     "captureRef": "development-source-observation",
@@ -20,12 +21,12 @@ vars: {d2-config: {data: {figure: |json
     "obligationRefs": [],
     "evidenceRefs": []
   },
-  "title": "Zero Trust: semantic responsibilities",
+  "title": "Zero Trust: rules meet the actual application",
   "kind": "responsibility-map",
   "questions": [
     {
       "ref": "purpose",
-      "text": "Which layer supplies semantics, refinement or application binding?",
+      "text": "How do current-use requirements reach a Gateway?",
       "focusRefs": [
         "sysml",
         "lean"
@@ -38,11 +39,11 @@ vars: {d2-config: {data: {figure: |json
     "lean": "CedarPooSpec/ZeroTrust/ProfileObject.lean"
   },
   "copy": {
-    "description": "This is the Zero Trust Component detail, not the repository architecture or a map of vertical industries.",
-    "status": "Each row identifies a responsibility; the final column retains its actual outgoing SDK relationships."
+    "description": "Follow the dependency arrows. Object interpretation retains the required parent rule.",
+    "status": "Logical responsibilities, not a runtime call sequence. The application supplies authenticated facts and effect ordering."
   },
   "presentation": {
-    "notation": "matrix",
+    "notation": "dependencies",
     "columns": 2
   },
   "sysml": {
@@ -51,35 +52,35 @@ vars: {d2-config: {data: {figure: |json
     "bindings": {
       "core": {
         "name": "CedarFrameworks::core",
-        "icon": "question"
+        "icon": "current"
       },
       "authorization": {
         "name": "CedarFrameworks::authorization",
-        "icon": "evidence"
+        "icon": "rules"
       },
       "poo": {
         "name": "CedarFrameworks::poo",
-        "icon": "library"
+        "icon": "branch"
       },
       "gateway": {
         "name": "CedarFrameworks::gateway",
-        "icon": "capture"
+        "icon": "gate"
       },
       "other": {
         "name": "CedarFrameworks::other",
-        "icon": "model"
+        "icon": "puzzle"
       }
     }
   }
 }
 |
 }}}
-core: "ZeroTrust functional requirements\nPre / ongoing use and obligations\nImmutable observations and refinement"
-authorization: "Authorization framework\nCedar Policy composition\nSchema-bound Delta analysis\nRevision and evidence contracts"
-poo: "ZeroTrust.ProfileObject\nOptional LeanPoo interpretation\nRequired + selected Sessions\nRetains the original requirement"
-gateway: "Gateway.ZeroTrust adapter\nGateway-specific effect binding\nCurrent use and retained consumption"
-other: "Other downstream integrations\nApplication-owned effects and views\nNo generic industry implementation"
-core -> poo: Functional requirements
-poo -> other: Typed specialization
-poo -> gateway: Actual inherited profile
-authorization -> gateway: Bound Policy assessment
+core: "Zero Trust core\nCurrent-use requirements"
+authorization: "Authorization\nCedar + schema-bound Delta"
+poo: "POO interpretation\nRequired parent + selected rule"
+gateway: "Gateway\nCurrent admission + consumption"
+other: "Other applications\nOwn effects + own views"
+core -> poo: "Requirements"
+poo -> other: "Specialization"
+poo -> gateway: "Parent rule"
+authorization -> gateway: "Policy assessment"

@@ -37,10 +37,10 @@ compositor. The original 12 CSS pixel readability gate remains in force.
 
 | View | Expression | What it communicates |
 |------+------------+----------------------|
-| Architecture overview | Responsibility regions and interface entries | Library, independent consumers and runtime boundaries; static relationships |
+| Architecture overview | Illustrated reading guide and dependency graph | Library, independent consumers and runtime boundaries; static relationships |
 | Model Components | Grouped capability catalogue | Composition/control, operation/information and cross-industry capabilities |
-| Verticals and platforms | Two-column classification | Industry controls and separate platform projections |
-| Zero Trust detail | Compact responsibility table | Which layer supplies semantics, refinement or binding to another |
+| Verticals and platforms | Industry/platform comparison | Industry controls and separate platform projections |
+| Zero Trust detail | Dependency graph | Which layer supplies semantics, refinement or binding to another |
 | Transport inventory | Quantitative distribution | Native entry counts, checked through the SDK |
 | Model proofs | Assurance panels | Requirements, current-use laws, history laws and counterexamples |
 | Object proofs | Assurance panels | Original-parent composition, continuing use and publication-frontier Contracts |
@@ -50,14 +50,19 @@ compositor. The original 12 CSS pixel readability gate remains in force.
 
 Reading groups are authored presentation, not additional SysML containment or
 execution stages. Every captured subject still appears exactly once, and every
-captured relationship stays visible as an interface entry, responsibility entry or basis
-item. Proof labels distinguish native-checked lemma dependencies from authored
+captured relationship stays visible as a dependency arrow or a numbered argument
+reference. PROOF references retain checked lemma uses; CONTEXT references are
+explanatory and do not assert proof-term dependencies. Proof labels distinguish native-checked lemma dependencies from authored
 reading relationships. The bars consume already verified numeric SDK observations,
 not numbers parsed from prose. No industry/platform coverage cross-product is
 invented. Temporal flow or sequence notation belongs to a view with actual
 ordered events; these static responsibility and proof views do not assert one.
 
 * Visual communication standard
+
+Read the [[file:../docs/diagram-review.org][student-perspective review]] for all ten views, before/after measurements,
+comprehension questions and remaining limitations. This is an author review,
+not a study with recruited students.
 
 A view starts from a reader's question and the decision they need to make.
 Use a scene or structure that carries the explanation: participants, a shared

@@ -5,14 +5,15 @@ vars: {d2-config: {data: {figure: |json
 {
   "purpose": "architecture",
   "language": "en",
-  "width": 1600,
+  "width": 1500,
   "primary": "purpose",
   "themes": [
     "editorial",
     "comfortable"
   ],
   "icons": [
-    "engineering"
+    "engineering",
+    "cedar"
   ],
   "basis": {
     "captureRef": "development-source-observation",
@@ -20,12 +21,12 @@ vars: {d2-config: {data: {figure: |json
     "obligationRefs": [],
     "evidenceRefs": []
   },
-  "title": "Composable capability inventory",
+  "title": "Build an application from reusable controls",
   "kind": "responsibility-map",
   "questions": [
     {
       "ref": "purpose",
-      "text": "Which capabilities can an application compose?",
+      "text": "Which controls does my application need?",
       "focusRefs": [
         "sysml",
         "library"
@@ -48,24 +49,26 @@ vars: {d2-config: {data: {figure: |json
     "agenticAISource": "CedarPooSpec/AgenticAI/README.org"
   },
   "copy": {
-    "description": "Zero Trust is a peer Component; Cloud and AgenticAI are cross-industry capabilities.",
-    "status": "An inventory of implemented library families, not a claim that every profile selects every Component."
+    "description": "Choose capabilities by responsibility. A profile selects only what it needs.",
+    "status": "Library inventory; these groups do not imply execution order or mandatory selection."
   },
   "presentation": {
     "notation": "catalogue",
-    "columns": 3,
+    "columns": 1,
     "groups": [
       {
-        "title": "Composition and continuous control",
+        "title": "Define the rules",
+        "icon": "rules",
         "subjects": [
           "functional",
           "zeroTrust",
           "authorization"
         ],
-        "columns": 1
+        "columns": 3
       },
       {
-        "title": "Operation and information controls",
+        "title": "Control operations and information",
+        "icon": "gate",
         "subjects": [
           "admission",
           "governance",
@@ -73,15 +76,16 @@ vars: {d2-config: {data: {figure: |json
           "pseudonymization",
           "data"
         ],
-        "columns": 1
+        "columns": 5
       },
       {
-        "title": "Cross-industry capabilities",
+        "title": "Reuse across industries",
+        "icon": "cloud",
         "subjects": [
           "cloud",
           "agenticAI"
         ],
-        "columns": 1
+        "columns": 2
       }
     ]
   },
@@ -91,56 +95,56 @@ vars: {d2-config: {data: {figure: |json
     "bindings": {
       "functional": {
         "name": "CedarArchitecture::functional",
-        "icon": "library"
+        "icon": "puzzle"
       },
       "zeroTrust": {
         "name": "CedarArchitecture::zeroTrust",
-        "icon": "obligation"
+        "icon": "current"
       },
       "authorization": {
         "name": "CedarArchitecture::authorization",
-        "icon": "model"
+        "icon": "rules"
       },
       "pseudonymization": {
         "name": "CedarArchitecture::pseudonymization",
-        "icon": "model"
+        "icon": "fingerprint"
       },
       "admission": {
         "name": "CedarArchitecture::admission",
-        "icon": "model"
+        "icon": "request"
       },
       "governance": {
         "name": "CedarArchitecture::governance",
-        "icon": "model"
+        "icon": "registrar"
       },
       "gateway": {
         "name": "CedarArchitecture::gateway",
-        "icon": "model"
+        "icon": "gate"
       },
       "data": {
         "name": "CedarArchitecture::data",
-        "icon": "model"
+        "icon": "registry"
       },
       "cloud": {
         "name": "CedarArchitecture::cloud",
-        "icon": "model"
+        "icon": "cloud"
       },
       "agenticAI": {
         "name": "CedarArchitecture::agenticAI",
-        "icon": "model"
+        "icon": "robot"
       }
     }
   }
 }
 |
 }}}
-functional: "Functional Cedar\nTyped Programs / capability selection\nShared preparation / Contracts"
-zeroTrust: "Zero Trust Component\nContinuous-use requirements\nConditions / obligations / refinement"
-authorization: "Authorization Component\nCedar policy composition\nValidation / Delta / evidence"
-pseudonymization: "Pseudonymization\nTransform / correlate / release\nExceptional re-identification"
-admission: "Admission\nTyped operation admission\nHandoff and current inputs"
-governance: "Governance\nOwned permits and vetoes\nDuties / approvals / delegation"
-gateway: "Gateway\nPublished profiles and consumption\nApplication-specific effect binding"
-data: "Data\nStorage and Lakehouse controls\nSource / destination boundaries"
-cloud: "Cloud\nCross-industry build / release\nArtifacts and provenance controls"
-agenticAI: "AgenticAI\nCross-industry agent capabilities\nDelegation / commerce / disclosure"
+functional: "Functional Cedar\nTyped Programs + Contracts"
+zeroTrust: "Zero Trust\nCurrent-use requirements"
+authorization: "Authorization\nPolicy validation + Delta"
+pseudonymization: "Pseudonymization\nTransform + correlate + release"
+admission: "Admission\nOperation + current inputs"
+governance: "Governance\nApprovals + duties + vetoes"
+gateway: "Gateway\nBind publication to use"
+data: "Data\nSource + destination controls"
+cloud: "Cloud\nBuild + release provenance"
+agenticAI: "AgenticAI\nDelegation + commerce"
