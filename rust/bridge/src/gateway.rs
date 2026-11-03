@@ -238,6 +238,7 @@ fn qualify_audits(
             },
         )?;
         let mut receipts = vec![receipt.ok_or("missing clean outcome")?];
+        let mut observed_snapshot = witness.snapshot();
         match sample.fault.as_str() {
             "clean" => (),
             "precommitOnly" => {
@@ -250,15 +251,20 @@ fn qualify_audits(
             "duplicateAction" => provider.actions.push(provider.actions[0].clone()),
             "duplicateReceipt" => receipts.push(receipts[0].clone()),
             "invalidReceipt" => receipts[0].signature[0] ^= 1,
-            "unanchoredReceipt" => witness = Witness::simulation(),
-            "rewrittenLog" => witness.entries[0].payload[0] ^= 1,
-            "truncatedLog" => witness.entries.clear(),
+            "unanchoredReceipt" => {
+                // This control is a separately trusted empty log, not rollback
+                // below the original witness's retained checkpoint floor.
+                witness = Witness::simulation();
+                observed_snapshot = witness.snapshot();
+            }
+            "rewrittenLog" => observed_snapshot.entries[0].payload[0] ^= 1,
+            "truncatedLog" => observed_snapshot.entries.clear(),
             _ => return Err("unclassified reconciliation control".into()),
         }
         let actual = reconcile(
             &provider,
             &receipts,
-            &witness.snapshot(),
+            &observed_snapshot,
             &simulator.audit_authority(&witness),
         );
         let expected = bind_audit_expected(sample.expected.clone(), &envelope.effect.operation)?;
@@ -533,6 +539,7 @@ pub(crate) fn audit(input: &str, trust_path: &str) -> Result<Value, String> {
         trust.observed_at,
     )?;
     let authority = cedar_poo_runtime::gateway::AuditAuthority {
+        prepared_publications: None,
         gateway_key,
         log_key,
         facts,

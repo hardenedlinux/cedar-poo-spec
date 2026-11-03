@@ -4,8 +4,8 @@ use crate::gateway::ReviewTrust;
 use crate::gateway::wire::sign;
 use crate::gateway::witness::PrecommitInput;
 use crate::gateway::{
-    AuditAuthority, Commit, EffectIdentity, Envelope, FactAuthority, FactBinding, ProviderJournal,
-    Reconciliation, ReviewBinding, Signed, Version, Witness, reconcile, verify,
+    AuditAuthority, EffectIdentity, Envelope, FactAuthority, FactBinding, FactStatement,
+    ProviderJournal, Reconciliation, ReviewBinding, Signed, Version, Witness, reconcile,
 };
 use crate::gateway::{Origin, Receipt};
 use crate::{Case, ReplayReceipt};
@@ -19,6 +19,8 @@ use std::sync::{Arc, Mutex};
 /// Witness, outcomes and independent provider evidence supplied for recovery.
 pub struct RecoveryEvidence<'a> {
     pub witness: &'a Witness,
+    pub publications: &'a [Signed],
+    pub audit: &'a AuditAuthority,
     pub receipts: &'a [Signed],
     pub provider: &'a ProviderJournal,
 }
@@ -89,6 +91,11 @@ impl Outcome {
 #[derive(Clone)]
 pub(super) struct Current {
     pub(super) generation: u64,
+    pub(super) active_owner: Arc<()>,
+    pub(super) fact_generation: u64,
+    pub(super) sources_current: bool,
+    pub(super) facts: Vec<Signed>,
+    pub(super) world: String,
     pub(super) case: Case,
     pub(super) schema: Option<SchemaSourceJson>,
     pub(super) cedar: ReplayReceipt,
@@ -118,7 +125,7 @@ pub struct PreparedEffect {
 /// disk backend. All model writers and the actual send share the deciding lock.
 pub struct Simulator {
     pub(super) owner: Arc<()>,
-    pub(super) current: Mutex<Current>,
+    pub(super) current: Arc<Mutex<Current>>,
     pub(super) source_keys: Arc<BTreeMap<String, SigningKey>>,
     pub(super) receipt_key: SigningKey,
     pub(super) review_trust: ReviewTrust,
@@ -157,74 +164,16 @@ pub(super) fn field_inventory(case: &Case) -> Result<BTreeMap<String, String>, S
     }
     Ok(values)
 }
+pub(super) fn original_consumed(current: &Current) -> bool {
+    matches!(current.original.grants.as_slice(), [grant]
+        if grant.id.0 == current.effect.operation && grant.effect == current.effect
+            && grant.max_uses == 1 && grant.used == 1)
+}
 impl Simulator {
-    /// Restore from the independently retained witness and outcome records.
-    /// Any precommit retains the burn; absence of a verified outcome retains
-    /// unknown exposure. This models recovery, not physical anti-rollback.
-    pub fn recover(
-        case: &Case,
-        schema: Option<&SchemaSourceJson>,
-        evidence: RecoveryEvidence<'_>,
-    ) -> Result<Self, String> {
-        let recovered = Self::new(case, schema)?;
-        for signed in &evidence.witness.entries {
-            let commit: Commit = verify(signed, &evidence.witness.verifying_key())?;
-            if commit.effect.operation == recovered.initial.effect.operation
-                && !commit.publications.is_empty()
-            {
-                return Err("reviewed effects require reviewed recovery".into());
-            }
-        }
-        recovered.restore_effects(evidence)?;
-        Ok(recovered)
-    }
-    pub(super) fn restore_effects(&self, evidence: RecoveryEvidence<'_>) -> Result<(), String> {
-        let RecoveryEvidence {
-            witness,
-            receipts,
-            provider,
-        } = evidence;
-        witness.verify_history()?;
-        let operation = self.initial.effect.operation.clone();
-        let mut committed = false;
-        for entry in &witness.entries {
-            let commit: Commit = verify(entry, &witness.verifying_key())?;
-            if commit.effect.operation == operation {
-                committed = true;
-            }
-        }
-        if committed {
-            let report = reconcile(
-                provider,
-                receipts,
-                &witness.snapshot(),
-                &self.audit_authority(witness),
-            );
-            let independently_matched = report == Reconciliation::default()
-                && provider
-                    .actions
-                    .iter()
-                    .any(|action| action.effect == self.initial.effect);
-            let complete = independently_matched
-                && receipts.iter().any(|signed| {
-                    let Ok(receipt) = verify::<Receipt>(signed, &self.verifying_key()) else {
-                        return false;
-                    };
-                    receipt.action.effect == self.initial.effect
-                        && witness.entries.iter().any(|entry| {
-                            entry.payload == receipt.commit.payload
-                                && entry.signature == receipt.commit.signature
-                        })
-                });
-            let mut current = self.current.lock().map_err(|_| "poisoned authority")?;
-            current.spent = true;
-            current.unknown = !complete;
-        }
-        Ok(())
-    }
     /// A resource writer invalidates mediation until fresh source preparation.
     pub fn replace_resource(&self, object: String, generation: u64) -> Result<(), String> {
         let mut current = self.current.lock().map_err(|_| "poisoned authority")?;
+        self.check_owner(&current)?;
         let next = current
             .generation
             .checked_add(1)
@@ -237,14 +186,17 @@ impl Simulator {
     }
     /// New, disjoint simulation world; never a live rollback/recovery API.
     pub fn fork_simulation(&self) -> Result<Self, String> {
+        let mut snapshot = self
+            .current
+            .lock()
+            .map_err(|_| "poisoned authority")?
+            .clone();
+        self.check_owner(&snapshot)?;
+        let owner = Arc::new(());
+        snapshot.active_owner = Arc::clone(&owner);
         Ok(Self {
-            owner: Arc::new(()),
-            current: Mutex::new(
-                self.current
-                    .lock()
-                    .map_err(|_| "poisoned authority")?
-                    .clone(),
-            ),
+            owner,
+            current: Arc::new(Mutex::new(snapshot)),
             source_keys: Arc::clone(&self.source_keys),
             receipt_key: self.receipt_key.clone(),
             review_trust: self.review_trust.clone(),
@@ -254,10 +206,11 @@ impl Simulator {
     pub fn envelope(&self) -> Envelope {
         let current = self.current.lock().expect("poisoned simulation authority");
         Envelope {
+            current_world: current.world.clone(),
             version: self.initial.version.clone(),
             effect: current.effect.clone(),
             review: current.review.clone(),
-            facts: self.initial.facts.clone(),
+            facts: current.facts.clone(),
         }
     }
     pub fn fact_authority(&self) -> FactAuthority {
@@ -275,6 +228,7 @@ impl Simulator {
             facts: self.fact_authority(),
             minimum_size: witness.minimum_size(),
             review_trust: Some(self.review_trust.clone()),
+            prepared_publications: None,
         }
     }
     /// Public trust material for independent review and approval verification.
@@ -294,16 +248,17 @@ impl Simulator {
         })
     }
     fn check(&self, current: &Current, envelope: &Envelope) -> Result<Vec<FactBinding>, String> {
+        self.check_owner(current)?;
         if envelope.version != (Version { major: 1, minor: 0 })
             || envelope.effect != current.effect
             || envelope.review != current.review
+            || envelope.current_world != current.world
             || !current.enforcing
             || !current.mapped
             || current.revoked
             || !current.registered
-            || !matches!(current.original.grants.as_slice(), [grant]
-                if grant.id.0 == current.effect.operation && grant.effect == current.effect
-                    && grant.max_uses == 1 && grant.used == 1)
+            || !original_consumed(current)
+            || !current.sources_current
             || current.unknown
             || current.spent
             || current.publication_unknown
@@ -311,7 +266,11 @@ impl Simulator {
         {
             return Err("current effect admission refused".into());
         }
-        current.authority.accepts(&envelope.facts)
+        let facts = current.authority.accepts(&envelope.facts)?;
+        if facts.iter().any(|fact| fact.source != current.world) {
+            return Err("fact world differs from the current SDK preparation".into());
+        }
+        Ok(facts)
     }
     pub fn execute(
         &self,
@@ -327,6 +286,7 @@ impl Simulator {
             return Err("stale effect handle".into());
         }
         let facts = self.check(&current, envelope)?;
+        self.check_owner(&current)?;
         let next = current
             .generation
             .checked_add(1)
@@ -354,6 +314,7 @@ impl Simulator {
             unknown: false,
         };
         let Ok(commit) = witness.append(PrecommitInput {
+            current_world: &current.world,
             effect: &current.effect,
             review: &current.review,
             facts: &facts,
@@ -399,27 +360,69 @@ impl Simulator {
     }
     pub fn mutate(&self, fault: Fault, envelope: &mut Envelope) -> Result<(), String> {
         let mut current = self.current.lock().map_err(|_| "poisoned authority")?;
+        self.check_owner(&current)?;
         let next = current
             .generation
             .checked_add(1)
             .ok_or("generation exhausted")?;
+        self.apply_fault(&mut current, fault, envelope)?;
+        current.generation = next;
+        Ok(())
+    }
+    fn apply_fault(
+        &self,
+        current: &mut Current,
+        fault: Fault,
+        envelope: &mut Envelope,
+    ) -> Result<(), String> {
         match fault {
             Fault::None | Fault::LogFailure | Fault::CrashAfterSend => (),
             Fault::Version => envelope.version.major = 2,
             Fault::MissingFact => {
                 envelope.facts.pop();
             }
-            Fault::DuplicateFact => envelope.facts.push(envelope.facts[0].clone()),
-            Fault::ExtraFact => {
-                let mut fact: FactBinding = serde_json::from_slice(&envelope.facts[0].payload)
-                    .map_err(|e| e.to_string())?;
-                fact.field = "extra".into();
-                envelope
-                    .facts
-                    .push(sign(&fact, &self.source_keys[&fact.issuer])?);
+            Fault::DuplicateFact => {
+                let fact = envelope.facts.first().ok_or("missing source fact")?.clone();
+                envelope.facts.push(fact);
             }
-            Fault::Unverified => envelope.facts[0].signature[0] ^= 1,
-            Fault::Expired => current.authority.now = 100,
+            Fault::ExtraFact => {
+                let mut statement: FactStatement = serde_json::from_slice(
+                    &envelope.facts.first().ok_or("missing source fact")?.payload,
+                )
+                .map_err(|e| e.to_string())?;
+                let fact = statement
+                    .facts
+                    .first_mut()
+                    .ok_or("empty source statement")?;
+                fact.field = "extra".into();
+                envelope.facts.push(sign(
+                    &fact,
+                    self.source_keys
+                        .get(&fact.issuer)
+                        .ok_or("unknown source issuer")?,
+                )?);
+            }
+            Fault::Unverified => {
+                let fact = envelope.facts.first_mut().ok_or("missing source fact")?;
+                let byte = fact
+                    .signature
+                    .first_mut()
+                    .ok_or("missing source signature")?;
+                *byte ^= 1;
+            }
+            Fault::Expired => {
+                let expiry = current
+                    .authority
+                    .public_material()
+                    .0
+                    .into_iter()
+                    .map(|fact| fact.expires_at)
+                    .max()
+                    .ok_or("missing source lease")?;
+                current.authority = current
+                    .authority
+                    .at_time(current.authority.now.max(expiry))?;
+            }
             Fault::Issuer
             | Fault::Subject
             | Fault::Audience
@@ -427,28 +430,54 @@ impl Simulator {
             | Fault::Value
             | Fault::FactGeneration
             | Fault::Claimed => {
-                let mut fact: FactBinding = serde_json::from_slice(&envelope.facts[0].payload)
-                    .map_err(|e| e.to_string())?;
-                let issuer_key = &self.source_keys[&fact.issuer];
+                let mut statement: FactStatement = serde_json::from_slice(
+                    &envelope.facts.first().ok_or("missing source fact")?.payload,
+                )
+                .map_err(|e| e.to_string())?;
+                let fact = statement
+                    .facts
+                    .first_mut()
+                    .ok_or("empty source statement")?;
+                let issuer_key = self
+                    .source_keys
+                    .get(&fact.issuer)
+                    .ok_or("unknown source issuer")?;
                 match fault {
                     Fault::Issuer => fact.issuer = "other".into(),
                     Fault::Subject => fact.subject = "other".into(),
                     Fault::Audience => fact.audience = "other".into(),
                     Fault::Source => fact.source = "other".into(),
                     Fault::Value => fact.value = "other".into(),
-                    Fault::FactGeneration => fact.generation += 1,
+                    Fault::FactGeneration => {
+                        fact.generation = fact
+                            .generation
+                            .checked_add(1)
+                            .ok_or("fact generation exhausted")?
+                    }
                     Fault::Claimed => fact.origin = Origin::Claimed,
                     _ => unreachable!(),
                 }
-                envelope.facts[0] = sign(&fact, issuer_key)?;
+                envelope.facts[0] = sign(&statement, issuer_key)?;
             }
             Fault::Review => envelope.review.report = "other".into(),
             Fault::Policy => envelope.review.after = "other".into(),
             Fault::Schema => envelope.review.schema = "other".into(),
             Fault::SourceRevision => envelope.review.source = "other".into(),
-            Fault::Epoch => envelope.review.epoch += 1,
+            Fault::Epoch => {
+                envelope.review.epoch = envelope
+                    .review
+                    .epoch
+                    .checked_add(1)
+                    .ok_or("review epoch exhausted")?
+            }
             Fault::Resource => envelope.effect.object = "other".into(),
-            Fault::ResourceGeneration => envelope.effect.generation += 1,
+            Fault::ResourceGeneration => {
+                envelope.effect.generation = envelope
+                    .effect
+                    .generation
+                    .checked_add(1)
+                    .ok_or("object generation exhausted")?
+            }
             Fault::Payload => envelope.effect.payload = "other".into(),
             Fault::ActionSchema => envelope.effect.action_schema = "other".into(),
             Fault::EffectAudience => envelope.effect.audience = "other".into(),
@@ -459,8 +488,6 @@ impl Simulator {
             Fault::Unconsumed => current.original.grants[0].used = 0,
             Fault::Unknown => current.unknown = true,
         }
-        // Every writer invalidates existing handles, including equal-value ABA.
-        current.generation = next;
         Ok(())
     }
     pub fn run(&self, fault: Fault) -> Result<(Outcome, Reconciliation), String> {

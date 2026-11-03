@@ -40,6 +40,8 @@ jobs:
         cvc5: 'true'
     - name: Actual C4 reviews, bound publications and current effects across all domains
       run: just check-reviewed-effects
+    - name: Native API latency and append-only log scale across all qualified Cases
+      run: just bench-gateway-runtime
   authorization-delta:
     runs-on: ubuntu-latest
     timeout-minutes: 20

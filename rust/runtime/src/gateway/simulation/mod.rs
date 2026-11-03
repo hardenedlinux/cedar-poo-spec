@@ -1,8 +1,9 @@
 //! Simulated current state, source binding, execution and recovery.
 mod construction;
+mod lifecycle;
 mod publication;
 mod recovery;
-pub use recovery::ReviewedRecovery;
+pub use lifecycle::LifecycleView;
 mod state;
 use publication::RegisteredReview;
 pub use publication::{PublicationTicket, ReviewSubmission};

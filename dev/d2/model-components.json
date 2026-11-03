@@ -8,7 +8,7 @@
     "CedarPooSpec/Cloud/README.org": "a6d5a30acf136506b313dff1121cdfdfd0bd5330fbf34e0bda3b5d8c6b19ee08",
     "CedarPooSpec/Data/README.org": "b4f3e0ec993fe58f926ca5b5a195171fa8f12e6f9192e09ac260a00927e0dc0c",
     "CedarPooSpec/Functional/README.org": "31dfe979d62c2a65df9446631fb6bc80b72bfc3bc10399efe0de540ea3cc0385",
-    "CedarPooSpec/Gateway/README.org": "a26a8c5cbf9065ff8ba7936d21b393fe8b2855d1bb757310ac60741cf899e32b",
+    "CedarPooSpec/Gateway/README.org": "a9913939ee8d8806831e69718e7deb277fa731249de6eb6053242217b83d4550",
     "CedarPooSpec/Governance/README.org": "7198754819ff70820dc4c0c1394957d506bdb305ebfd881ae526d901256872c1",
     "CedarPooSpec/Pseudonymization/README.org": "389ef357ad2d9efd79da03148883fe5ee35a5da832ed012b265c98ea32c0b4f2",
     "CedarPooSpec/ZeroTrust/README.org": "92b9ef0b0ff4c0be55b8e207b993debdad077fef1daa297fe040fea13222908f",
@@ -459,12 +459,12 @@
       "samples": 28,
       "requiredMinimum": 12
     },
-    "inputSHA256": "42c5b601239346e1043b47012c25c55798a5df3e48aa2ab20123b72d53c5ac5e",
+    "inputSHA256": "7257161dca473be443e209f4a4102584626baadba44792fb16df5450013c0b15",
     "scenes": [],
     "svgSHA256": [
-      "070f112ccd6729af3e0af1a1bb90e0f56d89edf9a0b291feb9476cdfcb81ba21"
+      "a7e2e5aaa02ee4c8f0fc6f1f64176fc8466a9d385c1790673c1d347325c92268"
     ],
-    "composedHTMLSHA256": "b53e4c1bb3322c893f0417c8a5fb0079905a47002a8338a8e07c4080b90d6a72",
+    "composedHTMLSHA256": "789ba3d1dd3f3902455cdc30a6e0d38fef54202e2cd0a1c6ce79d9f80c36233b",
     "dependencies": {
       "@fontsource/inter": "5.3.0",
       "@fontsource/kalam": "5.3.0",
@@ -477,12 +477,12 @@
       "web-worker": "1.5.0"
     },
     "regionSHA256": {},
-    "htmlSHA256": "b99147d3e71a955c7e2a172cedb8361061220fd54e7a802066e4238fb0ddb66b",
+    "htmlSHA256": "705d3e75a784685906ac2e3d65d4600564fd01e2acc8b9af19cf85c200424b70",
     "drawing": "precise",
     "routing": "none",
     "assetSHA256": {
-      "@fontsource/inter/files/inter-latin-400-normal.woff2": "8909904ab6c872eb994093482a88a28eca2cd95912d7b6fecd72103b0dc07edc",
-      "@fontsource/inter/files/inter-latin-700-normal.woff2": "6f56409fd3d64bb85f7d070bce20749db2d66b6d63cec586cc22d1c761be2491"
+      "@fontsource/inter/files/inter-latin-700-normal.woff2": "6f56409fd3d64bb85f7d070bce20749db2d66b6d63cec586cc22d1c761be2491",
+      "@fontsource/inter/files/inter-latin-400-normal.woff2": "8909904ab6c872eb994093482a88a28eca2cd95912d7b6fecd72103b0dc07edc"
     },
     "pngSHA256": "f5c4380cc21f4bc2030fdeff2bc4378a8a4fb9c95d5c59eded630b9db834e4e1",
     "browser": "156.0.8078.4",

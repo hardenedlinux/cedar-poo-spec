@@ -331,3 +331,13 @@ review/publication/current-effect chain in Rust. Run =just check-reviewed-effect
 for all-domain replay, independent approval, stale-use refusal, public audit,
 reviewed recovery and actual MCP child processes. See the
 [[file:../../docs/protocol/gateway-effect.org][protocol guide]] for exact authority and physical durability boundaries.
+
+* Current-use lifecycle
+
+[[file:Lifecycle.lean][Lifecycle]] strengthens the existing publication Contract with current field
+evidence, the same policy epoch and a pinned release world through POO
+=Contract.withMeaning=. Its current-use Contract, handle-generation laws and
+recovery/renewal laws retain original consumption, revocation and current Cedar
+admission. No theorem turns a historical review into a fresh-world receipt.
+The [[file:../../docs/protocol/gateway-effect.org][protocol audit]] maps these laws to native source writers, mediator fencing,
+independent historical audit and the explicit cross-world publication refusal.

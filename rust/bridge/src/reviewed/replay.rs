@@ -11,6 +11,11 @@ use serde_json::{Value, json};
 use std::io::Write;
 #[path = "coverage.rs"]
 mod coverage;
+#[path = "lifecycle.rs"]
+mod lifecycle;
+#[path = "runtime_benchmark.rs"]
+mod runtime_benchmark;
+pub(crate) use runtime_benchmark::benchmark;
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -49,6 +54,9 @@ struct Plan {
     stages: Value,
     reviews: Vec<Assessment>,
     expected_effects: Vec<Outcome>,
+    lifecycle_stages: Value,
+    lifecycle: Vec<Value>,
+    tightening: Assessment,
 }
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -77,6 +85,10 @@ struct Prepared {
     reviews: Vec<Signed>,
     approvals: Vec<Signed>,
     release: ReleaseIdentity,
+    empty_current: ValidatedManifest,
+    empty_held: ValidatedManifest,
+    tight_current: ValidatedManifest,
+    tightening: Signed,
 }
 #[derive(Default)]
 struct Totals {
@@ -86,6 +98,7 @@ struct Totals {
     refusals: usize,
     publications: usize,
     gains: usize,
+    continuous: bool,
 }
 
 fn source_hash(value: &impl serde::Serialize) -> Result<String, String> {
@@ -123,25 +136,29 @@ fn prepare(group: &Group, raw: &Value, issuer: &ReviewAuthority) -> Result<Prepa
         .reviews
         .iter()
         .enumerate()
-        .map(|(index, report)| {
-            validate_witnesses(report, &plan.schema)?;
-            let evidence = raw["plan"]["reviews"]
-                .get(index)
-                .ok_or("missing raw analysis evidence")?;
-            issuer.certify(&ReviewRecord {
-                version: Version { major: 1, minor: 0 },
-                before_root: report.before_root.clone(),
-                after_root: report.after_root.clone(),
-                before: policy_hash(&report.before)?,
-                after: policy_hash(&report.after)?,
-                schema: source_hash(&*plan.schema)?,
-                source: release.source.clone(),
-                epoch: report.epoch,
-                analysis: report.analysis.clone(),
-                evidence: source_hash(evidence)?,
-            })
-        })
+        .map(|(index, report)| certify(report, &raw["plan"]["reviews"][index], plan, issuer))
         .collect::<Result<Vec<_>, String>>()?;
+    let tightening = certify(&plan.tightening, &raw["plan"]["tightening"], plan, issuer)?;
+    let lifecycle_document = plan.lifecycle_stages.to_string();
+    let lifecycle = crate::catalog_input::document(&lifecycle_document)?;
+    let at = |name: &str| {
+        lifecycle.sources.validated_manifest(
+            lifecycle
+                .entries
+                .get(name)
+                .ok_or("missing lifecycle stage")?,
+        )
+    };
+    let empty_current = at("current")?;
+    let empty_held = at("held")?;
+    let tight_current = at("tight")?;
+    if empty_current.cases.len() != before.cases.len()
+        || empty_held.cases.len() != before.cases.len()
+        || tight_current.cases.len() != before.cases.len()
+        || plan.lifecycle.len() != before.cases.len()
+    {
+        return Err("incomplete continuous-use stages".into());
+    }
     let approvals = reviews
         .iter()
         .map(|review| issuer.approve(review))
@@ -153,6 +170,30 @@ fn prepare(group: &Group, raw: &Value, issuer: &ReviewAuthority) -> Result<Prepa
         reviews,
         approvals,
         release,
+        empty_current,
+        empty_held,
+        tight_current,
+        tightening,
+    })
+}
+fn certify(
+    report: &Assessment,
+    raw: &Value,
+    plan: &Plan,
+    issuer: &ReviewAuthority,
+) -> Result<Signed, String> {
+    validate_witnesses(report, &plan.schema)?;
+    issuer.certify(&ReviewRecord {
+        version: Version { major: 1, minor: 0 },
+        before_root: report.before_root.clone(),
+        after_root: report.after_root.clone(),
+        before: policy_hash(&report.before)?,
+        after: policy_hash(&report.after)?,
+        schema: source_hash(&*plan.schema)?,
+        source: source_hash(&plan.model)?,
+        epoch: report.epoch,
+        analysis: report.analysis.clone(),
+        evidence: source_hash(raw)?,
     })
 }
 fn validate_witnesses(report: &Assessment, schema: &SchemaSourceJson) -> Result<(), String> {
@@ -320,11 +361,15 @@ fn qualify_group(
 ) -> Result<(), String> {
     let prepared = prepare(group, raw, &ReviewAuthority::simulation())?;
     for index in 0..prepared.before.cases.len() {
-        let row = run_case(&prepared, index, group)?;
+        let row = if totals.continuous {
+            lifecycle::run_case(&prepared, index, group)?
+        } else {
+            run_case(&prepared, index, group)?
+        };
         serde_json::to_writer(&mut *output, &row).map_err(|e| e.to_string())?;
         writeln!(output).map_err(|e| e.to_string())?;
         totals.cases += 1;
-        totals.publications += 2;
+        totals.publications += if totals.continuous { 3 } else { 2 };
     }
     totals.groups += 1;
     totals.gains += group
@@ -406,11 +451,19 @@ fn qualify_bundle(
     );
     Ok(())
 }
-pub(crate) fn replay(input: &str, directory: &str, output: &mut impl Write) -> Result<(), String> {
+pub(crate) fn replay(
+    input: &str,
+    directory: &str,
+    output: &mut impl Write,
+    continuous: bool,
+) -> Result<(), String> {
     let original = crate::catalog::replay(input)?;
     let names = original.as_object().ok_or("missing canonical entries")?;
     let canonical = crate::catalog_input::document(input)?;
-    let mut totals = Totals::default();
+    let mut totals = Totals {
+        continuous,
+        ..Totals::default()
+    };
     for name in names.keys() {
         if !name
             .bytes()
@@ -445,7 +498,7 @@ pub(crate) fn replay(input: &str, directory: &str, output: &mut impl Write) -> R
     );
     serde_json::to_writer(
         &mut *output,
-        &json!({"kind":"summary","entries":totals.entries,
+        &json!({"kind":"summary","continuous":continuous,"lifecycle_outcomes":if continuous { totals.cases * 13 } else { 0 },"entries":totals.entries,
         "groups":totals.groups,"cases":totals.cases,"refusals":totals.refusals,
         "publications":totals.publications,"gains":totals.gains}),
     )
@@ -458,6 +511,14 @@ fn install_prepared(prepared: &Prepared, index: usize) -> Result<(Case, Simulato
     let before = &prepared.before.cases[index];
     let simulator =
         Simulator::with_release(before, &prepared.before.schema, prepared.release.clone())?;
+    activate_prepared(&simulator, prepared, index)?;
+    Ok((prepared.restored.cases[index].clone(), simulator))
+}
+fn activate_prepared(
+    simulator: &Simulator,
+    prepared: &Prepared,
+    index: usize,
+) -> Result<(), String> {
     let held = simulator.register_review(ReviewSubmission {
         review: &prepared.reviews[0],
         candidate: &prepared.held.cases[index],
@@ -470,7 +531,7 @@ fn install_prepared(prepared: &Prepared, index: usize) -> Result<(Case, Simulato
         approval: Some(&prepared.approvals[1]),
     })?;
     simulator.publish_review(restored, PublicationDelivery::Complete)?;
-    Ok((prepared.restored.cases[index].clone(), simulator))
+    Ok(())
 }
 /// Only startup configuration loads analyzer output and independent mock approvals.
 pub(crate) fn stdio(path: &str, index: usize, enforce: bool) -> Result<(), String> {

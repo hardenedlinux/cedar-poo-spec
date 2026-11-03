@@ -98,7 +98,7 @@ fn gateway_real_signature_preparation_keeps_source_inventory_time_and_key_checks
 }
 #[test]
 fn gateway_handle_is_foreign_stale_single_use_and_unknown_survives_recovery() {
-    let (case, schema, first) = setup();
+    let (_, _, first) = setup();
     let (_, _, other) = setup();
     let envelope = first.envelope();
     let mut log = Witness::simulation();
@@ -147,9 +147,10 @@ fn gateway_handle_is_foreign_stale_single_use_and_unknown_survives_recovery() {
     assert!(outcome.unknown && receipt.is_none());
     assert!(first.prepare(&envelope).is_err());
     let recovered = Simulator::recover(
-        &case,
-        Some(&schema),
+        &first,
         RecoveryEvidence {
+            publications: &[],
+            audit: &first.audit_authority(&log),
             witness: &log,
             receipts: &[],
             provider: &provider,
@@ -191,7 +192,7 @@ fn gateway_resource_replacement_and_revocation_before_use_refuse() {
                 )
                 .is_err()
         );
-        assert!(log.entries.is_empty() && provider.actions.is_empty());
+        assert!(log.entries().is_empty() && provider.actions.is_empty());
     }
     let (_, _, simulator) = setup();
     let envelope = simulator.envelope();
@@ -249,7 +250,7 @@ fn gateway_concurrent_preparations_commit_one_effect() {
 }
 #[test]
 fn gateway_independent_audit_and_lineage_do_not_confuse_commit_with_effect() {
-    let (case, schema, simulator) = setup();
+    let (_, _, simulator) = setup();
     let envelope = simulator.envelope();
     let mut log = Witness::simulation();
     let mut provider = ProviderJournal::default();
@@ -301,9 +302,10 @@ fn gateway_independent_audit_and_lineage_do_not_confuse_commit_with_effect() {
             .all(|edge| edge["state"] == "precommitted-only")
     );
     let recovered = Simulator::recover(
-        &case,
-        Some(&schema),
+        &simulator,
         RecoveryEvidence {
+            publications: &[],
+            audit: &simulator.audit_authority(&log),
             witness: &log,
             receipts: &receipts,
             provider: &provider,
@@ -323,12 +325,13 @@ fn gateway_independent_audit_and_lineage_do_not_confuse_commit_with_effect() {
         .len(),
         1
     );
-    log.entries.clear();
+    let mut damaged_snapshot = log.snapshot();
+    damaged_snapshot.entries.clear();
     assert!(
         reconcile(
             &provider,
             &receipts,
-            &log.snapshot(),
+            &damaged_snapshot,
             &simulator.audit_authority(&log)
         )
         .invalid_log
@@ -367,6 +370,7 @@ fn gateway_public_auditor_needs_no_signer_and_refuses_old_checkpoint() {
     let encoded = serde_json::to_vec(&log.snapshot()).unwrap();
     let snapshot: LogSnapshot = serde_json::from_slice(&encoded).unwrap();
     let authority = AuditAuthority {
+        prepared_publications: None,
         gateway_key: simulator.verifying_key(),
         log_key: log.verifying_key(),
         facts: simulator.fact_authority(),
@@ -428,26 +432,15 @@ fn gateway_corrupted_witness_refuses_dispatch_and_pending_precommit_is_not_clean
                 },
             )
             .unwrap();
+        let floor = damaged.entries().len() as u64;
+        let mut untrusted = damaged.snapshot();
         if truncate {
-            damaged.entries.clear();
+            untrusted.entries.clear();
         } else {
-            damaged.entries[0].signature[0] ^= 1;
+            untrusted.entries[0].signature[0] ^= 1;
         }
-        let retry = setup().2;
-        let mut independent = ProviderJournal::default();
-        let (outcome, receipt) = retry
-            .execute(
-                retry.prepare(&envelope).unwrap(),
-                &envelope,
-                EffectIo {
-                    witness: &mut damaged,
-                    provider: &mut independent,
-                    crash_after_send: false,
-                },
-            )
-            .unwrap();
-        assert!(!outcome.precommitted && !outcome.sent && receipt.is_none());
-        assert!(independent.actions.is_empty());
+        assert!(Witness::restore(&untrusted, floor).is_err());
+        assert!(scratch.actions.len() == 1);
     }
 }
 
@@ -521,4 +514,187 @@ fn gateway_post_send_receipt_budget_failure_retains_unknown_without_a_false_comp
     );
     assert_eq!(report.missing_receipts, vec![envelope.effect.operation]);
     assert!(!report.invalid_log);
+}
+
+#[test]
+fn gateway_owned_witness_restores_verified_bytes_and_extends_the_same_prefix() {
+    let (case, schema, first) = setup();
+    let mut witness = Witness::simulation();
+    let mut provider = ProviderJournal::default();
+    let envelope = first.envelope();
+    first
+        .execute(
+            first.prepare(&envelope).unwrap(),
+            &envelope,
+            EffectIo {
+                witness: &mut witness,
+                provider: &mut provider,
+                crash_after_send: false,
+            },
+        )
+        .unwrap();
+    let snapshot = witness.snapshot();
+    let mut restored = Witness::restore(&snapshot, 1).unwrap();
+    let mut next = case;
+    next.name.push_str("-next-operation");
+    let next = Simulator::new(&next, Some(&schema)).unwrap();
+    let envelope = next.envelope();
+    let (outcome, _) = next
+        .execute(
+            next.prepare(&envelope).unwrap(),
+            &envelope,
+            EffectIo {
+                witness: &mut restored,
+                provider: &mut provider,
+                crash_after_send: false,
+            },
+        )
+        .unwrap();
+    assert!(outcome.receipted);
+    assert_eq!(snapshot.entries.len(), 1);
+    assert_eq!(restored.entries().len(), 2);
+    restored.verify_history().unwrap();
+    assert!(Witness::restore(&snapshot, 2).is_err());
+    let mut changed = snapshot;
+    changed.entries[0].payload[0] ^= 1;
+    assert!(Witness::restore(&changed, 1).is_err());
+}
+
+#[test]
+fn gateway_source_statements_preserve_independent_field_authority_and_exact_coverage() {
+    use crate::gateway::FactStatement;
+    let left_key = SigningKey::from_slice(&[11; 32]).unwrap();
+    let right_key = SigningKey::from_slice(&[12; 32]).unwrap();
+    let left = FactBinding {
+        issuer: "left".into(),
+        subject: "user".into(),
+        audience: "gateway".into(),
+        source: "world".into(),
+        field: "a".into(),
+        value: "1".into(),
+        generation: 3,
+        origin: Origin::Attested,
+        not_before: 1,
+        expires_at: 20,
+    };
+    let second = FactBinding {
+        field: "b".into(),
+        value: "2".into(),
+        ..left.clone()
+    };
+    let right = FactBinding {
+        issuer: "right".into(),
+        field: "c".into(),
+        ..left.clone()
+    };
+    let authority = FactAuthority::new(
+        vec![left.clone(), second.clone(), right.clone()],
+        [
+            ("left".into(), *left_key.verifying_key()),
+            ("right".into(), *right_key.verifying_key()),
+        ]
+        .into(),
+        10,
+    )
+    .unwrap();
+    let statement = FactStatement {
+        version: Version { major: 1, minor: 0 },
+        facts: vec![left.clone(), second.clone()],
+    };
+    let right_statement = FactStatement {
+        facts: vec![right.clone()],
+        ..statement.clone()
+    };
+    let evidence = vec![
+        signed(&statement, &left_key),
+        signed(&right_statement, &right_key),
+    ];
+    let individual = vec![
+        signed(&left, &left_key),
+        signed(&second, &left_key),
+        signed(&right, &right_key),
+    ];
+    let expected = authority.accepts(&individual).unwrap();
+    assert_eq!(authority.accepts(&evidence).unwrap(), expected);
+    let prepared = authority.clone().prepare_sources(&evidence).unwrap();
+    assert_eq!(prepared.accepts(&evidence).unwrap(), expected);
+    let reversed = vec![evidence[1].clone(), evidence[0].clone()];
+    assert_eq!(prepared.accepts(&reversed).unwrap().len(), 3);
+    assert!(prepared.at_time(20).unwrap().accepts(&evidence).is_err());
+    assert!(prepared.accepts(&evidence[..1]).is_err());
+    assert!(
+        prepared
+            .accepts(&[evidence[0].clone(), evidence[0].clone()])
+            .is_err()
+    );
+    assert!(
+        prepared
+            .accepts(&[signed(&statement, &right_key), evidence[1].clone()])
+            .is_err()
+    );
+    for changed in [
+        FactStatement {
+            facts: vec![],
+            ..statement.clone()
+        },
+        FactStatement {
+            version: Version { major: 1, minor: 1 },
+            ..statement.clone()
+        },
+        FactStatement {
+            facts: vec![left.clone(), left.clone()],
+            ..statement.clone()
+        },
+        FactStatement {
+            facts: vec![left.clone(), second.clone(), right.clone()],
+            ..statement.clone()
+        },
+        FactStatement {
+            facts: vec![
+                left.clone(),
+                FactBinding {
+                    generation: 4,
+                    ..second.clone()
+                },
+            ],
+            ..statement.clone()
+        },
+        FactStatement {
+            facts: vec![
+                left.clone(),
+                FactBinding {
+                    origin: Origin::Claimed,
+                    ..second.clone()
+                },
+            ],
+            ..statement.clone()
+        },
+    ] {
+        assert!(
+            prepared
+                .accepts(&[signed(&changed, &left_key), evidence[1].clone()])
+                .is_err()
+        );
+    }
+    let mut unknown = serde_json::to_value(&statement).unwrap();
+    unknown["verified"] = serde_json::Value::Bool(true);
+    assert!(
+        prepared
+            .accepts(&[signed(&unknown, &left_key), evidence[1].clone()])
+            .is_err()
+    );
+    let mut altered = evidence.clone();
+    altered[0].signature[0] ^= 1;
+    assert!(prepared.accepts(&altered).is_err());
+    let changed_keys = FactAuthority::new(
+        expected.clone(),
+        [
+            ("left".into(), *right_key.verifying_key()),
+            ("right".into(), *right_key.verifying_key()),
+        ]
+        .into(),
+        10,
+    )
+    .unwrap();
+    assert!(changed_keys.accepts(&evidence).is_err());
 }

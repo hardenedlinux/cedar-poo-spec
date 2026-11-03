@@ -270,10 +270,51 @@ applicable domains. The configured mock review authority and a separate gain
 approval authority bind source, Schema, policy roots, compiled policies and
 epochs. Opaque publication tickets install the actual candidate SDK receipt;
 current effects never reuse the predecessor's Allow decision. Witness precommits
-bind the complete signed publication prefix. Public audit and reviewed recovery
+bind the complete signed publication prefix. Public audit and authority-bound recovery
 retain both that prefix and the original consumption/unknown-exposure state.
 
 =cedar-poo-bridge gateway-reviewed-stdio BUNDLE GROUP_INDEX --enforce|--shadow=
 uses trusted startup analyzer output with the existing MCP owner. The
 [[file:../docs/protocol/gateway-effect.org][protocol guide]] documents trust assumptions, refusal coverage and simulation
 limits. No incoming MCP argument can certify a review or approve expansion.
+
+* Current sources, revocation and recovery
+
+The trusted simulated adapter exposes =refresh_facts=, =advance_time= and
+=revoke= on the existing Simulator owner. Refresh re-runs strict SDK preparation
+while retaining the exact original request, policies, Schema and consumed grant.
+The new inventory has a current lease, a newer source generation and the actual
+world commitment. Old evidence, handles and pending publication tickets refuse.
+Time rollback refuses; expiry is checked at use and publication. Revocation
+cannot be cleared by any renewal or recovery method.
+
+=Simulator::recover(authority, evidence)= replaces both draft Case/history-only
+recovery APIs. It requires the current surviving trusted authority, exact signed
+publication prefix and independent historical audit configuration. It rotates
+the mediator owner under the same deciding lock, retains current authorization
+inputs and reconciles outcome evidence without reminting consumption. The old
+facade is fenced from all use and writes. There is no serialized caller-selected
+recovery checkpoint that can reset revocation or source freshness.
+
+A different fact world requires fresh SDK preparation for effects. Publication
+through an existing history additionally retains its pinned world; attempts
+from another world refuse. Request/context changes require a newly authorized
+logical operation. See the [[file:../docs/protocol/gateway-effect.org][boundary audit]] for the exact supported scope and
+physical Backend obligations. The additional =gateway-lifecycle-catalog= phase
+compares actual native effects and current state with Lean's POO lifecycle
+Contracts across every qualified Case; the original matrices remain required.
+
+=just bench-gateway-runtime= reports native API percentiles independently of the
+full regression process. It covers all qualified Cases, warm handle preparation,
+four-worker contention, SDK/source preparation and signed sends with a growing
+1,024-operation witness. See the [[file:../docs/protocol/gateway-effect.org][measurement definitions]] before interpreting
+these values as application latency. Witness history is owned append-only;
+untrusted snapshots take full validation at restore and public audit boundaries.
+
+
+Source preparation signs issuer-bound =FactStatement= batches, retaining every
+field binding and exact inventory check. Independent issuers use separate keys;
+no signature, current lease or generation check is removed. The native benchmark
+retains per-Case samples in generated JSON and labels hot preparation, fresh
+source preparation, full regression wall time and launch diagnostics separately.
+See [[file:../docs/protocol/gateway-effect.org][the protocol and source preparation proof boundary]].

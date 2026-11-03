@@ -192,6 +192,9 @@ publication and current SDK execution across the catalogue. The
 [[file:CedarPooSpec/Gateway/ReviewedEffect.lean][reviewed-publication Contract and kernel laws]] retain the exact installed
 successor and existing Zero Trust premises; signed publication history is
 checked again by the independent auditor.
+The [[file:CedarPooSpec/Gateway/Lifecycle.lean][current-use lifecycle Contracts]] additionally bind source renewal, sticky
+revocation and authority-bound recovery; the [[file:docs/protocol/gateway-effect.org][boundary audit]] documents the remaining
+Host/Backend obligations and deliberate cross-world publication refusal.
 
 * Design and evidence
 

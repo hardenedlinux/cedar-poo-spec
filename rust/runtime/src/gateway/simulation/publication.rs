@@ -66,11 +66,12 @@ impl Simulator {
             .lock()
             .map_err(|_| "poisoned authority")?
             .clone();
-        check_base(&snapshot, &record)?;
+        self.check_owner(&snapshot)?;
+        check_base(&snapshot, &record, &self.verifying_key())?;
         if input.candidate.name != snapshot.case.name
             || input.candidate.revision != snapshot.case.revision
             || json_sha256(&(&input.candidate.request, &*input.candidate.entities))?
-                != snapshot.review.source
+                != snapshot.world
             || value_sha256(&input.candidate.policies)? != record.after
         {
             return Err("candidate is not the reviewed policy at the original operation".into());
@@ -102,6 +103,7 @@ impl Simulator {
         registered: RegisteredReview,
     ) -> Result<PublicationTicket, String> {
         let mut current = self.current.lock().map_err(|_| "poisoned authority")?;
+        self.check_owner(&current)?;
         if current.generation != captured_generation {
             return Err("registration preparation became stale".into());
         }
@@ -128,6 +130,7 @@ impl Simulator {
             return Err("foreign publication ticket".into());
         }
         let mut current = self.current.lock().map_err(|_| "poisoned authority")?;
+        self.check_owner(&current)?;
         if current.generation != ticket.generation || current.publication_unknown {
             return Err("stale or unresolved publication".into());
         }
@@ -139,7 +142,7 @@ impl Simulator {
         if json_sha256(&registered.signed)? != ticket.review {
             return Err("replaced review".into());
         }
-        check_base(&current, &registered.record)?;
+        check_base(&current, &registered.record, &self.verifying_key())?;
         self.install_review(&mut current, registered, delivery)
     }
     fn install_review(
@@ -163,7 +166,7 @@ impl Simulator {
             approval: registered.approval,
             previous: current.publications.last().map(json_sha256).transpose()?,
             epoch,
-            world: current.review.source.clone(),
+            world: current.world.clone(),
             policies: registered.candidate.policies.clone(),
         };
         let signed = sign(&record, &self.receipt_key)?;
@@ -202,6 +205,7 @@ impl Simulator {
         let last = verify_publications(observed, &self.verifying_key(), &self.review_trust)?
             .ok_or("missing publication")?;
         let mut current = self.current.lock().map_err(|_| "poisoned authority")?;
+        self.check_owner(&current)?;
         if json_sha256(&observed)? != json_sha256(&current.publications)?
             || last.0.after_root != current.release_root
             || last.1.epoch != current.review.epoch
@@ -218,8 +222,28 @@ impl Simulator {
         Ok(())
     }
 }
-fn check_base(current: &Current, record: &ReviewRecord) -> Result<(), String> {
+fn check_base(
+    current: &Current,
+    record: &ReviewRecord,
+    gateway: &p256::ecdsa::VerifyingKey,
+) -> Result<(), String> {
+    if let Some(signed) = current.publications.last() {
+        let publication: PublicationRecord = crate::gateway::verify(signed, gateway)?;
+        if publication.world != current.world {
+            return Err(
+                "changed-world publication requires a separately bound release chain".into(),
+            );
+        }
+    }
+    current.authority.accepts(&current.facts)?;
     if !current.enforcing
+        || !current.sources_current
+        || current.spent
+        || !super::state::original_consumed(current)
+        || current.revoked
+        || !current.mapped
+        || !current.registered
+        || current.unknown
         || current.publication_unknown
         || record.before_root != current.release_root
         || record.source != current.model_source

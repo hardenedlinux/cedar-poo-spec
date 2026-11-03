@@ -25,6 +25,26 @@ pub struct AuditAuthority {
     pub facts: FactAuthority,
     pub minimum_size: u64,
     pub review_trust: Option<super::ReviewTrust>,
+    pub prepared_publications: Option<super::PreparedPublications>,
+}
+impl AuditAuthority {
+    /// Verify an exact public prefix; prepared material never supplies an Allow.
+    pub fn verify_publications(
+        &self,
+        records: &[Signed],
+    ) -> Result<Option<(super::ReviewRecord, super::PublicationRecord)>, String> {
+        if records.is_empty() {
+            return Ok(None);
+        }
+        let trust = self
+            .review_trust
+            .as_ref()
+            .ok_or("missing independent review trust")?;
+        match &self.prepared_publications {
+            Some(prepared) => prepared.verify(records, &self.gateway_key, trust),
+            None => super::verify_publications(records, &self.gateway_key, trust),
+        }
+    }
 }
 /// External auditor entrypoint: no private signer or gateway state is required.
 pub fn reconcile(
@@ -47,6 +67,9 @@ pub fn reconcile(
             let receipt: Receipt = verify(signed, &authority.gateway_key)?;
             let commit: Commit = verify(&receipt.commit, &authority.log_key)?;
             let facts = authority.facts.accepts(&receipt.facts)?;
+            if facts.iter().any(|fact| fact.source != commit.current_world) {
+                return Err("outcome facts do not bind its current world".into());
+            }
             if commit.publications
                 != receipt
                     .publications
@@ -60,22 +83,16 @@ pub fn reconcile(
                 let mut identity = commit.review.clone();
                 identity.report.clear();
                 if identity.before != identity.after
+                    || identity.source != commit.current_world
                     || json_sha256(&identity)? != commit.review.report
                 {
                     return Err("nonidentity effect omitted its publication evidence".into());
                 }
             }
             if !receipt.publications.is_empty() {
-                let trust = authority
-                    .review_trust
-                    .as_ref()
-                    .ok_or("missing independent review trust")?;
-                let last = super::verify_publications(
-                    &receipt.publications,
-                    &authority.gateway_key,
-                    trust,
-                )?
-                .ok_or("missing publication prefix")?;
+                let last = authority
+                    .verify_publications(&receipt.publications)?
+                    .ok_or("missing publication prefix")?;
                 super::publication_matches(&commit.review, &last)?;
             }
             if commit.facts

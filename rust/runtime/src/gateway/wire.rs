@@ -86,18 +86,23 @@ pub(super) fn sign(value: &impl Serialize, key: &SigningKey) -> Result<Signed, S
 }
 /// Verify original payload bytes with a trusted key before typed decoding.
 pub fn verify<T: DeserializeOwned>(value: &Signed, key: &VerifyingKey) -> Result<T, String> {
+    verify_signature(value, key)?;
+    serde_json::from_slice(&value.payload).map_err(|e| e.to_string())
+}
+
+pub(super) fn verify_signature(value: &Signed, key: &VerifyingKey) -> Result<(), String> {
     if value.payload.len() > MAX_SIGNED_PAYLOAD {
         return Err("oversized signed payload".into());
     }
     let signature = Signature::from_slice(&value.signature).map_err(|e| e.to_string())?;
     key.verify(&value.payload, &signature)
-        .map_err(|_| "unverified evidence")?;
-    serde_json::from_slice(&value.payload).map_err(|e| e.to_string())
+        .map_err(|_| "unverified evidence".into())
 }
 /// Untrusted versioned candidate carrying signed field evidence.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Envelope {
+    pub current_world: String,
     pub version: Version,
     pub effect: EffectIdentity,
     pub review: ReviewBinding,

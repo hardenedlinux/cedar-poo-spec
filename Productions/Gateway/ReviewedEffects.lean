@@ -1,4 +1,5 @@
 import CedarPooSpec.Gateway.ReviewedEffect
+import Productions.Gateway.Lifecycle
 import CedarPooSpec.SchemaJson
 import CedarPooSpec.Transport.SourceCatalog
 import CedarPooSpec.Functional.Capabilities
@@ -18,6 +19,9 @@ structure Plan where
   restoredLeft : String
   restoredRight : String
   restoredRoot : String
+  tighteningLeft : String
+  tighteningRight : String
+  tighteningRoot : String
 
 private def fresh (taken : List String) (stem : String) : String :=
   ((List.range (taken.length + 1)).map (fun n => stem ++ toString n)).find?
@@ -34,6 +38,9 @@ def plan (source : Transport.PolicySource) (schema : Transport.SchemaSource) : E
   let d := fresh (c :: b :: a :: names) "cedar-restored-left-"
   let e := fresh (d :: c :: b :: a :: names) "cedar-restored-right-"
   let f := fresh (e :: d :: c :: b :: a :: names) "cedar-restored-"
+  let g := fresh (f :: e :: d :: c :: b :: a :: names) "cedar-tight-left-"
+  let h := fresh (g :: f :: e :: d :: c :: b :: a :: names) "cedar-tight-right-"
+  let i := fresh (h :: g :: f :: e :: d :: c :: b :: a :: names) "cedar-tight-"
   let holdId := fresh (source.policies.map (·.id)) "cedar-review-hold-"
   let hold : Policy := {
     id := holdId
@@ -48,8 +55,11 @@ def plan (source : Transport.PolicySource) (schema : Transport.SchemaSource) : E
     { name := c, parentOrders := [[a,b]] },
     { name := d, parentOrders := [[c]], edits := [.remove holdId] },
     { name := e, parentOrders := [[c]] },
-    { name := f, parentOrders := [[d,e]] }] }
-  return ⟨model, schema, origin.root, a,b,c,d,e,f⟩
+    { name := f, parentOrders := [[d,e]] },
+    { name := g, parentOrders := [[f]], edits := [.extend hold] },
+    { name := h, parentOrders := [[f]] },
+    { name := i, parentOrders := [[g,h]] }] }
+  return ⟨model, schema, origin.root, a,b,c,d,e,f,g,h,i⟩
 
 private def policyEditJson (kind : String) (policy : Policy) : Except String Lean.Json := do
   return Lean.Json.mkObj [("kind", Lean.toJson kind), ("id", Lean.toJson policy.id),
@@ -65,10 +75,11 @@ def modelJson (plan : Plan) : Except String Lean.Json := do
       ("parents", Lean.toJson module.parentOrders), ("suffix", Lean.toJson module.suffix),
       ("edits", Lean.toJson (← module.edits.mapM editJson))])
 
-private def casesAt (plan : Plan) (rows : List Transport.Case) (root : String) :
+private def casesAt (plan : Plan) (program : Functional.Program plan.model plan.schema.meaning)
+    (rows : List Transport.Case) (root : String) (empty : Bool := false) :
     Except String Transport.Manifest := do
-  let program ← (Functional.prepareProgram Functional.standard plan.model plan.schema.meaning [root]).mapError Functional.Error.message
-  let cases ← rows.mapM fun row => program.case row.name row.revision root row.request row.entities
+  let cases ← rows.mapM fun row => program.case row.name row.revision root row.request
+    (if empty then Cedar.Data.Map.empty else row.entities)
   return ⟨cases, some plan.schema⟩
 
 /-- The existing analyzer captures exact declarations, schema and epoch. -/
@@ -113,14 +124,30 @@ def project (plan : Plan) (rows : List Transport.Case) : IO Lean.Json := do
   IO.eprintln s!"REVIEW-ANALYZE: {plan.beforeRoot}; cases={rows.length}"
   let held ← capture plan false
   let restored ← capture plan true
-  let before ← IO.ofExcept (casesAt plan rows plan.beforeRoot)
-  let middle ← IO.ofExcept (casesAt plan rows plan.heldRoot)
-  let after ← IO.ofExcept (casesAt plan rows plan.restoredRoot)
+  let program ← IO.ofExcept ((Functional.prepareProgram Functional.standard plan.model plan.schema.meaning
+    [plan.beforeRoot,plan.heldRoot,plan.restoredRoot,plan.tighteningRoot]).mapError Functional.Error.message)
+  let before ← IO.ofExcept (casesAt plan program rows plan.beforeRoot)
+  let middle ← IO.ofExcept (casesAt plan program rows plan.heldRoot)
+  let after ← IO.ofExcept (casesAt plan program rows plan.restoredRoot)
+  let emptyCurrent ← IO.ofExcept (casesAt plan program rows plan.restoredRoot true)
+  let emptyHeld ← IO.ofExcept (casesAt plan program rows plan.tighteningRoot true)
+  let tighteningCurrent ← IO.ofExcept (casesAt plan program rows plan.tighteningRoot)
+  let lifecycleStages ← IO.ofExcept (Transport.sourceCatalog [("current", .manifest emptyCurrent),
+    ("held", .manifest emptyHeld), ("tight", .manifest tighteningCurrent)])
+  let tightening ← IO.ofExcept ((← Authorization.Delta.analyzeAndCapture plan.model
+    plan.restoredRoot plan.tighteningLeft plan.tighteningRight plan.tighteningRoot plan.schema.meaning 9).mapError reprStr)
+  let lifecycle ← IO.ofExcept ((after.cases.zip (emptyCurrent.cases.zip emptyHeld.cases)).mapM fun (original,empty,held) =>
+    Production.Lifecycle.project tightening plan.model plan.schema.meaning
+      (original.response.get.decision == .allow && original.response.get.erroringPolicies.isEmpty)
+      (empty.response.get.decision == .allow && empty.response.get.erroringPolicies.isEmpty)
+      (held.response.get.decision == .allow && held.response.get.erroringPolicies.isEmpty)
+      (!original.entities.toList.isEmpty))
   let stages ← IO.ofExcept (Transport.sourceCatalog [("before", .manifest before),
     ("held", .manifest middle), ("restored", .manifest after)])
   return Lean.Json.mkObj [("model", ← IO.ofExcept (modelJson plan)),
     ("schema", plan.schema.value), ("initial_root", Lean.toJson plan.beforeRoot),
-    ("stages", stages), ("reviews", Lean.toJson [← reviewJson plan held, ← reviewJson plan restored]),
+    ("stages", stages), ("lifecycle_stages", lifecycleStages),
+    ("lifecycle", Lean.toJson lifecycle), ("tightening", ← reviewJson plan tightening), ("reviews", Lean.toJson [← reviewJson plan held, ← reviewJson plan restored]),
     ("expected_effects", Lean.toJson (after.cases.map fun row =>
       Gateway.EffectProtocol.Outcome.toJson (Gateway.EffectProtocol.Outcome.resolve
         (row.response.get.decision == .allow && row.response.get.erroringPolicies.isEmpty) true false)))]

@@ -1,63 +1,118 @@
-//! Reviewed release reconstruction retains the signed publication prefix.
+//! Recovery reads surviving trusted state; history cannot reconstruct live authority.
 use super::{RecoveryEvidence, Simulator};
-use crate::gateway::{
-    ReleaseIdentity, ReviewBinding, Signed, publication_matches, verify_publications,
-};
-use crate::{Case, json_sha256, value_sha256};
-use cedar_poo_core::SchemaSourceJson;
+use crate::gateway::{Commit, Reconciliation, publication_matches, reconcile, verify};
+use crate::{json_sha256, value_sha256};
+use std::sync::Arc;
 
-/// Independent release history and effect records for one original operation.
-pub struct ReviewedRecovery<'a> {
-    pub release: ReleaseIdentity,
-    pub publications: &'a [Signed],
-    pub effects: RecoveryEvidence<'a>,
+struct RecoveryStatus {
+    generation: u64,
+    committed: bool,
+    complete: bool,
 }
+
 impl Simulator {
-    /// Restore the actual reviewed policy before reconciling original consumption.
-    pub fn recover_reviewed(
-        case: &Case,
-        schema: &SchemaSourceJson,
-        input: ReviewedRecovery<'_>,
-    ) -> Result<Self, String> {
-        let recovered = Self::with_release(case, schema, input.release.clone())?;
-        let (review, published) = verify_publications(
-            input.publications,
-            &recovered.verifying_key(),
-            &recovered.review_trust,
-        )?
-        .ok_or("missing reviewed publication")?;
-        let first: crate::gateway::PublicationRecord =
-            crate::gateway::verify(&input.publications[0], &recovered.verifying_key())?;
-        let initial = recovered.review_trust.verify_review(&first.review)?;
-        if initial.before_root != input.release.root
-            || initial.source != input.release.source
-            || review.after != value_sha256(&case.policies)?
-            || review.schema != recovered.initial.effect.action_schema
-            || published.world != recovered.initial.review.source
-        {
-            return Err("recovery sources do not match the installed release".into());
+    /// Recover a mediator against the surviving trusted simulation authority.
+    /// Exact historical evidence can resolve an outcome, never reset live facts,
+    /// revocation, mode, original consumption, publication exposure or policy epoch.
+    pub fn recover(authority: &Self, evidence: RecoveryEvidence<'_>) -> Result<Self, String> {
+        let checked = authority.check_recovery(evidence)?;
+        authority.attach_recovered(checked)
+    }
+    fn check_recovery(&self, evidence: RecoveryEvidence<'_>) -> Result<RecoveryStatus, String> {
+        let authority = self;
+        evidence.witness.verify_history()?;
+        let snapshot = authority
+            .current
+            .lock()
+            .map_err(|_| "poisoned authority")?
+            .clone();
+        authority.check_owner(&snapshot)?;
+        if json_sha256(&snapshot.publications)? != json_sha256(&evidence.publications)? {
+            return Err("recovery discarded or substituted current publication history".into());
         }
-        {
-            let mut current = recovered.current.lock().map_err(|_| "poisoned authority")?;
-            current.release_root = review.after_root.clone();
-            current.review = ReviewBinding {
-                before: review.before,
-                after: review.after,
-                schema: review.schema,
-                source: published.world.clone(),
-                epoch: published.epoch,
-                report: json_sha256(&published.review)?,
-            };
-            current.publications = input.publications.to_vec();
-            publication_matches(
-                &current.review,
-                &(
-                    recovered.review_trust.verify_review(&published.review)?,
-                    published,
-                ),
-            )?;
+        if !evidence.publications.is_empty() {
+            let trust = evidence
+                .audit
+                .review_trust
+                .as_ref()
+                .ok_or("missing recovery review roots")?;
+            if trust.review_key != self.review_trust.review_key
+                || trust.approval_key != self.review_trust.approval_key
+            {
+                return Err("recovery review trust changed".into());
+            }
         }
-        recovered.restore_effects(input.effects)?;
-        Ok(recovered)
+        if let Some(last) = evidence.audit.verify_publications(evidence.publications)? {
+            publication_matches(&snapshot.review, &last)?;
+            if last.0.after_root != snapshot.release_root
+                || last.0.after != value_sha256(&snapshot.case.policies)?
+            {
+                return Err("recovery did not retain the actual installed policies".into());
+            }
+        }
+        if evidence.audit.gateway_key != authority.verifying_key()
+            || evidence.audit.log_key != evidence.witness.verifying_key()
+        {
+            return Err("recovery audit trust changed".into());
+        }
+        let committed = evidence
+            .witness
+            .entries()
+            .iter()
+            .try_fold(false, |found, signed| {
+                let commit: Commit = verify(signed, &evidence.audit.log_key)?;
+                Ok::<_, String>(found || commit.effect.operation == snapshot.effect.operation)
+            })?;
+        let report = reconcile(
+            evidence.provider,
+            evidence.receipts,
+            &evidence.witness.snapshot(),
+            evidence.audit,
+        );
+        if report.invalid_log {
+            return Err("recovery witness is below the trusted floor".into());
+        }
+        let complete = committed
+            && report == Reconciliation::default()
+            && evidence
+                .provider
+                .actions
+                .iter()
+                .any(|action| action.effect == snapshot.effect);
+        Ok(RecoveryStatus {
+            generation: snapshot.generation,
+            committed,
+            complete,
+        })
+    }
+    fn attach_recovered(&self, checked: RecoveryStatus) -> Result<Self, String> {
+        let authority = self;
+        let owner = Arc::new(());
+        {
+            let mut current = authority.current.lock().map_err(|_| "poisoned authority")?;
+            authority.check_owner(&current)?;
+            if current.generation != checked.generation {
+                return Err("recovery observation became stale".into());
+            }
+            let next = current
+                .generation
+                .checked_add(1)
+                .ok_or("generation exhausted")?;
+            current.spent |= checked.committed;
+            if current.spent || current.unknown {
+                current.unknown = !checked.complete;
+            }
+            current.pending_review = None;
+            current.active_owner = Arc::clone(&owner);
+            current.generation = next;
+        }
+        Ok(Self {
+            owner,
+            current: Arc::clone(&authority.current),
+            source_keys: Arc::clone(&authority.source_keys),
+            receipt_key: authority.receipt_key.clone(),
+            review_trust: authority.review_trust.clone(),
+            initial: authority.initial.clone(),
+        })
     }
 }

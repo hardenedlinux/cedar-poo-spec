@@ -1,0 +1,25 @@
+import CedarPooSpec.Gateway.Lifecycle
+#print axioms CedarPooSpec.Gateway.Lifecycle.invocation_is_exact
+#print axioms CedarPooSpec.Gateway.Lifecycle.old_handle_after_renew
+#print axioms CedarPooSpec.Gateway.Lifecycle.old_handle_after_recovery
+#print axioms CedarPooSpec.Gateway.Lifecycle.revoked_cannot_use
+#print axioms CedarPooSpec.Gateway.Lifecycle.recovery_preserves_revocation
+#print axioms CedarPooSpec.Gateway.Lifecycle.recovery_preserves_facts_and_clock
+#print axioms CedarPooSpec.Gateway.Lifecycle.recovery_preserves_burn
+#print axioms CedarPooSpec.Gateway.Lifecycle.fresh_use_is_actual_error_free
+#print axioms CedarPooSpec.Gateway.EffectProtocol.accepted_world_is_current
+#print axioms CedarPooSpec.Gateway.Lifecycle.renewal_preserves_clock_and_controls
+#print axioms CedarPooSpec.Gateway.Lifecycle.revoked_after_recovery_and_renewal
+#print axioms CedarPooSpec.Gateway.Lifecycle.publication_exact_and_current
+#print axioms CedarPooSpec.Gateway.Lifecycle.different_world_blocks_publication
+#print axioms CedarPooSpec.Gateway.Lifecycle.failed_refresh_blocks_use
+#print axioms CedarPooSpec.Gateway.Lifecycle.recovery_does_not_reopen_failed_sources
+#print axioms CedarPooSpec.Gateway.Lifecycle.unresolved_without_commit_is_retained
+#print axioms CedarPooSpec.Gateway.Lifecycle.publication_requires_original_consumption
+#print axioms CedarPooSpec.Gateway.Lifecycle.spent_blocks_publication
+
+#print axioms CedarPooSpec.ZeroTrust.accepted_statements_preserve_field_admission
+#print axioms CedarPooSpec.ZeroTrust.accepted_statements_are_verified
+#print axioms CedarPooSpec.ZeroTrust.accepted_statements_cover_exact_inventory
+
+#print axioms CedarPooSpec.Gateway.Lifecycle.source_invocation_preserves_field_admission

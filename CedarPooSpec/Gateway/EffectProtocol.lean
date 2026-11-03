@@ -36,6 +36,7 @@ structure ReviewBinding where
   deriving DecidableEq, BEq, Repr
 
 structure Envelope where
+  currentWorld : String
   version : Version
   effect : EffectIdentity
   review : ReviewBinding
@@ -43,6 +44,7 @@ structure Envelope where
   deriving DecidableEq
 
 structure Current where
+  world : String
   effect : EffectIdentity
   review : ReviewBinding
   authority : FactAuthority String String
@@ -54,12 +56,18 @@ structure Current where
   consumed : Bool
   unknown : Bool
 
+/-- Current source evidence must also name the world prepared by the SDK. -/
+def currentEvidence (current : Current) (envelope : Envelope) : Bool :=
+  (decide (envelope.currentWorld = current.world) &&
+    current.authority.acceptsAll current.required envelope.facts) &&
+    envelope.facts.all (fun fact => decide (fact.source = current.world))
+
 /-- Caller input never selects the trusted current image. The actual Cedar
 admission is supplied separately by the existing receipt/evaluator owner. -/
 def accepts (current : Current) (envelope : Envelope) (cedarAllowed : Bool) : Bool :=
   envelope.version.supported && decide (envelope.effect = current.effect) &&
     decide (envelope.review = current.review) &&
-    current.authority.acceptsAll current.required envelope.facts &&
+    currentEvidence current envelope &&
     current.enforcing && current.mapped && !current.revoked && current.registered &&
     current.consumed && !current.unknown && cedarAllowed
 
@@ -76,8 +84,18 @@ theorem accepted_effect_is_exact (current : Current) (envelope : Envelope)
   have checked := accepted
   simp only [accepts, Bool.and_eq_true_iff, decide_eq_true_eq] at checked
   exact ⟨checked.1.1.1.1.1.1.1.1.1.2, checked.1.1.1.1.1.1.1.1.2,
-    checked.1.1.1.1.1.1.1.2, checked.1.1.1.1.1.1.2, checked.1.1.1.1.1.2,
+    (Bool.and_eq_true_iff.mp (Bool.and_eq_true_iff.mp checked.1.1.1.1.1.1.1.2).1).2, checked.1.1.1.1.1.1.2, checked.1.1.1.1.1.2,
     false_of_negated _ checked.1.1.1.1.2, checked.1.1.1.2, checked.1.1.2, false_of_negated _ checked.1.2, checked.2⟩
+
+theorem accepted_world_is_current (current : Current) (envelope : Envelope)
+    (accepted : accepts current envelope cedarAllowed = true) :
+    envelope.currentWorld = current.world ∧
+      ∀ fact ∈ envelope.facts, fact.source = current.world := by
+  have checked := accepted
+  simp only [accepts, Bool.and_eq_true_iff, decide_eq_true_eq] at checked
+  have world := (Bool.and_eq_true_iff.mp checked.1.1.1.1.1.1.1.2).2
+  have named := (Bool.and_eq_true_iff.mp (Bool.and_eq_true_iff.mp checked.1.1.1.1.1.1.1.2).1).1
+  exact ⟨of_decide_eq_true named, by simpa [List.all_eq_true] using world⟩
 
 /-- POO interpretation retains the supplied original requirement and adds the
 actual evidence/effect check. Session/Contract remain with the existing owner. -/

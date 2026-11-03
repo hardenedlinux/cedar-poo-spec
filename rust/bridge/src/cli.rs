@@ -85,11 +85,20 @@ fn dispatch(
                 &mut std::io::BufWriter::new(std::io::stdout().lock()),
             );
         }
-        if command == "gateway-reviewed-catalog" {
+        if command == "gateway-reviewed-catalog" || command == "gateway-lifecycle-catalog" {
             return crate::reviewed::replay(
                 input,
                 path,
                 &mut std::io::BufWriter::new(std::io::stdout().lock()),
+                command == "gateway-lifecycle-catalog",
+            );
+        }
+        if command == "benchmark-gateway-runtime" || command == "benchmark-gateway-append" {
+            return crate::reviewed::benchmark(
+                input,
+                path,
+                &mut std::io::BufWriter::new(std::io::stdout().lock()),
+                command == "benchmark-gateway-append",
             );
         }
         if command == "gateway-reconcile" {

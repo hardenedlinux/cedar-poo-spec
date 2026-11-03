@@ -64,4 +64,52 @@ theorem accepted_inventory_covers_required (authority : FactAuthority Field Valu
       ∀ fact ∈ evidence, authority.accepts fact = true := by
   simpa [FactAuthority.acceptsAll, List.all_eq_true, and_assoc] using accepted
 
+
+/-- A typed projection of one signed source statement. The verifier is supplied
+by the independently configured Host, never decoded from an input truth flag. -/
+structure FactStatement (Field Value : Type) where
+  issuer : String
+  major : Nat := 1
+  minor : Nat := 0
+  facts : List (FactBinding Field Value)
+
+def FactStatement.valid (statement : FactStatement Field Value)
+    (verified : FactStatement Field Value → Bool) : Bool :=
+  decide (statement.major = 1 ∧ statement.minor = 0 ∧ statement.facts ≠ []) &&
+    verified statement && statement.facts.all (fun fact => decide (fact.issuer = statement.issuer))
+
+def FactAuthority.acceptsStatements (authority : FactAuthority Field Value)
+    (required : List Field) (statements : List (FactStatement Field Value))
+    (verified : FactStatement Field Value → Bool) : Bool :=
+  statements.all (fun statement => statement.valid verified) &&
+    authority.acceptsAll required (statements.flatMap (·.facts))
+
+theorem accepted_statements_preserve_field_admission (authority : FactAuthority Field Value)
+    (required : List Field) (statements : List (FactStatement Field Value))
+    (verified : FactStatement Field Value → Bool)
+    (accepted : authority.acceptsStatements required statements verified = true) :
+    authority.acceptsAll required (statements.flatMap (·.facts)) = true :=
+  (Bool.and_eq_true_iff.mp accepted).2
+
+theorem accepted_statements_are_verified (authority : FactAuthority Field Value)
+    (required : List Field) (statements : List (FactStatement Field Value))
+    (verified : FactStatement Field Value → Bool)
+    (accepted : authority.acceptsStatements required statements verified = true)
+    (statement : FactStatement Field Value) (member : statement ∈ statements) :
+    verified statement = true ∧ ∀ fact ∈ statement.facts, fact.issuer = statement.issuer := by
+  have valid := (List.all_eq_true.mp (Bool.and_eq_true_iff.mp accepted).1) statement member
+  have parts := Bool.and_eq_true_iff.mp valid
+  exact ⟨(Bool.and_eq_true_iff.mp parts.1).2, by
+    simpa using List.all_eq_true.mp parts.2⟩
+
+theorem accepted_statements_cover_exact_inventory (authority : FactAuthority Field Value)
+    (required : List Field) (statements : List (FactStatement Field Value))
+    (verified : FactStatement Field Value → Bool)
+    (accepted : authority.acceptsStatements required statements verified = true) :
+    required ≠ [] ∧ required.Nodup ∧
+      ((statements.flatMap (·.facts)).map (·.field)).Perm required ∧
+      ∀ fact ∈ statements.flatMap (·.facts), authority.accepts fact = true :=
+  accepted_inventory_covers_required authority required _
+    (accepted_statements_preserve_field_admission authority required statements verified accepted)
+
 end CedarPooSpec.ZeroTrust

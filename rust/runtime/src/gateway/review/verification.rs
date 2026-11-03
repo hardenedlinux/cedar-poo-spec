@@ -95,7 +95,7 @@ pub fn verify_publications(
         )
         .map(|last| last.map(|(review, publication, _)| (review, publication)))
 }
-/// Current-use binding must retain the actual last published revision.
+/// Current-use retains the last published policy; fresh facts bind the use world.
 pub fn publication_matches(
     binding: &ReviewBinding,
     last: &(ReviewRecord, PublicationRecord),

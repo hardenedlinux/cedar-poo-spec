@@ -8,3 +8,5 @@ pub use record::{
     ReleaseIdentity, ReviewRecord,
 };
 pub use verification::{ReviewTrust, publication_matches, verify_publications};
+mod preparation;
+pub use preparation::PreparedPublications;

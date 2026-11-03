@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct Commit {
+    pub current_world: String,
     pub version: Version,
     pub sequence: u64,
     pub previous: String,
@@ -67,7 +68,7 @@ pub fn verify_log(
 /// Independent simulated witness. Its records are not reconstructed from outcomes.
 pub struct Witness {
     key: SigningKey,
-    pub entries: Vec<Signed>,
+    entries: Vec<Signed>,
     pub available: bool,
     committed_size: usize,
     checkpoint: Signed,
@@ -93,6 +94,20 @@ impl Witness {
             checkpoint: EMPTY.clone(),
         }
     }
+    /// Borrow the append-only owned history; external bytes use the restore boundary.
+    pub fn entries(&self) -> &[Signed] {
+        &self.entries
+    }
+    /// Import untrusted historical bytes using the configured simulation witness
+    /// key and an independently retained minimum size, before accepting ownership.
+    pub fn restore(snapshot: &LogSnapshot, minimum_size: u64) -> Result<Self, String> {
+        let mut witness = Self::simulation();
+        verify_log(snapshot, &witness.verifying_key(), minimum_size)?;
+        witness.entries = snapshot.entries.clone();
+        witness.committed_size = snapshot.entries.len();
+        witness.checkpoint = snapshot.checkpoint.clone();
+        Ok(witness)
+    }
     pub fn snapshot(&self) -> LogSnapshot {
         LogSnapshot {
             checkpoint: self.checkpoint.clone(),
@@ -115,6 +130,7 @@ impl Witness {
     }
     pub(super) fn append(&mut self, input: PrecommitInput<'_>) -> Result<Signed, String> {
         let PrecommitInput {
+            current_world,
             effect,
             review,
             facts,
@@ -123,15 +139,14 @@ impl Witness {
         if !self.available {
             return Err("precommit unavailable".into());
         }
-        // A corrupted or truncated witness must not be repaired by signing a
-        // new head and then dispatching an effect.
+        // Only this owner can mutate the validated append-only prefix. Untrusted
+        // restore verifies every record before ownership; append checks the
+        // owned counter instead of verifying the whole prefix again.
         if self.entries.len() != self.committed_size {
             return Err("witness size changed".into());
         }
-        if !self.entries.is_empty() {
-            self.verify_history()?;
-        }
         let entry = Commit {
+            current_world: current_world.to_owned(),
             version: Version { major: 1, minor: 0 },
             sequence: self.entries.len() as u64,
             previous: self
@@ -170,6 +185,7 @@ impl Witness {
 }
 
 pub(super) struct PrecommitInput<'a> {
+    pub current_world: &'a str,
     pub(super) effect: &'a EffectIdentity,
     pub(super) review: &'a ReviewBinding,
     pub(super) facts: &'a [FactBinding],

@@ -132,3 +132,20 @@ Simulation uses public test keys and an independently configured source adapter.
 The public audit CLI accepts no private signer. All source, lease, object,
 review, version, loss, corruption and duplication controls remain in the gate.
 PR #12 remains unmerged.
+
+* Continuous-use follow-up
+
+The [[file:protocol/gateway-effect.org][protocol boundary audit]] now records the source/world, revocation, mediator
+ownership and recovery findings against the current implementation. The major
+change is to stop treating a valid historical record as current authority.
+Source refresh re-runs the SDK, revocation persists, and recovery uses a surviving
+trusted authority with separate historical audit trust. The original publication
+world-continuity check is retained and strengthened at registration/use boundaries;
+cross-world publication through that history refuses explicitly.
+
+The POO lifecycle Contracts and kernel laws are in
+[[file:../CedarPooSpec/Gateway/Lifecycle.lean][Gateway.Lifecycle]]. Full-domain native replay includes current facts and
+policy changes as well as retained outcome uncertainty. Physical antirollback,
+issuer truth, live clock readers, complete external IO mediation and temporal
+fairness are still not established by these finite simulations or by a Cedar
+same-world authorization Delta.
