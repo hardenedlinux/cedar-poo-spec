@@ -6,12 +6,68 @@ Historical publication approval is not a fresh-world Cedar receipt. -/
 namespace CedarPooSpec.Gateway.Lifecycle
 open EffectProtocol LeanPoo.Functional.DeclarativeMetadata
 
+/-- Exact intent retained by the trusted deciding writer before provider use. -/
+structure RetainedIntent where
+  commit : CommitRef
+  logKey : String
+  deriving DecidableEq, BEq, Repr
+
+/-- Verified public history and independent audit/provider projections.
+Native signature verification supplies these projections, not caller labels. -/
+structure RecoveryEvidence where
+  entries : List CommitRef
+  logKey : String
+  report : AuditReport
+  observed : Bool
+  deriving DecidableEq, BEq, Repr
+
+structure RecoveryInput where
+  operation : String
+  retained : Option RetainedIntent
+  evidence : RecoveryEvidence
+  deriving DecidableEq, BEq, Repr
+
+structure RecoveryStatus where
+  committed : Bool
+  complete : Bool
+  deriving DecidableEq, BEq, Repr
+
+/-- Clean historical evidence cannot substitute for the surviving intent. -/
+def checkRecovery (input : RecoveryInput) : Except String RecoveryStatus :=
+  if input.evidence.report.invalidLog then .error "invalid history"
+  else match input.retained with
+  | some retained =>
+    if input.evidence.logKey == retained.logKey &&
+        input.evidence.entries.any (fun entry => decide (entry = retained.commit)) then
+      .ok ⟨true, input.evidence.observed && input.evidence.report.clean⟩
+    else .error "missing retained intent"
+  | none =>
+    if input.evidence.entries.any (fun entry => entry.operation == input.operation) then
+      .error "unrecorded operation intent"
+    else .ok ⟨false, false⟩
+
+def recoveryContract : Contract Unit RecoveryInput RecoveryStatus where
+  input := ⟨"retained-recovery-evidence", fun _ => True, fun _ => inferInstance⟩
+  output := ⟨"bound-recovery-status", fun _ => True, fun _ => inferInstance⟩
+  meaning := fun _ input result => checkRecovery input = .ok result
+  decide := fun _ _ _ => inferInstance
+  rule := .atom ()
+
+def prepareRecovery (input : RecoveryInput) : Except String (RecoveryStatus × Unit) := do
+  let checked ← checkRecovery input
+  pure (checked, ())
+
+theorem recovery_invocation_is_bound
+    (receipt : Invocation recoveryContract prepareRecovery input) :
+    checkRecovery input = .ok receipt.result := receipt.logic
+
 structure State where
   current : Current
   generation : Nat := 0
   owner : Nat := 0
   factGeneration : Nat := 7
   spent : Bool := false
+  retainedIntent : Option RetainedIntent := none
   sourcesCurrent : Bool := true
   publicationUnknown : Bool := false
   cedarAllowed : Bool
@@ -123,6 +179,42 @@ theorem audited_recovery_preserves_burn (state : State) (committed observed : Bo
     (report : AuditReport) (spent : state.spent = true) :
     (recoverAudited state committed observed report).spent = true := by
   simp [recoverAudited, recover, spent]
+
+/-- Recovery consumes the actual retained-state Contract, then rotates ownership. -/
+def recoverChecked (state : State) (evidence : RecoveryEvidence) : Except String State := do
+  let receipt ← (recoveryContract.invoke prepareRecovery
+    ⟨state.current.effect.operation, state.retainedIntent, evidence⟩).mapError
+      (fun _ => "retained recovery Contract refused")
+  pure (recover state receipt.result.committed receipt.result.complete)
+
+theorem missing_retained_intent_is_refused (operation : String) (retained : RetainedIntent)
+    (evidence : RecoveryEvidence)
+    (missing : evidence.entries.any (fun entry => decide (entry = retained.commit)) = false) :
+    (checkRecovery ⟨operation, some retained, evidence⟩).isOk = false := by
+  cases h : evidence.report.invalidLog <;> simp [checkRecovery, h, missing, Except.isOk, Except.toBool]
+
+theorem foreign_log_key_is_refused (operation : String) (retained : RetainedIntent)
+    (evidence : RecoveryEvidence) (different : evidence.logKey ≠ retained.logKey) :
+    (checkRecovery ⟨operation, some retained, evidence⟩).isOk = false := by
+  cases h : evidence.report.invalidLog <;> simp [checkRecovery, h, different, Except.isOk, Except.toBool]
+
+theorem retained_recovery_requires_exact_history (operation : String) (retained : RetainedIntent)
+    (evidence : RecoveryEvidence) (status : RecoveryStatus)
+    (accepted : checkRecovery ⟨operation, some retained, evidence⟩ = .ok status) :
+    evidence.logKey = retained.logKey ∧ retained.commit ∈ evidence.entries := by
+  simp only [checkRecovery] at accepted
+  split at accepted
+  · cases accepted
+  · split at accepted
+    · rename_i matched
+      simpa [Bool.and_eq_true_iff, List.any_eq_true] using matched
+    · cases accepted
+
+theorem renewal_preserves_retained_intent (state : State) (authority required world cedarAllowed) :
+    (renew state authority required world cedarAllowed).retainedIntent = state.retainedIntent := rfl
+
+theorem recovery_preserves_retained_intent (state : State) (committed complete) :
+    (recover state committed complete).retainedIntent = state.retainedIntent := rfl
 
 /-- A live publication strengthens the existing exact-successor Contract using
 current source evidence and its pinned publication world. -/

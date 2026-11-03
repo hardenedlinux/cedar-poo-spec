@@ -750,3 +750,117 @@ finish saving before the unchanged 120-second outer watchdog and ended with
 status 124. No completed scheduler export was admitted. This is a retained
 collection failure, not a native timeout, a complete trace or wait attribution.
 Further recording attempts and budget increases are not part of this result.
+
+* Recovery binds the surviving authority's retained intent
+
+An independently clean signed history does not establish which intent belongs
+to the surviving authority. A native regression demonstrates this distinction:
+one operation renews its source lease, logs an intent and loses its outcome;
+a disjoint observation logs and completes the same effect under another source
+window. The latter history has genuine signatures and a clean independent audit,
+but its signed precommit differs. Previously, operation-name matching allowed
+that history to clear the first operation's uncertainty.
+
+The deciding writer now retains the exact signed precommit and witness public
+key atomically with consumption and unknown exposure, before the provider call.
+Recovery requires that exact record in the verified history under that key.
+Missing/substituted history is refused before owner rotation. If the surviving
+state has no recorded intent, an externally supplied same-operation intent is
+also refused. A clean audit and exact current provider effect are still required
+for completion; the retained anchor does not replace those checks.
+
+The retained record uses one immutable shared owner per operation. State
+snapshots share that owner; source renewal and publication never overwrite it.
+This intentionally retains public signed evidence for the consumed operation's
+lifetime and is not a claim of lower RSS or globally bounded storage.
+
+The shared Lean lifecycle owns typed =RetainedIntent=, =RecoveryEvidence=,
+=RecoveryInput= and =RecoveryStatus=. =recoveryContract= specifies the actual
+=checkRecovery= result, and Production recovery uses its actual Invocation via
+=recoverChecked=. =recovery_invocation_is_bound= binds the result to that checker;
+=retained_recovery_requires_exact_history= establishes the retained key and
+record membership. Missing-record and foreign-key refusal laws accompany the
+existing sticky revocation, original consumption and generation-fencing laws.
+Renewal/recovery preservation laws retain the original anchor.
+
+| Boundary | Shared implementation and qualification | Remaining premise |
+|----------+-----------------------------------------+-------------------|
+| Continuous authorization | Fresh source generation, lease, SDK world and current policy admission remain required. Renewal cannot replace the retained intent. | Source authenticity and physical clock interpretation belong to configured trusted readers. |
+| Revocation | Revocation is sticky across renewal, publication and recovery; serialized deciding writes invalidate prepared handles. | This models admission for one effect. It does not interrupt already committed external IO or mechanize streaming-use obligations. |
+| Recovery identity | Exact retained signed record and witness key, independent clean audit and exact observed effect are required. | Identical signed bytes denote one protocol identity. Unique original operations and nonforking trusted authority remain explicit premises. |
+| Failed recovery | Substituted, truncated and unrecorded same-operation histories are refused without changing the surviving owner or controls. | The in-memory authoritative state, including its retained intent, survives the modeled mediator failure. |
+| Concurrency | Recovery preparation is checked against the surviving generation again under the deciding mutex before attachment. | Distributed fencing and physical atomic storage are Backend obligations. |
+| Publication exposure | Exact publication history and release roots remain required; source refresh and recovery do not clear unresolved publication delivery. | Durable publication acknowledgement and physical IO authenticity are not proved by a signed observation. |
+| Historical trust | Historical source evidence remains separate from the current source window; it cannot create current permission. | Signer custody/rotation, cold-host recovery and nonrollback persistence are outside the simulator's theorem claims. |
+| Lost outcome | Without the required signed outcome, independent observation does not silently clear unknown exposure or consumption. | Authenticated provider-outcome reconstruction, compensation and eventual completion are not modeled; these safety laws do not establish liveness. |
+
+The real nonidentity review/publication/current-use catalog adds substituted,
+truncated and unbound-history controls for every executable Case. Negative Cases
+and explicit qualification refusals remain unchanged. Original lifecycle rows
+are retained; summary counts come from actual compared rows rather than a fixed
+thirteen-row assumption. The expanded full regression performs additional
+operations and is not a matched speedup comparison with the earlier workload.
+Lean/Rust native benchmarks retain their original populations and all non-wins.
+
+The earlier eight-second ordinary non-CPU accounting gap remains a separate
+investigation. Default five-second rolling trace retention, failed launch input
+collection and full-window recorder finalization timeout remain retained as
+diagnostic limits. None supplies an identified waiting object or waker for the
+original slow sample. This security refinement does not claim to resolve that
+tail or establish stable whole-process acceleration.
+
+** Full-domain qualification
+
+All 51 canonical producers, 211 preparation groups, 1,253 qualified Cases and
+39 explicit refusals pass. All original 16,289 lifecycle states compare
+identically after projecting only the three newly named controls; the 1,905
+additional states bring the actual total to 18,194. All original 41,669
+effect/audit rows compare identically. The genuine alternate-history regression
+also checks every renewal/revocation combination, and all 95 Runtime tests pass
+alongside complete Rust feature/package isolation, strict Clippy and formatting.
+
+The expanded complete lifecycle exits naturally in 41.093 seconds under the
+unchanged 120-second watchdog, with complete resource observation and about
+105.328 MiB peak RSS. This is a full regression over all domains, not single-call
+Runtime latency. Additional control operations and expected lifecycle rows change
+the complete process workload and input size; those totals must not be presented
+as a matched speedup or an isolated measurement of retained-anchor memory.
+
+Independent offline inspection of the earlier failed full-window capture cannot
+recover a complete archive: the official exporter returns status 10 with
+=Document Missing Template Error=. The raw attachment is retained, but no
+completed scheduler metadata or wait-object/waker attribution is admitted from
+it. This failed export and all earlier non-wins remain separate from the native
+security and performance qualification.
+
+** Native benchmark observations after retained-intent binding
+
+Lean compiled profile/reuse/root-scale and all nine object-family workloads
+pass. Rust retains all 211 bootstrap, 1,253 Case and 1,024 append observations,
+including allowed, blocked and concurrent populations. The table records
+separate local runs over the same per-phase Case populations; it is not a
+statistical paired speedup experiment. The expanded oracle inputs also prevent
+isolating retained-anchor memory from complete-process RSS alone.
+
+| Native phase | Samples | Prior p95 ms | Current p95 ms | Prior p99 ms | Current p99 ms |
+|--------------+---------+--------------+----------------+--------------+----------------|
+| =execute.empty-log= | 635 | 0.829375 | 0.797375 | 1.078792 | 1.037792 |
+| =operation.construct= | 1253 | 2.781791 | 2.714625 | 3.604750 | 3.459750 |
+| =operation.construct.shared-program= | 1253 | 1.838000 | 1.828625 | 1.996958 | 1.907875 |
+| =prepare.allowed= | 10160 | 0.018625 | 0.018500 | 0.029250 | 0.028791 |
+| =prepare.blocked= | 9888 | 0.000250 | 0.000167 | 0.000333 | 0.000250 |
+| =prepare.concurrent.allowed= | 20320 | 0.167750 | 0.171041 | 0.382625 | 0.401584 |
+| =prepare.concurrent.blocked= | 19776 | 0.007333 | 0.004917 | 0.014875 | 0.016959 |
+| =program.prepare= | 211 | 1.225375 | 1.227166 | 1.974917 | 1.674666 |
+| =review.publish.two= | 1253 | 5.017041 | 4.778625 | 6.862208 | 6.468750 |
+| =sdk.prepare= | 1253 | 1.368625 | 1.201084 | 1.993625 | 1.888833 |
+| =sdk.replay.prepared= | 1253 | 0.292791 | 0.286083 | 0.337167 | 0.311167 |
+| =sources.renew= | 1253 | 1.888917 | 1.842834 | 2.115333 | 2.319917 |
+
+The concurrent allowed/blocked p99 and renewal p99 increases are retained
+non-wins. Shared construction's maximum is 5.234 ms versus 3.841 ms previously,
+even with a lower p99. All per-Case maxima and slower observations remain in the
+native output and timing-only CI logs. The largest append bucket retains all
+768 samples, with p99 0.814 ms and maximum 1.523 ms. These local observations
+establish neither stable whole-process acceleration nor a production latency,
+retained-heap or RSS bound. All existing watchdog and heap limits remain.

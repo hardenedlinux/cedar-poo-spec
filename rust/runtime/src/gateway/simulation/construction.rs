@@ -133,6 +133,7 @@ impl Simulator {
                 original,
                 unknown: false,
                 spent: false,
+                retained_intent: None,
             })),
             source_keys,
             receipt_key: simulation_key(3),

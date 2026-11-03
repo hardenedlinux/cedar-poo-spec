@@ -273,6 +273,112 @@ fn failed_source(
     rows.push(observe("repaired-refresh", &restored, prepared)?);
     Ok(rows)
 }
+fn recovery_boundaries(
+    case: &cedar_poo_runtime::Case,
+    seed: &Simulator,
+    prepared: &PreparedPublications,
+) -> Result<Vec<Value>, String> {
+    if seed.prepare(&seed.envelope()).is_err() {
+        return Ok(Vec::new());
+    }
+    let uncertain = seed.fork_simulation()?;
+    uncertain.refresh_facts(case, 200)?;
+    let mut original_log = Witness::simulation();
+    let mut original_provider = ProviderJournal::default();
+    let envelope = uncertain.envelope();
+    uncertain.execute(
+        uncertain.prepare(&envelope)?,
+        &envelope,
+        EffectIo {
+            witness: &mut original_log,
+            provider: &mut original_provider,
+            crash_after_send: true,
+        },
+    )?;
+    let alternate = seed.fork_simulation()?;
+    let mut alternate_log = Witness::simulation();
+    let mut alternate_provider = ProviderJournal::default();
+    let envelope = alternate.envelope();
+    let (_, receipt) = alternate.execute(
+        alternate.prepare(&envelope)?,
+        &envelope,
+        EffectIo {
+            witness: &mut alternate_log,
+            provider: &mut alternate_provider,
+            crash_after_send: false,
+        },
+    )?;
+    let receipts = vec![receipt.ok_or("missing alternate outcome")?];
+    let mut audit = alternate.audit_authority(&alternate_log);
+    audit.prepared_publications = Some(prepared.clone());
+    if reconcile(
+        &alternate_provider,
+        &receipts,
+        &alternate_log.snapshot(),
+        &audit,
+    ) != Default::default()
+    {
+        return Err("alternate observation was not independently clean".into());
+    }
+    let history = uncertain.publication_history()?;
+    let before = uncertain.lifecycle_view()?;
+    if Simulator::recover(
+        &uncertain,
+        RecoveryEvidence {
+            witness: &alternate_log,
+            publications: &history,
+            audit: &audit,
+            receipts: &receipts,
+            provider: &alternate_provider,
+        },
+    )
+    .is_ok()
+        || uncertain.lifecycle_view()? != before
+    {
+        return Err("clean alternate history replaced the retained intent".into());
+    }
+    let empty = Witness::simulation();
+    let empty_provider = ProviderJournal::default();
+    let empty_audit = uncertain.audit_authority(&empty);
+    if Simulator::recover(
+        &uncertain,
+        RecoveryEvidence {
+            witness: &empty,
+            publications: &history,
+            audit: &empty_audit,
+            receipts: &[],
+            provider: &empty_provider,
+        },
+    )
+    .is_ok()
+        || uncertain.lifecycle_view()? != before
+    {
+        return Err("truncated history replaced the retained intent".into());
+    }
+    let unbound = seed.fork_simulation()?;
+    let before_unbound = unbound.lifecycle_view()?;
+    if Simulator::recover(
+        &unbound,
+        RecoveryEvidence {
+            witness: &alternate_log,
+            publications: &history,
+            audit: &audit,
+            receipts: &receipts,
+            provider: &alternate_provider,
+        },
+    )
+    .is_ok()
+        || unbound.lifecycle_view()? != before_unbound
+    {
+        return Err("external history manufactured a local intent".into());
+    }
+    Ok(vec![
+        observe("substituted-recovery", &uncertain, prepared)?,
+        observe("truncated-recovery", &uncertain, prepared)?,
+        observe("unbound-recovery", &unbound, prepared)?,
+    ])
+}
+
 pub(super) fn run_case(data: &Prepared, index: usize, group: &Group) -> Result<Value, String> {
     let (case, seed) = install_prepared(data, index)?;
     let prepared = PreparedPublications::new(
@@ -285,6 +391,7 @@ pub(super) fn run_case(data: &Prepared, index: usize, group: &Group) -> Result<V
     rows.push(burned(&seed, false, &prepared)?);
     rows.push(burned(&seed, true, &prepared)?);
     rows.extend(failed_source(data, index, &seed, &prepared)?);
+    rows.extend(recovery_boundaries(&case, &seed, &prepared)?);
     let actual = json!({"states":rows,"publication":publication});
     if actual != group.plan.lifecycle[index] {
         return Err(format!(

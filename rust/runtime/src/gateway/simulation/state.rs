@@ -87,6 +87,12 @@ impl Outcome {
         }
     }
 }
+/// Retained by the surviving authority in the same deciding write as the burn.
+#[derive(Clone)]
+pub(super) struct RetainedIntent {
+    pub(super) entry: Arc<Signed>,
+    pub(super) log_key: VerifyingKey,
+}
 #[derive(Clone)]
 pub(super) struct Current {
     pub(super) generation: u64,
@@ -113,6 +119,7 @@ pub(super) struct Current {
     pub(super) original: AuthorityLedger<EffectIdentity>,
     pub(super) unknown: bool,
     pub(super) spent: bool,
+    pub(super) retained_intent: Option<RetainedIntent>,
 }
 /// The token is private, owner-bound and consumed by value at final use.
 pub struct PreparedEffect {
@@ -324,6 +331,10 @@ impl Simulator {
         current.generation = next;
         current.spent = true;
         current.unknown = true;
+        current.retained_intent = Some(RetainedIntent {
+            entry: Arc::new(commit.clone()),
+            log_key: witness.verifying_key(),
+        });
         outcome.precommitted = true;
         outcome.sent = true;
         let action = match provider.send(&current.effect) {

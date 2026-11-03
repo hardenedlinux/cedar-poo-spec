@@ -29,3 +29,12 @@ import CedarPooSpec.Gateway.Lifecycle
 
 #print axioms CedarPooSpec.Gateway.Lifecycle.unclean_audit_retains_unknown
 #print axioms CedarPooSpec.Gateway.Lifecycle.audited_recovery_preserves_burn
+
+#print axioms CedarPooSpec.Gateway.Lifecycle.recovery_invocation_is_bound
+#print axioms CedarPooSpec.Gateway.Lifecycle.missing_retained_intent_is_refused
+#print axioms CedarPooSpec.Gateway.Lifecycle.foreign_log_key_is_refused
+
+#print axioms CedarPooSpec.Gateway.Lifecycle.retained_recovery_requires_exact_history
+
+#print axioms CedarPooSpec.Gateway.Lifecycle.renewal_preserves_retained_intent
+#print axioms CedarPooSpec.Gateway.Lifecycle.recovery_preserves_retained_intent

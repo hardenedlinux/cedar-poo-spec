@@ -35,6 +35,26 @@ private def renewAt (state : State) (world : String) (cedarAllowed : Bool) : Exc
       (fun _ => "source preparation Contract refused its actual fields")
   return renew state authority (prepared.result.map (·.field)) world cedarAllowed
 
+private def intent : RetainedIntent := ⟨⟨"operation", [0], [1]⟩, "witness"⟩
+private def cleanReport : AuditReport := ⟨[], [], [], [], [], 0, false⟩
+private def evidence (committed : Bool) : RecoveryEvidence :=
+  ⟨if committed then [intent.commit] else [], "witness", cleanReport, committed⟩
+
+private def recoveryBoundaries (original : State) : Except String (List Lean.Json) := do
+  if !original.cedarAllowed then return []
+  let renewed ← renewAt original "source" true
+  let uncertain := { renewed with
+    spent := true
+    retainedIntent := some intent
+    current := { renewed.current with unknown := true } }
+  let alternative : RecoveryEvidence :=
+    ⟨[⟨"operation", [2], [3]⟩], "witness", cleanReport, true⟩
+  if (recoverChecked uncertain alternative).isOk then throw "substituted history recovered"
+  if (recoverChecked uncertain (evidence false)).isOk then throw "truncated history recovered"
+  if (recoverChecked original (evidence true)).isOk then throw "unbound history recovered"
+  return [← row "substituted-recovery" uncertain,
+    ← row "truncated-recovery" uncertain, ← row "unbound-recovery" original]
+
 /-- Outcomes are produced by actual POO Contract invocations; the Case producer
 supplies real Cedar decisions for the current, empty-entity and held worlds. -/
 def project (reviewed : Authorization.Delta.ReviewedInteraction) (model : PolicyModules.Model)
@@ -51,23 +71,30 @@ def project (reviewed : Authorization.Delta.ReviewedInteraction) (model : Policy
     cedarAllowed := heldAllowed
     current := { aba.current with review := { aba.current.review with epoch := 10 } } }
   let failed := invalidateSources original
-  let failedRecovered := recover failed false false
+  let failedRecovered ← recoverChecked failed (evidence false)
   let repaired ← renewAt failedRecovered "source" originalAllowed
   let revoked := revoke original
-  let spent := { original with spent := originalAllowed }
+  let spent := { original with
+    spent := originalAllowed
+    retainedIntent := if originalAllowed then some intent else none }
   let uncertain := { spent with current := { spent.current with unknown := originalAllowed } }
-  let recoveredComplete := recover spent originalAllowed originalAllowed
-  let recoveredUnknown := recover uncertain originalAllowed false
+  let recoveredComplete ← recoverChecked spent (evidence originalAllowed)
+  let unresolved := { evidence originalAllowed with
+    report := if originalAllowed then { cleanReport with
+      unresolvedPrecommits := ["operation"], missingReceipts := ["operation"] } else cleanReport }
+  let recoveredUnknown ← recoverChecked uncertain unresolved
+  let recoveredRevoked ← recoverChecked revoked (evidence false)
+  let boundaries ← recoveryBoundaries original
   let active : Authorization.Delta.ReleaseState :=
     ⟨reviewed.snapshot.base.root, reviewed.snapshot.base.policies, .enforcing, reviewed.snapshot.epoch⟩
   let checked := (publicationContract reviewed model schema active changed "source" (envelope changed)).invoke
     (Gateway.ReviewedEffect.prepare reviewed model schema active ()) false
-  return Lean.Json.mkObj [("publication", Lean.toJson checked.isOk), ("states", Lean.toJson [← row "initial" original, ← row "expired" expired,
+  return Lean.Json.mkObj [("publication", Lean.toJson checked.isOk), ("states", Lean.toJson ([← row "initial" original, ← row "expired" expired,
     ← row "renewed" renewed, ← row "entities" changed, ← row "world-aba" aba,
     ← row "policy" held, ← row "revoked" revoked,
-    ← row "recovered-revoked" (recover revoked false false),
+    ← row "recovered-revoked" recoveredRevoked,
     ← row "recovered-complete" recoveredComplete,
     ← row "recovered-unknown" recoveredUnknown,
     ← row "failed-refresh" failed, ← row "recovered-failed-refresh" failedRecovered,
-    ← row "repaired-refresh" repaired])]
+    ← row "repaired-refresh" repaired] ++ boundaries))]
 end CedarPooSpec.Production.Lifecycle

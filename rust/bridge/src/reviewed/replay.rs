@@ -99,6 +99,7 @@ struct Totals {
     publications: usize,
     gains: usize,
     continuous: bool,
+    lifecycle_outcomes: usize,
 }
 
 fn source_hash(value: &impl serde::Serialize) -> Result<String, String> {
@@ -366,6 +367,12 @@ fn qualify_group(
         } else {
             run_case(&prepared, index, group)?
         };
+        if totals.continuous {
+            totals.lifecycle_outcomes += row["lifecycle"]["states"]
+                .as_array()
+                .ok_or("missing lifecycle states")?
+                .len();
+        }
         serde_json::to_writer(&mut *output, &row).map_err(|e| e.to_string())?;
         writeln!(output).map_err(|e| e.to_string())?;
         totals.cases += 1;
@@ -498,7 +505,7 @@ pub(crate) fn replay(
     );
     serde_json::to_writer(
         &mut *output,
-        &json!({"kind":"summary","continuous":continuous,"lifecycle_outcomes":if continuous { totals.cases * 13 } else { 0 },"entries":totals.entries,
+        &json!({"kind":"summary","continuous":continuous,"lifecycle_outcomes":totals.lifecycle_outcomes,"entries":totals.entries,
         "groups":totals.groups,"cases":totals.cases,"refusals":totals.refusals,
         "publications":totals.publications,"gains":totals.gains}),
     )

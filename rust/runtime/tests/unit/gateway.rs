@@ -768,3 +768,86 @@ fn check_ambiguous_intent_recovery(changed_effect: bool) {
     assert!(recovered.lifecycle_view().unwrap().unknown);
     assert!(recovered.prepare(&recovered.envelope()).is_err());
 }
+
+#[test]
+fn gateway_clean_alternate_history_cannot_resolve_the_retained_intent() {
+    for renewed in [false, true] {
+        for revoked in [false, true] {
+            check_retained_history_after_controls(renewed, revoked);
+        }
+    }
+}
+
+fn check_retained_history_after_controls(renewed: bool, revoked: bool) {
+    let (case, schema, first) = setup();
+    first.refresh_facts(&case, 200).unwrap();
+    let mut original_log = Witness::simulation();
+    let mut original_provider = ProviderJournal::default();
+    let envelope = first.envelope();
+    first
+        .execute(
+            first.prepare(&envelope).unwrap(),
+            &envelope,
+            EffectIo {
+                witness: &mut original_log,
+                provider: &mut original_provider,
+                crash_after_send: true,
+            },
+        )
+        .unwrap();
+    if renewed {
+        first.refresh_facts(&case, 300).unwrap();
+    }
+    if revoked {
+        first.revoke().unwrap();
+    }
+    assert!(first.lifecycle_view().unwrap().unknown);
+    let second = Simulator::new(&case, Some(&schema)).unwrap();
+    let mut alternate_log = Witness::simulation();
+    let mut alternate_provider = ProviderJournal::default();
+    let other = second.envelope();
+    assert_eq!(envelope.effect, other.effect);
+    let (_, receipt) = second
+        .execute(
+            second.prepare(&other).unwrap(),
+            &other,
+            EffectIo {
+                witness: &mut alternate_log,
+                provider: &mut alternate_provider,
+                crash_after_send: false,
+            },
+        )
+        .unwrap();
+    assert_ne!(
+        original_log.entries()[0].payload,
+        alternate_log.entries()[0].payload
+    );
+    let receipts = vec![receipt.unwrap()];
+    let audit = second.audit_authority(&alternate_log);
+    assert_eq!(
+        reconcile(
+            &alternate_provider,
+            &receipts,
+            &alternate_log.snapshot(),
+            &audit
+        ),
+        Reconciliation::default()
+    );
+    let before = first.lifecycle_view().unwrap();
+    let recovered = Simulator::recover(
+        &first,
+        RecoveryEvidence {
+            witness: &alternate_log,
+            publications: &[],
+            audit: &audit,
+            receipts: &receipts,
+            provider: &alternate_provider,
+        },
+    );
+    assert!(
+        recovered.is_err(),
+        "a clean but different log resolved the retained intent"
+    );
+    assert_eq!(first.lifecycle_view().unwrap(), before);
+    assert!(first.prepare(&first.envelope()).is_err());
+}

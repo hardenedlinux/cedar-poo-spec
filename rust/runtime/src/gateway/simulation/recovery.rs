@@ -55,14 +55,28 @@ impl Simulator {
         {
             return Err("recovery audit trust changed".into());
         }
-        let committed = evidence
-            .witness
-            .entries()
-            .iter()
-            .try_fold(false, |found, signed| {
-                let commit: Commit = verify(signed, &evidence.audit.log_key)?;
-                Ok::<_, String>(found || commit.effect.operation == snapshot.effect.operation)
-            })?;
+        let committed = match &snapshot.retained_intent {
+            Some(retained) => {
+                if retained.log_key != evidence.audit.log_key
+                    || !evidence.witness.entries().iter().any(|entry| {
+                        entry.payload == retained.entry.payload
+                            && entry.signature == retained.entry.signature
+                    })
+                {
+                    return Err("recovery omitted or substituted the retained intent".into());
+                }
+                true
+            }
+            None => {
+                for signed in evidence.witness.entries() {
+                    let commit: Commit = verify(signed, &evidence.audit.log_key)?;
+                    if commit.effect.operation == snapshot.effect.operation {
+                        return Err("recovery supplied an unrecorded operation intent".into());
+                    }
+                }
+                false
+            }
+        };
         let report = reconcile(
             evidence.provider,
             evidence.receipts,
