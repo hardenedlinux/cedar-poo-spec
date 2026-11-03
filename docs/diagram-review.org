@@ -95,7 +95,7 @@
 - 修改：分成三排论证；保留数值反例、父与子规则合取、消费前缀及发布前后沿的条件。
 - 学生理解题：root ≤ 10、parent ≤ 5，数值 8 能被子对象接受吗？
 - 预期解释：不能只因通过 root 就接受；必须保留独立选定的 parent 要求。
-- 复查结论与剩余难点：三个论证不能当成一个无条件安全定理。frontier 与历史前缀仍需先解释。
+- 复查结论与剩余难点：三个论证不能当成一个无条件安全定理。frontier 与历史前缀仍需先解释；图中明确拒绝的是重复消费，不是拒绝所有持续使用。
 
 ** 原生目录数量
 
@@ -152,7 +152,7 @@
 | [[file:../dev/d2/verticals-platforms.png][verticals-platforms]] | 89 → 64 | 502 → 524 | 13.00 |
 | [[file:../dev/d2/security-frameworks.png][security-frameworks]] | 129 → 69 | 544 → 372 | 13.00 |
 | [[file:../dev/d2/zero-trust-model-proofs.png][zero-trust-model-proofs]] | 346 → 260 | 880 → 851 | 13.00 |
-| [[file:../dev/d2/zero-trust-object-proofs.png][zero-trust-object-proofs]] | 386 → 270 | 1047 → 936 | 13.00 |
+| [[file:../dev/d2/zero-trust-object-proofs.png][zero-trust-object-proofs]] | 386 → 269 | 1047 → 936 | 13.00 |
 | [[file:../dev/d2/lean-catalog.png][lean-catalog]] | 62 → 59 | 766 → 685 | 13.00 |
 | [[file:../dev/d2/gateway-profile-workflow.png][gateway-profile-workflow]] | 91 → 74 | 347 → 344 | 13.00 |
 | [[file:../dev/d2/gateway-publication-swimlanes.png][gateway-publication-swimlanes]] | 111 → 100 | 969 → 883 | 13.00 |

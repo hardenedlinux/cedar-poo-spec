@@ -12,7 +12,7 @@
     "dev/artifacts.ts": "ca1096947536fbdbd5da5cbf1ce5c6f57521bd4a7b135233285dfe8fcff9859d",
     "dev/bun.lock": "2b7060a881aad9312d122f6d01146ef78c207b3c95254aa66b7b57a9eede5acd",
     "dev/catalog.ts": "6d65a91afcddb11de668cc668aa3c6b9076435c02e73a90323c7bf28a991965e",
-    "dev/d2/zero-trust-object-proofs.d2": "4d91113302136e3d1b6c096f1f17e1e32a9023dd1e0781dad9b3e9c8ec8c0f61",
+    "dev/d2/zero-trust-object-proofs.d2": "18b8c41e98b35a1f0eaf76d3d21f5552b34f4dc7542f5544af71cc795e365ba4",
     "dev/icons.ts": "0053a84dd7875949ffd03f8a067037353f3519f9f0875914fcbda1fb39f79764",
     "dev/inputs.ts": "5da4f7a946a9bd87cdca04a0a0406f5f4cddae906f6375a4636aa3fa22f77bf5",
     "dev/Justfile": "364059989486f5babe149b9ab2a570e09fce7abf9f450dc03d47a0f564fa1a10",
@@ -1092,12 +1092,12 @@
       "samples": 70,
       "requiredMinimum": 12
     },
-    "inputSHA256": "50addaadb554957d24d3c3e660a568398f0af2fda3430b8471f08151fe7f7c10",
+    "inputSHA256": "9eea75e63fcbf8bfa1868e975169ede47ece1f4ca32e4a5ad11d9773e0697378",
     "scenes": [],
     "svgSHA256": [
-      "6d78f6982f7ac184a962371585c48ec6f3dc4e98ccb28f81627dd3edec626589"
+      "db343a3f384fac4c30ffe4be775b03c1e8858f280beba26ca227ce6b3cac62f0"
     ],
-    "composedHTMLSHA256": "5bf9afbc79bee5929d342a0de9a5c1700fa750429e7f7c752874e6ff410fc7b7",
+    "composedHTMLSHA256": "32f2b5e2e7f8ff66ffdf0ebcd7b1232238254563661a14e460ace2d46eb78d0b",
     "dependencies": {
       "@fontsource/inter": "5.3.0",
       "@fontsource/kalam": "5.3.0",
@@ -1110,14 +1110,14 @@
       "web-worker": "1.5.0"
     },
     "regionSHA256": {},
-    "htmlSHA256": "5e029fb4a4107eb727c871a9c51680f19ac26332ec007e8d71b333552daf0590",
+    "htmlSHA256": "4181b84244781481ab7bec16e31e5ebad0df60ffa52577c94ea530e7b32b358d",
     "drawing": "precise",
     "routing": "none",
     "assetSHA256": {
       "@fontsource/inter/files/inter-latin-400-normal.woff2": "8909904ab6c872eb994093482a88a28eca2cd95912d7b6fecd72103b0dc07edc",
       "@fontsource/inter/files/inter-latin-700-normal.woff2": "6f56409fd3d64bb85f7d070bce20749db2d66b6d63cec586cc22d1c761be2491"
     },
-    "pngSHA256": "ab64d8db73715cead56beb7b1403d352f137f54e7c501d587dcce0815af5104d",
+    "pngSHA256": "5f961def1722570a3219e6373eaded2b1a7b4a57eae56f4729d24a9d0269cb23",
     "browser": "156.0.8078.4",
     "width": 2550,
     "height": 1989,
