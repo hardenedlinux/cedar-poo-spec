@@ -5,14 +5,15 @@ vars: {d2-config: {data: {figure: |json
 {
   "purpose": "architecture",
   "language": "en",
-  "width": 1400,
+  "width": 1900,
   "primary": "purpose",
   "themes": [
     "blueprint",
     "comfortable"
   ],
   "icons": [
-    "engineering"
+    "engineering",
+    "cedar"
   ],
   "basis": {
     "captureRef": "development-source-observation",
@@ -20,12 +21,12 @@ vars: {d2-config: {data: {figure: |json
     "obligationRefs": [],
     "evidenceRefs": []
   },
-  "title": "Gateway: typed publication admission workflow",
+  "title": "Gateway: can this request use the published profile?",
   "kind": "workflow",
   "questions": [
     {
       "ref": "purpose",
-      "text": "Where can admission refuse before a publication-bound receipt exists?",
+      "text": "Where does the request continue, and where must it stop?",
       "focusRefs": [
         "sysml",
         "sourceCode"
@@ -40,8 +41,8 @@ vars: {d2-config: {data: {figure: |json
     "admission": "CedarPooSpec/Gateway/Admission.lean"
   },
   "copy": {
-    "description": "Read top to bottom. Labelled arrows are success/error alternatives; only one branch is taken per call. The Host supplies the actual publication independently.",
-    "status": "Authored call/return reading of pure Lean APIs. authorizePublished calls authorize then bindPublication. Symbol existence and defining modules are checked in Lean; arrows are not extracted execution traces."
+    "description": "Follow the arrows from the profile to the bound receipt. Each check has an explicit refusal route.",
+    "status": "Pure admission, not dispatch. The Host supplies the authoritative publication; Lean checks the API bindings."
   },
   "presentation": {
     "notation": "workflow",
@@ -56,7 +57,8 @@ vars: {d2-config: {data: {figure: |json
       "terminals": [
         "stepAccepted",
         "stepRefused"
-      ]
+      ],
+      "direction": "RIGHT"
     }
   },
   "sysml": {
@@ -65,19 +67,19 @@ vars: {d2-config: {data: {figure: |json
     "bindings": {
       "stepSession": {
         "name": "GatewayProfileFlow::stepSession",
-        "icon": "question"
+        "icon": "current"
       },
       "stepCapture": {
         "name": "GatewayProfileFlow::stepCapture",
-        "icon": "question"
+        "icon": "request"
       },
       "stepAuthorize": {
         "name": "GatewayProfileFlow::stepAuthorize",
-        "icon": "question"
+        "icon": "current"
       },
       "stepBind": {
         "name": "GatewayProfileFlow::stepBind",
-        "icon": "question"
+        "icon": "capture"
       },
       "stepAccepted": {
         "name": "GatewayProfileFlow::stepAccepted",
@@ -85,7 +87,7 @@ vars: {d2-config: {data: {figure: |json
       },
       "stepRefused": {
         "name": "GatewayProfileFlow::stepRefused",
-        "icon": "evidence"
+        "icon": "gate"
       }
     }
   },
@@ -95,17 +97,17 @@ vars: {d2-config: {data: {figure: |json
 }
 |
 }}}
-stepSession: "Open the typed Session?\nopenSession original object\nShape + original refinement Contract"
-stepCapture: "Capture a published profile?\ncapturePublication context session\nRead the actual profile projection"
-stepAuthorize: "Authorize the actual request?\nauthorize prepared model effect state\nCurrent context / checks / Cedar allow"
-stepBind: "Bind to authoritative publication?\nbindPublication publication receipt\nExact selected profile + context"
-stepAccepted: "Return PublishedReceipt\nBound semantic receipt\nThis is not a dispatch or commit"
-stepRefused: "Return the owning typed error\nNo PublishedReceipt is constructed\nNo fallback to an unbound Receipt"
-stepSession -> stepCapture: "ok: indexed Session"
-stepSession -> stepRefused: "error: Contract issues"
-stepCapture -> stepAuthorize: "ok: Publication"
-stepCapture -> stepRefused: "error: invalidProfile"
-stepAuthorize -> stepBind: "ok: semantic Receipt"
-stepAuthorize -> stepRefused: "error: admission refused"
-stepBind -> stepAccepted: "ok: PublishedReceipt"
-stepBind -> stepRefused: "error: invalidProfile / staleContext"
+stepSession: "Profile still fits?\nOriginal checks retained"
+stepCapture: "Profile selected?\nRead the actual object"
+stepAuthorize: "Allowed now?\nCurrent context + Cedar"
+stepBind: "Same publication?\nExact profile + context"
+stepAccepted: "Bound receipt\nReady for final-use checks"
+stepRefused: "Stop\nReturn the typed error"
+stepSession -> stepCapture: "fits"
+stepSession -> stepRefused: "invalid"
+stepCapture -> stepAuthorize: "selected"
+stepCapture -> stepRefused: "missing"
+stepAuthorize -> stepBind: "allow"
+stepAuthorize -> stepRefused: "deny / error"
+stepBind -> stepAccepted: "match"
+stepBind -> stepRefused: "changed"

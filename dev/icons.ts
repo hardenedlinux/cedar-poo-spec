@@ -4,6 +4,7 @@ import type {IconAsset} from '@deterministic-engineering/render/icons';
 const glyph=(label:string,body:string):IconAsset=>({label,svg:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`});
 /** Local vector metaphors selected by the view; no imported bitmap or font icon. */
 export const cedarIcons={
+ caller:glyph('Caller requesting publication','<circle cx="32" cy="17" r="10"/><path d="M12 56V43a20 20 0 0 1 40 0v13M23 56V45M41 56V45"/>'),
  request:glyph('Request bound to its original contract','<rect x="7" y="9" width="32" height="43" rx="5"/><path d="M15 20h16M15 28h12M15 36h9"/><circle cx="45" cy="43" r="12"/><path d="M45 26v8M45 52v7M28 43h8M54 43h7"/>'),
  evidence:glyph('Selected review evidence','<path d="M12 6h29l10 10v38H12zM41 6v12h10M20 26h20M20 34h14"/><circle cx="39" cy="43" r="11"/><path d="m34 43 4 4 7-9"/>'),
  registry:glyph('Committed authority record','<ellipse cx="29" cy="14" rx="20" ry="8"/><path d="M9 14v31c0 11 40 11 40 0V14M9 28c0 11 40 11 40 0"/><path d="m36 44 7 7 13-15"/>'),

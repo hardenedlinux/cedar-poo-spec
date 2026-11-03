@@ -45,20 +45,22 @@ package GatewayPublicationLanes {
  part def Definition;
  part stepCapture : Definition;
  part stepCall : Definition;
+ part stepOwner : Definition;
  part stepCheck : Definition;
  part stepAdmit : Definition;
  part stepInstall : Definition;
  part stepObserve : Definition;
  part stepReturn : Definition;
  connection edge0 connect stepCapture to stepCall;
- connection edge1 connect stepCall to stepCheck;
+ connection edge1 connect stepCall to stepOwner;
+ connection ownerCheck connect stepOwner to stepCheck;
  connection edge2 connect stepCheck to stepAdmit;
  connection edge3 connect stepAdmit to stepInstall;
  connection edge4 connect stepInstall to stepObserve;
  connection edge5 connect stepObserve to stepReturn;
  view overview {
-  expose stepCapture; expose stepCall; expose stepCheck; expose stepAdmit; expose stepInstall; expose stepObserve; expose stepReturn;
-  expose edge0; expose edge1; expose edge2; expose edge3; expose edge4; expose edge5;
+  expose stepCapture; expose stepCall; expose stepOwner; expose stepCheck; expose stepAdmit; expose stepInstall; expose stepObserve; expose stepReturn;
+  expose ownerCheck; expose edge0; expose edge1; expose edge2; expose edge3; expose edge4; expose edge5;
   render asInterconnectionDiagram;
  }
 }

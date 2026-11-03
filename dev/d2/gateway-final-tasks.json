@@ -2,41 +2,41 @@
   "entry": "dev/d2/gateway-final-tasks.d2",
   "sources": {
     "CedarPooSpec/Gateway/PublicationReview.lean": "1ddfb0a04e008bf26f34e51f54d26b01421fbf62139727ab93de4195996ce204",
-    "dev/.generated/gateway-final-tasks-sdk.json": "155deb5bb32100cb4181ca658a4466fe683267a5ae21af3c6321e4797918c61a",
+    "dev/.generated/gateway-final-tasks-sdk.json": "eb15082c4674f214acff3342a6bc417b9151f3748f3f0f5b08b164b64deac83f",
     "dev/artifacts.ts": "ca1096947536fbdbd5da5cbf1ce5c6f57521bd4a7b135233285dfe8fcff9859d",
     "dev/bun.lock": "2b7060a881aad9312d122f6d01146ef78c207b3c95254aa66b7b57a9eede5acd",
     "dev/catalog.ts": "6d65a91afcddb11de668cc668aa3c6b9076435c02e73a90323c7bf28a991965e",
     "dev/d2/gateway-final-tasks.d2": "0c38c0e1eae535594c64707fdde43af1eda8a04e0b0c212af5e6d42b650240b1",
-    "dev/icons.ts": "f9f59a014cfb141cc48d444396e4f88217a51c53987ca69a279b542141a10512",
+    "dev/icons.ts": "45340ca1d19794f8fe48b849630a2691f564f546cc45c87c1424f314ff14e044",
     "dev/inputs.ts": "d79d292e5652cd4c4368a754e1472485fda4aeb0fea721e8b43b3f11d5aadc3f",
     "dev/Justfile": "364059989486f5babe149b9ab2a570e09fce7abf9f450dc03d47a0f564fa1a10",
-    "dev/notation.ts": "9f92b6f5144fe9e27bd103972574d27fa88a0d719e000227b52fe7b24cc26503",
+    "dev/notation.ts": "229ed638b34821729d1472ace8e46237ba593669057fc86521296e435cf5bec7",
     "dev/package.json": "4eb137a6d73d5dfb1e43020c3041e9a42151d480b26d6e01b99ee0ebc2997d90",
     "dev/projection.ts": "3fd049e50798aee9dce54af6cd6e6fccad45fec5ab24b994bb6a8a4b33d7252d",
     "dev/proofs.ts": "8a9cb88dd75b807f176c1389bd3e8b4df7cf658c657ad85bbf0487d09cafedd9",
     "dev/render.ts": "41b5ff6dfef93c5be3935198f190337c86454e358ab332eb9d908cf84b6b47e9",
     "dev/sources.ts": "3cd11d095476ee65c9086172773813e6e37e88087c9d01ee962cec59369d7ed8",
-    "dev/sysml/gateway-activities.sysml": "8b177e554ac0e8a68e7c2929ee259530d63ec4bf67d94574e84e5603c0c51b1e"
+    "dev/sysml/gateway-activities.sysml": "87c73ad3b6516117919c19fd78be453fcbf836e89bcfd21e678315523153cb07"
   },
   "binaries": {},
   "sdk": {
-    "modelHash": "9857a2aa827e5c04f66fd672f568a3c8e318d8362ccec34634a96643c3eeedcc",
+    "modelHash": "d402aa7d4522ae8184d3eb93bb28d7ca7543b5ff2f415eeb7150f0f9e064231d",
     "view": "GatewayFinalTasks::overview",
     "trace": {
-      "modelHash": "9857a2aa827e5c04f66fd672f568a3c8e318d8362ccec34634a96643c3eeedcc",
+      "modelHash": "d402aa7d4522ae8184d3eb93bb28d7ca7543b5ff2f415eeb7150f0f9e064231d",
       "requestedView": "GatewayFinalTasks::overview",
       "resolvedView": "GatewayFinalTasks::overview",
-      "renderingSHA256": "155deb5bb32100cb4181ca658a4466fe683267a5ae21af3c6321e4797918c61a",
-      "capturedRenderingJSON": "{\"modelHash\":\"9857a2aa827e5c04f66fd672f568a3c8e318d8362ccec34634a96643c3eeedcc\",\"requestedView\":\"GatewayFinalTasks::overview\",\"rendering\":{\"view\":\"GatewayFinalTasks::overview\",\"kind\":\"interconnection\",\"stated\":\"render asInterconnectionDiagram\",\"nodes\":[{\"id\":\"n0\",\"kind\":\"part\",\"name\":\"GatewayFinalTasks::stepFinal\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":73,\"startCol\":2,\"endLine\":73,\"endCol\":30}},{\"id\":\"n1\",\"kind\":\"part\",\"name\":\"GatewayFinalTasks::stepReceipt\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":76,\"startCol\":2,\"endLine\":76,\"endCol\":32}},{\"id\":\"n2\",\"kind\":\"part\",\"name\":\"GatewayFinalTasks::stepApproved\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":79,\"startCol\":2,\"endLine\":79,\"endCol\":33}},{\"id\":\"n3\",\"kind\":\"part\",\"name\":\"GatewayFinalTasks::stepDurable\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":82,\"startCol\":2,\"endLine\":82,\"endCol\":32}},{\"id\":\"n4\",\"kind\":\"part\",\"name\":\"GatewayFinalTasks::stepRecovered\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":85,\"startCol\":2,\"endLine\":85,\"endCol\":34}},{\"id\":\"n5\",\"kind\":\"part\",\"name\":\"GatewayFinalTasks::stepFenced\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":88,\"startCol\":2,\"endLine\":88,\"endCol\":31}},{\"id\":\"n6\",\"kind\":\"part\",\"name\":\"GatewayFinalTasks::stepCurrent\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":91,\"startCol\":2,\"endLine\":91,\"endCol\":32}},{\"id\":\"n7\",\"kind\":\"part\",\"name\":\"GatewayFinalTasks::stepPending\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":94,\"startCol\":2,\"endLine\":94,\"endCol\":32}},{\"id\":\"n8\",\"kind\":\"part\",\"name\":\"GatewayFinalTasks::stepCommitted\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":97,\"startCol\":2,\"endLine\":97,\"endCol\":34}}],\"edges\":[{\"from\":\"n0\",\"to\":\"n1\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":100,\"startCol\":2,\"endLine\":100,\"endCol\":52}},{\"from\":\"n0\",\"to\":\"n2\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":101,\"startCol\":2,\"endLine\":101,\"endCol\":53}},{\"from\":\"n0\",\"to\":\"n3\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":102,\"startCol\":2,\"endLine\":102,\"endCol\":52}},{\"from\":\"n0\",\"to\":\"n4\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":103,\"startCol\":2,\"endLine\":103,\"endCol\":54}},{\"from\":\"n0\",\"to\":\"n5\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":104,\"startCol\":2,\"endLine\":104,\"endCol\":51}},{\"from\":\"n0\",\"to\":\"n6\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":105,\"startCol\":2,\"endLine\":105,\"endCol\":52}},{\"from\":\"n0\",\"to\":\"n7\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":106,\"startCol\":2,\"endLine\":106,\"endCol\":52}},{\"from\":\"n0\",\"to\":\"n8\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":107,\"startCol\":2,\"endLine\":107,\"endCol\":54}}],\"columns\":[],\"rows\":[],\"notes\":[],\"notices\":[],\"shown\":[\"port-symbols\",\"compartments\",\"keywords\"]}}",
+      "renderingSHA256": "eb15082c4674f214acff3342a6bc417b9151f3748f3f0f5b08b164b64deac83f",
+      "capturedRenderingJSON": "{\"modelHash\":\"d402aa7d4522ae8184d3eb93bb28d7ca7543b5ff2f415eeb7150f0f9e064231d\",\"requestedView\":\"GatewayFinalTasks::overview\",\"rendering\":{\"view\":\"GatewayFinalTasks::overview\",\"kind\":\"interconnection\",\"stated\":\"render asInterconnectionDiagram\",\"nodes\":[{\"id\":\"n0\",\"kind\":\"part\",\"name\":\"GatewayFinalTasks::stepFinal\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":75,\"startCol\":2,\"endLine\":75,\"endCol\":30}},{\"id\":\"n1\",\"kind\":\"part\",\"name\":\"GatewayFinalTasks::stepReceipt\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":78,\"startCol\":2,\"endLine\":78,\"endCol\":32}},{\"id\":\"n2\",\"kind\":\"part\",\"name\":\"GatewayFinalTasks::stepApproved\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":81,\"startCol\":2,\"endLine\":81,\"endCol\":33}},{\"id\":\"n3\",\"kind\":\"part\",\"name\":\"GatewayFinalTasks::stepDurable\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":84,\"startCol\":2,\"endLine\":84,\"endCol\":32}},{\"id\":\"n4\",\"kind\":\"part\",\"name\":\"GatewayFinalTasks::stepRecovered\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":87,\"startCol\":2,\"endLine\":87,\"endCol\":34}},{\"id\":\"n5\",\"kind\":\"part\",\"name\":\"GatewayFinalTasks::stepFenced\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":90,\"startCol\":2,\"endLine\":90,\"endCol\":31}},{\"id\":\"n6\",\"kind\":\"part\",\"name\":\"GatewayFinalTasks::stepCurrent\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":93,\"startCol\":2,\"endLine\":93,\"endCol\":32}},{\"id\":\"n7\",\"kind\":\"part\",\"name\":\"GatewayFinalTasks::stepPending\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":96,\"startCol\":2,\"endLine\":96,\"endCol\":32}},{\"id\":\"n8\",\"kind\":\"part\",\"name\":\"GatewayFinalTasks::stepCommitted\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":99,\"startCol\":2,\"endLine\":99,\"endCol\":34}}],\"edges\":[{\"from\":\"n0\",\"to\":\"n1\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":102,\"startCol\":2,\"endLine\":102,\"endCol\":52}},{\"from\":\"n0\",\"to\":\"n2\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":103,\"startCol\":2,\"endLine\":103,\"endCol\":53}},{\"from\":\"n0\",\"to\":\"n3\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":104,\"startCol\":2,\"endLine\":104,\"endCol\":52}},{\"from\":\"n0\",\"to\":\"n4\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":105,\"startCol\":2,\"endLine\":105,\"endCol\":54}},{\"from\":\"n0\",\"to\":\"n5\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":106,\"startCol\":2,\"endLine\":106,\"endCol\":51}},{\"from\":\"n0\",\"to\":\"n6\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":107,\"startCol\":2,\"endLine\":107,\"endCol\":52}},{\"from\":\"n0\",\"to\":\"n7\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":108,\"startCol\":2,\"endLine\":108,\"endCol\":52}},{\"from\":\"n0\",\"to\":\"n8\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":109,\"startCol\":2,\"endLine\":109,\"endCol\":54}}],\"columns\":[],\"rows\":[],\"notes\":[],\"notices\":[],\"shown\":[\"port-symbols\",\"compartments\",\"keywords\"]}}",
       "nodes": [
         {
           "id": "n0",
           "parent": "",
           "origin": {
             "file": "dev/sysml/gateway-activities.sysml",
-            "startLine": 73,
+            "startLine": 75,
             "startCol": 2,
-            "endLine": 73,
+            "endLine": 75,
             "endCol": 30
           }
         },
@@ -45,9 +45,9 @@
           "parent": "",
           "origin": {
             "file": "dev/sysml/gateway-activities.sysml",
-            "startLine": 76,
+            "startLine": 78,
             "startCol": 2,
-            "endLine": 76,
+            "endLine": 78,
             "endCol": 32
           }
         },
@@ -56,9 +56,9 @@
           "parent": "",
           "origin": {
             "file": "dev/sysml/gateway-activities.sysml",
-            "startLine": 79,
+            "startLine": 81,
             "startCol": 2,
-            "endLine": 79,
+            "endLine": 81,
             "endCol": 33
           }
         },
@@ -67,9 +67,9 @@
           "parent": "",
           "origin": {
             "file": "dev/sysml/gateway-activities.sysml",
-            "startLine": 82,
+            "startLine": 84,
             "startCol": 2,
-            "endLine": 82,
+            "endLine": 84,
             "endCol": 32
           }
         },
@@ -78,9 +78,9 @@
           "parent": "",
           "origin": {
             "file": "dev/sysml/gateway-activities.sysml",
-            "startLine": 85,
+            "startLine": 87,
             "startCol": 2,
-            "endLine": 85,
+            "endLine": 87,
             "endCol": 34
           }
         },
@@ -89,9 +89,9 @@
           "parent": "",
           "origin": {
             "file": "dev/sysml/gateway-activities.sysml",
-            "startLine": 88,
+            "startLine": 90,
             "startCol": 2,
-            "endLine": 88,
+            "endLine": 90,
             "endCol": 31
           }
         },
@@ -100,9 +100,9 @@
           "parent": "",
           "origin": {
             "file": "dev/sysml/gateway-activities.sysml",
-            "startLine": 91,
+            "startLine": 93,
             "startCol": 2,
-            "endLine": 91,
+            "endLine": 93,
             "endCol": 32
           }
         },
@@ -111,9 +111,9 @@
           "parent": "",
           "origin": {
             "file": "dev/sysml/gateway-activities.sysml",
-            "startLine": 94,
+            "startLine": 96,
             "startCol": 2,
-            "endLine": 94,
+            "endLine": 96,
             "endCol": 32
           }
         },
@@ -122,9 +122,9 @@
           "parent": "",
           "origin": {
             "file": "dev/sysml/gateway-activities.sysml",
-            "startLine": 97,
+            "startLine": 99,
             "startCol": 2,
-            "endLine": 97,
+            "endLine": 99,
             "endCol": 34
           }
         }
@@ -140,9 +140,9 @@
           "kind": "connection",
           "origin": {
             "file": "dev/sysml/gateway-activities.sysml",
-            "startLine": 100,
+            "startLine": 102,
             "startCol": 2,
-            "endLine": 100,
+            "endLine": 102,
             "endCol": 52
           }
         },
@@ -156,9 +156,9 @@
           "kind": "connection",
           "origin": {
             "file": "dev/sysml/gateway-activities.sysml",
-            "startLine": 101,
+            "startLine": 103,
             "startCol": 2,
-            "endLine": 101,
+            "endLine": 103,
             "endCol": 53
           }
         },
@@ -172,9 +172,9 @@
           "kind": "connection",
           "origin": {
             "file": "dev/sysml/gateway-activities.sysml",
-            "startLine": 102,
+            "startLine": 104,
             "startCol": 2,
-            "endLine": 102,
+            "endLine": 104,
             "endCol": 52
           }
         },
@@ -188,9 +188,9 @@
           "kind": "connection",
           "origin": {
             "file": "dev/sysml/gateway-activities.sysml",
-            "startLine": 103,
+            "startLine": 105,
             "startCol": 2,
-            "endLine": 103,
+            "endLine": 105,
             "endCol": 54
           }
         },
@@ -204,9 +204,9 @@
           "kind": "connection",
           "origin": {
             "file": "dev/sysml/gateway-activities.sysml",
-            "startLine": 104,
+            "startLine": 106,
             "startCol": 2,
-            "endLine": 104,
+            "endLine": 106,
             "endCol": 51
           }
         },
@@ -220,9 +220,9 @@
           "kind": "connection",
           "origin": {
             "file": "dev/sysml/gateway-activities.sysml",
-            "startLine": 105,
+            "startLine": 107,
             "startCol": 2,
-            "endLine": 105,
+            "endLine": 107,
             "endCol": 52
           }
         },
@@ -236,9 +236,9 @@
           "kind": "connection",
           "origin": {
             "file": "dev/sysml/gateway-activities.sysml",
-            "startLine": 106,
+            "startLine": 108,
             "startCol": 2,
-            "endLine": 106,
+            "endLine": 108,
             "endCol": 52
           }
         },
@@ -252,9 +252,9 @@
           "kind": "connection",
           "origin": {
             "file": "dev/sysml/gateway-activities.sysml",
-            "startLine": 107,
+            "startLine": 109,
             "startCol": 2,
-            "endLine": 107,
+            "endLine": 109,
             "endCol": 54
           }
         }
@@ -264,7 +264,7 @@
     "observations": []
   },
   "proofClaims": {
-    "modelHash": "9857a2aa827e5c04f66fd672f568a3c8e318d8362ccec34634a96643c3eeedcc",
+    "modelHash": "d402aa7d4522ae8184d3eb93bb28d7ca7543b5ff2f415eeb7150f0f9e064231d",
     "cards": [
       {
         "id": "GatewayFinalTasks::stepFinal",
@@ -634,12 +634,12 @@
       "samples": 27,
       "requiredMinimum": 12
     },
-    "inputSHA256": "f1237239d0c00a09aa2b71d728e5a8466b0ab53ac06bb621918d984998f434b6",
+    "inputSHA256": "38a40560a4266f0f825eb4cf97ed25be701c77cd0545d3d032f971121157f798",
     "scenes": [],
     "svgSHA256": [
-      "f191dd602b5ea3600ab56ea313d14e89baf11692958e39984ad90c8443338121"
+      "ea942985e929fd15bf87001fbb8ea3d43b868d1904c1be97d36abb567fd55d15"
     ],
-    "composedHTMLSHA256": "29613af5a887b6580a9eb91acf0ddd5806fd57516b3bbbe1dd5a1c88dce5d85d",
+    "composedHTMLSHA256": "7cf651036052c0a71fb28ad946085e6acae755402cb9c0ed12878d222c88ab34",
     "dependencies": {
       "@fontsource/inter": "5.3.0",
       "@fontsource/kalam": "5.3.0",
@@ -652,7 +652,7 @@
       "web-worker": "1.5.0"
     },
     "regionSHA256": {},
-    "htmlSHA256": "ea25d52cfd17366b0dbd7bff8e07b68bd1ab8d21ad9c7d80412d146cc210363b",
+    "htmlSHA256": "43f1616385da055ede51465cc64ebe6eb147aaa3db6ee64967c264cd59f0ed92",
     "drawing": "precise",
     "routing": "none",
     "assetSHA256": {

@@ -7,10 +7,10 @@
     "dev/bun.lock": "2b7060a881aad9312d122f6d01146ef78c207b3c95254aa66b7b57a9eede5acd",
     "dev/catalog.ts": "6d65a91afcddb11de668cc668aa3c6b9076435c02e73a90323c7bf28a991965e",
     "dev/d2/security-frameworks.d2": "1ff2318cb2b86b1204469015ca7cd9d30149573de42bfd4330c6e0bf686be835",
-    "dev/icons.ts": "f9f59a014cfb141cc48d444396e4f88217a51c53987ca69a279b542141a10512",
+    "dev/icons.ts": "45340ca1d19794f8fe48b849630a2691f564f546cc45c87c1424f314ff14e044",
     "dev/inputs.ts": "d79d292e5652cd4c4368a754e1472485fda4aeb0fea721e8b43b3f11d5aadc3f",
     "dev/Justfile": "364059989486f5babe149b9ab2a570e09fce7abf9f450dc03d47a0f564fa1a10",
-    "dev/notation.ts": "9f92b6f5144fe9e27bd103972574d27fa88a0d719e000227b52fe7b24cc26503",
+    "dev/notation.ts": "229ed638b34821729d1472ace8e46237ba593669057fc86521296e435cf5bec7",
     "dev/package.json": "4eb137a6d73d5dfb1e43020c3041e9a42151d480b26d6e01b99ee0ebc2997d90",
     "dev/projection.ts": "3fd049e50798aee9dce54af6cd6e6fccad45fec5ab24b994bb6a8a4b33d7252d",
     "dev/proofs.ts": "8a9cb88dd75b807f176c1389bd3e8b4df7cf658c657ad85bbf0487d09cafedd9",
@@ -480,12 +480,12 @@
       "samples": 36,
       "requiredMinimum": 12
     },
-    "inputSHA256": "92530d4d89d2c4ec0c3e501ed829a296433357f16e0af786e367a0b1c03fd837",
+    "inputSHA256": "2ed6149f30854370db93a05b6dde9b51dff3cce18da2e6abd7baa16588e11313",
     "scenes": [],
     "svgSHA256": [
-      "dac0e4133426464afe4c9bb2dce3fb636f7ddce224ae6d35ef0ee839c5a63cf0"
+      "c9cb61db1cccf2ab2e0a373d5280aa372cf02171d8ebe02a7620944d963c584b"
     ],
-    "composedHTMLSHA256": "f03b13cd1adef9522c289ed0adeee5cdf107275d0151a3585112085903af7d50",
+    "composedHTMLSHA256": "88c538308daebbaadd23997b5825cb55d7df0db6da85717baef1b3ba118ad0ed",
     "dependencies": {
       "@fontsource/inter": "5.3.0",
       "@fontsource/kalam": "5.3.0",
@@ -498,7 +498,7 @@
       "web-worker": "1.5.0"
     },
     "regionSHA256": {},
-    "htmlSHA256": "1543c063691b5ecbb7e076e5920745dfbfe6263288cf6e5a75a23e2c1c03a4f0",
+    "htmlSHA256": "8f5d5303d067209b9db32ab737b05dc197338f38522363a6c646558be007fd2f",
     "drawing": "precise",
     "routing": "none",
     "assetSHA256": {

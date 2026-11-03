@@ -5,14 +5,15 @@ vars: {d2-config: {data: {figure: |json
 {
   "purpose": "architecture",
   "language": "en",
-  "width": 1800,
+  "width": 1550,
   "primary": "purpose",
   "themes": [
     "blueprint",
     "comfortable"
   ],
   "icons": [
-    "engineering"
+    "engineering",
+    "cedar"
   ],
   "basis": {
     "captureRef": "development-source-observation",
@@ -20,12 +21,12 @@ vars: {d2-config: {data: {figure: |json
     "obligationRefs": [],
     "evidenceRefs": []
   },
-  "title": "Gateway: who owns the simulated publication boundary?",
+  "title": "Gateway: one publication, three responsibilities",
   "kind": "swimlanes",
   "questions": [
     {
       "ref": "purpose",
-      "text": "Which participant acts, and when must the authority retain its lock?",
+      "text": "Who acts, and what stays inside the shared lock?",
       "focusRefs": [
         "sysml",
         "sourceCode"
@@ -39,8 +40,8 @@ vars: {d2-config: {data: {figure: |json
     "contract": "CedarPooSpec/Gateway/PublicationReview.lean"
   },
   "copy": {
-    "description": "Columns are responsibility lanes; rows are call order on the successful test-owned path. Refused paths return before installation/observation. capture runs at the authority on behalf of the caller.",
-    "status": "Source reading of the existing Rust in-memory control fixture, not a production Host or runtime trace. Check / prepare / install / observe share one lock scope; rows do not imply separate transactions."
+    "description": "Read down the lanes. Check, prepare, install and observation share one lock scope.",
+    "status": "Successful path of the Rust in-memory fixture. Refusals stop before install or observation; a local reply does not prove delivery."
   },
   "presentation": {
     "notation": "swimlanes",
@@ -52,21 +53,25 @@ vars: {d2-config: {data: {figure: |json
           "stepCapture",
           "stepCall",
           "stepReturn"
-        ]
+        ],
+        "icon": "caller"
       },
       {
         "title": "Shared authority / Mutex",
         "subjects": [
+          "stepOwner",
           "stepCheck",
           "stepAdmit",
           "stepInstall"
-        ]
+        ],
+        "icon": "gate"
       },
       {
         "title": "Commit observer",
         "subjects": [
           "stepObserve"
-        ]
+        ],
+        "icon": "observer"
       }
     ],
     "activity": {
@@ -81,6 +86,12 @@ vars: {d2-config: {data: {figure: |json
           "title": "Invoke",
           "subjects": [
             "stepCall"
+          ]
+        },
+        {
+          "title": "Check ownership",
+          "subjects": [
+            "stepOwner"
           ]
         },
         {
@@ -113,7 +124,16 @@ vars: {d2-config: {data: {figure: |json
             "stepReturn"
           ]
         }
-      ]
+      ],
+      "critical": {
+        "title": "FINAL-USE LOCK",
+        "subjects": [
+          "stepCheck",
+          "stepAdmit",
+          "stepInstall",
+          "stepObserve"
+        ]
+      }
     }
   },
   "sysml": {
@@ -122,15 +142,15 @@ vars: {d2-config: {data: {figure: |json
     "bindings": {
       "stepCapture": {
         "name": "GatewayPublicationLanes::stepCapture",
-        "icon": "evidence"
+        "icon": "request"
       },
       "stepCall": {
         "name": "GatewayPublicationLanes::stepCall",
-        "icon": "evidence"
+        "icon": "reference"
       },
       "stepCheck": {
         "name": "GatewayPublicationLanes::stepCheck",
-        "icon": "evidence"
+        "icon": "current"
       },
       "stepAdmit": {
         "name": "GatewayPublicationLanes::stepAdmit",
@@ -138,31 +158,37 @@ vars: {d2-config: {data: {figure: |json
       },
       "stepInstall": {
         "name": "GatewayPublicationLanes::stepInstall",
-        "icon": "evidence"
+        "icon": "registry"
       },
       "stepObserve": {
         "name": "GatewayPublicationLanes::stepObserve",
-        "icon": "evidence"
+        "icon": "observer"
       },
       "stepReturn": {
         "name": "GatewayPublicationLanes::stepReturn",
-        "icon": "evidence"
+        "icon": "document"
+      },
+      "stepOwner": {
+        "name": "GatewayPublicationLanes::stepOwner",
+        "icon": "registrar"
       }
     }
   }
 }
 |
 }}}
-stepCapture: "Request a captured ticket\nAuthority::capture\nOwner identity + current generation"
-stepCall: "Request publication\nAuthority::publish(ticket, lost, observe)\nTicket is not commit permission"
-stepCheck: "Refuse missing / foreign / stale\nAcquire current Mutex after owner check\nRead current image and current review"
-stepAdmit: "Prepare the successor image\nImage::step; refuse Denied / Exhausted\nNo observer on any refused path"
-stepInstall: "Install image + generation\nChecked generation increment\nThe same Mutex remains held"
-stepObserve: "Invoke observe(&current.image)\nCallback executes inside the Mutex\nCompeting control/register writers wait"
-stepReturn: "Return Committed(reply)\nA lost reply may remain unknown\nNot proof of external delivery"
+stepOwner: "Check ticket ownership\nMissing / foreign: stop before lock"
+stepCapture: "Capture ticket\nOwner + current generation"
+stepCall: "Request publication\nTicket grants no commit right"
+stepCheck: "Check current generation\nStale ticket: stop"
+stepAdmit: "Review and counters fit?\nDenied / exhausted: stop"
+stepInstall: "Install successor\nAdvance image + generation"
+stepObserve: "Observe installed state\nCallback under lock; then unlock"
+stepReturn: "Receive local reply\nLost replies may remain unknown"
 stepCapture -> stepCall: "ticket passed to caller"
-stepCall -> stepCheck: "enter publish; error branches return immediately"
+stepCall -> stepOwner: "enter publish; error branches return immediately"
 stepCheck -> stepAdmit: "current ticket only"
 stepAdmit -> stepInstall: "admitted image + checked counter only"
 stepInstall -> stepObserve: "installed state; lock retained"
 stepObserve -> stepReturn: "callback returns; then release lock"
+stepOwner -> stepCheck: "owner matches; acquire current Mutex"

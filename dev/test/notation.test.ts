@@ -71,3 +71,10 @@ test('task requirements are a rooted AND tree, not branching outcomes or complet
  expect(()=>bindNotation({notation:'tasks',groups:[{title:'Required',subjects:['right']}],activity:{entry:'left',terminals:['right']}},mapping,requirements,{},proofs)).toThrow('conjunctive');
  expect(()=>bindNotation({notation:'catalogue',groups:[{title:'All',subjects:['left','right']}],activity:{entry:'left'}},mapping,{...model,relations:[]},{})).toThrow('Static');
 });
+
+test('swimlane critical scope cannot silently skip an intervening stage',()=>{
+ const linear={...activityModel,relations:[{id:'a',src:'native-left',dst:'native-right',label:'next'},{id:'b',src:'native-right',dst:'native-end',label:'next'}]};
+ const activity={stages:[{title:'Check',subjects:['left']},{title:'Install',subjects:['right']},{title:'Observe',subjects:['end']}],critical:{title:'Lock',subjects:['left','right','end']}};
+ expect(bindNotation({notation:'swimlanes',groups:[{title:'Authority',subjects:['left','right','end']}],activity},activityMapping,linear,{}).activity?.critical?.subjects).toHaveLength(3);
+ expect(()=>bindNotation({notation:'swimlanes',groups:[{title:'Authority',subjects:['left','right','end']}],activity:{...activity,critical:{title:'Lock',subjects:['left','end']}}},activityMapping,linear,{})).toThrow('contiguous');
+});
