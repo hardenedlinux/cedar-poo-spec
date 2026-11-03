@@ -15,34 +15,76 @@ The canonical repository is [[https://github.com/hardenedlinux/cedar-poo-spec][h
 
 * Architecture views
 
-Zero Trust is an important Component of the shared Cedar model. Applications
-compose it with Authorization and other Components; it does not subsume
-LeanPoo, Cedar semantics or the vertical libraries.
+Start with the system overview, then choose a question from the picture index.
+Zero Trust is a Component of the shared Cedar model. Applications compose it
+with Authorization and other capabilities on the LeanPoo/Cedar foundations.
+
+** System overview
+
+Where do checked rules become application responsibilities?
 
 [[file:dev/d2/architecture-overview.png]]
 
-[[file:dev/d2/architecture-overview.svg][Architecture SVG]] · [[file:dev/d2/model-components.png][Component inventory]] ·
-[[file:dev/d2/verticals-platforms.png][Vertical controls and platform projections]] ·
-[[file:CedarPooSpec/ZeroTrust/README.org][Zero Trust proof maps and premises]] ·
-[[file:dev/README.org::*A reading path for people][Workflow, responsibility lanes and Final requirements]] ·
-[[file:dev/README.org][Model sources and rendering]] ·
-[[file:docs/diagram-review.org][Student-perspective diagram audit]]
+Read next: [[file:Productions/README.org][Production profiles]], [[file:Examples/README.org][Example scenarios]] and
+[[file:Productions/Backend.org][shared backend responsibilities]]. These consumers remain independent.
 
-Each view follows its question: the overview maps responsibilities and declared
-interfaces, inventories classify capabilities and export forms, and proof panels
-separate assumptions, kernel results and counterexamples.
+** Picture index
 
-Proof maps read declarations and roles through the OpenSysML SDK; Lean checks
-source modules, theorem kinds and declared lemma uses. D2 owns localized catalog
-captions, while the shared projection preserves model identities and topology.
-Per-figure source closures and receipt-last exports reject missing or mixed
-artifacts. Bun installs the Render Library from its reviewed Git revision; no
-vendor archive is tracked. The selected Render Git source includes upstream
-[[https://github.com/hardenedlinux/deterministic-engineering/pull/5][compiler lifecycle recovery]]: each compilation settles after its native process
-closes, including IPC failure paths. Cedar consumes this Library capability
-without a local process wrapper. Fresh-install and dependency-recovery CI use the same
-frozen Bun lockfile. Restored exports require the ignored browser intermediate
-and unchanged captured sources; missing, stale or mixed bundles are rejected.
+Each view has a different purpose. Open its full image, then follow the adjacent
+guide for the definitions, assumptions and implementation scope.
+
+| View and full image | Question it answers | Read next |
+|---------------------+---------------------+-----------|
+| [[file:dev/d2/architecture-overview.png][System overview]] | What belongs to the library, consumers and Host? | [[file:Productions/README.org][Production profiles]] · [[file:Productions/Backend.org][Backend design]] |
+| [[file:dev/d2/model-components.png][Reusable capabilities]] | Which controls can an application compose? | [[file:CedarPooSpec/Functional/README.org][Functional Cedar]] · [[file:docs/functional-coverage.org][Case coverage]] |
+| [[file:dev/d2/verticals-platforms.png][Industries and platforms]] | Am I choosing an industry rule or a platform adapter? | [[file:CedarPooSpec/Vertical/Health/README.org][Healthcare]] · [[file:CedarPooSpec/Vertical/FinancialServices/README.org][Financial services]] · [[file:CedarPooSpec/Platform/Google/README.org][Platform example]] |
+| [[file:dev/d2/security-frameworks.png][Zero Trust responsibilities]] | How do current-use requirements reach Gateway? | [[file:docs/zero-trust-contract.org][Framework contract]] · [[file:CedarPooSpec/Authorization/README.org][Authorization and Delta]] |
+| [[file:dev/d2/zero-trust-model-proofs.png][Zero Trust model proofs]] | What follows from the premises, and what breaks under rollback? | [[file:docs/rfc/0010-zero-trust.org][Model, papers and proof boundaries]] |
+| [[file:dev/d2/zero-trust-object-proofs.png][Object and publication proofs]] | How are parent rules, consumption and review epochs preserved? | [[file:CedarPooSpec/ZeroTrust/README.org][Object composition and theorem guide]] |
+| [[file:dev/d2/lean-catalog.png][Native catalog counts]] | Which transport forms occur in the 51-entry catalog? | [[file:Examples/README.org][Scenario catalog]] · [[file:docs/rfc/0006-schema-bound-cedar-replay.org][Schema-bound replay]] |
+| [[file:dev/d2/gateway-profile-workflow.png][Profile admission workflow]] | Which checks continue a request, and which stop it? | [[file:CedarPooSpec/Gateway/README.org][Gateway admission API]] |
+| [[file:dev/d2/gateway-publication-swimlanes.png][Publication roles and lock]] | Who checks, installs and observes under the shared boundary? | [[file:dev/README.org][Workflow and swimlane reading guide]] · [[file:docs/zero-trust-contract.org][Host obligations]] |
+| [[file:dev/d2/gateway-final-tasks.png][Final requirements]] | Which eight conditions must hold together? | [[file:CedarPooSpec/Gateway/PublicationReview.lean][Final record and laws]] · [[file:docs/diagram-review.org][Comprehension tasks and glossary]] |
+
+** Choose reusable capabilities
+
+Which responsibilities does this application need? Select capabilities rather
+than treating the catalogue as a mandatory execution sequence.
+
+[[file:dev/d2/model-components.png]]
+
+Read next: [[file:CedarPooSpec/Functional/README.org][typed Programs and Contracts]],
+[[file:CedarPooSpec/Authorization/README.org][policy validation and Delta]], or
+[[file:CedarPooSpec/AgenticAI/README.org][agent capabilities]].
+
+** Separate industry rules from platform integrations
+
+Industry controls describe what must be protected; a platform projection binds
+selected controls to a particular integration.
+
+[[file:dev/d2/verticals-platforms.png]]
+
+Read next: [[file:CedarPooSpec/Vertical/Health/README.org][Healthcare]],
+[[file:CedarPooSpec/Vertical/FinancialServices/README.org][Financial services]],
+[[file:CedarPooSpec/Platform/AWS/AgentCore/README.org][AWS AgentCore]], or
+[[file:CedarPooSpec/Platform/Google/README.org][Google Sensitive Data Protection]].
+
+** Locate Zero Trust inside the shared model
+
+Current-use requirements and authorization assessment meet at an application's
+actual effect boundary. Proofs and authenticated Host inputs have distinct roles.
+
+[[file:dev/d2/security-frameworks.png]]
+
+Read next: [[file:docs/zero-trust-contract.org][framework contract]],
+[[file:CedarPooSpec/ZeroTrust/README.org][proof maps and required premises]], or
+[[file:docs/rfc/0010-zero-trust.org][research sources and security-model limits]].
+
+The [[file:docs/diagram-review.org][student-perspective review]] covers all ten pictures, comprehension tasks,
+remaining reading difficulties and the full Lean symbol lookup. The
+[[file:dev/README.org][rendering guide]] explains how D2/SysML sources, native Lean checks and
+source-bound image receipts stay aligned. Open a full image for fine detail;
+a thumbnail is not a substitute for the linked definitions or proofs.
 
 * Architecture and ownership
 
