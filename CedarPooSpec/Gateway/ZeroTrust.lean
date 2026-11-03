@@ -1,5 +1,6 @@
 import CedarPooSpec.Gateway.Consumption
 import CedarPooSpec.Gateway.AuthorizationDelta
+import CedarPooSpec.Authorization.Delta.Release
 import CedarPooSpec.ZeroTrust
 
 /-! Gateway interpretation of the functional Zero Trust framework. Reuse LeanPoo
@@ -270,14 +271,59 @@ theorem final_use_preserves_authorization_delta (use : FinalUse proposal)
 /-- Current-use assessment using an actual receipt for the current request,
 state, entities, schema, model and checks. The original requirement still refines
 the selected current profile. These readers must be authoritative Host inputs;
-this does not reuse the initial receipt or consume the operation again. -/
+the active release reader is required independently. This does not reuse the
+initial receipt or consume the operation again. -/
 def currentAdmission (requiredProfile : Gateway.Profile) (host : Host E V)
     (preparedAt : V → Gateway.Prepared E S project) (modelAt : V → PolicyModules.Model)
-    (stateAt : V → S) (checksAt : V → List Gateway.Assessment) (entitiesAt : V → Entities) :
+    (stateAt : V → S) (checksAt : V → List Gateway.Assessment) (entitiesAt : V → Entities)
+    (releaseAt : V → Authorization.Delta.ReleaseState) :
     CedarPooSpec.ZeroTrust.Requirement E V := fun requested actual =>
-  ∃ _receipt : Gateway.Receipt (preparedAt actual) (modelAt actual) requested (stateAt actual)
+  ∃ receipt : Gateway.Receipt (preparedAt actual) (modelAt actual) requested (stateAt actual)
       (host.context actual) (checksAt actual) (entitiesAt actual),
-    requiredProfile.Refines (preparedAt actual).profile
+    requiredProfile.Refines (preparedAt actual).profile ∧
+    (releaseAt actual).matchesCurrent
+      ⟨(preparedAt actual).policy.root, receipt.cedar.policies⟩
+      (host.context actual).policyRevision = true
+
+/-- Execute the existing typed Cedar admission, then retain original-profile
+refinement and the independently supplied active release. No second evaluator,
+publication mutation or execution capability is introduced. -/
+def authorizeCurrent [DecidableEq E] [DecidableEq S]
+    (requiredProfile : Gateway.Profile) (host : Host E V)
+    (preparedAt : V → Gateway.Prepared E S project) (modelAt : V → PolicyModules.Model)
+    (stateAt : V → S) (checksAt : V → List Gateway.Assessment) (entitiesAt : V → Entities)
+    (releaseAt : V → Authorization.Delta.ReleaseState) (requested : E) (actual : V) :
+    Except Gateway.Error (PLift
+      (currentAdmission requiredProfile host preparedAt modelAt stateAt checksAt entitiesAt releaseAt requested actual)) := do
+  let receipt ← Gateway.authorize (preparedAt actual) (modelAt actual) requested
+    (stateAt actual) (host.context actual) (checksAt actual) (entitiesAt actual)
+  if refinement : requiredProfile.Refines (preparedAt actual).profile then
+    if matched : (releaseAt actual).matchesCurrent
+        ⟨(preparedAt actual).policy.root, receipt.cedar.policies⟩
+        (host.context actual).policyRevision = true then
+      return ⟨⟨receipt, refinement, matched⟩⟩
+    else throw .releaseNotCurrent
+  else throw .unqualifiedEvidence
+
+omit [BEq E] [LawfulBEq E] in
+/-- The ongoing receipt authorizes the independently read active policy set,
+not merely some root that compiles in the caller's model. -/
+theorem current_admission_binds_active_release
+    (requiredProfile : Gateway.Profile) (host : Host E V)
+    (preparedAt : V → Gateway.Prepared E S project) (modelAt : V → PolicyModules.Model)
+    (stateAt : V → S) (checksAt : V → List Gateway.Assessment) (entitiesAt : V → Entities)
+    (releaseAt : V → Authorization.Delta.ReleaseState)
+    (accepted : currentAdmission requiredProfile host preparedAt modelAt stateAt checksAt entitiesAt releaseAt requested actual) :
+    (releaseAt actual).activeRoot = (preparedAt actual).policy.root ∧
+    (releaseAt actual).executionMode = .enforcing ∧
+    (releaseAt actual).epoch = (host.context actual).policyRevision ∧
+    Authorization.Delta.errorFreeAllow (releaseAt actual).activePolicies
+      (Env.mk (project requested (stateAt actual)) (entitiesAt actual)) = true := by
+  obtain ⟨receipt, _, matched⟩ := accepted
+  have current := (Authorization.Delta.ReleaseState.matchesCurrent_iff _ _ _).mp matched
+  refine ⟨current.1, current.2.2.1, current.2.2.2, ?_⟩
+  rw [current.2.1]
+  exact Gateway.admitted_actual_request_is_error_free receipt
 
 omit [BEq E] [LawfulBEq E] in
 /-- Current admission also supports an independently approved gain: fresh
@@ -287,14 +333,15 @@ theorem current_admission_has_error_free_allow
     (requiredProfile : Gateway.Profile) (host : Host E V)
     (preparedAt : V → Gateway.Prepared E S project) (modelAt : V → PolicyModules.Model)
     (stateAt : V → S) (checksAt : V → List Gateway.Assessment) (entitiesAt : V → Entities)
-    (accepted : currentAdmission requiredProfile host preparedAt modelAt stateAt checksAt entitiesAt requested actual) :
+    (releaseAt : V → Authorization.Delta.ReleaseState)
+    (accepted : currentAdmission requiredProfile host preparedAt modelAt stateAt checksAt entitiesAt releaseAt requested actual) :
     ∃ receipt : Gateway.Receipt (preparedAt actual) (modelAt actual) requested (stateAt actual)
       (host.context actual) (checksAt actual) (entitiesAt actual),
       requiredProfile.Refines (preparedAt actual).profile ∧
       (preparedAt actual).operationId.value = (host.context actual).scope.canonicalOperation ∧
       Authorization.Delta.errorFreeAllow receipt.cedar.policies
         (Env.mk (project requested (stateAt actual)) (entitiesAt actual)) = true := by
-  obtain ⟨receipt, refinement⟩ := accepted
+  obtain ⟨receipt, refinement, _⟩ := accepted
   exact ⟨receipt, refinement, Gateway.admitted_operation_is_canonical receipt,
     Gateway.admitted_actual_request_is_error_free receipt⟩
 
@@ -304,8 +351,9 @@ All initial-consumption and unknown-hold requirements remain in continuing. -/
 theorem continuing_current_admission_preserves_delta
     (preparedAt : V → Gateway.Prepared E S project) (modelAt : V → PolicyModules.Model)
     (stateAt : V → S) (checksAt : V → List Gateway.Assessment) (entitiesAt : V → Entities)
+    (releaseAt : V → Authorization.Delta.ReleaseState)
     (accepted : (continuing proposal
-      (currentAdmission original host preparedAt modelAt stateAt checksAt entitiesAt)).required requested actual)
+      (currentAdmission original host preparedAt modelAt stateAt checksAt entitiesAt releaseAt)).required requested actual)
     (plan : Gateway.DeltaPlan)
     (binding : ∀ receipt : Gateway.Receipt (preparedAt actual) (modelAt actual) requested
       (stateAt actual) (host.context actual) (checksAt actual) (entitiesAt actual),
@@ -318,14 +366,19 @@ theorem continuing_current_admission_preserves_delta
       plan.revision.afterPolicies)
     (renewed : Admission.AuthorityLedger E) (renewedId : String) :
     host.currentAtUse actual ∧ original.Refines (preparedAt actual).profile ∧
+    (releaseAt actual).activePolicies = plan.revision.afterPolicies ∧
+    (releaseAt actual).executionMode = .enforcing ∧
+    (releaseAt actual).epoch = (host.context actual).policyRevision ∧
     Authorization.Delta.errorFreeAllow plan.revision.beforePolicies
       (Env.mk (project requested (stateAt actual)) (entitiesAt actual)) = true ∧
     host.unknownRetained actual proposal.after ∧
     Gateway.consumeAdmission publication proposal.receipt (host.operations actual) renewed renewedId =
       .error .operationAlreadyAdmitted := by
   have retained := continuing_use_preserves_original_consumption proposal accepted renewed renewedId
-  obtain ⟨receipt, refinement⟩ := retained.2.1
-  exact ⟨accepted.2.2.1, refinement,
+  obtain ⟨receipt, refinement, matched⟩ := retained.2.1
+  have current := (Authorization.Delta.ReleaseState.matchesCurrent_iff _ _ _).mp matched
+  exact ⟨accepted.2.2.1, refinement, current.2.1.trans (binding receipt).policiesMatch,
+    current.2.2.1, current.2.2.2,
     Gateway.bound_admitted_execution_preserves_delta receipt plan (binding receipt) coverage world before after,
     retained.2.2⟩
 

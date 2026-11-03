@@ -15,7 +15,7 @@ between source modules; the existing Lean import audit enforces that boundary.
 | Workflow | Owner / gate | Local entrypoints |
 |----------+--------------+-------------------|
 | [[file:../.github/workflows/ci.yml][ci.yml]] | Whole-library Lean integration and Rust workspace | =just check-lean=, =just check-rust= |
-| [[file:../.github/workflows/zero-trust.yml][zero-trust.yml]] | Zero Trust / Gateway native simulation; generic authorization Delta | =just check-gateway-delta=, =just check-agent-trace-delta= and authorization Delta recipes |
+| [[file:../.github/workflows/zero-trust.yml][zero-trust.yml]] | Zero Trust / Gateway native simulation and Production current-use vectors; generic authorization Delta | =just check-gateway-delta=, =just check-agent-trace-delta= and authorization Delta recipes |
 | [[file:../.github/workflows/healthcare.yml][healthcare.yml]] | Healthcare Cases and impact analysis | =just example health ...=, =just check-health-authorization-impact= |
 | [[file:../.github/workflows/financial-services.yml][financial-services.yml]] | Banking, claims, payment and commerce | Financial-services examples and payment/commerce recipes |
 | [[file:../.github/workflows/platforms.yml][platforms.yml]] | Cloud and agent platform integration | Cloud, AWS AgenticPlatform and enterprise Agent examples |

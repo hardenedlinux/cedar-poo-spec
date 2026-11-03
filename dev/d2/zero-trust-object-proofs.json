@@ -2,7 +2,7 @@
   "entry": "dev/d2/zero-trust-object-proofs.d2",
   "sources": {
     "CedarPooSpec/Gateway/PublicationReview.lean": "1ddfb0a04e008bf26f34e51f54d26b01421fbf62139727ab93de4195996ce204",
-    "CedarPooSpec/Gateway/ZeroTrust.lean": "6ef9abbec130ae27ac17f7fb3b2b4426193e6dcb862b11847abeb370612b69a0",
+    "CedarPooSpec/Gateway/ZeroTrust.lean": "b6e3e2299a8c51b47f3b29d9708a1df515df468da25d7648e34b4cf59ea6940e",
     "CedarPooSpec/ZeroTrust/Composition.lean": "ebab914cf26a6d08662fb58dea452985673e3ab3e7f6ee3c97abb572b840984e",
     "CedarPooSpec/ZeroTrust/Continuous.lean": "42c1453d6de90b4e09ae3c3270de4ddf4bb5b6509055761a6c5574fe8755a89f",
     "CedarPooSpec/ZeroTrust/Model.lean": "bf9827dc36c52cfc41f63fd1ee9ff83b325972c41504b41444e2134d635519a2",
@@ -1092,12 +1092,12 @@
       "samples": 70,
       "requiredMinimum": 12
     },
-    "inputSHA256": "9eea75e63fcbf8bfa1868e975169ede47ece1f4ca32e4a5ad11d9773e0697378",
+    "inputSHA256": "8888857379e160ada5e949f1f7c79fb688ec3e4857a9243d83a786caffa86544",
     "scenes": [],
     "svgSHA256": [
-      "db343a3f384fac4c30ffe4be775b03c1e8858f280beba26ca227ce6b3cac62f0"
+      "9f9ef53636dcb09af56732509f1d60f919a7f28570146e820b66349d497db519"
     ],
-    "composedHTMLSHA256": "32f2b5e2e7f8ff66ffdf0ebcd7b1232238254563661a14e460ace2d46eb78d0b",
+    "composedHTMLSHA256": "df9e342fc3a6899ea2ad554d56e406f9eda8caf32f9d7f8ae500c9efa11b6897",
     "dependencies": {
       "@fontsource/inter": "5.3.0",
       "@fontsource/kalam": "5.3.0",
@@ -1110,7 +1110,7 @@
       "web-worker": "1.5.0"
     },
     "regionSHA256": {},
-    "htmlSHA256": "4181b84244781481ab7bec16e31e5ebad0df60ffa52577c94ea530e7b32b358d",
+    "htmlSHA256": "911581994ec54673e27e51a3a2891fcead9d732000f3f4957509f7da48b9bfec",
     "drawing": "precise",
     "routing": "none",
     "assetSHA256": {

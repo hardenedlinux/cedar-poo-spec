@@ -4,8 +4,8 @@
 
 length == ($manifest[0].cases | length)
   and all(.[]; .format_version == 1
-  and .cedar_policy_version == "4.12.0"
-  and .cedar_language_version == "4.5.0"
+  and .cedar_policy_version == "4.14.1"
+  and .cedar_language_version == "4.6.0"
   and (.policies_sha256 | test("^[0-9a-f]{64}$"))
   and (.entities_sha256 | test("^[0-9a-f]{64}$"))
   and (.request_sha256 | test("^[0-9a-f]{64}$"))

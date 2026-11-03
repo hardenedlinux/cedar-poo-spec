@@ -32,6 +32,17 @@ domain-specific reference candidate; its README claim of a formal CapBAC model
 is not admitted as a checked dependency or a proof of this API. No repository
 above supplies a universal, drop-in Zero Trust theorem covering Gateway recovery.
 
+* Integrated current-release binding
+
+The [[file:../zero-trust-contract.org][current-release coherence implementation]] makes the active release an
+independent mandatory input to ongoing Gateway admission. A valid old receipt
+can coexist with a changed active root; the new binding joins current compiled
+policies, root, enforcing mode and epoch to the current request and entities.
+Production medical/financial POO profiles and independent strict-schema Rust
+replay exercise the composition through the existing Zero Trust CI module.
+This discharges a local safety obligation, not all architecture, temporal or
+trajectory guarantees in the source table above.
+
 * Architecture completeness review
 
 The predicate conjunction is an effect-boundary kernel. It is insufficient as a

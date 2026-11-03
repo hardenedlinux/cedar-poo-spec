@@ -582,16 +582,13 @@ private def publicationRegistrationTraces
   return Lean.Json.mkObj [("reviews", Lean.toJson reviews), ("traces", Lean.toJson traces)]
 
 private def checkReleaseProperties : IO Unit := do
-  let .ok gain ← Authorization.Delta.analyzeAndCapture releaseModel "base" "left" "right" "mixed" schema 7
-    | throw (IO.userError "could not capture actual joint-gain analysis")
+  let gain ← IO.ofExcept ((← Authorization.Delta.analyzeAndCapture releaseModel "base" "left" "right" "mixed" schema 7).mapError (fun error => "could not capture joint-gain analysis: " ++ reprStr error))
   let .jointOnlyGain _ := gain.analysis.outcome
     | throw (IO.userError "fixture did not exercise governed expansion")
-  let .ok safe ← Authorization.Delta.analyzeAndCapture releaseModel "base" "left" "retained" "safe" schema 7
-    | throw (IO.userError "could not capture actual no-gain analysis")
+  let safe ← IO.ofExcept ((← Authorization.Delta.analyzeAndCapture releaseModel "base" "left" "retained" "safe" schema 7).mapError (fun error => "could not capture no-gain analysis: " ++ reprStr error))
   let .noCombinedGain := safe.analysis.outcome
     | throw (IO.userError "retained hold was not no-gain")
-  let .ok followup ← Authorization.Delta.analyzeAndCapture followupModel "mixed" "postLeft" "postRight" "postMixed" schema 8
-    | throw (IO.userError "could not capture current follow-up review")
+  let followup ← IO.ofExcept ((← Authorization.Delta.analyzeAndCapture followupModel "mixed" "postLeft" "postRight" "postMixed" schema 8).mapError (fun error => "could not capture follow-up analysis: " ++ reprStr error))
   let .noCombinedGain := followup.analysis.outcome
     | throw (IO.userError "identity follow-up was not no-gain")
   -- Complete Cartesian coverage: mode, epoch, parent, policies, schema,

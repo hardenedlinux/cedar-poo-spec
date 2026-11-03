@@ -36,6 +36,8 @@ check-gateway:
     lake build CedarPooSpec.Gateway Tests.Gateway.Contracts Tests.Gateway.Counterexamples Tests.Gateway.Objects Tests.Gateway.Publication Tests.Gateway.Delta Tests.Gateway.ZeroTrust Tests.Gateway.PublicationReview Tests.ZeroTrust.UsageControl Tests.ZeroTrust.ImportBoundary Tests.ZeroTrust.Functional
 
 check-gateway-delta: check-gateway
+    lake build Productions.Gateway.CurrentUseMain
+    timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 --run Productions/Gateway/CurrentUseMain.lean
     timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 --run Tests/Gateway/Delta.lean
     cargo run --locked -p cedar-poo-bridge --manifest-path Cargo.toml -- replay-receipts < .lake/build/gateway-current-review-manifest.json > .lake/build/gateway-current-review-receipts.json
     jq -e 'length == 10' .lake/build/gateway-current-review-receipts.json > /dev/null

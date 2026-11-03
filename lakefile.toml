@@ -8,7 +8,7 @@ restoreAllArtifacts = true
 [[require]]
 name = "Cedar"
 git = { url = "https://github.com/cedar-policy/cedar-spec.git", subDir = "cedar-lean" }
-rev = "017c35c3d1f856a0f8b62a66660ee6628870bbcf"
+rev = "ac201c127d31cff4bea784c87d3e3d3e8fb8bfe9"
 
 [[require]]
 name = "LeanPoo"

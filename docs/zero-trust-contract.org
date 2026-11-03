@@ -66,8 +66,8 @@ observation. Generation non-reuse, authentic reading, atomic persistence,
 rollback-resistant recovery and native sender/trace correspondence remain Host
 premises, not consequences of naming a predicate currentAtUse.
 
-Applications on older fixed pins check new APIs in isolation. No pin is changed
-here. Historical raw evidence is preserved; inherited Cedar native-decision
+Earlier isolated alignment snapshots retained their original fixed pins.
+The current dependency upgrade is recorded in the integration section below. Historical raw evidence is preserved; inherited Cedar native-decision
 axioms remain visible in printed axiom audits. The complete UCON temporal rule
 system and deployed NIST compliance are not claimed.
 
@@ -95,3 +95,68 @@ complete post-states, including revocation-before-use and recovery-after-unknown
 This extends existing owners and requires no deployed credentials or new
 backend. It remains future work; the preceding theorems and simulations keep
 their stated coverage. The PyO3 boundary is a replay consumer, not that authority.
+
+
+* Current-release coherence: integrated improvement
+
+The improvement joins three distinct boundaries without replacing Cedar:
+review the revision in one world; publish a registered release; authorize each
+later use against the independently read active release and its current facts.
+A same-world implication does not establish either of the latter two steps.
+This is a project integration result, not a claim of a new authorization logic.
+
+=ReleaseState.matchesCurrent= compares the actual active root, exact compiled
+policy list, enforcing mode and epoch with the current receipt and Gateway
+context. =Gateway.ZeroTrust.authorizeCurrent= runs the existing strict typed
+admission and retains this binding together with the original Profile
+refinement. There is no default release reader. A caller's prepared root alone
+cannot establish that its policies are active. A legitimately approved gain
+still uses fresh admission; this API does not require every release to be no-gain.
+
+=current_admission_binds_active_release= proves error-free Allow for the actual
+active policies at the exact current request/entities. The continuing Delta
+composition also binds those active policies to the revision's after-policies,
+retains unresolved exposure and rejects reconsumption of the original operation.
+The generic binding theorem adds no native-computation axiom; existing Cedar
+native-decimal/date axioms remain visible in the Delta theorem's printed audit.
+
+=Tests.Gateway.ZeroTrust= exposes the old counterexample: a valid receipt and
+Profile refinement coexist with a different active root. It rejects changes to
+root, policies, epoch, observing mode and disabled mode, and retains the existing
+changed-fact and original-consumption counterexamples.
+
+[[file:../Productions/Gateway/CurrentUse.lean][Production current-use composition]] uses the actual medical DisclosureProfile
+and financial ControllerReleaseProfile, their typed slots and executable POO
+Contracts. It constructs four strict-schema Cedar worlds and 24 current-release
+uses, with both Allow and Deny outcomes. It imports neither Examples nor Tests.
+The medical vector uses the existing delegation-attribute presence condition;
+it does not reinterpret presence as an authenticated, unrevoked delegation.
+
+The existing Rust publication-authority test interpreter independently replays
+all four worlds with SDK schema validation. Its current-use boundary reads the
+stored active source and current facts under the existing mutex, checks release
+identity, epoch, enforcement and generation, and observes any simulated effect
+before releasing the lock. All 24 results must equal Lean's output, with exactly
+two admitted uses. Additional checks cover fact mutation, fresh-ticket denial,
+unresolved exposure and ABA invalidation. This simulator does not authenticate
+external readers, prove filesystem durability or provide a production sender.
+Policy-source comparison is representation-sensitive and may conservatively
+refuse a reordered but semantically equal source; it does not infer equivalence.
+The older publication, CAS and registration corpora keep their original sizes.
+
+Run =just check-gateway-delta= for the combined existing gate. Its original
+120-second producer deadline, 2048 MiB Lean heap and heartbeat budget remain
+unchanged. Generated inputs stay in =.lake/build=; they are not credentials.
+
+| Foundation | Integration obligation | Explicit boundary |
+|------------+------------------------+-------------------|
+| [[https://csrc.nist.gov/pubs/sp/800/207/final][NIST SP 800-207]] and [[https://csrc.nist.gov/pubs/sp/800/207/a/final][800-207A]] | Bind authorization to current resource, policy and workload facts at the enforcement boundary | Architecture principles are not a seven-principle compliance theorem. Reader authenticity and complete mediation remain Host premises. |
+| [[https://profsandhu.com/journals/tissec/p351-zhang.pdf][Zhang et al., formal UCON (2005)]] | Reassess mutable attributes and current enforcement state during use | These finite safety/refusal checks do not mechanize every temporal rule, fairness or eventual obligation completion. |
+| [[https://arxiv.org/abs/2403.04651v2][Cedar]] | Reuse the official evaluator, strict schemas and same-world Delta reasoning | Policy validity and implication do not authenticate input facts or perform external IO. |
+| [[https://arxiv.org/abs/2609.15803v1][Collina et al. (2026)]] | Keep same-world difference separate from sequential agent safety | We do not implement its reviewer utilities or discharge continuation-value and discounted-MDP assumptions. |
+
+Current upgrade: Cedar Lean =ac201c127d31cff4bea784c87d3e3d3e8fb8bfe9=,
+Lean =4.35.0=, Rust =cedar-policy 4.14.1= (language =4.6.0=).
+LeanPoo remains the latest official release tag =v0.1.2=, rebuilt under this
+project's toolchain. Cedar's public =Cedar.Spec.Json= owns the JSON instances;
+SPEC imports it rather than introducing local replacement instances.

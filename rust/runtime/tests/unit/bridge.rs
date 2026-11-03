@@ -338,8 +338,8 @@ fn replay_receipt_binds_request_even_when_decision_is_unchanged() {
     let receipts = replay_manifest(&baseline).expect("official Cedar replay");
     assert_eq!(receipts.len(), 1);
     assert_eq!(receipts[0].format_version, 1);
-    assert_eq!(receipts[0].cedar_policy_version, "4.12.0");
-    assert_eq!(receipts[0].cedar_language_version, "4.5.0");
+    assert_eq!(receipts[0].cedar_policy_version, "4.14.1");
+    assert_eq!(receipts[0].cedar_language_version, "4.6.0");
     assert_eq!(receipts[0].policies_sha256.len(), 64);
     assert_eq!(receipts[0].decision, "allow");
     assert!(receipts[0].error_free_allow);

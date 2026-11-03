@@ -19,12 +19,12 @@
     "dev/sources.ts": "3cd11d095476ee65c9086172773813e6e37e88087c9d01ee962cec59369d7ed8",
     "dev/sysml/lean-catalog.sysml": "ab7215eb4846306aec3ef2b0f16ec55dda87179efb10ea762f02b78d0c6234e5",
     "Examples/ManifestCatalog.lean": "7c1c1eb2d288dfc7d3601062f2fe452d302b693d231ac455dcf24238a3a8219c",
-    "lake-manifest.json": "2a29d4c80859e24738a30d7a4b6e1bbba68ad7571fbaf0eddcf431b60ec5cffe",
-    "lakefile.toml": "44a18411f9971ff9695f63be48d8f5db7d5b0238c2fc419ff2f1ab5cda36849d",
-    "lean-toolchain": "d5edba4e4b8faad9c1baeadb265716d20d03be4d1a2647dc5e35b0c0325bea7b"
+    "lake-manifest.json": "5c10e81300af9d9572dac82e27172f8dab81088e551a23103e010a6473ad3d16",
+    "lakefile.toml": "db0941cbf316d0991b698708d54e206285eeae6a6f1eed0decae69752a8d2507",
+    "lean-toolchain": "ca5f1f601d34c49079e38d7e7041eb0f2a9c227fbc1df0f404820069a052330c"
   },
   "binaries": {
-    ".lake/build/bin/caseManifestsNative": "ef12149bcd18205983821b0e4b1c9b8f3fa6cc20d93b17224052ba46b6263049"
+    ".lake/build/bin/caseManifestsNative": "9cf0fb5bbde22694b6a446de777d0c6a29f16066b2ecd9d262d73a04d0cc2b01"
   },
   "sdk": {
     "modelHash": "665d61c642370cfe88a2c7e787417b4a2d132e45b98c4d2faf82b05cdd669043",
@@ -239,12 +239,12 @@
       "samples": 18,
       "requiredMinimum": 12
     },
-    "inputSHA256": "3bb108ad1c44afcafb4c1487429d2570aaba5fa2cbdf54026ca1e2da45ec6462",
+    "inputSHA256": "a181307b4c6267f39abbb54ef684afc8ff19ddfb1897e2ece747bbf09f7baf61",
     "scenes": [],
     "svgSHA256": [
-      "a7682a623a7e8e36a7bf42769c9e2f19846e7bf52e1df2ffc57fbd77564deaf7"
+      "0a4d1328138c1ad71f715165c829edeb2add6701a227ca0542de79361b5afde7"
     ],
-    "composedHTMLSHA256": "edb9b423023e20f97ef2de36d471596a222a0c3553b96deecf82a2f30758b0c4",
+    "composedHTMLSHA256": "77de3c2275cf059ec01e66558716ed49de378565822934a767adcf5f13e9fda4",
     "dependencies": {
       "@fontsource/inter": "5.3.0",
       "@fontsource/kalam": "5.3.0",
@@ -257,12 +257,12 @@
       "web-worker": "1.5.0"
     },
     "regionSHA256": {},
-    "htmlSHA256": "5c77793ced686b8aa9833ebc85010f738c7d4bc1987d64f3143df37692d8a400",
+    "htmlSHA256": "b4b9bd9989b8d9c0a838b02c09d17cc9ca67cf2b12554ef034cb3f95d19b1558",
     "drawing": "precise",
     "routing": "none",
     "assetSHA256": {
-      "@fontsource/inter/files/inter-latin-700-normal.woff2": "6f56409fd3d64bb85f7d070bce20749db2d66b6d63cec586cc22d1c761be2491",
-      "@fontsource/inter/files/inter-latin-400-normal.woff2": "8909904ab6c872eb994093482a88a28eca2cd95912d7b6fecd72103b0dc07edc"
+      "@fontsource/inter/files/inter-latin-400-normal.woff2": "8909904ab6c872eb994093482a88a28eca2cd95912d7b6fecd72103b0dc07edc",
+      "@fontsource/inter/files/inter-latin-700-normal.woff2": "6f56409fd3d64bb85f7d070bce20749db2d66b6d63cec586cc22d1c761be2491"
     },
     "pngSHA256": "a37590b5273ab2d29ea3a1f64199076eb107cb61a57341e100c568836e7b1cf0",
     "browser": "156.0.8078.4",

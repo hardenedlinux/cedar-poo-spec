@@ -103,6 +103,7 @@ struct Current {
     generation: u64,
     image: Image,
     review: Arc<Review>,
+    active_case: Option<crate::Case>,
 }
 struct Authority {
     owner: Arc<()>,
@@ -139,6 +140,7 @@ impl Authority {
                 generation: 0,
                 image: initial.clone(),
                 review: Arc::new(review),
+                active_case: None,
             }),
             initial,
         }
@@ -175,6 +177,9 @@ impl Authority {
             return Attempt::Exhausted;
         };
         current.image = next;
+        // This interpreter has no authenticated source loader for a newly
+        // published root. Never carry an old active source across activation.
+        current.active_case = None;
         current.generation = generation;
         observe(&current.image);
         Attempt::Committed(reply)
@@ -187,6 +192,9 @@ impl Authority {
         };
         let review = Arc::clone(&current.review);
         current.image.step(command, &review, &self.initial);
+        if matches!(command, 3 | 4) {
+            current.active_case = None;
+        }
         current.generation = generation;
         Ok(())
     }
@@ -591,6 +599,7 @@ fn rolling_back_the_authority_record_remains_an_explicit_counterexample() {
         generation: ticket.generation,
         image: original,
         review,
+        active_case: None,
     };
     assert_eq!(
         authority.publish(Some(&ticket), false, |_| {
@@ -820,4 +829,167 @@ fn registered_reviews_and_followup_publications_match_lean() {
         saw_two_commits,
         "must admit actual consecutive publications"
     );
+}
+
+// This simulation extends the existing authority boundary. It authenticates no
+// external fact source and does not turn replay receipts into IO capabilities.
+impl Authority {
+    fn current_use(
+        &self,
+        ticket: &Ticket,
+        prepared_root: &str,
+        prepared_epoch: u64,
+        prepared_policies: &crate::CompiledPolicyJson,
+        observe: impl FnOnce(&Image),
+    ) -> bool {
+        if !Arc::ptr_eq(&ticket.owner, &self.owner) {
+            return false;
+        }
+        let current = self.current.lock().unwrap();
+        let Some(actual) = current.active_case.as_ref() else {
+            return false;
+        };
+        if ticket.generation != current.generation
+            || current.image.root != prepared_root
+            || current.image.epoch != prepared_epoch
+            || current.image.epoch != current.image.floor
+            || current.image.mode != "enforcing"
+            || current.image.unknown
+            || !actual.policies.same_source(prepared_policies)
+        {
+            return false;
+        }
+        // Fresh actual facts and independently stored policy source go through
+        // the official SDK while the deciding image remains locked.
+        let Ok(receipts) = replay_manifest(&Manifest {
+            cases: vec![actual.clone()],
+        }) else {
+            return false;
+        };
+        if !receipts[0].error_free_allow {
+            return false;
+        }
+        observe(&current.image);
+        true
+    }
+}
+
+#[test]
+#[ignore = "requires Production vectors; run just check-gateway-delta"]
+fn production_current_use_binds_active_release_and_fresh_facts() {
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../.lake/build");
+    let fixture: serde_json::Value = serde_json::from_str(
+        &std::fs::read_to_string(root.join("gateway-production-current-use.json")).unwrap(),
+    )
+    .unwrap();
+    assert_eq!(fixture["format_version"], 1);
+    let manifest: Manifest = serde_json::from_value(fixture["manifest"].clone()).unwrap();
+    assert_eq!(manifest.cases.len(), 4);
+    // Strict schema checking is independent of Lean's admission result.
+    for domain in ["health-disclosure", "financial-payment"] {
+        let validated = crate::ValidatedManifest {
+            schema: serde_json::from_value(fixture["schemas"][domain].clone()).unwrap(),
+            cases: manifest
+                .cases
+                .iter()
+                .filter(|case| case.revision == domain)
+                .cloned()
+                .collect(),
+        };
+        assert_eq!(
+            crate::replay_validated_manifest(&validated).unwrap().len(),
+            2
+        );
+    }
+    let receipts = replay_manifest(&manifest).unwrap();
+    assert_eq!(
+        receipts.iter().filter(|row| row.error_free_allow).count(),
+        2
+    );
+    let mut accepted = 0;
+    let uses = fixture["uses"].as_array().unwrap();
+    assert_eq!(uses.len(), 24);
+    for row in uses {
+        let prepared = manifest
+            .cases
+            .iter()
+            .find(|case| case.name == row["case_name"])
+            .unwrap();
+        let authority = Authority::new(fixture_review(true, false));
+        {
+            let mut current = authority.current.lock().unwrap();
+            current.image.root = row["active_root"].as_str().unwrap().into();
+            current.image.epoch = row["active_epoch"].as_u64().unwrap();
+            current.image.floor = current.image.epoch;
+            current.image.mode = row["mode"].as_str().unwrap().into();
+            let mut actual = prepared.clone();
+            actual.policies = serde_json::from_value(row["active_policies"].clone()).unwrap();
+            current.active_case = Some(actual);
+        }
+        let ticket = authority.capture();
+        let effects = AtomicUsize::new(0);
+        let use_now = |ticket: &Ticket| {
+            authority.current_use(
+                ticket,
+                row["prepared_root"].as_str().unwrap(),
+                row["prepared_epoch"].as_u64().unwrap(),
+                &prepared.policies,
+                |_| {
+                    assert!(
+                        authority.current.try_lock().is_err(),
+                        "effect escaped current-use boundary"
+                    );
+                    effects.fetch_add(1, Ordering::SeqCst);
+                },
+            )
+        };
+        let result = use_now(&ticket);
+        assert_eq!(result, row["accepted"].as_bool().unwrap(), "{row}");
+        assert_eq!(effects.load(Ordering::SeqCst), usize::from(result));
+        accepted += usize::from(result);
+        if result {
+            // A current fact writer invalidates old preparation. Even a fresh
+            // ticket must run the SDK against the changed actual request/entities.
+            let denied = manifest
+                .cases
+                .iter()
+                .find(|case| case.revision == prepared.revision && case.expected == "deny")
+                .unwrap();
+            {
+                let mut current = authority.current.lock().unwrap();
+                current.active_case = Some(denied.clone());
+                current.generation = current.generation.checked_add(1).unwrap();
+            }
+            assert!(!use_now(&ticket));
+            assert!(!use_now(&authority.capture()));
+            {
+                let mut current = authority.current.lock().unwrap();
+                current.active_case = Some(prepared.clone());
+                current.image.unknown = true;
+                current.generation = current.generation.checked_add(1).unwrap();
+            }
+            assert!(
+                !use_now(&authority.capture()),
+                "unknown exposure must remain held"
+            );
+            assert_eq!(effects.load(Ordering::SeqCst), 1);
+        }
+        // An equal public image after two writes cannot revive this ticket.
+        authority.control(1).unwrap();
+        authority.control(5).unwrap();
+        assert!(!use_now(&ticket));
+        assert_eq!(effects.load(Ordering::SeqCst), usize::from(result));
+    }
+    assert_eq!(accepted, 2);
+    // Publication/recovery must not silently reuse an unrelated source image.
+    let authority = Authority::new(fixture_review(true, false));
+    authority.current.lock().unwrap().active_case = Some(manifest.cases[0].clone());
+    assert_eq!(
+        authority.publish(Some(&authority.capture()), false, |_| {}),
+        Attempt::Committed(1)
+    );
+    assert!(authority.current.lock().unwrap().active_case.is_none());
+    authority.current.lock().unwrap().active_case = Some(manifest.cases[0].clone());
+    authority.control(3).unwrap();
+    assert!(authority.current.lock().unwrap().active_case.is_none());
 }

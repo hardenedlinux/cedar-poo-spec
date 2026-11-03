@@ -124,7 +124,7 @@ inductive ExecutionMode where
   | enforcing
   | observing
   | disabled
-  deriving BEq, Repr
+  deriving DecidableEq, BEq, Repr
 
 /-- Pure model of the Host's active policy version and execution mode. The
     Host owns durable storage and synchronization of this state. -/
@@ -134,6 +134,21 @@ structure ReleaseState where
   executionMode : ExecutionMode
   epoch : Nat
   deriving BEq, Repr
+
+/-- Compare an independently read active release with the exact policy snapshot
+and context epoch used for current admission. This is publication coherence,
+not authorization or authentication; the caller must still assess current facts. -/
+def ReleaseState.matchesCurrent (state : ReleaseState)
+    (snapshot : CedarPooSpec.Admission.PolicySnapshot) (epoch : Nat) : Bool :=
+  decide (state.activeRoot = snapshot.root ∧ state.activePolicies = snapshot.policies ∧
+    state.executionMode = .enforcing ∧ state.epoch = epoch)
+
+theorem ReleaseState.matchesCurrent_iff (state : ReleaseState)
+    (snapshot : CedarPooSpec.Admission.PolicySnapshot) (epoch : Nat) :
+    state.matchesCurrent snapshot epoch = true ↔
+      state.activeRoot = snapshot.root ∧ state.activePolicies = snapshot.policies ∧
+      state.executionMode = .enforcing ∧ state.epoch = epoch := by
+  simp [matchesCurrent]
 
 /-- A compare-and-swap transition for a no-gain candidate. A real Host must
     apply the version check, publication, and epoch increment atomically. -/

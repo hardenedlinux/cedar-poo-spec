@@ -1,3 +1,4 @@
+import Cedar.Validation.RequestEntityValidator
 import CedarPooSpec.Functional.Capabilities
 import CedarPooSpec.Cloud.Pipeline.ReleaseBoundary
 import CedarPooSpec.Cloud.Pipeline.Evidence
