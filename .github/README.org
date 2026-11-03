@@ -33,7 +33,9 @@ rather than hidden in one all-domain job.
 * Common setup, separate evidence
 
 =actions/setup-verification= installs the declared Lean toolchain, pinned uv,
-just and recipe search dependency, plus optional Rust. It invokes the existing
+just and recipe search dependency, plus optional Rust and pinned CVC5.
+Every module executing solver-backed Delta explicitly enables CVC5; a separate
+module cannot rely on another job having installed a process or environment. It invokes the existing
 =lean-cache= owner; no new cache generation or version ladder is introduced.
 Each independent job restores only compiler-compatible outputs and lets Lake
 traces determine rebuilding. First runs of newly named jobs can have cache

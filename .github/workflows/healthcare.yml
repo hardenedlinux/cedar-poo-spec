@@ -21,6 +21,7 @@ jobs:
     - uses: ./.github/actions/setup-verification
       with:
         rust: 'true'
+        cvc5: 'true'
     - run: just example health prior-authorization
     - run: just example health prior-authorization-internal-channels
     - run: just example health pseudonymization

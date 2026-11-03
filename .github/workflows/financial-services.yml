@@ -21,6 +21,7 @@ jobs:
     - uses: ./.github/actions/setup-verification
       with:
         rust: 'true'
+        cvc5: 'true'
     - run: just example aws financial-services lakehouse
     - run: just example aws financial-services multi-account-banking
     - run: just example aws financial-services claim-settlement
