@@ -837,6 +837,50 @@ fresh grant status. The adapter must obtain it under the same authority
 boundary as final effect admission. This repository does not contain the
 deployed OAuth verifier or a production shared replay store.
 
+The upstream Lean =Authority= owns the active grant inventory, revoked token
+identities, current clock and replay reservations. =commitContract= binds the
+exact successor for one verified attempt. The proof key joins issuer, sender
+key thumbprint and proof ID across routes served by the same authority. An
+attempt cannot supply its own active status or install a reservation by
+setting a flag. A successful commit makes another attempt using the same
+proof key inadmissible. Revocation refuses the token on every later use,
+including with a fresh proof or the original authenticated TLS certificate.
+
+This is a pure library transition. A downstream Gateway must serialize it
+against the actual current authority and combine it with Cedar authorization
+and final effect admission. Two evaluations against independent copies of
+the same pre-state can both succeed. The contract therefore does not claim
+cross-worker atomicity without a shared deciding store.
+
+*** Research basis and proof boundary
+
+OAuth contributes delegated authority scoped to a resource. The Zero Trust
+policy still evaluates the actual use with current evidence, applies the
+resource's own authorization policy and mediates the resulting effect.
+An earlier grant does not establish current permission. This separation
+follows the resource-centered architecture in
+[[https://csrc.nist.gov/pubs/sp/800/207/final][NIST SP 800-207]].
+
+| Source | Design obligation for this library | Scope of the result |
+|--------+------------------------------------+---------------------|
+| [[https://arxiv.org/abs/1601.01229][Fett, Küsters and Schmitz, A Comprehensive Formal Security Analysis of OAuth 2.0]] | Separate authorization, authentication and session integrity. Treat the configured issuer and verified grant as distinct from caller claims. | Their authorization-server and browser flow results are conditional on their web model and protocol assumptions. The resource transition here does not prove those flows. |
+| [[https://openid.net/wordpress-content/uploads/2022/12/Formal-Security-Analysis-of-FAPI-2.0_FINAL_2022-10.pdf][Formal Security Analysis of FAPI 2.0]] | Model sender constraint explicitly. Select the DPoP or certificate check from the grant and refuse a mismatched mechanism. | FAPI's protocol and attacker model cover more than the resource boundary. This library claims neither full profile conformance nor session integrity. |
+| [[https://www.rfc-editor.org/rfc/rfc9700.html][RFC 9700]], [[https://www.rfc-editor.org/rfc/rfc9449.html][RFC 9449]] and [[https://www.rfc-editor.org/rfc/rfc8705.html][RFC 8705]] | Check audience and scope against the actual target. For DPoP retain proof freshness, token hash, method, URI, key, nonce and replay state. For mTLS use the authenticated connection certificate. | The Lean checks assume sound cryptographic verification and trusted current observations. The model does not prove key custody, transport integrity or distributed storage correctness. |
+
+A useful counterexample is an authenticated, unexpired token presented to
+a different resource audience. A second is a request using the right token
+and certificate after revocation. Neither can satisfy the resource profile.
+A captured DPoP proof can satisfy the same cryptographic checks on a second
+worker. It is rejected by the modeled successor only if both workers consult
+and update the same authoritative reservation state.
+
+Future protocol proofs should model issuer selection and authorization-code
+redemption separately from this resource layer. They should account for
+redirect and session binding, PKCE, token substitution and key rotation before
+making end-to-end claims. Downstream language libraries can refine the resource
+Contract first by translating verified observations and proving their store
+implements the same commit and revocation ordering.
+
 References include [[https://www.rfc-editor.org/rfc/rfc9700.html#section-2.3][OAuth Security BCP]],
 [[https://www.rfc-editor.org/rfc/rfc8707.html][Resource Indicators]],
 [[https://www.rfc-editor.org/rfc/rfc7662.html][Token Introspection]],

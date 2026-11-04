@@ -140,4 +140,119 @@ theorem revoked_grant_blocks_continuing_use
   have active := (strengthened_requires_fresh_oauth base observe accepted).2.1
   simp [inactive] at active
 
+/-- Replay identity shared by routes served by one authorization authority. -/
+structure ProofKey where
+  issuer : String
+  thumbprint : String
+  proofId : String
+  deriving DecidableEq
+
+/-- Current resource authority. The adapter serializes commit and revocation
+against this image and supplies time from its trusted clock. -/
+structure Authority where
+  activeGrants : List Grant
+  revokedTokens : List String := []
+  reserved : List ProofKey := []
+  now : Nat
+  maxProofAge : Nat
+  deriving DecidableEq
+
+structure Attempt where
+  grant : Grant
+  target : Target
+  sender : SenderObservation
+  tokenAuthenticated : Bool
+
+def Attempt.proofKey (attempt : Attempt) : Option ProofKey :=
+  match attempt.sender with
+  | .dpop proof => some ⟨attempt.grant.identity.issuer, proof.thumbprint, proof.proofId⟩
+  | .mtls _ => none
+
+def Authority.revoke (authority : Authority) (tokenHash : String) : Authority :=
+  { authority with revokedTokens := tokenHash :: authority.revokedTokens }
+
+/-- Project active status and replay eligibility from current authority, never
+from a previously accepted request. The pending reservation is installed only
+with a successful transition. -/
+def Authority.observe (authority : Authority) (attempt : Attempt) : CurrentUse :=
+  let sender := match attempt.sender with
+    | .dpop proof =>
+      let fresh := attempt.proofKey.all (fun key => decide (key ∉ authority.reserved))
+      .dpop { proof with replayReserved := fresh }
+    | .mtls peer => .mtls peer
+  ⟨attempt.grant, attempt.target, sender, authority.now, authority.maxProofAge,
+    attempt.tokenAuthenticated,
+    decide (attempt.grant ∈ authority.activeGrants ∧
+      attempt.grant.tokenHash ∉ authority.revokedTokens)⟩
+
+/-- A pure commit proposal for the OAuth component of final admission.
+Cedar and the remaining Zero Trust requirements still govern the effect. -/
+def Authority.commit (authority : Authority) (attempt : Attempt) : Option Authority :=
+  if (authority.observe attempt).bound then
+    some { authority with reserved := match attempt.proofKey with
+      | none => authority.reserved
+      | some key => key :: authority.reserved }
+  else none
+
+def commitContract : Contract Unit (Authority × Attempt) Authority where
+  input := ⟨"current-oauth-authority", fun _ => True, fun _ => inferInstance⟩
+  output := ⟨"oauth-admission-successor", fun _ => True, fun _ => inferInstance⟩
+  meaning := fun _ input next => input.1.commit input.2 = some next
+  decide := fun _ _ _ => inferInstance
+  rule := .atom ()
+
+def prepareCommit (input : Authority × Attempt) : Except String (Authority × Unit) :=
+  match input.1.commit input.2 with
+  | some next => .ok (next, ())
+  | none => .error "OAuth admission refused"
+
+theorem commit_preserves_reservation
+    (receipt : Invocation commitContract prepareCommit (authority, attempt))
+    (key : ProofKey) (dpop : attempt.proofKey = some key) :
+    key ∈ receipt.result.reserved := by
+  have committed := receipt.logic
+  change authority.commit attempt = some receipt.result at committed
+  unfold Authority.commit at committed
+  split at committed
+  · rw [← Option.some.inj committed]
+    simp [dpop]
+  · contradiction
+
+theorem reserved_proof_refused (authority : Authority) (attempt : Attempt)
+    (key : ProofKey) (dpop : attempt.proofKey = some key) (used : key ∈ authority.reserved) :
+    authority.commit attempt = none := by
+  cases h : attempt.sender with
+  | mtls peer => simp [Attempt.proofKey, h] at dpop
+  | dpop proof =>
+    cases binding : attempt.grant.confirmation <;>
+      simp [Authority.commit, Authority.observe, CurrentUse.bound, CurrentUse.senderBound,
+        h, binding, dpop, used]
+
+theorem revoked_token_refused (authority : Authority) (attempt : Attempt)
+    (revoked : attempt.grant.tokenHash ∈ authority.revokedTokens) :
+    authority.commit attempt = none := by
+  simp [Authority.commit, Authority.observe, CurrentUse.bound, revoked]
+
+theorem revoke_blocks_next_use (authority : Authority) (attempt : Attempt) :
+    (authority.revoke attempt.grant.tokenHash).commit attempt = none := by
+  apply revoked_token_refused
+  simp [Authority.revoke]
+
+theorem commit_preserves_revocations
+    (receipt : Invocation commitContract prepareCommit (authority, attempt)) :
+    receipt.result.revokedTokens = authority.revokedTokens := by
+  have committed := receipt.logic
+  change authority.commit attempt = some receipt.result at committed
+  unfold Authority.commit at committed
+  split at committed
+  · rw [← Option.some.inj committed]
+  · contradiction
+
+theorem same_proof_refused_after_commit
+    (receipt : Invocation commitContract prepareCommit (authority, attempt))
+    (key : ProofKey) (dpop : attempt.proofKey = some key)
+    (retry : Attempt) (sameProof : retry.proofKey = some key) :
+    receipt.result.commit retry = none :=
+  reserved_proof_refused _ retry key sameProof (commit_preserves_reservation receipt key dpop)
+
 end CedarPooSpec.Gateway.OAuth

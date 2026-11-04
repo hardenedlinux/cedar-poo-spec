@@ -50,8 +50,42 @@ theorem profiles_use_the_same_oauth_requirement
     CedarPooSpec.Platform.AWS.AgentCore.withOAuth base observe =
       CedarPooSpec.Vertical.Health.FHIR.withOAuth base observe := rfl
 
+private def authority : Authority :=
+  { activeGrants := [grant], now := 14, maxProofAge := 5 }
+
+private def attempt : Attempt := ⟨grant, target, .dpop proof, true⟩
+
+theorem authority_reserves_proof_once_across_routes :
+    let second := { attempt with target := { target with requiredScopes := [] } }
+    (authority.commit attempt).isSome = true ∧
+    (authority.commit second).isSome = true ∧
+    (authority.commit attempt).bind (·.commit second) = none := by
+  native_decide
+
+theorem supplied_replay_flag_cannot_choose_the_authority :
+    let candidate := { attempt with sender := .dpop { proof with replayReserved := false } }
+    (authority.commit candidate).isSome = true ∧
+    (authority.commit candidate).bind (·.commit attempt) = none := by
+  native_decide
+
+theorem revoked_authority_refuses_fresh_proof_and_bound_mtls :
+    let fresh := { attempt with sender := .dpop { proof with proofId := "fresh" } }
+    let revoked := authority.revoke grant.tokenHash
+    let mtlsGrant := { grant with confirmation := .mtls "cert" }
+    let mtls : Attempt := ⟨mtlsGrant, target, .mtls "cert", true⟩
+    let mtlsAuthority := { authority with activeGrants := [mtls.grant] }
+    (authority.commit fresh).isSome = true ∧ revoked.commit fresh = none ∧
+    (mtlsAuthority.commit mtls).isSome = true ∧
+    mtlsAuthority.commit { mtls with sender := .mtls "other" } = none ∧
+    (mtlsAuthority.revoke grant.tokenHash).commit mtls = none := by
+  native_decide
+
 end Tests.Gateway.OAuth
 
 #print axioms CedarPooSpec.Gateway.OAuth.receipt_requires_current_bound_token
 #print axioms CedarPooSpec.Gateway.OAuth.strengthened_preserves_gateway
 #print axioms CedarPooSpec.Gateway.OAuth.revoked_grant_blocks_continuing_use
+
+#print axioms CedarPooSpec.Gateway.OAuth.same_proof_refused_after_commit
+#print axioms CedarPooSpec.Gateway.OAuth.revoke_blocks_next_use
+#print axioms CedarPooSpec.Gateway.OAuth.commit_preserves_revocations
