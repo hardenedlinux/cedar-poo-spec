@@ -181,4 +181,51 @@ theorem reconciliation_requires_independent_exact_binding (reserved observed : D
     simpa using checked
   · contradiction
 
+/-- A terminal observation can be installed once. Repeated evidence for that
+observation is idempotent. A contradictory signed result cannot replace it. -/
+def settleDispatch (retained : Option Bool) (reserved observed : DispatchBinding)
+    (authenticated delivered : Bool) : Option Bool := do
+  let accepted ← reconcileDispatch reserved observed authenticated delivered
+  if retained.all (· == accepted) then some accepted else none
+
+theorem conflicting_settlement_refused (reserved observed : DispatchBinding)
+    (authenticated retained delivered : Bool) (conflict : retained ≠ delivered) :
+    settleDispatch (some retained) reserved observed authenticated delivered = none := by
+  simp [settleDispatch, reconcileDispatch, conflict]
+
+theorem matching_settlement_idempotent (binding : DispatchBinding) (delivered : Bool) :
+    settleDispatch (some delivered) binding binding true delivered = some delivered := by
+  simp [settleDispatch, reconcileDispatch]
+
+structure SettlementInput where
+  sender : SenderImage
+  retained : Option Bool
+  reserved : DispatchBinding
+  observed : DispatchBinding
+  authenticated : Bool
+  delivered : Bool
+
+def prepareSettlement (input : SettlementInput) : Except String (Bool × SenderImage) :=
+  match settleDispatch input.retained input.reserved input.observed input.authenticated input.delivered with
+  | none => .error "unverified or conflicting outcome"
+  | some accepted => .ok (accepted, input.sender)
+
+def settlementContract : Contract Unit SettlementInput Bool where
+  input := ⟨"retained-dispatch-and-provider-observation", fun _ => True, fun _ => inferInstance⟩
+  output := ⟨"stable-terminal-observation", fun _ => True, fun _ => inferInstance⟩
+  meaning := fun _ input result =>
+    settleDispatch input.retained input.reserved input.observed input.authenticated input.delivered =
+      some result
+  decide := fun _ _ _ => inferInstance
+  rule := .atom ()
+
+theorem settlement_invocation_preserves_sender
+    (receipt : Invocation settlementContract prepareSettlement input) :
+    receipt.state = input.sender := by
+  have called := receipt.called
+  unfold prepareSettlement at called
+  split at called
+  · contradiction
+  · exact (congrArg Prod.snd (Except.ok.inj called)).symm
+
 end CedarPooSpec.Admission

@@ -666,7 +666,30 @@ fn check_restarted_dispatch(
             }
         };
         let signed = sign(serde_json::to_vec(&outcome).map_err(|e| e.to_string())?);
+        let staged = sender_path.join("sender.staged");
+        fs::remove_file(&staged).map_err(|e| e.to_string())?;
+        fs::create_dir(&staged).map_err(|e| e.to_string())?;
+        assert!(
+            restarted
+                .reconcile(&first.operation_id, &signed, key.as_bytes())
+                .is_err()
+        );
+        assert_eq!(restarted.audit()?.len(), 1);
+        fs::remove_dir(&staged).map_err(|e| e.to_string())?;
         assert!(restarted.reconcile(&first.operation_id, &signed, key.as_bytes())?);
+        let mut conflict = serde_json::to_value(&outcome).map_err(|e| e.to_string())?;
+        conflict["delivered"] = json!(false);
+        let conflict = sign(serde_json::to_vec(&conflict).map_err(|e| e.to_string())?);
+        let settled = PersistentDisclosureHost::open(&sender_path, policy)?;
+        assert_eq!(
+            settled
+                .reconcile(&first.operation_id, &conflict, key.as_bytes())
+                .err()
+                .as_deref(),
+            Some("conflicting authenticated provider settlement")
+        );
+        assert!(settled.reconcile(&first.operation_id, &signed, key.as_bytes())?);
+
         assert!(
             restarted
                 .reconcile(
@@ -717,6 +740,14 @@ fn check_restarted_dispatch(
             matches!(result, Some(DispatchOutcome::Unknown(receipt)) if receipt.remaining_budget == 0)
         );
         assert_eq!(sends, 1);
+        let latest = PersistentDisclosureHost::open(&sender_path, policy)?;
+        assert_eq!(latest.audit()?.len(), 2);
+        assert!(
+            latest
+                .reconcile(&first.operation_id, &conflict, key.as_bytes())
+                .is_err()
+        );
+        assert!(latest.reconcile(&first.operation_id, &signed, key.as_bytes())?);
         Ok(())
     })();
     let cleanup = fs::remove_dir_all(path).map_err(|e| e.to_string());

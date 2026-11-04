@@ -210,16 +210,29 @@ so a caller cannot supply an older in-memory cut to the recovery entrypoint.
 The transport must authenticate the Host and protect the observed effect.
 Both directories require non-rollback storage and trusted provisioning.
 
-A detached provider outcome is verified against an independently configured
-provider key and the exact retained binding. Reading it never releases the
-send reservation. The native replay forces a staging failure, drops and
-reopens the sender after a lost reply, and checks the recovered budget,
-approval usage, cohort and audit. It rejects a different channel and
-approval before and after reading the signed outcome. A reopened receiver
-rejects a delayed, previously unseen operation carrying the retired cut.
-These checks use a local Unix filesystem and a simulated receiver.
-Power-loss qualification, remote transport and a production provider
-outcome store are separate deployment work.
+The first terminal provider outcome is verified against an independently
+configured key and the exact retained binding, then stored as signed bytes
+in the sender image. A matching observation is idempotent. An authenticated
+contradiction is rejected and cannot replace the first observation, even
+after reopen or a later admission. This detects contradictory evidence
+presented to this sender. Provider truth and signing-key custody remain
+independent premises. Settlement does not credit budget, restore approval
+or make the operation dispatchable.
+
+| Failure window | Reopen rule | Evidence |
+|----------------+-------------+----------|
+| Sender candidate or settlement staged before replacement | Load the previous committed image. A failed staging operation does not invoke dispatch or acknowledge settlement. | Native staging fault controls. |
+| Replacement visible before directory sync is acknowledged | Return an error. Reopen the committed name and recheck. If the same settlement is already visible, synchronize the directory before acknowledging it. | Ordering in the adapter. Power-loss behavior is outside this replay. |
+| Admission durable before an external call | Retain the charge and reservation. An absent result does not establish that nothing happened. | Contract and conservative replay rule. |
+| Receiver reservation durable before effect or reply | Repeated attempts remain blocked. Independent provider evidence can settle the result. | Duplicate receiver request and lost-reply replay. |
+| Receiver cut advanced before restart | Reopen from the receiver directory and compare the request to the current cut under the application lock. | A previously unseen operation bearing the old cut is rejected. |
+
+The native replay drops and reopens the sender after a lost reply, checks
+recovered accounting, and refuses a changed channel and approval before
+and after settlement. It also tests a validly signed contradictory result
+after reopen and after another admission. These controls use a local Unix
+filesystem and a simulated receiver. Remote transport, provider durability
+and physical power-loss qualification require separate deployment evidence.
 
 * Host transaction contract
 

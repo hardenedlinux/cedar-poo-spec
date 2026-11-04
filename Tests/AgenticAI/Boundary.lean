@@ -57,3 +57,6 @@ end Tests.AgenticAI.Boundary
 #print axioms CedarPooSpec.Admission.dispatch_invocation_fences_and_reserves
 #print axioms CedarPooSpec.Admission.sender_commit_retains_all_components
 #print axioms CedarPooSpec.Admission.restored_receiver_refuses_old_cut
+#print axioms CedarPooSpec.Admission.conflicting_settlement_refused
+#print axioms CedarPooSpec.Admission.settlement_invocation_preserves_sender
+#print axioms CedarPooSpec.Admission.matching_settlement_idempotent

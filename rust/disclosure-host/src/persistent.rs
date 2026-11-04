@@ -22,6 +22,13 @@ struct Image {
     operations: OperationLedger<Effect>,
     audit: Vec<CommitReceipt>,
     dispatches: BTreeMap<String, DispatchBinding>,
+    #[serde(default)]
+    settlements: BTreeMap<String, Signed>,
+}
+
+struct DispatchHistory {
+    dispatches: BTreeMap<String, DispatchBinding>,
+    settlements: BTreeMap<String, Signed>,
 }
 
 /// Process-reopenable sender. File locking coordinates distinct Host handles.
@@ -67,6 +74,7 @@ impl PersistentDisclosureHost {
                 operations: OperationLedger::default(),
                 audit: Vec::new(),
                 dispatches: BTreeMap::new(),
+                settlements: BTreeMap::new(),
             },
         )
     }
@@ -79,16 +87,20 @@ impl PersistentDisclosureHost {
         Ok(image)
     }
 
-    fn unpack(&self, image: Image) -> (Inner, BTreeMap<String, DispatchBinding>) {
+    fn unpack(&self, image: Image) -> (Inner, DispatchHistory) {
+        let inner = Inner {
+            policies: Arc::clone(&self.policy.0),
+            evidence: image.evidence,
+            authority: image.authority,
+            operations: image.operations,
+            audit: image.audit,
+        };
         (
-            Inner {
-                policies: Arc::clone(&self.policy.0),
-                evidence: image.evidence,
-                authority: image.authority,
-                operations: image.operations,
-                audit: image.audit,
+            inner,
+            DispatchHistory {
+                dispatches: image.dispatches,
+                settlements: image.settlements,
             },
-            image.dispatches,
         )
     }
 
@@ -114,15 +126,17 @@ impl PersistentDisclosureHost {
         let binding = DispatchBinding::new(actual, cut)?;
         let receipt = {
             let _guard = lock(&self.directory, "sender")?;
-            let (mut inner, mut dispatches) = self.unpack(self.load()?);
+            let (mut inner, mut history) = self.unpack(self.load()?);
             if !Arc::ptr_eq(&self.scope, &ticket.scope)
-                || dispatches.contains_key(&actual.operation_id.0)
+                || history.dispatches.contains_key(&actual.operation_id.0)
                 || !ticket_current(&inner, &ticket, actual)?
             {
                 return Ok(None);
             }
             let receipt = commit_admitted(&mut inner, &ticket, actual)?;
-            dispatches.insert(actual.operation_id.0.clone(), binding.clone());
+            history
+                .dispatches
+                .insert(actual.operation_id.0.clone(), binding.clone());
             atomic_write(
                 &self.directory,
                 "sender",
@@ -132,7 +146,8 @@ impl PersistentDisclosureHost {
                     authority: inner.authority,
                     operations: inner.operations,
                     audit: inner.audit,
-                    dispatches,
+                    dispatches: history.dispatches,
+                    settlements: history.settlements,
                 },
             )?;
             receipt
@@ -160,11 +175,23 @@ impl PersistentDisclosureHost {
         provider_key: &[u8],
     ) -> Result<bool, String> {
         let _guard = lock(&self.directory, "sender")?;
-        let image = self.load()?;
+        let mut image = self.load()?;
         let binding = image
             .dispatches
             .get(&id.0)
             .ok_or("missing retained dispatch")?;
-        verify_outcome(binding, signed, provider_key)
+        let delivered = verify_outcome(binding, signed, provider_key)?;
+        if let Some(retained) = image.settlements.get(&id.0) {
+            if verify_outcome(binding, retained, provider_key)? != delivered {
+                return Err("conflicting authenticated provider settlement".into());
+            }
+            // Reconfirm directory durability if a prior rename reported
+            // an ambiguous synchronization error.
+            crate::dispatch::sync_directory(&self.directory)?;
+            return Ok(delivered);
+        }
+        image.settlements.insert(id.0.clone(), signed.clone());
+        atomic_write(&self.directory, "sender", &image)?;
+        Ok(delivered)
     }
 }

@@ -149,6 +149,10 @@ pub(crate) fn atomic_write(
     serde_json::to_writer(&mut file, value).map_err(|e| e.to_string())?;
     file.sync_all().map_err(|e| e.to_string())?;
     std::fs::rename(staged, directory.join(format!("{name}.json"))).map_err(|e| e.to_string())?;
+    sync_directory(directory)
+}
+
+pub(crate) fn sync_directory(directory: &Path) -> Result<(), String> {
     File::open(directory)
         .and_then(|dir| dir.sync_all())
         .map_err(|e| e.to_string())
