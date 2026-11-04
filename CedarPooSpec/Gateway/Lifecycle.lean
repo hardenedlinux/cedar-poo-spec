@@ -72,10 +72,24 @@ structure WitnessFrontier where
 def WitnessFrontier.observe (logKey : String) (entries : List CommitRef) : WitnessFrontier :=
   ⟨logKey, entries.length, entries.getLast?⟩
 
+/-- Read the checked boundary directly without allocating a copied prefix. -/
+def WitnessFrontier.boundaryAt (size : Nat) (entries : List CommitRef) : Option CommitRef :=
+  if size = 0 then none else entries[size - 1]?
+
+theorem indexed_boundary_matches_verified_prefix (size : Nat) (entries : List CommitRef)
+    (within : size ≤ entries.length) :
+    WitnessFrontier.boundaryAt size entries = (entries.take size).getLast? := by
+  rw [List.getLast?_take]
+  unfold WitnessFrontier.boundaryAt
+  split
+  · rfl
+  · have available : size - 1 < entries.length := by omega
+    simp only [List.getElem?_eq_getElem available, Option.some_or]
+
 def WitnessFrontier.extends (prior : WitnessFrontier) (logKey : String)
     (entries : List CommitRef) : Bool :=
   decide (prior.logKey = logKey) && decide (prior.size ≤ entries.length) &&
-    decide ((entries.take prior.size).getLast? = prior.boundary)
+    decide (WitnessFrontier.boundaryAt prior.size entries = prior.boundary)
 
 structure HistoryInput where
   prior : Option WitnessFrontier
@@ -111,7 +125,10 @@ theorem changed_frontier_is_refused (prior : WitnessFrontier) (logKey : String)
     (entries : List CommitRef) (valid : Bool)
     (changed : (entries.take prior.size).getLast? ≠ prior.boundary) :
     (checkHistory ⟨some prior, logKey, entries, valid⟩).isOk = false := by
-  simp [checkHistory, WitnessFrontier.extends, changed, Except.isOk, Except.toBool]
+  by_cases within : prior.size ≤ entries.length
+  · have bound := indexed_boundary_matches_verified_prefix prior.size entries within
+    simp [checkHistory, WitnessFrontier.extends, bound, changed, Except.isOk, Except.toBool]
+  · simp [checkHistory, WitnessFrontier.extends, within, Except.isOk, Except.toBool]
 
 theorem history_result_retains_observed_frontier
     (receipt : Invocation historyContract prepareHistory input) :

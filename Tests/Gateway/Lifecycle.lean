@@ -69,3 +69,5 @@ import CedarPooSpec.Gateway.Lifecycle
 
 #print axioms CedarPooSpec.Gateway.Lifecycle.observed_recovery_retains_verified_progress
 #print axioms CedarPooSpec.Gateway.Lifecycle.observed_recovery_preserves_current_authority
+
+#print axioms CedarPooSpec.Gateway.Lifecycle.indexed_boundary_matches_verified_prefix

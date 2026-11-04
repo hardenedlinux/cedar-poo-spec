@@ -328,7 +328,7 @@ impl Simulator {
             unknown: false,
         };
         if let Some(frontier) = &current.witness_frontier {
-            frontier.check(witness.entries(), &witness.verifying_key())?;
+            witness.check_frontier(frontier)?;
         }
         let Ok(commit) = witness.append(PrecommitInput {
             current_world: &current.world,
@@ -347,10 +347,7 @@ impl Simulator {
             log_key: witness.verifying_key(),
             facts: current.authority.clone(),
         });
-        current.witness_frontier = Some(crate::gateway::witness::WitnessFrontier::observe(
-            witness.entries(),
-            witness.verifying_key(),
-        )?);
+        current.witness_frontier = Some(witness.frontier());
         outcome.precommitted = true;
         outcome.sent = true;
         let action = match provider.send(crate::gateway::provider::ProviderRequest {

@@ -1,7 +1,6 @@
 //! Reconciliation from public log, source and gateway trust material.
 use super::{
     Commit, FactAuthority, LogSnapshot, ProviderJournal, Receipt, Signed, Version, verify,
-    verify_log,
 };
 use crate::json_sha256;
 use p256::ecdsa::VerifyingKey;
@@ -152,7 +151,56 @@ fn reconcile_source(
     source: OutcomeSource<'_>,
     intent: Option<&Signed>,
 ) -> Reconciliation {
-    let history = verify_log(snapshot, &authority.log_key, authority.minimum_size);
+    let view = snapshot.view();
+    let history = super::witness::verify_view(view, &authority.log_key, authority.minimum_size);
+    reconcile_records(
+        journal,
+        receipts,
+        view,
+        authority,
+        source,
+        intent,
+        history.as_ref().map_err(|_| ()),
+    )
+}
+
+/// Recovery supplies one fully verified borrowed log; no second checkpoint,
+/// signature/chain pass or detached log copy is introduced here.
+pub(super) fn reconcile_recovery(
+    journal: &ProviderJournal,
+    receipts: &[Signed],
+    history: &super::witness::VerifiedLog<'_>,
+    authority: &AuditAuthority,
+    provider_key: Option<&VerifyingKey>,
+    intent: Option<&Signed>,
+) -> Reconciliation {
+    let verified = if history.key() == authority.log_key
+        && history.records().len() as u64 >= authority.minimum_size
+    {
+        Ok(history)
+    } else {
+        Err(())
+    };
+    reconcile_records(
+        journal,
+        receipts,
+        history.view(),
+        authority,
+        provider_key.map_or(OutcomeSource::Gateway, OutcomeSource::Provider),
+        intent,
+        verified,
+    )
+}
+
+fn reconcile_records(
+    journal: &ProviderJournal,
+    receipts: &[Signed],
+    snapshot: super::witness::LogView<'_>,
+    authority: &AuditAuthority,
+    source: OutcomeSource<'_>,
+    intent: Option<&Signed>,
+    history: Result<&super::witness::VerifiedLog<'_>, ()>,
+) -> Reconciliation {
     let mut report = Reconciliation {
         invalid_log: history.is_err(),
         ..Reconciliation::default()
@@ -175,6 +223,7 @@ fn reconcile_source(
         history
             .as_ref()
             .ok()?
+            .records()
             .get(*index)
             .map(|commit| commit.effect.operation.as_str())
     });
@@ -206,6 +255,7 @@ fn reconcile_source(
             let commit: &Commit = history
                 .as_ref()
                 .map_err(|_| "invalid witness history")?
+                .records()
                 .get(commit_index)
                 .ok_or("missing verified commit projection")?;
             if receipt.version != (Version { major: 1, minor: 0 })
@@ -290,6 +340,7 @@ fn reconcile_source(
     if let Ok(commits) = &history {
         let mut intents = BTreeSet::new();
         for (commit_index, commit) in commits
+            .records()
             .iter()
             .enumerate()
             .filter(|(_, commit)| in_scope(&commit.effect.operation))
@@ -323,3 +374,7 @@ fn reconcile_source(
     }
     report
 }
+
+#[cfg(test)]
+#[path = "../../tests/unit/gateway_verified_log.rs"]
+mod tests;

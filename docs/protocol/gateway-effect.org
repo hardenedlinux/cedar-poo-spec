@@ -1462,3 +1462,83 @@ sample storage. These observations identify allocator retention and explicitly
 owned copies in this cohort; they do not establish the cause of every RSS
 increase, a production memory bound or absence of leaks across arbitrary runs.
 All raw native samples and resource receipts remain ignored local build evidence.
+
+** Controlling Ubuntu history-regression attribution
+
+The 59.451 to 88.987 second lifecycle change is predominantly accounted CPU:
+59.410 versus 88.910 CPU seconds. Its elapsed-minus-CPU intervals are only
+0.041 and 0.077 seconds. This Ubuntu observation does not reproduce the separate
+multi-second Darwin accounting gap. Other processes in the same two CI jobs
+changed by similar factors:
+
+| Complete native process | 3d75c77 wall seconds | 4f8a4a3 wall seconds | 3d75c77 CPU seconds | 4f8a4a3 CPU seconds |
+|-------------------------+---------------------+---------------------+--------------------+--------------------|
+| Reviewed catalog | 11.689 | 17.065 | 11.560 | 17.020 |
+| Full lifecycle | 59.451 | 88.987 | 59.410 | 88.910 |
+| All-Case runtime API Benchmark | 14.385 | 20.197 | 14.580 | 20.480 |
+| Shared append and recovery Benchmark | 5.720 | 8.526 | 5.690 | 8.500 |
+
+Both jobs report Ubuntu 26.04.1, but their actual runner images/provisioners and
+regions differ: the earlier reviewed-effects job used centralus and image
+20261101.186.1; the later job used westus3 and image 20261025.179.1. The common
+slowdown supports an environment contribution; it does not prove its precise
+fraction or make added frontier work free. Normalizing lifecycle CPU by the
+reviewed-catalog control leaves about a 1.7 percent increase, but this ratio is
+not an isolated algorithm-cost measurement.
+
+A dedicated =history-comparison= job in the existing Zero Trust workflow
+consumes this revision's complete validated inputs from =reviewed-effects= and
+executes =bench-gateway-history=: fixed
+=A1 B1 C1 C2 B2 A2= order on one runner, using exact committed sources for
+=A= (3d75c77), =B= (4f8a4a3) and the current verified-view implementation =C=.
+All binaries use the same Cargo lockfile, compiler, target directory and complete
+current Lean-produced inputs. Each process must exit naturally under the original
+120-second watchdog, retain all 28,989 states and compare every output byte with
+the full current replay. A changed source, incomplete output or failed process
+cannot be admitted by timing. All six raw outputs, hashes, CPU/RSS receipts and
+host/CPU-quota metadata are CI artifacts; no raw Benchmark dataset is committed.
+The original job deadline is unchanged, and no timing threshold selects samples.
+
+*** Borrowed log verification and authenticated metadata reuse
+
+Recovery now borrows the owned witness's immutable checkpoint and signed-entry
+slice. One complete public verification produces a private immutable typed view
+bound to the original verifying key and original bytes. The view owns parsed
+Commit records and the authenticated head; it cannot be deserialized from caller
+claims or modified through its read-only accessors. The independent reconciler
+reuses this view and rechecks its key and the current independently supplied
+checkpoint floor. Wrong-key and increased-floor regressions refuse even an
+otherwise authentic prepared empty log.
+
+Exact retained-intent lookup compares both payload and signature before reading
+the already verified Commit's effect. It no longer performs a second signature
+verification/parse. No-intent absence also uses this same complete verified
+history. Every supplied outcome envelope, source/publication binding, operation
+ambiguity and observed effect still passes the existing independent auditor.
+The generation-checked deciding update and current authorization checks remain.
+
+For a retained boundary inside a longer fully verified chain, the next Commit's
+verified =previous= field already names that boundary. For an equal-size prefix,
+the authenticated head contains its root. Recovery reuses these fields instead
+of re-encoding and hashing the same signed entry. The owned witness likewise
+retains its typed authenticated head at construction, verified restore and
+append, reusing the root for the next append and frontier. It retains one head,
+not another per-entry digest cache. Public untrusted snapshots still receive
+complete signature, sequence, chain, version and head verification.
+
+Lean's actual history Contract now reads its range-checked boundary directly
+instead of constructing a copied List prefix. The kernel theorem
+=indexed_boundary_matches_verified_prefix= proves equality with the previous
+prefix interpretation for every admitted size. Existing key, rollback, fork,
+revocation, source and consumption laws remain in use. Native cryptographic
+root/chain interpretation and hash collision resistance remain explicit Host
+assumptions; this optimization does not claim a Lean proof of ECDSA or SHA-256.
+
+The local complete lifecycle sample for this verified-view change exits naturally
+in 87.591 seconds (83.540 accounted CPU seconds), with 111.375 MiB peak RSS;
+all 28,989 state bytes and the 41,669 effect/audit results match the prior output.
+The preceding retained-frontier sample was 84.285 seconds / 111.141 MiB. This
+slower/higher-RSS observation remains a non-win. Cross-run local timings do not
+replace the fixed same-job Ubuntu experiment. Runtime qualification retains 107
+passing tests and the unchanged five fixture-owned ignored tests, plus the full
+source/Delta/Contract/replay gates. Current metadata reuse is never an Allow.
