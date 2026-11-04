@@ -1,5 +1,6 @@
 //! Trusted local persistence and a simulated final receiver for disclosure.
 use super::Effect;
+use cedar_poo_core::operation_identity::OperationId;
 use cedar_poo_runtime::gateway::{Signed, public_key, verify};
 use cedar_poo_runtime::gateway_source_sha256;
 use serde::{Deserialize, Serialize};
@@ -198,20 +199,54 @@ impl DisclosureReceiver {
         atomic_write(&self.directory, "receiver", next)
     }
 
-    pub fn receive<T>(
+    /// Apply only once, then persist the independent provider's signed
+    /// observation before returning it. Failure after apply remains unknown.
+    pub fn receive(
         &self,
         request: &DispatchBinding,
         actual: &Effect,
-        apply: impl FnOnce(&Effect) -> Result<T, String>,
-    ) -> Result<Option<T>, String> {
+        provider_key: &[u8],
+        apply: impl FnOnce(&Effect) -> Result<Signed, String>,
+    ) -> Result<Option<Signed>, String> {
         let _guard = lock(&self.directory, "receiver")?;
         let current: ReceiverCut = read(&self.directory, "receiver")?;
+        let journal = DispatchJournal::new(&self.directory);
         if request.cut != current
             || DispatchBinding::new(actual, current)? != *request
-            || !DispatchJournal::new(&self.directory).reserve(request)?
+            || !journal.reserve(request)?
         {
             return Ok(None);
         }
-        apply(actual).map(Some)
+        let signed = apply(actual)?;
+        verify_outcome(request, &signed, provider_key)?;
+        atomic_write(&self.directory, &outcome_name(&request.operation)?, &signed)?;
+        Ok(Some(signed))
     }
+
+    /// A restarted provider can return evidence without reapplying the effect.
+    /// Missing outcome bytes are unknown, including for a reserved operation.
+    pub fn outcome(&self, id: &OperationId, provider_key: &[u8]) -> Result<Option<Signed>, String> {
+        let _guard = lock(&self.directory, "receiver")?;
+        let name = outcome_name(&id.0)?;
+        let file = match File::open(self.directory.join(format!("{name}.json"))) {
+            Ok(file) => file,
+            Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(None),
+            Err(error) => return Err(error.to_string()),
+        };
+        let signed = serde_json::from_reader(file).map_err(|e| e.to_string())?;
+        let reservation = File::open(DispatchJournal::new(&self.directory).path(&id.0)?)
+            .map_err(|e| e.to_string())?;
+        let binding: DispatchBinding =
+            serde_json::from_reader(reservation).map_err(|e| e.to_string())?;
+        if binding.operation != id.0 {
+            return Err("provider reservation belongs to a different operation".into());
+        }
+        verify_outcome(&binding, &signed, provider_key)?;
+        sync_directory(&self.directory)?;
+        Ok(Some(signed))
+    }
+}
+
+fn outcome_name(operation: &str) -> Result<String, String> {
+    Ok(format!("outcome-{}", gateway_source_sha256(&operation)?))
 }

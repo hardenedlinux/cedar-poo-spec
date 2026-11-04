@@ -228,4 +228,62 @@ theorem settlement_invocation_preserves_sender
   · contradiction
   · exact (congrArg Prod.snd (Except.ok.inj called)).symm
 
+/-- Provider-side projection for one operation. Reservation and result custody
+are separate writes unless the effect target supplies a shared transaction. -/
+structure ProviderReceiptImage where
+  reserved : DispatchBinding
+  operations : OperationLedger
+  retained : Option Bool
+  deriving DecidableEq
+
+structure ProviderReceiptInput where
+  image : ProviderReceiptImage
+  observed : DispatchBinding
+  authenticated : Bool
+  delivered : Bool
+
+def recordProviderReceipt (input : ProviderReceiptInput) : Option ProviderReceiptImage := do
+  if !input.image.operations.admitted.contains input.image.reserved.operation then none else
+  let outcome ← settleDispatch input.image.retained input.image.reserved input.observed
+    input.authenticated input.delivered
+  some { input.image with retained := some outcome }
+
+def providerReceiptContract : Contract Unit ProviderReceiptInput ProviderReceiptImage where
+  input := ⟨"provider-reservation-and-authenticated-result", fun _ => True, fun _ => inferInstance⟩
+  output := ⟨"persistable-provider-receipt", fun _ => True, fun _ => inferInstance⟩
+  meaning := fun _ input result => recordProviderReceipt input = some result
+  decide := fun _ _ _ => inferInstance
+  rule := .atom ()
+
+def prepareProviderReceipt (input : ProviderReceiptInput) :
+    Except String (ProviderReceiptImage × Unit) :=
+  match recordProviderReceipt input with
+  | none => .error "provider result lacks matching reservation or conflicts"
+  | some next => .ok (next, ())
+
+theorem provider_receipt_preserves_reservation
+    (receipt : Invocation providerReceiptContract prepareProviderReceipt input) :
+    receipt.result.operations = input.image.operations ∧
+    receipt.result.reserved = input.image.reserved := by
+  have recorded := receipt.logic
+  change recordProviderReceipt input = some receipt.result at recorded
+  unfold recordProviderReceipt at recorded
+  split at recorded
+  · contradiction
+  · cases settled : settleDispatch input.image.retained input.image.reserved input.observed
+        input.authenticated input.delivered <;> simp [settled] at recorded
+    rw [← recorded]
+    exact ⟨rfl, rfl⟩
+
+/-- The remote adapter must recover at least its acknowledged generation.
+This premise excludes a stale but otherwise valid replica read. -/
+theorem acknowledged_fence_survives_remote_reopen
+    (request actual : DispatchBinding) (ledger : OperationLedger)
+    (acknowledged reopened : ReceiverCut)
+    (retired : request.cut.generation < acknowledged.generation)
+    (nonRollback : acknowledged.generation ≤ reopened.generation) :
+    receiveDispatch reopened request actual ledger = none :=
+  restored_receiver_refuses_old_cut request actual ledger reopened
+    (Nat.lt_of_lt_of_le retired nonRollback)
+
 end CedarPooSpec.Admission

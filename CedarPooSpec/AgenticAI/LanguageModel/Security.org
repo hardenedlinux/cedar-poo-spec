@@ -234,6 +234,49 @@ after reopen and after another admission. These controls use a local Unix
 filesystem and a simulated receiver. Remote transport, provider durability
 and physical power-loss qualification require separate deployment evidence.
 
+* Provider receipt custody and remote storage qualification
+
+The receiver verifies and persists the provider's exact signed result before
+returning it. A reopened receiver can return that evidence by operation ID
+without calling the effect adapter. Its receipt reader checks the original
+reservation and the independently configured provider key. If the effect
+runs but receipt persistence fails, reopen reports no receipt and the
+receiver reservation still refuses another application. An absent receipt
+cannot distinguish a crash before the effect from a crash after it.
+The sender retains its charge in both cases. A production provider that
+requires automatic resolution must supply its own transaction joining the
+effect and its durable outcome, or independent target evidence.
+
+The local writer stages bytes, synchronizes the file, replaces the committed
+name and synchronizes the directory. Linux [[https://man7.org/linux/man-pages/man2/fsync.2.html][fsync(2)]]
+documents why synchronizing a file does not by itself persist its directory
+entry. The native controls inject a failure before receipt replacement and
+reopen against a stale staged cut. They exercise recovery logic on an intact
+filesystem. They do not model device cache loss, a filesystem rollback or
+power interruption between system calls.
+
+A remote adapter must qualify all of the following properties before reuse
+of this safety claim.
+
+| Required property | Acceptance observation |
+|-------------------+------------------------|
+| Linearizable cut and reservation decisions | After an acknowledged cut advance, a receiver using another connection or a promoted replica rejects a previously unseen request with the old cut. A check against a cached or stale replica cannot authorize application. |
+| Atomic, durable replacement | After an acknowledged write and storage failover, the entire committed image is recoverable. Interrupted writes expose the preceding image or the whole successor. A staging object cannot become the live image on its own. |
+| Durable conditional reservation | Competing writers for the same operation have one winner across independent clients. An ambiguous response leaves the operation unresolved until an authoritative read. |
+| Independent provider receipt custody | A provider restart can return the exact signed bytes without invoking the effect. A missing or corrupt result does not release the operation or reverse the charge. |
+
+Herlihy and Wing's [[https://www.cs.cmu.edu/~wing/publications/HerlihyWing90.pdf][linearizability definition]]
+supplies the real-time ordering requirement for acknowledged cut changes.
+[[https://www.rfc-editor.org/rfc/rfc8881.html#section-18.3][RFC 8881, COMMIT]]
+illustrates a separate durability obligation: an unstable remote write can
+require a later commit and a write-verifier check after a server restart.
+A remote mount or storage API needs deployment-specific qualification.
+The Lean model proves old-cut refusal when the reopened generation is at
+least the acknowledged generation. The accompanying counterexample accepts
+a previously unseen old-cut operation when recovery instead reads the stale
+generation. The provider receipt Contract preserves the reserved operation
+and its exact binding while recording a terminal observation.
+
 * Host transaction contract
 
 1. Resolve the current source, token, transformation, purpose, delegation,

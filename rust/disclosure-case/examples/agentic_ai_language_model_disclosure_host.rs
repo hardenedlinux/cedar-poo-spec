@@ -541,7 +541,7 @@ fn check_restarted_dispatch(
     use cedar_poo_disclosure_host::{
         DisclosureOutcome, DisclosureReceiver, PersistentDisclosureHost, ReceiverCut,
     };
-    use cedar_poo_runtime::gateway::Signed;
+    use cedar_poo_runtime::gateway::{Signed, verify};
     use p256::ecdsa::{Signature, SigningKey, signature::Signer};
 
     let path = env::temp_dir().join(format!("cedar-disclosure-restart-{}", process::id()));
@@ -555,6 +555,8 @@ fn check_restarted_dispatch(
         replan.channel = "message".into();
         let mut delayed = first.clone();
         delayed.operation_id = OperationId::from("delayed-operation");
+        let mut uncertain = first.clone();
+        uncertain.operation_id = OperationId::from("effect-without-durable-receipt");
         let approval = |id| AuthorityId::from(id);
         let cut = ReceiverCut {
             scope: "study-observers".into(),
@@ -562,16 +564,44 @@ fn check_restarted_dispatch(
         };
         assert!(PersistentDisclosureHost::open(&sender_path, policy).is_err());
         assert!(DisclosureReceiver::open(&receiver_path).is_err());
+        let mut grants = authority(first, &replan, &delayed);
+        grants.grants.push(AuthorityGrant {
+            id: approval("approval-uncertain"),
+            effect: uncertain.clone(),
+            max_uses: 1,
+            used: 0,
+        });
         PersistentDisclosureHost::initialize(
             &sender_path,
             policy,
-            evidence(),
-            authority(first, &replan, &delayed),
+            Evidence {
+                budget: 3,
+                ..evidence()
+            },
+            grants,
         )?;
         DisclosureReceiver::initialize(&receiver_path, &cut)?;
         let receiver = DisclosureReceiver::open(&receiver_path)?;
         let mut sends = 0;
-        let mut observed = None;
+        let provider = SigningKey::from_slice(&[11; 32]).map_err(|e| e.to_string())?;
+        let foreign = SigningKey::from_slice(&[12; 32]).map_err(|e| e.to_string())?;
+        let key = provider.verifying_key().to_encoded_point(false);
+        let sign = |payload: Vec<u8>| {
+            let signature: Signature = provider.sign(&payload);
+            Signed {
+                payload,
+                signature: signature.to_bytes().to_vec(),
+            }
+        };
+        let sign_outcome = |binding: &cedar_poo_disclosure_host::DispatchBinding| {
+            serde_json::to_vec(&DisclosureOutcome {
+                domain: DisclosureOutcome::DOMAIN.into(),
+                binding: binding.clone(),
+                delivered: true,
+            })
+            .map(sign)
+            .map_err(|e| e.to_string())
+        };
         {
             let sender = PersistentDisclosureHost::open(&sender_path, policy)?;
             let ticket = sender
@@ -603,14 +633,14 @@ fn check_restarted_dispatch(
             fs::remove_dir(&staged).map_err(|e| e.to_string())?;
             let result =
                 sender.commit_and_dispatch(ticket, first, cut.clone(), |binding, actual| {
-                    observed = receiver.receive(binding, actual, |_| {
-                        sends += 1;
-                        Ok(DisclosureOutcome {
-                            domain: DisclosureOutcome::DOMAIN.into(),
-                            binding: binding.clone(),
-                            delivered: true,
-                        })
-                    })?;
+                    assert!(
+                        receiver
+                            .receive(binding, actual, key.as_bytes(), |_| {
+                                sends += 1;
+                                sign_outcome(binding)
+                            })?
+                            .is_some()
+                    );
                     Err("lost provider reply".into())
                 })?;
             assert!(matches!(result, Some(DispatchOutcome::Unknown(_))));
@@ -629,7 +659,7 @@ fn check_restarted_dispatch(
         let restarted = PersistentDisclosureHost::open(&sender_path, policy)?;
         let audit = restarted.audit()?;
         assert_eq!(audit.len(), 1);
-        assert_eq!(audit[0].remaining_budget, 1);
+        assert_eq!(audit[0].remaining_budget, 2);
         assert_eq!(audit[0].remaining_candidates, 4);
         assert_eq!(audit[0].operation_id, first.operation_id.0);
         assert_eq!(
@@ -646,26 +676,28 @@ fn check_restarted_dispatch(
                 .is_none()
         );
 
-        let outcome = observed.ok_or("missing independent provider observation")?;
+        drop(receiver);
+        let receiver = DisclosureReceiver::open(&receiver_path)?;
+        let signed = receiver
+            .outcome(&first.operation_id, key.as_bytes())?
+            .ok_or("provider lost acknowledged signed receipt after reopen")?;
         assert!(
             receiver
-                .receive(&outcome.binding, first, |_| {
+                .outcome(
+                    &first.operation_id,
+                    foreign.verifying_key().to_encoded_point(false).as_bytes()
+                )
+                .is_err()
+        );
+        let outcome: DisclosureOutcome = verify(&signed, provider.verifying_key())?;
+        assert!(
+            receiver
+                .receive(&outcome.binding, first, key.as_bytes(), |_| {
                     sends += 1;
-                    Ok(())
+                    Err("duplicate reached the effect".into())
                 })?
                 .is_none()
         );
-        let provider = SigningKey::from_slice(&[11; 32]).map_err(|e| e.to_string())?;
-        let foreign = SigningKey::from_slice(&[12; 32]).map_err(|e| e.to_string())?;
-        let key = provider.verifying_key().to_encoded_point(false);
-        let sign = |payload: Vec<u8>| {
-            let signature: Signature = provider.sign(&payload);
-            Signed {
-                payload,
-                signature: signature.to_bytes().to_vec(),
-            }
-        };
-        let signed = sign(serde_json::to_vec(&outcome).map_err(|e| e.to_string())?);
         let staged = sender_path.join("sender.staged");
         fs::remove_file(&staged).map_err(|e| e.to_string())?;
         fs::create_dir(&staged).map_err(|e| e.to_string())?;
@@ -714,10 +746,13 @@ fn check_restarted_dispatch(
         );
         assert_eq!(restarted.audit()?.len(), 1);
 
-        receiver.advance(&ReceiverCut {
+        let next = ReceiverCut {
             generation: 8,
             ..cut.clone()
-        })?;
+        };
+        receiver.advance(&next)?;
+        let stale_cut = serde_json::to_vec(&cut).map_err(|e| e.to_string())?;
+        fs::write(receiver_path.join("receiver.staged"), stale_cut).map_err(|e| e.to_string())?;
         drop(receiver);
         let reopened = DisclosureReceiver::open(&receiver_path)?;
         assert!(reopened.advance(&cut).is_err());
@@ -728,16 +763,16 @@ fn check_restarted_dispatch(
             restarted.commit_and_dispatch(delayed_ticket, &delayed, cut, |binding, actual| {
                 assert!(
                     reopened
-                        .receive(binding, actual, |_| {
+                        .receive(binding, actual, key.as_bytes(), |_| {
                             sends += 1;
-                            Ok(())
+                            Err("retired cut reached the effect".into())
                         })?
                         .is_none()
                 );
                 Err("receiver rejected retired cut".into())
             })?;
         assert!(
-            matches!(result, Some(DispatchOutcome::Unknown(receipt)) if receipt.remaining_budget == 0)
+            matches!(result, Some(DispatchOutcome::Unknown(receipt)) if receipt.remaining_budget == 1)
         );
         assert_eq!(sends, 1);
         let latest = PersistentDisclosureHost::open(&sender_path, policy)?;
@@ -748,6 +783,35 @@ fn check_restarted_dispatch(
                 .is_err()
         );
         assert!(latest.reconcile(&first.operation_id, &signed, key.as_bytes())?);
+        let operation = &uncertain.operation_id;
+        let digest = cedar_poo_runtime::gateway_source_sha256(&operation.0)?;
+        let staged = receiver_path.join(format!("outcome-{digest}.staged"));
+        fs::create_dir(&staged).map_err(|e| e.to_string())?;
+        let ticket = latest
+            .prepare(approval("approval-uncertain"), uncertain.clone())?
+            .ok_or("missing budget for receipt crash control")?;
+        let failed = latest.commit_and_dispatch(ticket, &uncertain, next, |binding, actual| {
+            let result = reopened.receive(binding, actual, key.as_bytes(), |_| {
+                sends += 1;
+                sign_outcome(binding)
+            });
+            assert!(result.is_err());
+            let recovered = DisclosureReceiver::open(&receiver_path)?;
+            assert!(recovered.outcome(operation, key.as_bytes())?.is_none());
+            assert!(
+                recovered
+                    .receive(binding, actual, key.as_bytes(), |_| {
+                        sends += 1;
+                        Err("receipt failure released receiver reservation".into())
+                    })?
+                    .is_none()
+            );
+            Err("provider receipt persistence failed after effect".into())
+        })?;
+        assert!(
+            matches!(failed, Some(DispatchOutcome::Unknown(receipt)) if receipt.remaining_budget == 0)
+        );
+        assert_eq!(sends, 2);
         Ok(())
     })();
     let cleanup = fs::remove_dir_all(path).map_err(|e| e.to_string());

@@ -60,3 +60,16 @@ end Tests.AgenticAI.Boundary
 #print axioms CedarPooSpec.Admission.conflicting_settlement_refused
 #print axioms CedarPooSpec.Admission.settlement_invocation_preserves_sender
 #print axioms CedarPooSpec.Admission.matching_settlement_idempotent
+
+
+#print axioms CedarPooSpec.Admission.provider_receipt_preserves_reservation
+#print axioms CedarPooSpec.Admission.acknowledged_fence_survives_remote_reopen
+
+open CedarPooSpec.Admission in
+theorem staleReplicaCanAcceptPreviouslyUnseenOperation :
+    let old : ReceiverCut := ⟨"sink", 7⟩
+    let current : ReceiverCut := ⟨"sink", 8⟩
+    let request : DispatchBinding := ⟨⟨"new-operation"⟩, "exact-effect", old⟩
+    (receiveDispatch old request request {}).isSome = true ∧
+      receiveDispatch current request request {} = none := by
+  decide
