@@ -78,7 +78,7 @@ impl ProviderJournal {
                 != request
                     .publications
                     .iter()
-                    .map(json_sha256)
+                    .map(Signed::source_sha256)
                     .collect::<Result<Vec<_>, _>>()?
         {
             return Err("provider input differs from the witnessed intent".into());

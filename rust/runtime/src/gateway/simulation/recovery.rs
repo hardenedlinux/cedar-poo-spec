@@ -1,8 +1,19 @@
 //! Recovery reads surviving trusted state; history cannot reconstruct live authority.
 use super::{RecoveryEvidence, Simulator};
 use crate::gateway::{AuditAuthority, Reconciliation, publication_matches};
-use crate::{json_sha256, value_sha256};
+use crate::value_sha256;
 use std::sync::Arc;
+
+struct RecoverySnapshot {
+    generation: u64,
+    review: crate::gateway::ReviewBinding,
+    release_root: String,
+    policies: crate::CompiledPolicyJson,
+    operation: String,
+    authority: crate::gateway::FactAuthority,
+    retained_intent: Option<super::state::RetainedIntent>,
+    witness_frontier: Option<crate::gateway::witness::WitnessFrontier>,
+}
 
 struct RecoveryStatus {
     generation: u64,
@@ -39,15 +50,31 @@ impl Simulator {
     ) -> Result<RecoveryStatus, String> {
         let authority = self;
         let history = evidence.witness.view();
-        let snapshot = authority
-            .current
-            .lock()
-            .map_err(|_| "poisoned authority")?
-            .clone();
-        authority.check_owner(&snapshot)?;
-        if json_sha256(&snapshot.publications)? != json_sha256(&evidence.publications)? {
-            return Err("recovery discarded or substituted current publication history".into());
-        }
+        let snapshot = {
+            let current = authority.current.lock().map_err(|_| "poisoned authority")?;
+            authority.check_owner(&current)?;
+            // Exact ordered bytes are stronger than digest equality. Borrow the
+            // retained prefix while locked instead of cloning and encoding it.
+            if current.publications.len() != evidence.publications.len()
+                || !current
+                    .publications
+                    .iter()
+                    .zip(evidence.publications)
+                    .all(|(a, b)| a.payload == b.payload && a.signature == b.signature)
+            {
+                return Err("recovery discarded or substituted current publication history".into());
+            }
+            RecoverySnapshot {
+                generation: current.generation,
+                review: current.review.clone(),
+                release_root: current.release_root.clone(),
+                policies: current.case.policies.clone(),
+                operation: current.effect.operation.clone(),
+                authority: current.authority.clone(),
+                retained_intent: current.retained_intent.clone(),
+                witness_frontier: current.witness_frontier.clone(),
+            }
+        };
         if !evidence.publications.is_empty() {
             let trust = evidence
                 .audit
@@ -63,7 +90,7 @@ impl Simulator {
         if let Some(last) = evidence.audit.verify_publications(evidence.publications)? {
             publication_matches(&snapshot.review, &last)?;
             if last.0.after_root != snapshot.release_root
-                || last.0.after != value_sha256(&snapshot.case.policies)?
+                || last.0.after != value_sha256(&snapshot.policies)?
             {
                 return Err("recovery did not retain the actual installed policies".into());
             }
@@ -115,7 +142,7 @@ impl Simulator {
                 if history
                     .records()
                     .iter()
-                    .any(|commit| commit.effect.operation == snapshot.effect.operation)
+                    .any(|commit| commit.effect.operation == snapshot.operation)
                 {
                     return Err("recovery supplied an unrecorded operation intent".into());
                 }

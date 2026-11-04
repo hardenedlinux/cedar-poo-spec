@@ -1,7 +1,7 @@
 //! Public review/approval and contiguous publication verification.
 use super::{AnalysisKind, GainApproval, PublicationRecord, ReviewAuthority, ReviewRecord};
 use crate::gateway::{ReviewBinding, Signed, Version, verify};
-use crate::{json_sha256, value_sha256};
+use crate::value_sha256;
 use p256::ecdsa::VerifyingKey;
 
 /// Public review/approval trust roots, chosen outside the candidate artifact.
@@ -39,7 +39,7 @@ impl ReviewTrust {
             let approved: GainApproval = verify(approval, &self.approval_key)?;
             if approved.version != record.version
                 || approved.epoch != record.epoch
-                || approved.review != json_sha256(signed)?
+                || approved.review != signed.source_sha256()?
             {
                 return Err("approval does not bind this exact review".into());
             }
@@ -90,7 +90,7 @@ pub fn verify_publications(
                     }
                     _ => (),
                 }
-                Ok(Some((review, publication, json_sha256(signed)?)))
+                Ok(Some((review, publication, signed.source_sha256()?)))
             },
         )
         .map(|last| last.map(|(review, publication, _)| (review, publication)))
@@ -106,7 +106,7 @@ pub fn publication_matches(
         || binding.schema != review.schema
         || binding.source != published.world
         || binding.epoch != published.epoch
-        || binding.report != json_sha256(&published.review)?
+        || binding.report != published.review.source_sha256()?
     {
         return Err("effect is not bound to the current publication".into());
     }

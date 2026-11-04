@@ -2,7 +2,6 @@
 use super::{GainApproval, ReviewRecord, ReviewTrust};
 use crate::gateway::wire::{sign, simulation_key};
 use crate::gateway::{Signed, Version, verify};
-use crate::json_sha256;
 use p256::ecdsa::SigningKey;
 
 /// Trusted simulation issuers; neither key is selected by an incoming envelope.
@@ -35,7 +34,7 @@ impl ReviewAuthority {
         sign(
             &GainApproval {
                 version: Version { major: 1, minor: 0 },
-                review: json_sha256(review)?,
+                review: review.source_sha256()?,
                 epoch: record.epoch,
             },
             &self.approval,

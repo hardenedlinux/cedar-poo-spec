@@ -158,7 +158,7 @@ bench-project-native-cold output:
     exit "$status"
 
 # Same job/host, exact historical sources, complete workload, fixed A-B-C-C-B-A.
-# A=before progress retention; B=retained progress; C=current verified-view reuse.
+# A=before progress retention; B=verified-view reuse; C=current streaming/recovery.
 # All six samples and original watchdogs are retained, with no timing admission.
 [script("bash")]
 bench-gateway-history:
@@ -171,7 +171,7 @@ bench-gateway-history:
     target="$scratch/target"
     mkdir -p "$evidence" "$binaries"
     before=3d75c77f2e169458cf4887f6d2409c56d079e56a
-    retained=4f8a4a3b7300552d4b3fc9fc4e10a46feb94c328
+    retained=c0b684188c8dc5ee04ce59aeb912aa3f95d8ad24
     git rev-parse HEAD > "$evidence/current-commit.txt"
     git diff --binary > "$evidence/current-source.patch"
     uname -a > "$evidence/host.txt"
@@ -212,3 +212,11 @@ bench-gateway-history:
         tail -n 1 "$evidence/$sample.jsonl" | jq -e '.lifecycle_outcomes == 28989 and .entries == 51 and .groups == 211 and .cases == 1253 and .refusals == 39 and .publications == 3759' >/dev/null
     done
     jq -s 'map({executable_sha256,wall_s:(.elapsed_ns/1000000000),cpu_s:((.user_cpu_ns+.system_cpu_ns)/1000000000),rss_mib:(.peak_rss_bytes/1048576),returncode})' "$evidence/A1.resource.json" "$evidence/B1.resource.json" "$evidence/C1.resource.json" "$evidence/C2.resource.json" "$evidence/B2.resource.json" "$evidence/A2.resource.json" | tee "$evidence/summary.json"
+
+    # Separate diagnostic image: never replace the ordinary A/B/C products or
+    # include allocation instrumentation in their complete-process comparison.
+    cargo build --release --locked -p cedar-poo-bridge --features gateway,allocation-observation
+    timeout --signal=TERM --kill-after=3s 120s uv run --project python --package cedar-poo-py-test --locked python -m cedar_poo_py_test.resources --timeout-seconds 120 --output "$evidence/signed-identity.resource.json" rust/target/release/cedar-poo-bridge benchmark-gateway-append .lake/build/reviewed-effects < .lake/build/functional-catalog.json > "$evidence/signed-identity.json"
+    jq -e '.returncode == 0 and .termination_reason == null and .owned_group_quiesced and .resource_observation_complete and .timeout_seconds == 120' "$evidence/signed-identity.resource.json" >/dev/null
+    jq -e '.operations == 1024 and .recovery_log_entries == 1026 and .recovery_samples == 3 and (.samples_ns["signed-identity.reference"] | length) == 2 and (.samples_ns["signed-identity.stream"] | length) == 2' "$evidence/signed-identity.json" >/dev/null
+    jq -c '{kind,operations,recovery_log_entries,phases,memory_phases}' "$evidence/signed-identity.json"

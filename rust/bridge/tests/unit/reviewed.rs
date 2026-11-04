@@ -340,6 +340,34 @@ fn fresh_reviewed_recovery_keeps_epoch_and_public_audit_requires_review_trust() 
         )
         .is_err()
     );
+    // Full-length substitutions must fail at the same retained-history boundary,
+    // including signature-only changes and reordered/duplicated valid entries.
+    for change in 0..4 {
+        let mut changed = history.clone();
+        match change {
+            0 => changed[1].signature[0] ^= 1,
+            1 => changed[1].payload[0] ^= 1,
+            2 => changed.swap(0, 1),
+            _ => changed[1] = changed[0].clone(),
+        }
+        let result = Simulator::recover(
+            &recovered,
+            RecoveryEvidence {
+                publications: &changed,
+                audit: &recovered.audit_authority(&witness),
+                witness: &witness,
+                receipts: &receipts,
+                provider: &provider,
+            },
+        );
+        assert_eq!(
+            result.err().as_deref(),
+            Some("recovery discarded or substituted current publication history")
+        );
+        assert_eq!(recovered.publication_view().unwrap().epoch, 9);
+        assert!(recovered.prepare(&recovered.envelope()).is_err());
+        assert_eq!(provider.actions.len(), 1);
+    }
 }
 
 #[test]

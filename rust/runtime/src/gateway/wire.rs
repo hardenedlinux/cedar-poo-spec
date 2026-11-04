@@ -65,6 +65,12 @@ pub struct Signed {
     #[serde(with = "base64url")]
     pub signature: Vec<u8>,
 }
+impl Signed {
+    /// Canonical source identity of the exact original bytes; grants no authority.
+    pub fn source_sha256(&self) -> Result<String, String> {
+        crate::canonical::signed_sha256(&self.payload, &self.signature)
+    }
+}
 #[path = "base64url.rs"]
 mod base64url;
 /// Decode an independently configured SEC1 P-256 verification key.

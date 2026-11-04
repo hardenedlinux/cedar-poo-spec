@@ -411,8 +411,53 @@ fn growing_log(data: &mut Measurements) -> Result<(), String> {
         data.scale_memory
             .insert("independent-audit-and-recovery", memory);
     }
+    #[cfg(feature = "allocation-observation")]
+    compare_signed_identity(data, witness.entries())?;
     Ok(())
 }
+// Diagnostic-only fixed-order reference/stream/stream/reference over the actual
+// scale log. Keep this work outside normal API/process timing and memory phases.
+#[cfg(feature = "allocation-observation")]
+fn compare_signed_identity(data: &mut Measurements, entries: &[Signed]) -> Result<(), String> {
+    let expected = entries
+        .iter()
+        .map(cedar_poo_runtime::gateway_source_sha256)
+        .collect::<Result<Vec<_>, _>>()?;
+    for stream in [false, true, true, false] {
+        let phase = if stream {
+            "signed-identity.stream"
+        } else {
+            "signed-identity.reference"
+        };
+        let memory = crate::allocation::begin_phase();
+        measure(data, phase, || {
+            for (entry, expected) in entries.iter().zip(&expected) {
+                let digest = if stream {
+                    std::hint::black_box(entry).source_sha256()?
+                } else {
+                    cedar_poo_runtime::gateway_source_sha256(std::hint::black_box(entry))?
+                };
+                if std::hint::black_box(digest) != *expected {
+                    return Err("streaming identity differs from canonical reference".into());
+                }
+            }
+            Ok(())
+        })?;
+        if let Some(memory) = crate::allocation::end_phase(memory) {
+            // Preserve both samples rather than replacing the first observation.
+            let suffix = data.times[phase].len();
+            let key = match (stream, suffix) {
+                (false, 1) => "signed-identity.reference.1",
+                (false, _) => "signed-identity.reference.2",
+                (true, 1) => "signed-identity.stream.1",
+                (true, _) => "signed-identity.stream.2",
+            };
+            data.scale_memory.insert(key, memory);
+        }
+    }
+    Ok(())
+}
+
 fn statistics(values: &[u128]) -> Value {
     let mut values = values.to_vec();
     values.sort_unstable();

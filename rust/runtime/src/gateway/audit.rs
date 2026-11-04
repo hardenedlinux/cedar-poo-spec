@@ -275,7 +275,7 @@ fn reconcile_records(
                 != receipt
                     .publications
                     .iter()
-                    .map(json_sha256)
+                    .map(Signed::source_sha256)
                     .collect::<Result<Vec<_>, _>>()?
             {
                 return Err("publication evidence changed".into());

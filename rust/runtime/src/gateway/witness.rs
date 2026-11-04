@@ -127,7 +127,7 @@ pub(super) fn verify_view<'a>(
             {
                 return Err("broken public log history".into());
             }
-            let previous = json_sha256(signed)?;
+            let previous = signed.source_sha256()?;
             records.push(entry);
             Ok::<_, String>((previous, records))
         },
@@ -158,7 +158,7 @@ impl WitnessFrontier {
         let root = self
             .size
             .checked_sub(1)
-            .map(|index| json_sha256(&entries[index]))
+            .map(|index| entries[index].source_sha256())
             .transpose()?
             .unwrap_or_default();
         if root != self.root {
@@ -280,11 +280,11 @@ impl Witness {
             facts: facts.iter().map(json_sha256).collect::<Result<_, _>>()?,
             publications: publications
                 .iter()
-                .map(json_sha256)
+                .map(Signed::source_sha256)
                 .collect::<Result<_, _>>()?,
         };
         let signed = sign(&entry, &self.key)?;
-        let committed_root = json_sha256(&signed)?;
+        let committed_root = signed.source_sha256()?;
         let committed_size = self
             .head
             .size

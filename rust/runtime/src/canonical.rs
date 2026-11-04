@@ -11,12 +11,39 @@ pub fn json_sha256(value: &impl Serialize) -> Result<String, String> {
 }
 
 pub(crate) fn value_sha256(value: &Value) -> Result<String, String> {
+    hash_encoding(|writer| write_canonical_json(value, writer))
+}
+
+#[cfg(feature = "gateway")]
+pub(crate) fn signed_sha256(payload: &[u8], signature: &[u8]) -> Result<String, String> {
+    use base64::{engine::general_purpose::URL_SAFE_NO_PAD, write::EncoderWriter};
+    hash_encoding(|writer| {
+        writer
+            .write_all(b"{\"payload\":\"")
+            .map_err(|e| e.to_string())?;
+        for (index, bytes) in [payload, signature].into_iter().enumerate() {
+            if index != 0 {
+                writer
+                    .write_all(b"\",\"signature\":\"")
+                    .map_err(|e| e.to_string())?;
+            }
+            let mut encoder = EncoderWriter::new(&mut *writer, &URL_SAFE_NO_PAD);
+            encoder.write_all(bytes).map_err(|e| e.to_string())?;
+            encoder.finish().map_err(|e| e.to_string())?;
+        }
+        writer.write_all(b"\"}").map_err(|e| e.to_string())
+    })
+}
+
+fn hash_encoding(
+    encode: impl FnOnce(&mut HashWriter) -> Result<(), String>,
+) -> Result<String, String> {
     let mut writer = HashWriter {
         digest: Sha256::new(),
         buffer: [0; 1024],
         used: 0,
     };
-    write_canonical_json(value, &mut writer)?;
+    encode(&mut writer)?;
     writer.flush().map_err(|error| error.to_string())?;
     Ok(encode_digest(writer.digest.finalize()))
 }

@@ -125,7 +125,7 @@ impl Simulator {
             .generation
             .checked_add(1)
             .ok_or("generation exhausted")?;
-        let review = json_sha256(&registered.signed)?;
+        let review = registered.signed.source_sha256()?;
         current.pending_review = Some(registered);
         current.generation = generation;
         Ok(PublicationTicket {
@@ -153,7 +153,7 @@ impl Simulator {
             .as_ref()
             .ok_or("missing current registration")?
             .clone();
-        if json_sha256(&registered.signed)? != ticket.review {
+        if registered.signed.source_sha256()? != ticket.review {
             return Err("replaced review".into());
         }
         check_base(&current, &registered.record, &self.verifying_key())?;
@@ -178,7 +178,11 @@ impl Simulator {
             version: Version { major: 1, minor: 0 },
             review: registered.signed.clone(),
             approval: registered.approval,
-            previous: current.publications.last().map(json_sha256).transpose()?,
+            previous: current
+                .publications
+                .last()
+                .map(crate::gateway::Signed::source_sha256)
+                .transpose()?,
             epoch,
             world: current.world.clone(),
             policies: registered.candidate.policies.clone(),
@@ -190,7 +194,7 @@ impl Simulator {
             schema: registered.record.schema,
             source: current.review.source.clone(),
             epoch,
-            report: json_sha256(&registered.signed)?,
+            report: registered.signed.source_sha256()?,
         };
         current.release_root = registered.record.after_root;
         current.case = registered.candidate;

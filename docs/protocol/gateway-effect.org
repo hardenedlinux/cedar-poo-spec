@@ -1587,3 +1587,49 @@ and produced distinct known-source products: A =f2aa1c00...=, B =63bf5ac7...=,
 and C =a5e13722...=. The tree-mode preflight repeats this result without manual
 source timestamp edits. These are build/admission observations, not timed runtime
 samples. The normal target is preserved and no dependency or compiler flag changes.
+
+*** Streaming signed identities and bounded recovery observations
+
+The next shared optimization targets repeated representation work rather than
+relaxing verification. =Signed.source_sha256= emits the exact canonical JSON
+identity directly into the buffered SHA-256 writer. Unpadded URL-safe base64
+streams from the original payload and signature slices; no intermediate JSON
+Value, encoded String or full canonical buffer is constructed. This identity
+alone grants no authority. Issuer, witness, review and provider signatures still
+require their independently selected verification keys. The generic canonical
+hash remains an independent reference and serves unordered/general objects.
+
+Native boundary controls compare both algorithms for every byte class, base64
+triplet tails, empty signatures, SHA buffer boundaries and the public payload
+limit. Both payload-only and signature-only substitutions change the identity.
+Review, publication, append, full-log verification, provider projections and
+independent audits use the same byte-compatible implementation.
+
+Recovery captures only generation, review/release identity, the shared policy
+source, operation identity, original retained intent/fact authority and frontier
+under the surviving owner's lock. It no longer clones the full Case, decoded
+request context, SDK receipt, raw facts, pending review or publication history.
+The supplied publication prefix must equal the retained ordered payload and
+signature bytes, including its length, before the lock is released. Full
+publication authentication follows outside the lock; the final generation and
+owner checks still reject a stale observation. Historical source interpretation,
+current revocation/expiration, consumption and quarantine remain authoritative.
+Controls reject truncated, reordered, duplicated and independently tampered
+payload/signature histories without resetting state or resending an effect.
+
+The optional existing Rust allocation-observation benchmark compares canonical
+reference/stream/stream/reference identities on the actual 1026-entry scale log.
+All four time/resource samples are retained after the normal append/recovery
+memory windows. This diagnostic is excluded from ordinary process comparisons.
+The complete same-host A-B-C-C-B-A experiment retains A=3d75c77 and uses the
+immediate pre-change c0b6841 as B; C is the new source-bound executable. Its
+original workload, output-byte checks, 120-second watchdog and artifact custody
+checks remain unchanged. Every non-win remains reportable.
+
+A removed allocation is not evidence of a removed CPU bottleneck: recovery still
+authenticates the complete independent log and reconciles signed outcomes.
+The prior accepted same-host comparison reported a 0.48% whole-process non-win;
+this change requires a fresh complete comparison before any speedup claim.
+The aggregate wall/CPU difference is not a named eight-second wait. Kernel wait
+objects/wakers, pre-main startup and RSS remain independent open investigations;
+neither a smaller native allocation count nor a faster digest resolves them.
