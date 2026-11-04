@@ -2,7 +2,7 @@
 use super::{Group, Prepared, install_prepared};
 use cedar_poo_runtime::gateway::{
     EffectIo, Outcome, PreparedPublications, ProviderJournal, PublicationDelivery,
-    RecoveryEvidence, ReviewSubmission, Simulator, Witness, reconcile,
+    RecoveryEvidence, ReviewSubmission, Simulator, Witness, WitnessFrontier, reconcile,
 };
 use serde_json::{Value, json};
 
@@ -586,6 +586,14 @@ fn scoped_recovery(
             },
         )?;
         let own_prefix = (phase == "foreign-complete-tail").then(|| witness.snapshot());
+        // Capture the committed prefix before any competing append. This pin
+        // represents an independent read retained across mediator recovery.
+        let independent_frontier = own_prefix
+            .as_ref()
+            .map(|prefix| {
+                WitnessFrontier::from_checkpoint(&prefix.checkpoint, &witness.verifying_key())
+            })
+            .transpose()?;
         if !matches!(phase, "foreign-pending-prefix" | "foreign-complete-prefix") {
             foreign.execute(
                 foreign.prepare(&foreign_envelope)?,
@@ -646,6 +654,7 @@ fn scoped_recovery(
         let before = own.lifecycle_view()?;
         let mut current_audit = own.audit_authority(&witness);
         current_audit.prepared_publications = Some(prepared.clone());
+        current_audit.independent_frontier = independent_frontier;
         let restored = Simulator::recover_with_provider_outcomes(
             &own,
             RecoveryEvidence {
