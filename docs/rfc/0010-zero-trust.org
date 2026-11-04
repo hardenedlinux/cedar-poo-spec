@@ -874,12 +874,42 @@ A captured DPoP proof can satisfy the same cryptographic checks on a second
 worker. It is rejected by the modeled successor only if both workers consult
 and update the same authoritative reservation state.
 
-Future protocol proofs should model issuer selection and authorization-code
-redemption separately from this resource layer. They should account for
-redirect and session binding, PKCE, token substitution and key rotation before
-making end-to-end claims. Downstream language libraries can refine the resource
-Contract first by translating verified observations and proving their store
-implements the same commit and revocation ordering.
+*** Authorization-code redemption and resource composition
+
+The client selects the issuer before redirect and keeps the pending session
+in trusted state. The callback issuer must match that selection. Endpoint
+routing is derived from the configured issuer, so a response cannot select
+its own token endpoint. The issuer-scoped code lookup refuses ambiguous
+records. The issued record and redemption request must match the saved
+client, exact redirect URI, browser session, state and S256 challenge.
+A successful transition returns the original grant and records the spent
+issuer/code pair together. A replay against the committed successor fails.
+
+The Lean input carries the S256 projection of a verifier. The adapter must
+compute it from a syntactically valid verifier. The Rust reference computes
+unpadded base64url SHA-256 and exercises the RFC 7636 Appendix B vector.
+Its mutex models a single authorization server process. Cross-process
+deployment requires an authoritative atomic code store and durable
+consumption before returning the token. The client must bind the callback
+to its own pending session and obtain token results through the selected
+authenticated issuer endpoint.
+
+The resource path requires the exact redeemed grant and reruns current
+OAuth authority checks, including sender constraint and revocation. Cedar
+and the existing final mediation requirements still apply. The Rust replay
+refuses a changed token and a revoked grant after successful redemption.
+
+The OAuth formal analysis motivates independent issuer selection and session
+integrity. The FAPI 2.0 analysis motivates the hardened authorization-code
+profile and sender-constrained use. This local transition assumes secure
+session custody, authenticated issuer metadata, authorization server
+issuance, and trustworthy cryptographic inputs. It does not model browser
+and network behavior, PAR, client authentication, authorization request
+integrity, or token endpoint discovery. It establishes no end-to-end FAPI
+conformance claim. Protocol references include
+[[https://www.rfc-editor.org/rfc/rfc9207.html][Authorization Server Issuer Identification]]
+and [[https://www.rfc-editor.org/rfc/rfc7636.html][PKCE]].
+
 
 References include [[https://www.rfc-editor.org/rfc/rfc9700.html#section-2.3][OAuth Security BCP]],
 [[https://www.rfc-editor.org/rfc/rfc8707.html][Resource Indicators]],

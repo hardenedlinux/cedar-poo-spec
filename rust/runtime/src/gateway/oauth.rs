@@ -10,13 +10,13 @@ pub struct Identity {
     pub client: String,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Confirmation {
     Dpop(String),
     Mtls(String),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Grant {
     pub identity: Identity,
     pub audiences: Vec<String>,

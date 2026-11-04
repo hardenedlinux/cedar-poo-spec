@@ -6,6 +6,7 @@ mod audit;
 mod checkpoint_store;
 mod lineage;
 pub mod oauth;
+pub mod oauth_code;
 mod provider;
 mod review;
 mod simulation;
