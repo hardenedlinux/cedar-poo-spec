@@ -61,12 +61,79 @@ theorem recovery_invocation_is_bound
     (receipt : Invocation recoveryContract prepareRecovery input) :
     checkRecovery input = .ok receipt.result := receipt.logic
 
+/-- Compact authenticated progress. Native code uses the boundary's complete
+signed-pair digest under collision resistance and the full verified chain. -/
+structure WitnessFrontier where
+  logKey : String
+  size : Nat
+  boundary : Option CommitRef
+  deriving DecidableEq, BEq, Repr
+
+def WitnessFrontier.observe (logKey : String) (entries : List CommitRef) : WitnessFrontier :=
+  ⟨logKey, entries.length, entries.getLast?⟩
+
+def WitnessFrontier.extends (prior : WitnessFrontier) (logKey : String)
+    (entries : List CommitRef) : Bool :=
+  decide (prior.logKey = logKey) && decide (prior.size ≤ entries.length) &&
+    decide ((entries.take prior.size).getLast? = prior.boundary)
+
+structure HistoryInput where
+  prior : Option WitnessFrontier
+  logKey : String
+  entries : List CommitRef
+  valid : Bool
+
+def checkHistory (input : HistoryInput) : Except String WitnessFrontier :=
+  if input.valid && input.prior.all (fun prior => prior.extends input.logKey input.entries) then
+    .ok (WitnessFrontier.observe input.logKey input.entries)
+  else .error "witness frontier regressed or changed prefix"
+
+def historyContract : Contract Unit HistoryInput WitnessFrontier where
+  input := ⟨"verified-history-extension", fun _ => True, fun _ => inferInstance⟩
+  output := ⟨"retained-witness-frontier", fun _ => True, fun _ => inferInstance⟩
+  meaning := fun _ input result => checkHistory input = .ok result
+  decide := fun _ _ _ => inferInstance
+  rule := .atom ()
+
+def prepareHistory (input : HistoryInput) : Except String (WitnessFrontier × Unit) := do
+  pure (← checkHistory input, ())
+
+theorem history_invocation_is_bound
+    (receipt : Invocation historyContract prepareHistory input) :
+    checkHistory input = .ok receipt.result := receipt.logic
+
+theorem rollback_frontier_is_refused (prior : WitnessFrontier) (logKey : String)
+    (entries : List CommitRef) (valid : Bool) (shorter : entries.length < prior.size) :
+    (checkHistory ⟨some prior, logKey, entries, valid⟩).isOk = false := by
+  simp [checkHistory, WitnessFrontier.extends, Nat.not_le_of_lt shorter, Except.isOk, Except.toBool]
+
+theorem changed_frontier_is_refused (prior : WitnessFrontier) (logKey : String)
+    (entries : List CommitRef) (valid : Bool)
+    (changed : (entries.take prior.size).getLast? ≠ prior.boundary) :
+    (checkHistory ⟨some prior, logKey, entries, valid⟩).isOk = false := by
+  simp [checkHistory, WitnessFrontier.extends, changed, Except.isOk, Except.toBool]
+
+theorem history_result_retains_observed_frontier
+    (receipt : Invocation historyContract prepareHistory input) :
+    receipt.result = WitnessFrontier.observe input.logKey input.entries := by
+  have bound := history_invocation_is_bound receipt
+  simp only [checkHistory] at bound
+  split at bound
+  · exact (Except.ok.inj bound).symm
+  · cases bound
+
+theorem changed_witness_key_is_refused (prior : WitnessFrontier) (logKey : String)
+    (entries : List CommitRef) (valid : Bool) (changed : prior.logKey ≠ logKey) :
+    (checkHistory ⟨some prior, logKey, entries, valid⟩).isOk = false := by
+  simp [checkHistory, WitnessFrontier.extends, changed, Except.isOk, Except.toBool]
+
 structure State where
   current : Current
   generation : Nat := 0
   owner : Nat := 0
   factGeneration : Nat := 7
   spent : Bool := false
+  witnessFrontier : Option WitnessFrontier := none
   retainedIntent : Option RetainedIntent := none
   retainedAuthority : Option (CedarPooSpec.ZeroTrust.FactAuthority String String) := none
   sourcesCurrent : Bool := true
@@ -177,6 +244,25 @@ def recover (state : State) (committed complete : Bool) : State :=
     current := { state.current with unknown :=
       if spent || state.current.unknown then !(committed && complete) else state.current.unknown } }
 
+/-- Install progress in the same transition that rotates the mediator owner. -/
+def recoverObserved (state : State) (status : RecoveryStatus) (frontier : WitnessFrontier) : State :=
+  {recover state status.committed status.complete with witnessFrontier := some frontier}
+
+theorem observed_recovery_retains_verified_progress (state : State) (status : RecoveryStatus)
+    (receipt : Invocation historyContract prepareHistory input) :
+    (recoverObserved state status receipt.result).witnessFrontier =
+      some (WitnessFrontier.observe input.logKey input.entries) := by
+  simp only [recoverObserved, history_result_retains_observed_frontier receipt]
+
+theorem observed_recovery_preserves_current_authority (state : State) (status : RecoveryStatus)
+    (frontier : WitnessFrontier) :
+    (recoverObserved state status frontier).current.authority = state.current.authority ∧
+    (recoverObserved state status frontier).current.revoked = state.current.revoked ∧
+    (recoverObserved state status frontier).retainedAuthority = state.retainedAuthority ∧
+    (recoverObserved state status frontier).sourcesCurrent = state.sourcesCurrent ∧
+    (recoverObserved state status frontier).spent = (state.spent || status.committed) :=
+  ⟨rfl, rfl, rfl, rfl, rfl⟩
+
 /-- Compose verified reconciliation with recovery. The independent provider
 must also observe the exact retained effect; current authorization is preserved. -/
 def recoverAudited (state : State) (committed observed : Bool) (report : AuditReport) : State :=
@@ -195,10 +281,13 @@ theorem audited_recovery_preserves_burn (state : State) (committed observed : Bo
 
 /-- Recovery consumes the actual retained-state Contract, then rotates ownership. -/
 def recoverChecked (state : State) (evidence : RecoveryEvidence) : Except String State := do
+  let history ← (historyContract.invoke prepareHistory
+    ⟨state.witnessFrontier, evidence.logKey, evidence.entries, !evidence.report.invalidLog⟩).mapError
+      (fun _ => "history extension Contract refused")
   let receipt ← (recoveryContract.invoke prepareRecovery
     ⟨state.current.effect.operation, state.retainedIntent, evidence⟩).mapError
       (fun _ => "retained recovery Contract refused")
-  pure (recover state receipt.result.committed receipt.result.complete)
+  pure (recoverObserved state receipt.result history.result)
 
 structure ProviderRecoveryEvidence where
   actions : List AuditRecord
@@ -240,9 +329,12 @@ def prepareProviderRecovery (trust : ProviderAuditTrust) (input : State × Provi
 
 def recoverFromProviderChecked (trust : ProviderAuditTrust) (state : State)
     (evidence : ProviderRecoveryEvidence) : Except String State := do
+  let history ← (historyContract.invoke prepareHistory
+    ⟨state.witnessFrontier, trust.logKey, evidence.entries, evidence.logValid⟩).mapError
+      (fun _ => "provider history extension Contract refused")
   let receipt ← ((providerRecoveryContract trust).invoke (prepareProviderRecovery trust)
     (state, evidence)).mapError (fun _ => "provider recovery Contract refused")
-  pure (recover state receipt.result.committed receipt.result.complete)
+  pure (recoverObserved state receipt.result history.result)
 
 theorem provider_recovery_invocation_is_bound
     (receipt : Invocation (providerRecoveryContract trust) (prepareProviderRecovery trust) (state, evidence)) :

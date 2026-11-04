@@ -585,6 +585,7 @@ fn scoped_recovery(
                 crash_after_send: true,
             },
         )?;
+        let own_prefix = (phase == "foreign-complete-tail").then(|| witness.snapshot());
         if !matches!(phase, "foreign-pending-prefix" | "foreign-complete-prefix") {
             foreign.execute(
                 foreign.prepare(&foreign_envelope)?,
@@ -656,6 +657,25 @@ fn scoped_recovery(
             },
             &outcomes,
         )?;
+        if phase == "foreign-complete-tail" {
+            let prefix = own_prefix.as_ref().ok_or("missing own prefix control")?;
+            let old_witness = Witness::restore(prefix, prefix.entries.len() as u64)?;
+            let old_audit = restored.audit_authority(&old_witness);
+            let rollback = Simulator::recover_with_provider_outcomes(
+                &restored,
+                RecoveryEvidence {
+                    witness: &old_witness,
+                    publications: &history,
+                    audit: &old_audit,
+                    receipts: &[],
+                    provider: &provider,
+                },
+                &outcomes,
+            );
+            if !matches!(rollback, Err(error) if error.contains("witness frontier")) {
+                return Err("recovery forgot the already authenticated shared tail".into());
+            }
+        }
         let after = restored.lifecycle_view()?;
         let unresolved = matches!(
             phase,

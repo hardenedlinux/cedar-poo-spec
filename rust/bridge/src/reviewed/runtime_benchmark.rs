@@ -25,6 +25,7 @@ struct Measurements {
     samples: Vec<Value>,
     program_samples: Vec<Value>,
     scale_buffers: BTreeMap<&'static str, usize>,
+    scale_memory: BTreeMap<&'static str, crate::allocation::MemoryPhase>,
 }
 fn measure<T>(
     data: &mut Measurements,
@@ -254,6 +255,7 @@ fn growing_log(data: &mut Measurements) -> Result<(), String> {
     let mut provider = ProviderJournal::default();
     let mut receipts = Vec::new();
     let mut audit = None;
+    let append_memory = crate::allocation::begin_phase();
     (0..SCALE).try_for_each(|index| -> Result<(), String> {
         let mut operation = case.clone();
         // Distinct logical operations over one actual Cedar world; no grant is reused.
@@ -286,13 +288,20 @@ fn growing_log(data: &mut Measurements) -> Result<(), String> {
     {
         return Err("growing-log independent reconciliation failed".into());
     }
+    if let Some(memory) = crate::allocation::end_phase(append_memory) {
+        data.scale_memory.insert("append-and-global-audit", memory);
+    }
     data.scale_buffers.insert(
         "retired_gateway_receipts",
         signed_buffer_capacity(&receipts),
     );
     // The global audit was the final reader of these receipts. Independent
     // provider recovery needs no redundant Gateway evidence retained beside it.
+    let release_memory = crate::allocation::begin_phase();
     drop(receipts);
+    if let Some(memory) = crate::allocation::end_phase(release_memory) {
+        data.scale_memory.insert("release-gateway-receipts", memory);
+    }
     // Preserve all original 1024 append timings and their full global audit.
     // Additional recovery work shares that verified operation log.
     let mut foreign_case = case.clone();
@@ -326,6 +335,7 @@ fn growing_log(data: &mut Measurements) -> Result<(), String> {
     if !outcome.unknown || receipt.is_some() {
         return Err("recovery benchmark retained a Gateway receipt".into());
     }
+    let detach_memory = crate::allocation::begin_phase();
     let outcomes: Vec<_> = provider.signed_outcomes().cloned().collect();
     data.scale_buffers.insert(
         "provider_live",
@@ -341,6 +351,10 @@ fn growing_log(data: &mut Measurements) -> Result<(), String> {
         "witness_snapshot",
         signed_buffer_capacity(&snapshot.entries),
     );
+    if let Some(memory) = crate::allocation::end_phase(detach_memory) {
+        data.scale_memory
+            .insert("detach-provider-and-witness", memory);
+    }
     let intent = snapshot.entries.last().ok_or("missing benchmark intent")?;
     pending.revoke()?;
     pending.advance_time(100)?;
@@ -348,6 +362,7 @@ fn growing_log(data: &mut Measurements) -> Result<(), String> {
         return Err("expired benchmark renewal succeeded".into());
     }
     let current = pending.audit_authority(&witness);
+    let recovery_memory = crate::allocation::begin_phase();
     for _ in 0..3 {
         let report = measure(data, "audit.intent.log-1026", || {
             Ok(cedar_poo_runtime::gateway::reconcile_intent(
@@ -391,6 +406,10 @@ fn growing_log(data: &mut Measurements) -> Result<(), String> {
         {
             return Err("recovery benchmark lost current controls or dispatched again".into());
         }
+    }
+    if let Some(memory) = crate::allocation::end_phase(recovery_memory) {
+        data.scale_memory
+            .insert("independent-audit-and-recovery", memory);
     }
     Ok(())
 }
@@ -504,7 +523,7 @@ fn benchmark_append(
     }
     serde_json::to_writer(&mut *output, &json!({"kind":"gateway-append-scale","build_profile":"release",
         "source":provenance,"operations":SCALE,"recovery_log_entries":SCALE+2,
-        "recovery_provider_actions":SCALE+1,"recovery_samples":3,"buffer_capacity_bytes":data.scale_buffers,"phases":phases,"samples_ns":data.times,
+        "recovery_provider_actions":SCALE+1,"recovery_samples":3,"buffer_capacity_bytes":data.scale_buffers,"memory_phases":data.scale_memory,"phases":phases,"samples_ns":data.times,
         "scope":"distinct logical operations over one real Cedar world, one explicit shared SDK program and append-only witness/provider; fresh evaluation per operation; independent full-log reconciliation after timing"})).map_err(|e|e.to_string())?;
     writeln!(output).map_err(|e| e.to_string())
 }

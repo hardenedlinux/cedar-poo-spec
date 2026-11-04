@@ -414,3 +414,10 @@ native append Benchmark preserves its 1,024 samples and adds 1,026-record scoped
 recovery, with independent audit, revocation/source controls and native byte-buffer
 capacity observations. See the shared protocol for the full boundary matrix and
 all non-winning performance/resource observations.
+
+Recovery retains an authenticated witness frontier in the surviving authority.
+Subsequent recovery or send must extend the same prefix, even when an older valid
+checkpoint still contains the original intent. The frontier advances with the
+existing owner/generation update; source renewal and historical metadata cannot
+reset it. See the protocol's shared-log progress section for signed rollback/fork
+controls, Lean history Contracts and the limits of per-authority continuity.

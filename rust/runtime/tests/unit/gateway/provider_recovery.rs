@@ -630,3 +630,194 @@ fn gateway_verified_metadata_reuse_requires_both_exact_payload_and_signature() {
         }
     }
 }
+
+#[test]
+fn gateway_recovery_retains_observed_shared_history_across_owner_rotation() {
+    for provider_mode in [false, true] {
+        let (case, schema, first) = setup();
+        let mut witness = Witness::simulation();
+        let mut provider = ProviderJournal::default();
+        let envelope = first.envelope();
+        let (_, receipt) = first
+            .execute(
+                first.prepare(&envelope).unwrap(),
+                &envelope,
+                EffectIo {
+                    witness: &mut witness,
+                    provider: &mut provider,
+                    crash_after_send: false,
+                },
+            )
+            .unwrap();
+        let short = witness.snapshot();
+        let mut foreign_case = case.clone();
+        foreign_case.name.push_str("::foreign-tail");
+        let foreign = Simulator::new(&foreign_case, Some(&schema)).unwrap();
+        let other = foreign.envelope();
+        foreign
+            .execute(
+                foreign.prepare(&other).unwrap(),
+                &other,
+                EffectIo {
+                    witness: &mut witness,
+                    provider: &mut provider,
+                    crash_after_send: true,
+                },
+            )
+            .unwrap();
+        first.revoke().unwrap();
+        first.advance_time(100).unwrap();
+        let receipts: Vec<_> = receipt.into_iter().collect();
+        let proofs: Vec<_> = provider.signed_outcomes().cloned().collect();
+        let settle = |owner: &Simulator, log: &Witness| {
+            let audit = owner.audit_authority(log);
+            let evidence = RecoveryEvidence {
+                witness: log,
+                publications: &[],
+                audit: &audit,
+                receipts: if provider_mode { &[] } else { &receipts },
+                provider: &provider,
+            };
+            if provider_mode {
+                Simulator::recover_with_provider_outcomes(owner, evidence, &proofs)
+            } else {
+                Simulator::recover(owner, evidence)
+            }
+        };
+        let audit = first.audit_authority(&witness);
+        let unresolved = Simulator::recover(
+            &first,
+            RecoveryEvidence {
+                witness: &witness,
+                publications: &[],
+                audit: &audit,
+                receipts: &[],
+                provider: &provider,
+            },
+        )
+        .unwrap();
+        assert!(unresolved.lifecycle_view().unwrap().unknown);
+        let rolled_back = Witness::restore(&short, 1).unwrap();
+        assert!(
+            settle(&unresolved, &rolled_back).is_err(),
+            "unresolved recovery forgot authenticated progress"
+        );
+        let recovered = settle(&unresolved, &witness).unwrap();
+        let rolled_back = Witness::restore(&short, 1).unwrap();
+        assert!(
+            settle(&recovered, &rolled_back).is_err(),
+            "recovery forgot an observed foreign tail"
+        );
+        // A valid signature and equal size do not establish prefix continuity.
+        let mut fork = Witness::restore(&short, 1).unwrap();
+        foreign_case.name.push_str("::fork");
+        let fork_owner = Simulator::new(&foreign_case, Some(&schema)).unwrap();
+        let fork_envelope = fork_owner.envelope();
+        let mut fork_provider = ProviderJournal::default();
+        fork_owner
+            .execute(
+                fork_owner.prepare(&fork_envelope).unwrap(),
+                &fork_envelope,
+                EffectIo {
+                    witness: &mut fork,
+                    provider: &mut fork_provider,
+                    crash_after_send: true,
+                },
+            )
+            .unwrap();
+        fork.verify_history().unwrap();
+        assert!(
+            settle(&recovered, &fork).is_err(),
+            "equal-height signed fork was accepted"
+        );
+        foreign_case.name.push_str("::longer-fork");
+        let fork_tail = Simulator::new(&foreign_case, Some(&schema)).unwrap();
+        let tail_envelope = fork_tail.envelope();
+        fork_tail
+            .execute(
+                fork_tail.prepare(&tail_envelope).unwrap(),
+                &tail_envelope,
+                EffectIo {
+                    witness: &mut fork,
+                    provider: &mut fork_provider,
+                    crash_after_send: true,
+                },
+            )
+            .unwrap();
+        fork.verify_history().unwrap();
+        assert!(
+            settle(&recovered, &fork).is_err(),
+            "longer signed fork was accepted"
+        );
+        // Rejected observations must not retire the live owner or poison progress.
+        let repeated = settle(&recovered, &witness).unwrap();
+        assert!(repeated.lifecycle_view().unwrap().revoked);
+        assert!(recovered.advance_time(101).is_err());
+        assert!(recovered.lifecycle_view().unwrap().revoked);
+        assert_eq!(recovered.lifecycle_view().unwrap().now, 100);
+        assert_eq!(provider.actions.len(), 2);
+    }
+}
+
+#[test]
+fn gateway_recovery_before_own_intent_pins_shared_history_before_future_send() {
+    let (mut case, schema, first) = setup();
+    case.name.push_str("::prior-foreign");
+    let foreign = Simulator::new(&case, Some(&schema)).unwrap();
+    let mut witness = Witness::simulation();
+    let mut provider = ProviderJournal::default();
+    let other = foreign.envelope();
+    foreign
+        .execute(
+            foreign.prepare(&other).unwrap(),
+            &other,
+            EffectIo {
+                witness: &mut witness,
+                provider: &mut provider,
+                crash_after_send: true,
+            },
+        )
+        .unwrap();
+    let audit = first.audit_authority(&witness);
+    let recovered = Simulator::recover(
+        &first,
+        RecoveryEvidence {
+            witness: &witness,
+            publications: &[],
+            audit: &audit,
+            receipts: &[],
+            provider: &provider,
+        },
+    )
+    .unwrap();
+    let envelope = recovered.envelope();
+    let mut stale = Witness::simulation();
+    assert!(
+        recovered
+            .execute(
+                recovered.prepare(&envelope).unwrap(),
+                &envelope,
+                EffectIo {
+                    witness: &mut stale,
+                    provider: &mut provider,
+                    crash_after_send: false
+                }
+            )
+            .is_err()
+    );
+    assert!(!recovered.lifecycle_view().unwrap().spent);
+    assert!(stale.entries().is_empty());
+    recovered
+        .execute(
+            recovered.prepare(&envelope).unwrap(),
+            &envelope,
+            EffectIo {
+                witness: &mut witness,
+                provider: &mut provider,
+                crash_after_send: false,
+            },
+        )
+        .unwrap();
+    assert_eq!(provider.actions.len(), 2);
+    assert_eq!(witness.entries().len(), 2);
+}

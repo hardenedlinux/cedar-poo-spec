@@ -115,6 +115,13 @@ private def scopedRecovery (original : State) : Except String (List Lean.Json) :
     {base with entries := [foreign, intent.commit], actions := [foreignAction, action], outcomes := [other, own]}
   let tailComplete ← recoverFromProviderChecked providerTrust pending
     {base with entries := [intent.commit, foreign], actions := [action, foreignAction], outcomes := [own, other]}
+  if (recoverFromProviderChecked providerTrust tailComplete base).isOk then
+    throw "recovery forgot authenticated shared history progress"
+  if (recoverFromProviderChecked providerTrust tailComplete
+      {base with entries := [intent.commit, ⟨"foreign", [8], [9]⟩]}).isOk then
+    throw "recovery accepted an equal-size shared history fork"
+  let _ ← recoverFromProviderChecked providerTrust tailComplete
+    {base with entries := [intent.commit, foreign], actions := [action, foreignAction], outcomes := [own, other]}
   let duplicate ← recoverFromProviderChecked providerTrust pending
     {base with entries := [intent.commit, ⟨"operation", [8], [9]⟩]}
   let unanchored ← recoverFromProviderChecked providerTrust pending

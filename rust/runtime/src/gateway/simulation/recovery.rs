@@ -10,6 +10,7 @@ struct RecoveryStatus {
     generation: u64,
     committed: bool,
     complete: bool,
+    frontier: crate::gateway::witness::WitnessFrontier,
 }
 
 impl Simulator {
@@ -46,6 +47,9 @@ impl Simulator {
             .map_err(|_| "poisoned authority")?
             .clone();
         authority.check_owner(&snapshot)?;
+        if let Some(frontier) = &snapshot.witness_frontier {
+            frontier.check(&history.entries, &evidence.witness.verifying_key())?;
+        }
         if json_sha256(&snapshot.publications)? != json_sha256(&evidence.publications)? {
             return Err("recovery discarded or substituted current publication history".into());
         }
@@ -169,6 +173,10 @@ impl Simulator {
             generation: snapshot.generation,
             committed,
             complete,
+            frontier: crate::gateway::witness::WitnessFrontier::observe(
+                &history.entries,
+                evidence.witness.verifying_key(),
+            )?,
         })
     }
     fn attach_recovered(&self, checked: RecoveryStatus) -> Result<Self, String> {
@@ -188,6 +196,7 @@ impl Simulator {
             if current.spent || current.unknown {
                 current.unknown = !checked.complete;
             }
+            current.witness_frontier = Some(checked.frontier);
             current.pending_review = None;
             current.active_owner = Arc::clone(&owner);
             current.generation = next;

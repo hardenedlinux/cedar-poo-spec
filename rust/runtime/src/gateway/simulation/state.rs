@@ -121,6 +121,7 @@ pub(super) struct Current {
     pub(super) unknown: bool,
     pub(super) spent: bool,
     pub(super) retained_intent: Option<RetainedIntent>,
+    pub(super) witness_frontier: Option<crate::gateway::witness::WitnessFrontier>,
 }
 /// The token is private, owner-bound and consumed by value at final use.
 pub struct PreparedEffect {
@@ -326,6 +327,9 @@ impl Simulator {
             receipted: false,
             unknown: false,
         };
+        if let Some(frontier) = &current.witness_frontier {
+            frontier.check(witness.entries(), &witness.verifying_key())?;
+        }
         let Ok(commit) = witness.append(PrecommitInput {
             current_world: &current.world,
             effect: &current.effect,
@@ -343,6 +347,10 @@ impl Simulator {
             log_key: witness.verifying_key(),
             facts: current.authority.clone(),
         });
+        current.witness_frontier = Some(crate::gateway::witness::WitnessFrontier::observe(
+            witness.entries(),
+            witness.verifying_key(),
+        )?);
         outcome.precommitted = true;
         outcome.sent = true;
         let action = match provider.send(crate::gateway::provider::ProviderRequest {

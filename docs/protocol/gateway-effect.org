@@ -1340,3 +1340,125 @@ source patches, frozen inputs and failed/non-winning probes stay outside Git.
 The original eight-second wait object/waker and the allocator-level explanation
 of fluctuating RSS remain open; no aggregate timer or buffer-capacity counter is
 presented as a substitute for that evidence.
+
+** Retaining authenticated shared-log progress across recovery
+
+The exact-intent scope prevents unrelated pending work from blocking local
+completion. It does not, by itself, preserve the largest shared prefix already
+observed by the surviving authority. A real signed regression demonstrated a
+second recovery accepting an older valid checkpoint containing the same own
+intent, after an earlier recovery had authenticated an additional foreign tail.
+The old caller-supplied minimum size did not retain this progress across owners.
+
+The shared simulation authority now retains a compact witness frontier: the
+independently pinned witness key, entry count and canonical digest of the complete
+signed boundary entry. It records the initial deciding precommit and every
+accepted recovery, including a verified but unresolved outcome. A recovery must
+present at least this many entries and the identical boundary digest under the
+same key. The complete checkpoint, signatures and chain are still verified by
+the independent auditor; matching a boundary alone cannot authenticate a log.
+The digest assumes collision resistance. Historical fact preparation and
+publication metadata never select or reset this frontier.
+
+The frontier is installed in the existing generation-checked owner rotation,
+alongside the outcome update. Refused recovery changes neither progress nor
+ownership. A mediator recovered before its own intent also pins observed shared
+history: its later send refuses a shorter or different witness before appending,
+burning the original operation or calling the provider. Honest continuation and
+repeated recovery remain supported. This adds no persisted log copy or global
+cache; the authority retains one bounded root and count.
+
+| Boundary | Required behavior |
+|----------+-------------------|
+| Older valid signed checkpoint containing the own intent | Refuse without rotating the owner |
+| Equal-size validly signed fork | Refuse the changed boundary |
+| Longer log changing the retained prefix | Refuse before outcome settlement |
+| Honest extension of the retained prefix | Fully verify and advance progress |
+| Invalid complete history or source/outcome evidence | Never manufacture completion |
+| Historical completion after revocation, expiry or source quarantine | Preserve current controls and consumption |
+| Pre-intent recovery followed by a stale-witness send | Refuse without appending or sending |
+
+Lean's =historyContract= is actually invoked before both Gateway and provider
+recovery Contracts. Its result binds the observed frontier to the verified
+history interpretation. Kernel-checked laws reject shorter histories, changed
+boundaries and changed witness keys. The executable model uses exact signed
+boundary bytes; the native realization uses their canonical digest and the full
+verified hash chain. Every applicable Production Case checks repeated shared-tail
+recovery, rollback and a same-height fork in the Lean producer; native replay
+checks rollback for the same real Case, in addition to signed cross-channel unit
+controls for forks and future sends. Original lifecycle projections are retained.
+
+This is per-authority continuity, not a transparency consensus protocol. A
+stateless auditor still needs an independently retained checkpoint floor. A crash
+that loses the surviving authority needs a durable trusted frontier; unsigned
+backup metadata cannot recreate one. Different independent witnesses can still
+equivocate unless a separately specified consistency or gossip mechanism detects
+it. This change claims neither global linearizability nor kernel scheduling
+attribution.
+
+*** Native resource attribution and retained non-wins
+
+The complete original lifecycle projection remains byte-identical: 51 entries,
+211 groups, 1,253 Cases, 39 refusals, 3,759 publications and 28,989 lifecycle
+states. The full effect/audit output also retains all 41,669 results. In this
+local cohort, the complete lifecycle process took 84.285 seconds, 79.560 CPU
+seconds and 111.141 MiB peak RSS. The preceding metadata-reuse cohort took
+78.195 seconds and 110.547 MiB. These are retained non-winning observations,
+not a paired speed claim or a single-effect latency measurement. The original
+120-second process watchdog remains unchanged.
+
+The existing native append Benchmark now reuses the existing optional Rust
+allocation observer at four lifetime boundaries: append plus full global audit,
+release of retired Gateway receipts, detached provider/witness copies, and the
+independent audit/recovery cycle. =memory_phases= is empty without the
+=allocation-observation= feature. With that feature, each phase records actual
+live requested bytes before/after, the absolute live-byte peak, allocation calls,
+requested bytes and platform process RSS/allocator statistics. These are native
+observations; Python only supervises the external process and resource receipt.
+The four memory windows do not overlap or omit original append samples and
+refusal controls. Instrumented times remain diagnostic and are never substituted
+for ordinary latency samples.
+
+A decrease in live requested bytes after =drop= does not imply that malloc
+returns all of its reserved pages to the OS. Conversely, a high RSS by itself
+does not identify an allocator leak. Buffer capacities exclude container and
+allocator overhead; platform heap statistics have a different accounting scope
+from Rust requested bytes. The independent-audit window includes the complete
+verified prefix and detached outcomes; its peak is not a single-request bound.
+The original approximately eight-second runtime wait object and its waker
+remain unidentified. The elapsed-minus-CPU interval is retained separately from
+fresh-file startup and thread-state samples; it cannot name a wait primitive.
+
+The fixed ordinary native runtime cohort covered all 1,253 API Cases and 635
+executable effects in 17.336 process seconds (16.430 CPU seconds, 123.953 MiB
+RSS). Effect execution p95/p99 was 1.903/2.361 ms; prepared SDK replay was
+0.319/0.385 ms; source renewal was 2.026/3.611 ms. The unchanged 1,024-operation
+append workload plus independent 1,026-record recovery took 8.678 process
+seconds (8.270 CPU seconds, 174.438 MiB RSS). Three full-prefix independent
+audits and three recoveries had medians 0.635/0.650 seconds. The earlier
+metadata-reuse cohort recorded 0.621/0.635 seconds and 172.156 MiB RSS: these
+slower recovery and higher RSS samples remain non-wins. Whole-process durations
+include all iterations; they are not individual effect latencies.
+
+A separate allocation-observed process, using the same complete append workload,
+produced these native observations. Each value is MiB except the final count.
+The observed process itself took 9.340 seconds and peaked at 170.891 MiB RSS;
+it does not replace the ordinary 8.678-second sample.
+
+| Native phase | Live requested before | Live requested after | Absolute phase peak | RSS at end | Allocator reserved | Allocation calls |
+|--------------+-----------------------+----------------------+---------------------+------------+--------------------+------------------|
+| Append and full global audit | 12.487 | 153.589 | 165.623 | 140.797 | 220 | 10,745,636 |
+| Release retired Gateway receipts | 153.590 | 86.100 | 153.590 | 140.844 | 220 | 0 |
+| Detach provider outcomes and witness | 86.680 | 125.977 | 125.977 | 164.875 | 244 | 4,115 |
+| Three independent audits and recoveries | 125.977 | 125.977 | 137.400 | 170.844 | 248 | 750,953 |
+
+The release phase removes exactly 70,768,172 requested bytes: 70,719,020 bytes
+of signed buffer capacities and 49,152 bytes of receipt-vector storage. This
+specific lifetime reduction is real, while RSS does not fall and allocator
+reservation remains 220 MiB. The detached views then add about 39.297 MiB of
+live requested bytes. The audit/recovery window peaks about 11.423 MiB above
+its initial live bytes and finishes only 128 bytes above them, including timing
+sample storage. These observations identify allocator retention and explicitly
+owned copies in this cohort; they do not establish the cause of every RSS
+increase, a production memory bound or absence of leaks across arbitrary runs.
+All raw native samples and resource receipts remain ignored local build evidence.

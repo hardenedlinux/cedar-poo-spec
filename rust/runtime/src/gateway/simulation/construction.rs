@@ -134,6 +134,7 @@ impl Simulator {
                 unknown: false,
                 spent: false,
                 retained_intent: None,
+                witness_frontier: None,
             })),
             source_keys,
             receipt_key: simulation_key(3),

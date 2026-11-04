@@ -59,3 +59,13 @@ import CedarPooSpec.Gateway.Lifecycle
 #print axioms CedarPooSpec.Gateway.EffectProtocol.scoped_same_operation_precommits_are_reported
 
 #print axioms CedarPooSpec.Gateway.EffectProtocol.unrelated_precommit_preserves_operation_report
+
+#print axioms CedarPooSpec.Gateway.Lifecycle.history_invocation_is_bound
+#print axioms CedarPooSpec.Gateway.Lifecycle.rollback_frontier_is_refused
+#print axioms CedarPooSpec.Gateway.Lifecycle.changed_frontier_is_refused
+
+#print axioms CedarPooSpec.Gateway.Lifecycle.history_result_retains_observed_frontier
+#print axioms CedarPooSpec.Gateway.Lifecycle.changed_witness_key_is_refused
+
+#print axioms CedarPooSpec.Gateway.Lifecycle.observed_recovery_retains_verified_progress
+#print axioms CedarPooSpec.Gateway.Lifecycle.observed_recovery_preserves_current_authority

@@ -65,6 +65,43 @@ pub fn verify_log(
     }
     Ok(records)
 }
+/// Compact trusted progress, retained only after a complete public-log check.
+/// The boundary digest binds the prefix under the verified chain assumption.
+#[derive(Clone)]
+pub(crate) struct WitnessFrontier {
+    key: VerifyingKey,
+    size: usize,
+    root: String,
+}
+impl WitnessFrontier {
+    pub(crate) fn observe(entries: &[Signed], key: VerifyingKey) -> Result<Self, String> {
+        Ok(Self {
+            key,
+            size: entries.len(),
+            root: entries
+                .last()
+                .map(json_sha256)
+                .transpose()?
+                .unwrap_or_default(),
+        })
+    }
+    pub(crate) fn check(&self, entries: &[Signed], key: &VerifyingKey) -> Result<(), String> {
+        if self.key != *key || entries.len() < self.size {
+            return Err("recovery witness frontier regressed or changed key".into());
+        }
+        let root = self
+            .size
+            .checked_sub(1)
+            .map(|index| json_sha256(&entries[index]))
+            .transpose()?
+            .unwrap_or_default();
+        if root != self.root {
+            return Err("recovery witness frontier changed prefix".into());
+        }
+        Ok(())
+    }
+}
+
 /// Independent simulated witness. Its records are not reconstructed from outcomes.
 pub struct Witness {
     key: SigningKey,
