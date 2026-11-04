@@ -427,3 +427,206 @@ fn gateway_recovery_refuses_reconfigured_source_roots_without_rotating_the_owner
         assert_eq!(provider.actions.len(), 1);
     }
 }
+
+#[test]
+fn gateway_independent_pending_operation_cannot_quarantine_an_authentic_completion() {
+    for provider_mode in [false, true] {
+        let (case, schema, own) = setup();
+        let mut other_case = case.clone();
+        other_case.name.push_str("-independent-pending");
+        let other = Simulator::new(&other_case, Some(&schema)).unwrap();
+        let mut witness = Witness::simulation();
+        let mut unavailable: ProviderJournal = serde_json::from_str(r#"{"actions":[]}"#).unwrap();
+        let other_envelope = other.envelope();
+        other
+            .execute(
+                other.prepare(&other_envelope).unwrap(),
+                &other_envelope,
+                EffectIo {
+                    witness: &mut witness,
+                    provider: &mut unavailable,
+                    crash_after_send: true,
+                },
+            )
+            .unwrap();
+        let mut provider = ProviderJournal::default();
+        let envelope = own.envelope();
+        let (_, own_receipt) = own
+            .execute(
+                own.prepare(&envelope).unwrap(),
+                &envelope,
+                EffectIo {
+                    witness: &mut witness,
+                    provider: &mut provider,
+                    crash_after_send: provider_mode,
+                },
+            )
+            .unwrap();
+        let outcomes: Vec<_> = provider.signed_outcomes().cloned().collect();
+        let audit = own.audit_authority(&witness);
+        let receipts: Vec<_> = own_receipt.into_iter().collect();
+        let global = if provider_mode {
+            crate::gateway::reconcile_provider_outcomes(
+                &provider,
+                &outcomes,
+                &witness.snapshot(),
+                crate::gateway::ProviderAuditTrust {
+                    authority: &audit,
+                    provider_key: &own.provider_verifying_key(),
+                },
+            )
+        } else {
+            crate::gateway::reconcile(&provider, &receipts, &witness.snapshot(), &audit)
+        };
+        assert!(
+            global
+                .unresolved_precommits
+                .contains(&other_envelope.effect.operation)
+        );
+        let evidence = RecoveryEvidence {
+            witness: &witness,
+            publications: &[],
+            audit: &audit,
+            receipts: &receipts,
+            provider: &provider,
+        };
+        let settled = if provider_mode {
+            Simulator::recover_with_provider_outcomes(&own, evidence, &outcomes)
+        } else {
+            Simulator::recover(&own, evidence)
+        }
+        .unwrap();
+        assert!(
+            !settled.lifecycle_view().unwrap().unknown,
+            "unrelated pending operation prevented exact-intent settlement"
+        );
+        assert!(settled.lifecycle_view().unwrap().spent);
+        assert!(other.lifecycle_view().unwrap().unknown);
+        assert_eq!(provider.actions.len(), 1);
+    }
+}
+
+#[test]
+fn gateway_intent_audit_cannot_hide_invalid_prefix_or_missing_exact_anchor() {
+    let (case, schema, own) = setup();
+    let mut witness = Witness::simulation();
+    let mut provider = ProviderJournal::default();
+    let mut other_case = case.clone();
+    other_case.name.push_str("::bad-prefix");
+    let other = Simulator::new(&other_case, Some(&schema)).unwrap();
+    let mut unavailable: ProviderJournal =
+        serde_json::from_value(serde_json::json!({"actions":[]})).unwrap();
+    let other_envelope = other.envelope();
+    other
+        .execute(
+            other.prepare(&other_envelope).unwrap(),
+            &other_envelope,
+            EffectIo {
+                witness: &mut witness,
+                provider: &mut unavailable,
+                crash_after_send: true,
+            },
+        )
+        .unwrap();
+    let envelope = own.envelope();
+    own.execute(
+        own.prepare(&envelope).unwrap(),
+        &envelope,
+        EffectIo {
+            witness: &mut witness,
+            provider: &mut provider,
+            crash_after_send: true,
+        },
+    )
+    .unwrap();
+    let outcomes: Vec<_> = provider.signed_outcomes().cloned().collect();
+    let audit = own.audit_authority(&witness);
+    let original = witness.snapshot();
+    let intent = original.entries.last().unwrap().clone();
+    let mut missing = intent.clone();
+    missing.signature[0] ^= 1;
+    let mut broken = original.clone();
+    broken.checkpoint.signature[0] ^= 1;
+    let mut prefix = original.clone();
+    prefix.entries[0].signature[0] ^= 1;
+    for (snapshot, anchor) in [
+        (&original, &missing),
+        (&broken, &intent),
+        (&prefix, &intent),
+    ] {
+        let report = crate::gateway::reconcile_intent(
+            &provider,
+            &outcomes,
+            snapshot,
+            crate::gateway::IntentAuditTrust {
+                authority: &audit,
+                intent: anchor,
+                provider_key: Some(&own.provider_verifying_key()),
+            },
+        );
+        assert!(report.invalid_log);
+        assert_ne!(report, Reconciliation::default());
+    }
+}
+
+#[test]
+fn gateway_verified_metadata_reuse_requires_both_exact_payload_and_signature() {
+    let (_, _, own) = setup();
+    let mut witness = Witness::simulation();
+    let mut provider = ProviderJournal::default();
+    let envelope = own.envelope();
+    own.execute(
+        own.prepare(&envelope).unwrap(),
+        &envelope,
+        EffectIo {
+            witness: &mut witness,
+            provider: &mut provider,
+            crash_after_send: true,
+        },
+    )
+    .unwrap();
+    let provider_key = SigningKey::from_slice(&[8; 32]).unwrap();
+    let original: crate::gateway::ProviderOutcome = crate::gateway::verify(
+        provider.signed_outcomes().next().unwrap(),
+        provider_key.verifying_key(),
+    )
+    .unwrap();
+    let audit = own.audit_authority(&witness);
+    let snapshot = witness.snapshot();
+    for change_payload in [false, true] {
+        let mut changed = original.clone();
+        if change_payload {
+            changed.outcome.commit.payload[0] ^= 1;
+        } else {
+            changed.outcome.commit.signature[0] ^= 1;
+        }
+        let outcomes = [signed(&changed, &provider_key)];
+        let global = crate::gateway::reconcile_provider_outcomes(
+            &provider,
+            &outcomes,
+            &snapshot,
+            crate::gateway::ProviderAuditTrust {
+                authority: &audit,
+                provider_key: provider_key.verifying_key(),
+            },
+        );
+        let scoped = crate::gateway::reconcile_intent(
+            &provider,
+            &outcomes,
+            &snapshot,
+            crate::gateway::IntentAuditTrust {
+                authority: &audit,
+                intent: &snapshot.entries[0],
+                provider_key: Some(provider_key.verifying_key()),
+            },
+        );
+        for report in [global, scoped] {
+            assert!(!report.invalid_log);
+            assert_eq!(report.invalid_receipts, 1);
+            assert_eq!(
+                report.unresolved_precommits,
+                vec![envelope.effect.operation.clone()]
+            );
+        }
+    }
+}

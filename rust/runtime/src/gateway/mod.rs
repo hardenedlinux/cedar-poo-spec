@@ -10,7 +10,8 @@ mod sources;
 mod wire;
 mod witness;
 pub use audit::{
-    AuditAuthority, ProviderAuditTrust, Reconciliation, reconcile, reconcile_provider_outcomes,
+    AuditAuthority, IntentAuditTrust, ProviderAuditTrust, Reconciliation, reconcile,
+    reconcile_intent, reconcile_provider_outcomes,
 };
 pub use lineage::{Lineage, LineageBatch, LineageEdge, LineageState};
 pub use provider::{ProviderAction, ProviderJournal, ProviderOutcome, Receipt};

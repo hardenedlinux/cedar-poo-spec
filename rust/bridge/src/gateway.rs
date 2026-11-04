@@ -535,6 +535,7 @@ struct AuditTrust {
     review_key: Option<Vec<u8>>,
     approval_key: Option<Vec<u8>>,
     provider_key: Option<Vec<u8>>,
+    intent: Option<cedar_poo_runtime::gateway::Signed>,
 }
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -576,24 +577,43 @@ pub(crate) fn audit(input: &str, trust_path: &str) -> Result<Value, String> {
             _ => return Err("both independent review and approval keys are required".into()),
         },
     };
-    let report = match (trust.provider_key, input.provider_outcomes) {
-        (None, None) => cedar_poo_runtime::gateway::reconcile(
-            &input.journal,
-            &input.receipts,
-            &input.snapshot,
-            &authority,
-        ),
-        (Some(key), Some(outcomes)) if input.receipts.is_empty() => {
-            let provider_key = cedar_poo_runtime::gateway::public_key(&key)?;
+    let selected_intent = trust.intent.as_ref();
+    let reconcile = |outcomes: &[cedar_poo_runtime::gateway::Signed], provider_key| {
+        if let Some(intent) = selected_intent {
+            cedar_poo_runtime::gateway::reconcile_intent(
+                &input.journal,
+                outcomes,
+                &input.snapshot,
+                cedar_poo_runtime::gateway::IntentAuditTrust {
+                    authority: &authority,
+                    intent,
+                    provider_key,
+                },
+            )
+        } else if let Some(provider_key) = provider_key {
             cedar_poo_runtime::gateway::reconcile_provider_outcomes(
                 &input.journal,
-                &outcomes,
+                outcomes,
                 &input.snapshot,
                 cedar_poo_runtime::gateway::ProviderAuditTrust {
                     authority: &authority,
-                    provider_key: &provider_key,
+                    provider_key,
                 },
             )
+        } else {
+            cedar_poo_runtime::gateway::reconcile(
+                &input.journal,
+                outcomes,
+                &input.snapshot,
+                &authority,
+            )
+        }
+    };
+    let report = match (trust.provider_key, input.provider_outcomes) {
+        (None, None) => reconcile(&input.receipts, None),
+        (Some(key), Some(outcomes)) if input.receipts.is_empty() => {
+            let provider_key = cedar_poo_runtime::gateway::public_key(&key)?;
+            reconcile(&outcomes, Some(&provider_key))
         }
         _ => {
             return Err(
@@ -601,5 +621,9 @@ pub(crate) fn audit(input: &str, trust_path: &str) -> Result<Value, String> {
             );
         }
     };
-    serde_json::to_value(report).map_err(|e| e.to_string())
+    let mut result = serde_json::to_value(report).map_err(|e| e.to_string())?;
+    if let Some(intent) = selected_intent {
+        result["scope"] = json!({"kind":"retained-intent", "commit_sha256":cedar_poo_runtime::gateway_source_sha256(intent)?});
+    }
+    Ok(result)
 }

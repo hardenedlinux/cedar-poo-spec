@@ -23,7 +23,7 @@
     "Examples/README.org": "fd4cb20ca0b38c5f0cd7701d7978c9b78ae656d37af2f02b9b1ae269fbe1e9e5",
     "Productions/Backend.org": "5b13f15d215bd1ab90589df4605a83fcde48c8760555cea377a94e22e0e4bdde",
     "Productions/README.org": "4aaab738b8b8f5688b1eaedce19bc16d9a9a707cf07167ebedc0388599431fd7",
-    "rust/README.org": "7a8d8e49f83e642928355927b5b356503837e2b5c763a0c0e6e3b14e0fb2445b"
+    "rust/README.org": "fa79caa542185dfdffe5322a0cb74af925e59aeebb9c7a3aa08ba5edffbc4496"
   },
   "binaries": {},
   "sdk": {
@@ -563,21 +563,21 @@
       "samples": 29,
       "requiredMinimum": 12
     },
-    "inputSHA256": "9f9694d6b5bbf8af25ef496146af26a486ae6bd741b231583cce9b1f603064d6",
+    "inputSHA256": "53c021d22631fdba1e8a078742359845c026589d9487efb2f32bd37b5334c548",
     "scenes": [
       {
         "inputSHA256": "06030e324cc3baeda381529e9c10c29b6c64086735b79280c4173ccb16a19edf",
         "layoutSHA256": "874d0374effa756afa57d32c15fe23d529a96f287da791871f001e14aa902654",
         "nodes": 10,
         "edges": 14,
-        "milliseconds": 146.37608299999965
+        "milliseconds": 111.76579099999981
       }
     ],
     "svgSHA256": [
-      "1d07174c89f316b6960b1eabd765119d333bf627509dbecbc26bcad360c612c4",
+      "0ffc8122a8ae196556f5fc84da36fb47e1da8af1bff752ee7ea3c20b81576d9b",
       "047e7f6524cf182088ad8e94b842eea4af3a64119c73c218a2e845ef9e82174e"
     ],
-    "composedHTMLSHA256": "1b4cd9dd2a6df3ec8ea2762e0c1c27438c9cb0da45a661544a5de1fb9326fc61",
+    "composedHTMLSHA256": "f83910f314a29fa2a63aec098827e06ebecb5ae891f02dfecc78b8f32180ff1b",
     "dependencies": {
       "@fontsource/inter": "5.3.0",
       "@fontsource/kalam": "5.3.0",
@@ -590,7 +590,7 @@
       "web-worker": "1.5.0"
     },
     "regionSHA256": {},
-    "htmlSHA256": "c9683cd52f6eb1a2a91e87a6658809ee756392bc0d1265aae500b95391bd6402",
+    "htmlSHA256": "3a85da879e50d06ad38adcdac42bf4f9e9ccc89c43dc2d8f2595ab112131df64",
     "drawing": "precise",
     "routing": "elkjs@0.12.1",
     "assetSHA256": {

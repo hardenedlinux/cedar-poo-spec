@@ -208,9 +208,10 @@ structure ProviderRecoveryEvidence where
   expected : AuditRecord
 
 private def providerEvidence (trust : ProviderAuditTrust)
-    (source : CedarPooSpec.ZeroTrust.FactAuthority String String) (evidence : ProviderRecoveryEvidence) : RecoveryEvidence :=
+    (source : CedarPooSpec.ZeroTrust.FactAuthority String String)
+    (intent : CommitRef) (evidence : ProviderRecoveryEvidence) : RecoveryEvidence :=
   ⟨evidence.entries, trust.logKey,
-    reconcileProvider trust source evidence.actions evidence.outcomes evidence.logValid evidence.entries,
+    reconcileProviderIntent trust source intent evidence.actions evidence.outcomes evidence.logValid evidence.entries,
     evidence.actions.any (fun action => decide (action = evidence.expected))⟩
 
 def checkProviderRecovery (trust : ProviderAuditTrust) (state : State)
@@ -219,7 +220,10 @@ def checkProviderRecovery (trust : ProviderAuditTrust) (state : State)
   | none => .error "missing retained source authority"
   | some source =>
     if evidence.expected.operation != state.current.effect.operation then .error "different operation"
-    else checkRecovery ⟨state.current.effect.operation, state.retainedIntent, providerEvidence trust source evidence⟩
+    else match state.retainedIntent with
+    | none => .error "missing retained intent"
+    | some retained => checkRecovery ⟨state.current.effect.operation, state.retainedIntent,
+        providerEvidence trust source retained.commit evidence⟩
 
 def providerRecoveryContract (trust : ProviderAuditTrust) :
     Contract Unit (State × ProviderRecoveryEvidence) RecoveryStatus where
@@ -404,11 +408,11 @@ theorem provider_recovery_exact_retained_history
   cases source : state.retainedAuthority with
   | none => simp [checkProviderRecovery, source] at checked
   | some historical =>
-    simp only [checkProviderRecovery, source] at checked
+    simp only [checkProviderRecovery, source, present] at checked
     split at checked
     · cases checked
     · exact retained_recovery_requires_exact_history state.current.effect.operation retained
-        (providerEvidence trust historical evidence) receipt.result (by simpa [present] using checked)
+        (providerEvidence trust historical retained.commit evidence) receipt.result (by simpa [present] using checked)
 
 theorem provider_settlement_does_not_remint
     (receipt : Invocation (providerRecoveryContract trust) (prepareProviderRecovery trust) (state, evidence))

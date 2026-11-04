@@ -1,6 +1,8 @@
 //! Recovery reads surviving trusted state; history cannot reconstruct live authority.
 use super::{RecoveryEvidence, Simulator};
-use crate::gateway::{AuditAuthority, Reconciliation, publication_matches, reconcile, verify_log};
+use crate::gateway::{
+    AuditAuthority, Commit, Reconciliation, publication_matches, reconcile, verify, verify_log,
+};
 use crate::{json_sha256, value_sha256};
 use std::sync::Arc;
 
@@ -38,11 +40,6 @@ impl Simulator {
     ) -> Result<RecoveryStatus, String> {
         let authority = self;
         let history = evidence.witness.snapshot();
-        let records = verify_log(
-            &history,
-            &evidence.witness.verifying_key(),
-            evidence.witness.minimum_size(),
-        )?;
         let snapshot = authority
             .current
             .lock()
@@ -91,7 +88,10 @@ impl Simulator {
             gateway_key: evidence.audit.gateway_key,
             log_key: evidence.audit.log_key,
             facts: facts.clone(),
-            minimum_size: evidence.audit.minimum_size,
+            minimum_size: evidence
+                .audit
+                .minimum_size
+                .max(evidence.witness.minimum_size()),
             review_trust: evidence.audit.review_trust.clone(),
             prepared_publications: evidence.audit.prepared_publications.clone(),
         };
@@ -100,23 +100,25 @@ impl Simulator {
                 if retained.log_key != evidence.audit.log_key {
                     return Err("recovery witness key differs from retained intent".into());
                 }
-                let index = history
-                    .entries
-                    .iter()
-                    .position(|entry| {
-                        entry.payload == retained.entry.payload
-                            && entry.signature == retained.entry.signature
-                    })
-                    .ok_or("recovery omitted or substituted the retained intent")?;
-                Some(
-                    records
-                        .get(index)
-                        .ok_or("retained witness projection missing")?
-                        .effect
-                        .clone(),
-                )
+                if !history.entries.iter().any(|entry| {
+                    entry.payload == retained.entry.payload
+                        && entry.signature == retained.entry.signature
+                }) {
+                    return Err("recovery omitted or substituted the retained intent".into());
+                }
+                // Decode only the retained record here. The independent auditor
+                // still verifies the complete prefix and every outcome envelope.
+                let original: Commit = verify(&retained.entry, &retained.log_key)?;
+                Some(original.effect)
             }
             None => {
+                // Without a retained intent, absence still requires the full
+                // verified history; successful outcomes cannot adopt an intent.
+                let records = verify_log(
+                    &history,
+                    &evidence.witness.verifying_key(),
+                    evidence.witness.minimum_size(),
+                )?;
                 if records
                     .iter()
                     .any(|commit| commit.effect.operation == snapshot.effect.operation)
@@ -126,18 +128,30 @@ impl Simulator {
                 None
             }
         };
-        drop(records);
-        let report = match outcomes {
-            None => reconcile(evidence.provider, evidence.receipts, &history, &audit),
-            Some(outcomes) => crate::gateway::reconcile_provider_outcomes(
+        let report = if let Some(retained) = &snapshot.retained_intent {
+            crate::gateway::reconcile_intent(
                 evidence.provider,
-                outcomes,
+                outcomes.unwrap_or(evidence.receipts),
                 &history,
-                crate::gateway::ProviderAuditTrust {
+                crate::gateway::IntentAuditTrust {
                     authority: &audit,
-                    provider_key: &self.provider_verifying_key(),
+                    intent: &retained.entry,
+                    provider_key: outcomes.map(|_| &self.provider_key),
                 },
-            ),
+            )
+        } else {
+            match outcomes {
+                None => reconcile(evidence.provider, evidence.receipts, &history, &audit),
+                Some(outcomes) => crate::gateway::reconcile_provider_outcomes(
+                    evidence.provider,
+                    outcomes,
+                    &history,
+                    crate::gateway::ProviderAuditTrust {
+                        authority: &audit,
+                        provider_key: &self.provider_key,
+                    },
+                ),
+            }
         };
         if report.invalid_log {
             return Err("recovery witness is below the trusted floor".into());

@@ -2,8 +2,8 @@
 use super::{Bundle, Case, Prepared, activate_prepared, coverage, prepare, validate_refusals};
 use cedar_poo_core::SchemaSourceJson;
 use cedar_poo_runtime::gateway::{
-    EffectIo, Envelope, ProviderJournal, Receipt, ReleaseIdentity, ReviewAuthority, Simulator,
-    Witness, reconcile, verify,
+    EffectIo, Envelope, ProviderJournal, Receipt, ReleaseIdentity, ReviewAuthority, Signed,
+    Simulator, Witness, reconcile, verify,
 };
 use cedar_poo_runtime::{ValidatedManifest, ValidatedProgram, replay_validated_manifest};
 use serde_json::{Value, json};
@@ -24,6 +24,7 @@ struct Measurements {
     scale: Option<(Case, SchemaSourceJson)>,
     samples: Vec<Value>,
     program_samples: Vec<Value>,
+    scale_buffers: BTreeMap<&'static str, usize>,
 }
 fn measure<T>(
     data: &mut Measurements,
@@ -228,6 +229,14 @@ fn qualify_entry(
     eprintln!("RUNTIME-ENTRY: {name}; cases={}", data.cases);
     Ok(())
 }
+// Native owned byte-buffer observations; excludes containers and allocator overhead.
+fn signed_buffer_capacity<'a>(proofs: impl IntoIterator<Item = &'a Signed>) -> usize {
+    proofs
+        .into_iter()
+        .map(|proof| proof.payload.capacity() + proof.signature.capacity())
+        .sum()
+}
+
 fn growing_log(data: &mut Measurements) -> Result<(), String> {
     let (case, schema) = data
         .scale
@@ -276,6 +285,112 @@ fn growing_log(data: &mut Measurements) -> Result<(), String> {
         || provider.actions.len() != SCALE
     {
         return Err("growing-log independent reconciliation failed".into());
+    }
+    data.scale_buffers.insert(
+        "retired_gateway_receipts",
+        signed_buffer_capacity(&receipts),
+    );
+    // The global audit was the final reader of these receipts. Independent
+    // provider recovery needs no redundant Gateway evidence retained beside it.
+    drop(receipts);
+    // Preserve all original 1024 append timings and their full global audit.
+    // Additional recovery work shares that verified operation log.
+    let mut foreign_case = case.clone();
+    foreign_case.name = "runtime-recovery-unrelated-pending".into();
+    let foreign = Simulator::with_prepared_release(&foreign_case, &program, release.clone())?;
+    let mut unavailable: ProviderJournal =
+        serde_json::from_value(json!({"actions":[]})).map_err(|e| e.to_string())?;
+    let foreign_envelope = foreign.envelope();
+    foreign.execute(
+        foreign.prepare(&foreign_envelope)?,
+        &foreign_envelope,
+        EffectIo {
+            witness: &mut witness,
+            provider: &mut unavailable,
+            crash_after_send: true,
+        },
+    )?;
+    let mut operation = case.clone();
+    operation.name = "runtime-recovery-own-intent".into();
+    let pending = Simulator::with_prepared_release(&operation, &program, release)?;
+    let envelope = pending.envelope();
+    let (outcome, receipt) = pending.execute(
+        pending.prepare(&envelope)?,
+        &envelope,
+        EffectIo {
+            witness: &mut witness,
+            provider: &mut provider,
+            crash_after_send: true,
+        },
+    )?;
+    if !outcome.unknown || receipt.is_some() {
+        return Err("recovery benchmark retained a Gateway receipt".into());
+    }
+    let outcomes: Vec<_> = provider.signed_outcomes().cloned().collect();
+    data.scale_buffers.insert(
+        "provider_live",
+        signed_buffer_capacity(provider.signed_outcomes()),
+    );
+    data.scale_buffers
+        .insert("provider_detached", signed_buffer_capacity(&outcomes));
+    data.scale_buffers
+        .insert("witness_live", signed_buffer_capacity(witness.entries()));
+    let historical = pending.audit_authority(&witness);
+    let snapshot = witness.snapshot();
+    data.scale_buffers.insert(
+        "witness_snapshot",
+        signed_buffer_capacity(&snapshot.entries),
+    );
+    let intent = snapshot.entries.last().ok_or("missing benchmark intent")?;
+    pending.revoke()?;
+    pending.advance_time(100)?;
+    if pending.refresh_facts(&operation, 100).is_ok() {
+        return Err("expired benchmark renewal succeeded".into());
+    }
+    let current = pending.audit_authority(&witness);
+    for _ in 0..3 {
+        let report = measure(data, "audit.intent.log-1026", || {
+            Ok(cedar_poo_runtime::gateway::reconcile_intent(
+                &provider,
+                &outcomes,
+                &snapshot,
+                cedar_poo_runtime::gateway::IntentAuditTrust {
+                    authority: &historical,
+                    intent,
+                    provider_key: Some(&pending.provider_verifying_key()),
+                },
+            ))
+        })?;
+        if report != Default::default() {
+            return Err("independent benchmark intent audit failed".into());
+        }
+        let authority = pending.fork_simulation()?;
+        let recovered = measure(data, "recover.intent.log-1026", || {
+            Simulator::recover_with_provider_outcomes(
+                &authority,
+                cedar_poo_runtime::gateway::RecoveryEvidence {
+                    witness: &witness,
+                    publications: &[],
+                    audit: &current,
+                    receipts: &[],
+                    provider: &provider,
+                },
+                &outcomes,
+            )
+        })?;
+        let view = recovered.lifecycle_view()?;
+        if view.unknown
+            || !view.spent
+            || !view.revoked
+            || view.sources_current
+            || view.now != 100
+            || authority.advance_time(101).is_ok()
+            || !foreign.lifecycle_view()?.unknown
+            || witness.entries().len() != SCALE + 2
+            || provider.actions.len() != SCALE + 1
+        {
+            return Err("recovery benchmark lost current controls or dispatched again".into());
+        }
     }
     Ok(())
 }
@@ -388,7 +503,8 @@ fn benchmark_append(
         }
     }
     serde_json::to_writer(&mut *output, &json!({"kind":"gateway-append-scale","build_profile":"release",
-        "source":provenance,"operations":SCALE,"phases":phases,"samples_ns":data.times,
+        "source":provenance,"operations":SCALE,"recovery_log_entries":SCALE+2,
+        "recovery_provider_actions":SCALE+1,"recovery_samples":3,"buffer_capacity_bytes":data.scale_buffers,"phases":phases,"samples_ns":data.times,
         "scope":"distinct logical operations over one real Cedar world, one explicit shared SDK program and append-only witness/provider; fresh evaluation per operation; independent full-log reconciliation after timing"})).map_err(|e|e.to_string())?;
     writeln!(output).map_err(|e| e.to_string())
 }

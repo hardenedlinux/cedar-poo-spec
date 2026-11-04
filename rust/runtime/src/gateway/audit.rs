@@ -89,6 +89,7 @@ pub fn reconcile(
         snapshot,
         authority,
         OutcomeSource::Gateway,
+        None,
     )
 }
 
@@ -112,6 +113,34 @@ pub fn reconcile_provider_outcomes(
         snapshot,
         trust.authority,
         OutcomeSource::Provider(trust.provider_key),
+        None,
+    )
+}
+
+/// Explicit expected intent and completion channel from independently trusted setup.
+pub struct IntentAuditTrust<'a> {
+    pub authority: &'a AuditAuthority,
+    pub intent: &'a Signed,
+    pub provider_key: Option<&'a VerifyingKey>,
+}
+/// Audit one operation anchored to exact signed bytes in the full verified log.
+/// All outcome envelopes are authenticated before excluding unrelated operations.
+/// This result does not certify completion of the rest of the shared journal.
+pub fn reconcile_intent(
+    journal: &ProviderJournal,
+    outcomes: &[Signed],
+    snapshot: &LogSnapshot,
+    trust: IntentAuditTrust<'_>,
+) -> Reconciliation {
+    reconcile_source(
+        journal,
+        outcomes,
+        snapshot,
+        trust.authority,
+        trust
+            .provider_key
+            .map_or(OutcomeSource::Gateway, OutcomeSource::Provider),
+        Some(trust.intent),
     )
 }
 
@@ -121,6 +150,7 @@ fn reconcile_source(
     snapshot: &LogSnapshot,
     authority: &AuditAuthority,
     source: OutcomeSource<'_>,
+    intent: Option<&Signed>,
 ) -> Reconciliation {
     let history = verify_log(snapshot, &authority.log_key, authority.minimum_size);
     let mut report = Reconciliation {
@@ -140,7 +170,23 @@ fn reconcile_source(
             )
         })
         .collect();
-    let observed: BTreeSet<_> = journal.actions.iter().collect();
+    let operation = intent.and_then(|entry| {
+        let index = anchors.get(&(entry.payload.as_slice(), entry.signature.as_slice()))?;
+        history
+            .as_ref()
+            .ok()?
+            .get(*index)
+            .map(|commit| commit.effect.operation.as_str())
+    });
+    if intent.is_some() && operation.is_none() {
+        report.invalid_log = true;
+    }
+    let in_scope = |candidate: &str| operation.is_none_or(|expected| expected == candidate);
+    let observed: BTreeSet<_> = journal
+        .actions
+        .iter()
+        .filter(|action| in_scope(&action.effect.operation))
+        .collect();
     let mut verified = BTreeMap::new();
     for signed in receipts {
         let checked = (|| {
@@ -148,7 +194,29 @@ fn reconcile_source(
                 return Err("invalid witness history".into());
             }
             let receipt = verify_outcome(signed, authority, source)?;
-            let commit: Commit = verify(&receipt.commit, &authority.log_key)?;
+            let commit_index = *anchors
+                .get(&(
+                    receipt.commit.payload.as_slice(),
+                    receipt.commit.signature.as_slice(),
+                ))
+                .ok_or("unanchored outcome")?;
+            // The full prefix already authenticated this exact signed pair.
+            // Reuse its typed metadata rather than reverify/reparse each receipt's
+            // copy. Neither an operation label nor a digest is used as identity.
+            let commit: &Commit = history
+                .as_ref()
+                .map_err(|_| "invalid witness history")?
+                .get(commit_index)
+                .ok_or("missing verified commit projection")?;
+            if receipt.version != (Version { major: 1, minor: 0 })
+                || commit.version != receipt.version
+                || commit.effect != receipt.action.effect
+            {
+                return Err("unanchored outcome".into());
+            }
+            if !in_scope(&receipt.action.effect.operation) {
+                return Ok(None);
+            }
             let facts = authority.facts.accepts(&receipt.facts)?;
             if facts.iter().any(|fact| fact.source != commit.current_world) {
                 return Err("outcome facts do not bind its current world".into());
@@ -186,22 +254,10 @@ fn reconcile_source(
             {
                 return Err("receipt fact projection changed".into());
             }
-            if receipt.version != (Version { major: 1, minor: 0 })
-                || commit.version != receipt.version
-                || commit.effect != receipt.action.effect
-            {
-                return Err("unanchored outcome".into());
-            }
-            let commit_index = *anchors
-                .get(&(
-                    receipt.commit.payload.as_slice(),
-                    receipt.commit.signature.as_slice(),
-                ))
-                .ok_or("unanchored outcome")?;
-            Ok::<_, String>((receipt, commit_index))
+            Ok::<_, String>(Some((receipt, commit_index)))
         })();
         match checked {
-            Ok((receipt, commit_index)) => {
+            Ok(Some((receipt, commit_index))) => {
                 let operation = receipt.action.effect.operation.clone();
                 let outcome = VerifiedOutcome {
                     action: receipt.action,
@@ -211,11 +267,16 @@ fn reconcile_source(
                     report.duplicates.push(operation);
                 }
             }
+            Ok(None) => (),
             Err(_) => report.invalid_receipts += 1,
         }
     }
     let mut seen = BTreeSet::new();
-    for action in &journal.actions {
+    for action in journal
+        .actions
+        .iter()
+        .filter(|action| in_scope(&action.effect.operation))
+    {
         let operation = &action.effect.operation;
         if !seen.insert(operation.clone()) {
             report.duplicates.push(operation.clone());
@@ -226,9 +287,13 @@ fn reconcile_source(
             Some(_) => (),
         }
     }
-    if let Ok(commits) = history {
+    if let Ok(commits) = &history {
         let mut intents = BTreeSet::new();
-        for (commit_index, commit) in commits.iter().enumerate() {
+        for (commit_index, commit) in commits
+            .iter()
+            .enumerate()
+            .filter(|(_, commit)| in_scope(&commit.effect.operation))
+        {
             let operation = &commit.effect.operation;
             if !intents.insert(operation) {
                 report.duplicates.push(operation.clone());

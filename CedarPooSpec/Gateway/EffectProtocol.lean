@@ -252,12 +252,18 @@ structure ProviderOutcome where
 structure ProviderAuditTrust where
   providerKey : String
   logKey : String
+  authenticated : String → ProviderOutcome → Bool
   verified : FactAuthority String String → String → ProviderOutcome → Bool
+
+/-- The native envelope interpretation checks the provider signature before
+operation selection. Source semantics remain a separate historical check. -/
+def ProviderAuditTrust.authenticates (trust : ProviderAuditTrust) (outcome : ProviderOutcome) : Bool :=
+  trust.authenticated trust.providerKey outcome && outcome.version.supported &&
+    decide (outcome.domain = "cedar-poo/provider-outcome") && decide (outcome.logKey = trust.logKey)
 
 def ProviderAuditTrust.accepts (trust : ProviderAuditTrust) (source : FactAuthority String String)
     (outcome : ProviderOutcome) : Bool :=
-  trust.verified source trust.providerKey outcome && outcome.version.supported &&
-    decide (outcome.domain = "cedar-poo/provider-outcome") && decide (outcome.logKey = trust.logKey)
+  trust.authenticates outcome && trust.verified source trust.providerKey outcome
 
 /-- Native interpretation verifies signatures and the original fact/publication
 projection. This pure model does not claim a proof of cryptography or physical IO. -/
@@ -270,9 +276,10 @@ def reconcileProvider (trust : ProviderAuditTrust) (source : FactAuthority Strin
 theorem accepted_provider_is_bound_to_configured_trust (trust : ProviderAuditTrust)
     (source : FactAuthority String String)
     (outcome : ProviderOutcome) (accepted : trust.accepts source outcome = true) :
-    trust.verified source trust.providerKey outcome = true ∧ outcome.version.supported = true ∧
+    trust.authenticated trust.providerKey outcome = true ∧
+      trust.verified source trust.providerKey outcome = true ∧ outcome.version.supported = true ∧
       outcome.domain = "cedar-poo/provider-outcome" ∧ outcome.logKey = trust.logKey := by
-  simpa [ProviderAuditTrust.accepts, Bool.and_eq_true_iff, and_assoc] using accepted
+  simpa [ProviderAuditTrust.accepts, ProviderAuditTrust.authenticates, Bool.and_eq_true_iff, and_assoc, and_left_comm, and_comm] using accepted
 
 theorem provider_without_outcomes_remains_unresolved (trust : ProviderAuditTrust)
     (source : FactAuthority String String)
@@ -280,6 +287,65 @@ theorem provider_without_outcomes_remains_unresolved (trust : ProviderAuditTrust
     operation ∈ (reconcileProvider trust source actions [] logValid precommits).unresolvedPrecommits ↔
       operation ∈ precommits.map (·.operation) := by
   simp [reconcileProvider, reconcile, ids]
+
+/-- Select one operation only after authentication. Invalid evidence and the
+validity of the complete log remain independent, unfiltered obligations. -/
+def reconcileOperation (operation : String) (actions : List AuditRecord)
+    (receipts : List AuditReceipt) (invalid : Nat) (logValid : Bool)
+    (precommits : List CommitRef) : AuditReport :=
+  reconcile (actions.filter (fun action => decide (action.operation = operation)))
+    (receipts.filter (fun receipt => decide (receipt.action.operation = operation)))
+    invalid logValid (precommits.filter (fun entry => decide (entry.operation = operation)))
+
+theorem unrelated_precommit_preserves_operation_report (operation : String)
+    (actions : List AuditRecord) (receipts : List AuditReceipt) (invalid : Nat)
+    (logValid : Bool) (precommits : List CommitRef) (foreign : CommitRef)
+    (different : foreign.operation ≠ operation) :
+    reconcileOperation operation actions receipts invalid logValid (precommits ++ [foreign]) =
+      reconcileOperation operation actions receipts invalid logValid precommits := by
+  simp [reconcileOperation, List.filter_append, different]
+
+/-- A scoped result uses one independently retained exact intent. It still
+requires the full log-validity premise and authenticates every outcome envelope
+and its membership before selecting the operation's source interpretation. -/
+def reconcileProviderIntent (trust : ProviderAuditTrust) (source : FactAuthority String String)
+    (intent : CommitRef) (actions : List AuditRecord) (outcomes : List ProviderOutcome)
+    (logValid : Bool) (precommits : List CommitRef) : AuditReport :=
+  let authenticated := outcomes.filter (fun outcome => trust.authenticates outcome &&
+    (precommits.any (fun entry => decide (entry = outcome.receipt.commit))) &&
+    decide (outcome.receipt.action.operation = outcome.receipt.commit.operation))
+  let relevant := authenticated.filter (fun outcome => decide (outcome.receipt.action.operation = intent.operation))
+  let accepted := relevant.filter (trust.accepts source)
+  reconcileOperation intent.operation actions (accepted.map (·.receipt))
+    (outcomes.length - authenticated.length + relevant.length - accepted.length)
+    (logValid && (precommits.any (fun entry => decide (entry = intent)))) precommits
+
+theorem scoped_invalid_log_is_not_hidden (trust : ProviderAuditTrust) (source : FactAuthority String String)
+    (intent : CommitRef) (actions : List AuditRecord) (outcomes : List ProviderOutcome)
+    (precommits : List CommitRef) :
+    (reconcileProviderIntent trust source intent actions outcomes false precommits).invalidLog = true := by
+  simp [reconcileProviderIntent, reconcileOperation, reconcile]
+
+theorem scoped_missing_anchor_is_invalid (trust : ProviderAuditTrust) (source : FactAuthority String String)
+    (intent : CommitRef) (actions : List AuditRecord) (outcomes : List ProviderOutcome)
+    (precommits : List CommitRef) (missing : intent ∉ precommits) :
+    (reconcileProviderIntent trust source intent actions outcomes true precommits).invalidLog = true := by
+  have absent : precommits.any (fun entry => decide (entry = intent)) = false := by
+    apply Bool.eq_false_iff.mpr
+    simpa [List.any_eq_true] using missing
+  simp [reconcileProviderIntent, reconcileOperation, reconcile, absent]
+
+theorem scoped_bad_envelope_is_not_ignored (trust : ProviderAuditTrust) (source : FactAuthority String String)
+    (intent : CommitRef) (actions : List AuditRecord) (outcome : ProviderOutcome)
+    (precommits : List CommitRef) (bad : trust.authenticates outcome = false) :
+    (reconcileProviderIntent trust source intent actions [outcome] true precommits).invalidReceipts = 1 := by
+  simp [reconcileProviderIntent, reconcileOperation, reconcile, bad]
+
+theorem scoped_same_operation_precommits_are_reported
+    (trust : ProviderAuditTrust) (source : FactAuthority String String) (intent other : CommitRef)
+    (same : other.operation = intent.operation) :
+    intent.operation ∈ (reconcileProviderIntent trust source intent [] [] true [intent, other]).duplicates := by
+  simp [reconcileProviderIntent, reconcileOperation, reconcile, ids, same]
 
 structure LineageEdge where
   source : String

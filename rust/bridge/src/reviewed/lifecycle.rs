@@ -525,6 +525,171 @@ fn provider_recovery(
     Ok(rows)
 }
 
+fn scoped_recovery(
+    data: &Prepared,
+    index: usize,
+    seed: &Simulator,
+    prepared: &PreparedPublications,
+) -> Result<Vec<Value>, String> {
+    if seed.prepare(&seed.envelope()).is_err() {
+        return Ok(Vec::new());
+    }
+    let mut foreign_case = data.restored.cases[index].clone();
+    foreign_case.name.push_str("::independent-operation");
+    let foreign_seed = Simulator::new(&foreign_case, Some(&data.restored.schema))?;
+    foreign_seed.advance_time(11)?;
+    foreign_seed.refresh_facts(&foreign_case, 200)?;
+    let mut rows = Vec::new();
+    for phase in [
+        "foreign-pending-prefix",
+        "foreign-complete-prefix",
+        "foreign-complete-tail",
+        "same-operation-duplicate",
+        "unanchored-foreign",
+        "invalid-foreign-signature",
+    ] {
+        let own = seed.fork_simulation()?;
+        let foreign = if phase == "same-operation-duplicate" {
+            seed.fork_simulation()?
+        } else {
+            foreign_seed.fork_simulation()?
+        };
+        let mut witness = Witness::simulation();
+        let mut detached = Witness::simulation();
+        let mut provider = ProviderJournal::default();
+        let mut unavailable: ProviderJournal =
+            serde_json::from_value(json!({"actions":[]})).map_err(|e| e.to_string())?;
+        let foreign_envelope = foreign.envelope();
+        if matches!(phase, "foreign-pending-prefix" | "foreign-complete-prefix") {
+            foreign.execute(
+                foreign.prepare(&foreign_envelope)?,
+                &foreign_envelope,
+                EffectIo {
+                    witness: &mut witness,
+                    provider: if phase == "foreign-pending-prefix" {
+                        &mut unavailable
+                    } else {
+                        &mut provider
+                    },
+                    crash_after_send: true,
+                },
+            )?;
+        }
+        let envelope = own.envelope();
+        own.execute(
+            own.prepare(&envelope)?,
+            &envelope,
+            EffectIo {
+                witness: &mut witness,
+                provider: &mut provider,
+                crash_after_send: true,
+            },
+        )?;
+        if !matches!(phase, "foreign-pending-prefix" | "foreign-complete-prefix") {
+            foreign.execute(
+                foreign.prepare(&foreign_envelope)?,
+                &foreign_envelope,
+                EffectIo {
+                    witness: if phase == "unanchored-foreign" {
+                        &mut detached
+                    } else {
+                        &mut witness
+                    },
+                    provider: &mut provider,
+                    crash_after_send: true,
+                },
+            )?;
+        }
+        // Clone and inject the bounded fault in one traversal of the detached
+        // evidence; do not perform a second membership scan inside the case loop.
+        let mut corrupted = 0;
+        let outcomes = provider
+            .signed_outcomes()
+            .map(|proof| {
+                let mut proof = proof.clone();
+                if phase == "invalid-foreign-signature" {
+                    let outcome: cedar_poo_runtime::gateway::ProviderOutcome =
+                        serde_json::from_slice(&proof.payload).map_err(|e| e.to_string())?;
+                    if outcome.outcome.action.effect.operation == foreign_envelope.effect.operation
+                    {
+                        proof.signature[0] ^= 1;
+                        corrupted += 1;
+                    }
+                }
+                Ok(proof)
+            })
+            .collect::<Result<Vec<_>, String>>()?;
+        if phase == "invalid-foreign-signature" && corrupted != 1 {
+            return Err("foreign fault injection did not select exactly one proof".into());
+        }
+        let history = own.publication_history()?;
+        let mut audit = own.audit_authority(&witness);
+        audit.prepared_publications = Some(prepared.clone());
+        if cedar_poo_runtime::gateway::reconcile_provider_outcomes(
+            &provider,
+            &outcomes,
+            &witness.snapshot(),
+            cedar_poo_runtime::gateway::ProviderAuditTrust {
+                authority: &audit,
+                provider_key: &own.provider_verifying_key(),
+            },
+        ) == Default::default()
+        {
+            return Err(format!("global audit hid the other operation: {phase}"));
+        }
+        own.revoke()?;
+        own.advance_time(100)?;
+        if own.refresh_facts(&data.restored.cases[index], 100).is_ok() {
+            return Err("invalid scoped source renewal succeeded".into());
+        }
+        let before = own.lifecycle_view()?;
+        let mut current_audit = own.audit_authority(&witness);
+        current_audit.prepared_publications = Some(prepared.clone());
+        let restored = Simulator::recover_with_provider_outcomes(
+            &own,
+            RecoveryEvidence {
+                witness: &witness,
+                publications: &history,
+                audit: &current_audit,
+                receipts: &[],
+                provider: &provider,
+            },
+            &outcomes,
+        )?;
+        let after = restored.lifecycle_view()?;
+        let unresolved = matches!(
+            phase,
+            "same-operation-duplicate" | "unanchored-foreign" | "invalid-foreign-signature"
+        );
+        if after.unknown != unresolved
+            || !after.spent
+            || !after.revoked
+            || after.sources_current
+            || after.now != before.now
+            || after.fact_generation != before.fact_generation
+            || restored.envelope().effect != envelope.effect
+            || own.advance_time(101).is_ok()
+        {
+            return Err(format!(
+                "scoped recovery lost current authorization controls: {phase}"
+            ));
+        }
+        let expected_actions =
+            if matches!(phase, "foreign-pending-prefix" | "same-operation-duplicate") {
+                1
+            } else {
+                2
+            };
+        if provider.actions.len() != expected_actions
+            || provider.signed_outcomes().count() != expected_actions
+        {
+            return Err("scoped recovery resent a provider effect".into());
+        }
+        rows.push(observe(&format!("scope-{phase}"), &restored, prepared)?);
+    }
+    Ok(rows)
+}
+
 pub(super) fn run_case(data: &Prepared, index: usize, group: &Group) -> Result<Value, String> {
     let (case, seed) = install_prepared(data, index)?;
     let prepared = PreparedPublications::new(
@@ -539,6 +704,7 @@ pub(super) fn run_case(data: &Prepared, index: usize, group: &Group) -> Result<V
     rows.extend(failed_source(data, index, &seed, &prepared)?);
     rows.extend(recovery_boundaries(&case, &seed, &prepared)?);
     rows.extend(provider_recovery(data, index, &seed, &prepared)?);
+    rows.extend(scoped_recovery(data, index, &seed, &prepared)?);
     let actual = json!({"states":rows,"publication":publication});
     if actual != group.plan.lifecycle[index] {
         return Err(format!(

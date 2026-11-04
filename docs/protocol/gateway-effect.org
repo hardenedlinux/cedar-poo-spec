@@ -1113,3 +1113,230 @@ including the earlier slower tails, remain retained. The new ordinary effect
 replay's elapsed-minus-accounted-CPU total is 0.599 seconds; it does not reproduce
 or explain the original eight-second interval. No further scheduler-recording
 retry substitutes for the missing wait-object and waker evidence.
+
+** Exact-intent recovery over a shared witness and provider
+
+Starting qualification confirms all 16 CI checks for =f6bde50=. A genuine native
+regression then showed that an independent operation's pending precommit kept
+an authentic completion quarantined. Both operations shared the same witness;
+the old recovery path required the entire journal report to be empty. That
+coupled one operation's progress to the completion of unrelated operations.
+
+=IntentAuditTrust= now carries an independently expected complete signed intent,
+its original audit authority and an explicit optional provider root. The public
+=reconcile_intent= function reuses the existing auditor. It verifies the complete
+checkpoint and log prefix, derives the operation from the exact signed bytes at
+the canonical log position, and authenticates every supplied outcome envelope
+before selecting the operation. Canonical indices are retained after selection.
+A missing expected anchor makes the scoped log incompatible; it cannot select a
+wildcard or silently fall back to a global result.
+
+Only the selected operation's historical source/publication interpretation is
+applied to its outcomes. A valid unrelated envelope is not evidence that its
+foreign facts or publications passed this operation's authority. Ordinary global
+reconciliation keeps its complete findings. A clean scoped result certifies no
+completion for the rest of the shared journal and clears no foreign uncertainty.
+
+The existing public-key-only =gateway-reconcile= command accepts =intent= only
+in trusted configuration. Request evidence cannot choose its own scope. Scoped
+output includes =scope.kind= set to =retained-intent= and the expected complete commit's
+canonical SHA-256. This digest identifies report context; admission still matches
+complete signed bytes. No intent configuration preserves the original global
+wire result. Real child-process controls use the actual healthcare and financial
+Profiles with different Schemas, a shared witness/provider, and public material
+only; incoming scope injection is refused.
+
+| Shared-log boundary | Required behavior |
+|---------------------+-------------------|
+| Valid unrelated pending prefix | Global audit retains it; exact-intent completion can settle. |
+| Valid unrelated completed prefix or tail | Authenticate its envelope and anchor; select the target's historical source independently. |
+| Same-operation second precommit | Retain every same-operation record and report ambiguity; do not filter down to the preferred signed entry. |
+| Unanchored foreign outcome | Keep the integrity error even when its operation name differs. |
+| Corrupt foreign signature | Refuse to classify an unverified label as harmless unrelated evidence. |
+| Invalid prefix or checkpoint | Fail the full log premise even if the target's own signature remains valid. |
+| Missing exact expected anchor | Refuse the scoped result; preserve the deciding owner on recovery refusal. |
+| Revoked, expired and quarantined target | Completion preserves revocation, clock, source quarantine and original consumption. |
+
+The pure =reconcileOperation= algorithm selects already authenticated projections
+without filtering the invalid-evidence count or the full-log-validity premise.
+=unrelated_precommit_preserves_operation_report= proves that adding an unrelated
+pending precommit cannot change that operation report when those premises remain
+fixed. Provider envelope authentication and source verification are separate
+trusted interpretations. Kernel laws additionally retain invalid prefixes,
+missing anchors, corrupt envelopes and same-operation duplicates. The actual
+=recoveryContract= / =providerRecoveryContract= and native writer remain bound to
+the exact original intent and retained source authority; this is not a proof of
+Rust or cryptographic primitives.
+
+Six new shared controls run for every executable Case. Recovery occurs after
+revocation, clock advancement and failed-source renewal. The first full gate
+covers all 51 entries / 211 groups / 1,253 Cases / 39 refusals, 3,759 publications
+and 28,989 counted lifecycle states. It retains every prior 25,179-state byte and
+all 41,669 effect/audit rows; the new 3,810 states match the typed Lean oracle.
+The first full command completes in 316.57 seconds, including the expanded
+99.735-second lifecycle process. These are regression processes, not request
+latency or a matched comparison against a smaller prior workload.
+
+*** Remove redundant full-prefix preparation
+
+For a surviving exact intent, recovery previously decoded/verified the entire
+history before the independent auditor repeated that work. It now verifies the
+single retained record and lets the independent auditor verify the complete
+prefix and outcome envelopes. The effective checkpoint floor is the maximum of
+the owned witness floor and the independently supplied audit floor. An authority
+without a retained intent still needs a full verified absence check and cannot
+adopt an unrecorded intent. No source, publication, signature, same-operation
+ambiguity or ownership/generation check is dropped.
+
+The native append Benchmark preserves all original 1,024 append samples and
+their full independent global audit. It then adds one unrelated pending intent
+and one genuine lost-receipt intent: 1,026 log records and 1,025 provider actions.
+Three public independent intent audits and three provider recovery samples use
+that complete prefix. Recovery retains revocation, time 100, failed-source
+quarantine, original consumption and the foreign uncertainty, with no resend.
+This large-log recovery/audit time is not an ordinary single-operation dispatch
+latency. Workload and assertions belong to Rust; Python only observes external
+process/resources.
+
+The source-bound local pre/post-prefix variants use identical benchmark code,
+all 51 frozen producer inputs and an A-B-B-A schedule. Full source patches,
+executable/input hashes, outputs and every raw sample are retained as ignored
+local artifacts. The pre-optimization control is a local source snapshot based
+on =f6bde50=, not a claim that the committed =f6bde50= already had this workload.
+
+| Sample | Recovery median, seconds (3 samples) | Process elapsed, seconds | Accounted CPU, seconds | Peak RSS, MiB |
+|--------+-------------------------------------+--------------------------+------------------------+---------------|
+| A1: before prefix reuse | 8.049 | 69.091 | 14.270 | 173.313 |
+| B1: after prefix reuse | 0.892 | 10.978 | 10.040 | 196.234 |
+| B2: after prefix reuse | 0.905 | 10.484 | 10.100 | 196.422 |
+| A2: before prefix reuse | 1.270 | 11.666 | 11.150 | 195.766 |
+
+All 12 recovery observations, 12 independent audits and every original append
+sample are retained. A1 is not discarded: its elapsed-minus-accounted-CPU total
+is 54.821 seconds and many unchanged append observations also slow down. A
+read-only host query after A1 shows load averages 27.96/34.09/24.64 for 12 logical
+CPUs; before B1 the one-minute value is 11.19. No thermal warning is reported.
+These are load/context observations, not a time-aligned waiting-object/waker
+trace or proof that CPU contention explains the original eight-second sample.
+No other process, scheduler priority or security setting is changed. Neither
+an eight-fold speedup nor an RSS win follows from this set; B1/B2 RSS exceeds A2.
+
+*** Separate metadata volume and retained byte-buffer lifetime
+
+A second independent A-B-B-A probe uses one unchanged executable and canonical
+catalog. All 51 sidecars compare completely after removing only the six new
+oracle controls; all actual Schema/Policy/Entities/request/review and 1,253 API
+Cases remain unchanged. The API Benchmark currently eagerly decodes its
+=lifecycle: Vec<Value>= oracle field even though its timed API operations do not
+consume those lifecycle states.
+
+| Oracle metadata | Elapsed, seconds | Peak RSS, MiB |
+|-----------------+------------------+---------------|
+| Prior metadata, first | 17.024 | 122.594 |
+| Expanded metadata, first | 18.229 | 122.859 |
+| Expanded metadata, second | 18.380 | 126.625 |
+| Prior metadata, second | 20.394 | 125.063 |
+
+The overlapping RSS ranges do not isolate an allocator leak or quantify the
+retained fact snapshot's memory cost. In particular, changing oracle volume and
+using a different binary cannot be treated as an isolated snapshot allocation
+comparison. All four processes and per-Case timings remain retained.
+
+The large-log recovery workload also held the 1,024 Gateway receipt buffers after
+the original global audit had finished, beside the provider's live and detached
+signed records. Their last use is now explicit: release those Gateway buffers
+before independent provider recovery. Native =buffer_capacity_bytes= observations
+record retired Gateway, live/detached provider and live/snapshot witness buffers.
+These are owned serialized Vec capacities, excluding containers and allocator
+overhead, not retained-heap or RSS bounds. The process includes both simulated
+provider retention and its independent reader, not just a single request.
+
+The final standard combined gate completes naturally in 368.26 seconds, with
+28,989 lifecycle states and all original effect/audit rows. The complete
+28,989-state native output compares byte-for-byte with the pre-prefix version,
+not just the prior-state projection. The lifecycle process is 94.113 seconds /
+108.375 MiB versus 99.735 seconds / 109.781 MiB before prefix reuse. Despite this
+local reduction, total workflow wall time increases from 316.57 to 368.26 seconds;
+that non-win remains. Changed host scheduling and build/cache activity prevent
+attributing whole-workflow timing to the recovery algorithm.
+
+All compiled Lean profile/reuse/root-scale and nine family workloads pass. The
+final native API process takes 50.113 seconds with 21.520 accounted CPU seconds
+and 124.000 MiB peak RSS. Execution p95/p99 is 8.239/36.876 ms and prepared SDK
+replay is 0.715/11.065 ms. These slower tails and the 28.593-second elapsed-minus-CPU
+interval are retained; they neither reproduce the original eight-second wait
+nor identify an object/waker. Complete CPU and per-Case timing observations are
+kept, including unchanged preparation/publication phases with large tails.
+
+The post-lifetime recovery probe completes in 11.366 seconds / 10.720 accounted
+CPU seconds / 169.266 MiB, preserving all original 1,024 append observations and
+all six added large-log audit/recovery samples. The retired Gateway byte-buffer
+capacity is 70,719,020 bytes (67.443 MiB). Live provider buffers are 71,452,288 bytes,
+detached reader buffers 35,886,044 bytes, and each live/snapshot witness buffer set
+5,171,918 bytes. The actual provider data and the independent reader coexist in
+this simulation process. These capacities expose concrete owners; they do not
+prove that allocator pages or total RSS fall by the same amount.
+
+This single lifetime probe peaks below the earlier approximately 196-MiB warm
+prefix controls, but its recovery median increases to 1.064 seconds versus
+0.892/0.905 seconds in B1/B2; its largest append bucket also retains a 37.589-ms
+maximum. Both are non-wins. Prefix reuse, buffer lifetime and allocator/OS effects
+must not be collapsed into one claimed stable speedup or memory bound.
+
+Before verified-metadata reuse, Runtime qualification is 103 passed / the unchanged five explicitly
+ignored tests, with fixture-owning child-process gates separate. The strict
+quality gate initially found an extra membership scan in the small fault-injection
+builder. That scan is now fused into the existing clone traversal, and the builder
+checks that exactly one foreign proof is corrupted. No rule, assertion, workload,
+heap limit, process watchdog or missing/invalid-evidence control is weakened.
+
+*** Reuse the authenticated prefix metadata, not just its position
+
+The same complete-byte index now selects the typed =Commit= already produced by
+full-prefix verification. Previously each outcome reverified and reparsed its
+embedded precommit before looking up its canonical position. A successful lookup
+requires the exact =(payload, signature)= pair from that fully verified prefix;
+there is no payload-only, signature-only, operation-only or digest-only fallback.
+Every outer completion signature, full checkpoint/chain/floor, selected historical
+fact/publication check and same-operation ambiguity check remains. This removes
+redundant signature/deserialization work and short-lived duplicate Commit objects,
+not signature obligations or fresh authorization checks.
+
+The new native attack control signs a valid provider envelope around an altered
+inner payload or altered inner signature. Both global and exact-intent audit
+must reject either mismatch with a valid surrounding log. The existing Lean
+=different_commit_cannot_resolve= law and full =CommitRef= identity remain the
+model boundary; native interpretation supplies the actual signature checks.
+
+All 28,989 native lifecycle results and all 41,669 effect/audit results compare
+byte-for-byte after this final reuse change. The frozen-input lifecycle process
+is 78.195 seconds, with 76.030 accounted CPU seconds and 110.547 MiB peak RSS.
+The preceding leaf replay was 102.777 seconds / 97.490 CPU seconds / 110.156 MiB.
+The new RSS increase remains a non-win; these observations do not establish a
+stable RSS reduction or attribute the original eight-second interval.
+
+The final 1,026-record workload retains all original append samples, three
+independent audits and three recoveries. Audit/recovery medians are 0.621/0.635
+seconds; the whole process is 8.396 seconds / 8.160 accounted CPU seconds /
+172.156 MiB. The earlier lifetime probe was 11.366 seconds / 169.266 MiB: CPU/time
+improves in this local set while peak RSS rises. Owned serialized buffer-capacity
+observations are unchanged. All prior A-B-B-A observations and slower maxima
+remain retained; no sample is replaced by this result.
+
+The complete native API observation is 17.465 seconds / 16.740 CPU seconds /
+126.375 MiB. Execution p95/p99 is 1.872/2.368 ms; prepared SDK replay is
+0.309/0.351 ms; source renewal is 2.216/3.042 ms. Source renewal and prepared replay
+tails remain above the earlier historical-source sample, and API RSS exceeds the
+preceding 124.000 MiB. The prior high-load 50.113-second process and all slower
+per-Case observations remain retained. No universal latency, allocator-causality
+or production memory bound is claimed.
+
+Final quality qualification passes 104 Runtime tests with the original five
+explicit ignores, all strict Rust feature/package gates, 355-module Lean import
+isolation and English Org parsing. Four real Gateway child-process tests pass,
+including healthcare/financial shared-history audit and scope-injection refusal.
+All ten views regenerate, with 52 tests / 321 assertions. Raw observations,
+source patches, frozen inputs and failed/non-winning probes stay outside Git.
+The original eight-second wait object/waker and the allocator-level explanation
+of fluctuating RSS remain open; no aggregate timer or buffer-capacity counter is
+presented as a substitute for that evidence.

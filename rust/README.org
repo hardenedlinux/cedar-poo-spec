@@ -403,3 +403,14 @@ A supplied current audit view must retain the same issuer roots; replacing them
 is refused before ownership changes. This historical audit cannot renew current
 authorization or remint a consumed effect. See the shared protocol's historical
 source authority section for the typed laws and full Case matrix.
+
+For a shared log, =reconcile_intent= / =IntentAuditTrust= anchor the audit to exact
+independently expected signed bytes. Every log record and outcome envelope is
+verified before unrelated operations are selected out; the complete signed-pair
+index reuses authenticated Commit metadata without repeated signature/JSON work; same-operation ambiguity
+remains a refusal. The existing CLI accepts an intent only in trusted setup and
+marks scoped output explicitly. Global audit findings remain distinct. The
+native append Benchmark preserves its 1,024 samples and adds 1,026-record scoped
+recovery, with independent audit, revocation/source controls and native byte-buffer
+capacity observations. See the shared protocol for the full boundary matrix and
+all non-winning performance/resource observations.

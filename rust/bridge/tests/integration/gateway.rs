@@ -4,7 +4,7 @@ use cedar_poo_runtime::{Case, ValidatedManifest};
 use serde_json::{Value, json};
 use std::io::Write;
 use std::process::{Command, Stdio};
-fn fixture() -> (ValidatedManifest, Case) {
+fn fixture(revision: &str) -> (ValidatedManifest, Case) {
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../.lake/build");
     let input: Value = serde_json::from_str(
         &std::fs::read_to_string(root.join("gateway-production-current-use.json")).unwrap(),
@@ -13,10 +13,10 @@ fn fixture() -> (ValidatedManifest, Case) {
     let cases: Vec<Case> = serde_json::from_value(input["manifest"]["cases"].clone()).unwrap();
     let case = cases
         .into_iter()
-        .find(|case| case.revision == "health-disclosure" && case.expected == "allow")
+        .find(|case| case.revision == revision && case.expected == "allow")
         .unwrap();
     let manifest = ValidatedManifest {
-        schema: serde_json::from_value(input["schemas"]["health-disclosure"].clone()).unwrap(),
+        schema: serde_json::from_value(input["schemas"][revision].clone()).unwrap(),
         cases: vec![case.clone()],
     };
     (manifest, case)
@@ -27,7 +27,7 @@ fn meta() -> Value {
 #[test]
 #[ignore = "requires Production vectors; run just check-effect-protocol"]
 fn gateway_stdio_process_binds_current_sources_and_mode() {
-    let (manifest, case) = fixture();
+    let (manifest, case) = fixture("health-disclosure");
     let temp = std::env::temp_dir().join(format!("cedar-gateway-mcp-{}.json", std::process::id()));
     // Use original producer JSON for Case; the runtime intentionally exposes no
     // unchecked serializer that could pretend an arbitrary expected decision.
@@ -129,7 +129,7 @@ fn gateway_stdio_process_binds_current_sources_and_mode() {
 #[test]
 #[ignore = "requires Production vectors; run just check-effect-protocol"]
 fn gateway_public_auditor_cli_requires_only_public_trust_material() {
-    let (manifest, case) = fixture();
+    let (manifest, case) = fixture("health-disclosure");
     let simulator = Simulator::new(&case, Some(&manifest.schema)).unwrap();
     let envelope = simulator.envelope();
     let mut witness = Witness::simulation();
@@ -177,7 +177,7 @@ fn gateway_public_auditor_cli_requires_only_public_trust_material() {
 #[test]
 #[ignore = "requires Production vectors; run just check-effect-protocol"]
 fn gateway_public_provider_auditor_verifies_a_lost_gateway_receipt() {
-    let (manifest, case) = fixture();
+    let (manifest, case) = fixture("health-disclosure");
     let simulator = Simulator::new(&case, Some(&manifest.schema)).unwrap();
     let envelope = simulator.envelope();
     let mut witness = Witness::simulation();
@@ -250,5 +250,102 @@ fn gateway_public_provider_auditor_verifies_a_lost_gateway_receipt() {
     let output = child.wait_with_output().unwrap();
     assert!(!output.status.success());
     assert!(String::from_utf8_lossy(&output.stderr).contains("configured audit mode"));
+    std::fs::remove_file(temp).unwrap();
+}
+
+#[test]
+#[ignore = "requires Production vectors; run just check-effect-protocol"]
+fn gateway_public_intent_audit_separates_health_and_financial_histories() {
+    let (manifest, case) = fixture("health-disclosure");
+    let own = Simulator::new(&case, Some(&manifest.schema)).unwrap();
+    let (other_manifest, other_case) = fixture("financial-payment");
+    let other = Simulator::new(&other_case, Some(&other_manifest.schema)).unwrap();
+    let mut witness = Witness::simulation();
+    let mut provider = ProviderJournal::default();
+    let foreign = other.envelope();
+    other
+        .execute(
+            other.prepare(&foreign).unwrap(),
+            &foreign,
+            EffectIo {
+                witness: &mut witness,
+                provider: &mut provider,
+                crash_after_send: true,
+            },
+        )
+        .unwrap();
+    let envelope = own.envelope();
+    own.execute(
+        own.prepare(&envelope).unwrap(),
+        &envelope,
+        EffectIo {
+            witness: &mut witness,
+            provider: &mut provider,
+            crash_after_send: true,
+        },
+    )
+    .unwrap();
+    let proofs: Vec<_> = provider.signed_outcomes().cloned().collect();
+    let (facts, source_keys, observed_at) = own.fact_authority().public_material();
+    let base = json!({"gateway_key":own.verifying_key().to_encoded_point(false).as_bytes(),
+        "log_key":witness.verifying_key().to_encoded_point(false).as_bytes(),"minimum_size":2,
+        "facts":facts,"source_keys":source_keys,"observed_at":observed_at,
+        "provider_key":own.provider_verifying_key().to_encoded_point(false).as_bytes()});
+    let input = json!({"snapshot":witness.snapshot(),"journal":provider,"receipts":[],"provider_outcomes":proofs});
+    let intent = witness.entries().last().unwrap();
+    let temp = std::env::temp_dir().join(format!("cedar-intent-audit-{}.json", std::process::id()));
+    for scoped in [false, true] {
+        let mut trust = base.clone();
+        if scoped {
+            trust["intent"] = serde_json::to_value(intent).unwrap();
+        }
+        std::fs::write(&temp, serde_json::to_vec(&trust).unwrap()).unwrap();
+        let mut child = Command::new(env!("CARGO_BIN_EXE_cedar-poo-bridge"))
+            .args(["gateway-reconcile", temp.to_str().unwrap()])
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .spawn()
+            .unwrap();
+        child
+            .stdin
+            .take()
+            .unwrap()
+            .write_all(&serde_json::to_vec(&input).unwrap())
+            .unwrap();
+        let result = child.wait_with_output().unwrap();
+        assert!(result.status.success());
+        let report: Value = serde_json::from_slice(&result.stdout).unwrap();
+        if scoped {
+            assert_eq!(report["unresolved_precommits"], json!([]));
+            assert_eq!(report["scope"]["kind"], "retained-intent");
+            assert_eq!(
+                report["scope"]["commit_sha256"],
+                cedar_poo_runtime::gateway_source_sha256(intent).unwrap()
+            );
+        } else {
+            assert_eq!(
+                report["unresolved_precommits"],
+                json!([foreign.effect.operation])
+            );
+            assert!(report.get("scope").is_none());
+        }
+    }
+    std::fs::write(&temp, serde_json::to_vec(&base).unwrap()).unwrap();
+    let mut injected = input;
+    injected["intent"] = serde_json::to_value(intent).unwrap();
+    let mut child = Command::new(env!("CARGO_BIN_EXE_cedar-poo-bridge"))
+        .args(["gateway-reconcile", temp.to_str().unwrap()])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    child
+        .stdin
+        .take()
+        .unwrap()
+        .write_all(&serde_json::to_vec(&injected).unwrap())
+        .unwrap();
+    assert!(!child.wait_with_output().unwrap().status.success());
     std::fs::remove_file(temp).unwrap();
 }

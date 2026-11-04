@@ -56,8 +56,9 @@ private def recoveryBoundaries (original : State) : Except String (List Lean.Jso
     ← row "truncated-recovery" uncertain, ← row "unbound-recovery" original]
 
 private def providerTrust : ProviderAuditTrust :=
-  ⟨"provider", "witness", fun source key outcome => key == "provider" && outcome.signature == [1] &&
-    source.accepts Production.EffectProtocol.baseFact⟩
+  ⟨"provider", "witness", (fun key outcome => key == "provider" && outcome.signature == [1]),
+    fun source key outcome => key == "provider" && outcome.signature == [1] &&
+    outcome.receipt.action.operation == "operation" && source.accepts Production.EffectProtocol.baseFact⟩
 
 private def providerRecovery (original : State) (emptyAllowed worldChanged : Bool) : Except String (List Lean.Json) := do
   if !original.cedarAllowed then return []
@@ -96,6 +97,40 @@ private def providerRecovery (original : State) (emptyAllowed worldChanged : Boo
     ← row "provider-repaired-current-audit" repairedResult,
     ← row "provider-world-current-audit" changedResult]
 
+private def scopedRecovery (original : State) : Except String (List Lean.Json) := do
+  if !original.cedarAllowed then return []
+  let retained := retainIntent original intent
+  let revoked := revoke retained
+  let pending := invalidateSources {revoked with current := {revoked.current with
+    authority := {revoked.current.authority with now := 100}}}
+  let action : AuditRecord := ⟨"operation", "original"⟩
+  let foreign : CommitRef := ⟨"foreign", [2], [3]⟩
+  let foreignAction : AuditRecord := ⟨"foreign", "different-source-window"⟩
+  let own : ProviderOutcome := ⟨⟨1,0⟩, "cedar-poo/provider-outcome", "witness", ⟨action, intent.commit⟩, [1]⟩
+  let other : ProviderOutcome := ⟨⟨1,0⟩, "cedar-poo/provider-outcome", "witness", ⟨foreignAction, foreign⟩, [1]⟩
+  let base : ProviderRecoveryEvidence := ⟨[action], [own], [intent.commit], true, action⟩
+  let prefixPending ← recoverFromProviderChecked providerTrust pending
+    {base with entries := [foreign, intent.commit]}
+  let prefixComplete ← recoverFromProviderChecked providerTrust pending
+    {base with entries := [foreign, intent.commit], actions := [foreignAction, action], outcomes := [other, own]}
+  let tailComplete ← recoverFromProviderChecked providerTrust pending
+    {base with entries := [intent.commit, foreign], actions := [action, foreignAction], outcomes := [own, other]}
+  let duplicate ← recoverFromProviderChecked providerTrust pending
+    {base with entries := [intent.commit, ⟨"operation", [8], [9]⟩]}
+  let unanchored ← recoverFromProviderChecked providerTrust pending
+    {base with actions := [action, foreignAction], outcomes := [own, other]}
+  let invalid ← recoverFromProviderChecked providerTrust pending
+    {base with
+      entries := [intent.commit, foreign]
+      actions := [action, foreignAction]
+      outcomes := [own, {other with signature := [0]}]}
+  return [← row "scope-foreign-pending-prefix" prefixPending,
+    ← row "scope-foreign-complete-prefix" prefixComplete,
+    ← row "scope-foreign-complete-tail" tailComplete,
+    ← row "scope-same-operation-duplicate" duplicate,
+    ← row "scope-unanchored-foreign" unanchored,
+    ← row "scope-invalid-foreign-signature" invalid]
+
 /-- Outcomes are produced by actual POO Contract invocations; the Case producer
 supplies real Cedar decisions for the current, empty-entity and held worlds. -/
 def project (reviewed : Authorization.Delta.ReviewedInteraction) (model : PolicyModules.Model)
@@ -127,6 +162,7 @@ def project (reviewed : Authorization.Delta.ReviewedInteraction) (model : Policy
   let recoveredRevoked ← recoverChecked revoked (evidence false)
   let boundaries ← recoveryBoundaries original
   let providerStates ← providerRecovery original emptyAllowed worldChanged
+  let scopedStates ← scopedRecovery original
   let active : Authorization.Delta.ReleaseState :=
     ⟨reviewed.snapshot.base.root, reviewed.snapshot.base.policies, .enforcing, reviewed.snapshot.epoch⟩
   let checked := (publicationContract reviewed model schema active changed "source" (envelope changed)).invoke
@@ -138,5 +174,5 @@ def project (reviewed : Authorization.Delta.ReviewedInteraction) (model : Policy
     ← row "recovered-complete" recoveredComplete,
     ← row "recovered-unknown" recoveredUnknown,
     ← row "failed-refresh" failed, ← row "recovered-failed-refresh" failedRecovered,
-    ← row "repaired-refresh" repaired] ++ boundaries ++ providerStates))]
+    ← row "repaired-refresh" repaired] ++ boundaries ++ providerStates ++ scopedStates))]
 end CedarPooSpec.Production.Lifecycle

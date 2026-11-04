@@ -52,3 +52,10 @@ import CedarPooSpec.Gateway.Lifecycle
 #print axioms CedarPooSpec.Gateway.Lifecycle.provider_recovery_is_independent_of_current_authority
 #print axioms CedarPooSpec.Gateway.Lifecycle.renewal_preserves_retained_source
 #print axioms CedarPooSpec.Gateway.Lifecycle.provider_settlement_preserves_source_views
+
+#print axioms CedarPooSpec.Gateway.EffectProtocol.scoped_invalid_log_is_not_hidden
+#print axioms CedarPooSpec.Gateway.EffectProtocol.scoped_missing_anchor_is_invalid
+#print axioms CedarPooSpec.Gateway.EffectProtocol.scoped_bad_envelope_is_not_ignored
+#print axioms CedarPooSpec.Gateway.EffectProtocol.scoped_same_operation_precommits_are_reported
+
+#print axioms CedarPooSpec.Gateway.EffectProtocol.unrelated_precommit_preserves_operation_report
