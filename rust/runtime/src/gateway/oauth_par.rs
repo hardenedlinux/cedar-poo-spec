@@ -1,11 +1,12 @@
 //! Pushed authorization reference for confidential clients.
 use super::oauth::{Confirmation, CurrentUse, Grant, ReplayGuard};
 use super::oauth_code::{self, CodeLedger, Issued, RedeemedGrant, Session};
+use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::sync::Mutex;
 
 /// Registered client authentication method and verified credential identity.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Credential {
     Mtls(String),
     PrivateKeyJwt(String),
@@ -20,7 +21,7 @@ impl Credential {
 }
 
 /// Trusted issuer-side OAuth client registration.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Registration {
     pub issuer: String,
     pub client: String,

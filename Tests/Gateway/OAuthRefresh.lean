@@ -1,4 +1,4 @@
-import CedarPooSpec.Gateway.OAuthRevocation
+import CedarPooSpec.Gateway.OAuthRevocationRecovery
 
 namespace Tests.Gateway.OAuthRefresh
 open CedarPooSpec.Gateway.OAuth
@@ -55,8 +55,16 @@ private def exercise (confirmation replacement : Confirmation) : Bool := Id.run 
   let before : Revocation.Checkpoint := ⟨"issuer-ledger", 3, current⟩
   let frontier : Revocation.Checkpoint := ⟨before.authorityId, 4, revoked.result⟩
   let forged := { frontier with ledger := current }
+  let durable : Revocation.Recovery.Store := ⟨before, []⟩
+  let some persisted := durable.revoke (verified digest) | return false
+  let recovery : Revocation.Recovery.RecoveryInput := ⟨before.authorityId, some persisted, frontier⟩
   let after : RefreshInput := { retry with ledger := current, next := { next with tokenHash := "after" } }
-  return (refresh { exchange with verified := verified ⟨digest, tokenSender replacement⟩ }).isNone &&
+  return (Revocation.Recovery.recoveryContract.invoke Revocation.Recovery.prepareRecovery recovery).isOk &&
+    (Revocation.Recovery.recover { recovery with replica := before }).isNone &&
+    (Revocation.Recovery.recover { recovery with replica := forged }).isNone &&
+    (Revocation.Recovery.recover { recovery with durable := none }).isNone &&
+    (Revocation.Recovery.recover { recovery with authorityId := "another-authority" }).isNone &&
+    (refresh { exchange with verified := verified ⟨digest, tokenSender replacement⟩ }).isNone &&
     (refresh { exchange with next := { next with confirmation := replacement } }).isNone &&
     (refresh { exchange with next := { next with scopes := ["patient.write"] } }).isNone &&
     (refresh { exchange with ledger := current }).isNone &&
@@ -78,7 +86,20 @@ private def exercise (confirmation replacement : Confirmation) : Bool := Id.run 
       (Revocation.check { read with independent := some frontier }).isNone &&
       (Revocation.check fork).isNone &&
       (Revocation.check { renewed with checked := before }).isNone &&
-      (Revocation.check renewed).isNone)
+      (Revocation.check renewed).isNone &&
+      let input : Revocation.Recovery.FinalInput := ⟨before.authorityId, some durable, read.toReplicaRead⟩
+      let result := Revocation.Recovery.finalContract.invoke Revocation.Recovery.prepareFinal input
+      match result with
+      | .error _ => false
+      | .ok committed =>
+        let replay := Revocation.Recovery.finalize { input with durable := some committed.result }
+        let senderAcceptsReplay := match confirmation with
+          | .dpop _ => replay.isNone
+          | .mtls _ => replay.isSome
+        senderAcceptsReplay &&
+          (Revocation.Recovery.finalize { input with durable := some persisted }).isNone &&
+          (Revocation.Recovery.finalize
+            ⟨before.authorityId, some persisted, renewed.toReplicaRead⟩).isNone)
 
 /-- The identical request still passes with a pre-revocation snapshot even
 when the authoritative revocation has already committed. -/
@@ -102,3 +123,10 @@ end Tests.Gateway.OAuthRefresh
 #print axioms CedarPooSpec.Gateway.OAuth.Revocation.mediation_retains_original_and_frontier
 #print axioms CedarPooSpec.Gateway.OAuth.Revocation.revoked_descendant_refused
 #print axioms CedarPooSpec.Gateway.OAuth.Revocation.final_use_refused_without_current_check
+
+#print axioms CedarPooSpec.Gateway.OAuth.Revocation.Recovery.recovery_retains_independent_store
+#print axioms CedarPooSpec.Gateway.OAuth.Revocation.Recovery.persisted_revocation_marks_family
+#print axioms CedarPooSpec.Gateway.OAuth.Revocation.Recovery.final_retains_checkpoint_and_reservation
+#print axioms CedarPooSpec.Gateway.OAuth.Revocation.Recovery.durable_revocation_blocks_final
+#print axioms CedarPooSpec.Gateway.OAuth.Revocation.Recovery.durable_reservation_blocks_final
+#print axioms CedarPooSpec.Gateway.OAuth.Revocation.Recovery.persisted_revoke_refuses_final

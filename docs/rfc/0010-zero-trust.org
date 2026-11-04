@@ -1131,8 +1131,44 @@ current prefix from an independently authenticated, rollback-resistant
 authority and bind its exact ledger contents to the position. It must
 serialize the reservation and final effect with all revocation writers.
 The reference uses exact in-memory equality and a synchronous observer.
-Distributed proof transport, persistent checkpoint custody, and
-external effect atomicity remain adapter obligations.
+Distributed proof transport and external effect atomicity remain
+adapter obligations.
+
+*** Durable revocation recovery and cross-worker ordering
+
+=Gateway.OAuth.Revocation.Recovery= adds a persisted image containing
+the independent checkpoint and the committed OAuth proof reservations.
+Recovery selects an authority from trusted configuration and requires
+exact equality with its current persisted checkpoint. A missing image,
+wrong authority, old position, or fork at the same position cannot
+restore access. The recovery Contract returns the independent image,
+including its reservations. A replica is never a bootstrap input.
+
+Final use reopens and checks that same authority at the actual effect
+boundary. The durable final Contract reuses the existing frontier and
+sender checks, taking DPoP reservations from the recovered image. An
+authenticated revocation updates the family marker and advances the
+checkpoint position on a change. Enrollment and refresh use the same
+ledger transitions as the process-local reference.
+
+The Unix Rust reference reuses the trusted checkpoint directory, file
+lock, staged write, file sync, rename, and directory sync. Every worker
+reopens the same lock inode. Revocation acknowledges only after the
+updated image is durable. Final execution holds that lock from the
+independent read through proof reservation and the synchronous effect
+observer. A revoke that acquires the lock first refuses a previously
+checked use. An effect already inside the boundary precedes the
+revocation. A DPoP reservation is durable before the observer runs,
+and remains consumed if the worker stops before observing an effect.
+
+The authority directory and its lock must remain outside replica
+rollback and under trusted custody. The Rust replay covers a separate
+writer process, reopened readers, stale and substituted images, and
+corrupt or missing authoritative state. The model assumes the
+filesystem honors the lock, atomic rename, and sync operations. It
+does not establish remote consensus, physical power-loss behavior, or
+atomicity with an external recipient. The application effect protocol
+still owns unknown outcomes and reconciliation.
 
 
 References include [[https://www.rfc-editor.org/rfc/rfc9700.html#section-2.3][OAuth Security BCP]],

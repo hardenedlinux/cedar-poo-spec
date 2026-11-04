@@ -1,10 +1,11 @@
 //! Resource-side checks over trusted Host projections. HTTP, token verification,
 //! and authenticated live grant status belong to the deploying Host.
+use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::sync::Mutex;
 
 /// Issuer-qualified resource owner and OAuth client identity.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Identity {
     pub issuer: String,
     pub subject: String,
@@ -12,14 +13,14 @@ pub struct Identity {
 }
 
 /// Sender constraint carried by the verified grant.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Confirmation {
     Dpop(String),
     Mtls(String),
 }
 
 /// Verified token claims used by the resource authorization model.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Grant {
     pub identity: Identity,
     pub audiences: Vec<String>,
@@ -103,41 +104,53 @@ impl CurrentUse {
                 .checked_sub(proof.issued_at)
                 .is_some_and(|age| age <= self.max_proof_age)
     }
-}
 
-/// Process-local replay reference. Deployments need an authoritative shared
-/// reservation across workers and restarts for the accepted proof window.
-#[derive(Default)]
-pub struct ReplayGuard {
-    reserved: Mutex<HashSet<(String, String, String)>>,
-}
-
-impl ReplayGuard {
-    /// Run at each actual use with current verified observations and the
-    /// existing Gateway decision. An OAuth acceptance is not a send permit.
-    pub fn admit(&self, base_allowed: bool, current: &CurrentUse) -> Result<bool, String> {
-        if !base_allowed || !current.grant_bound() {
+    pub(super) fn admit_with(
+        &self,
+        base_allowed: bool,
+        reserve: impl FnOnce(ProofReservation) -> Result<bool, String>,
+    ) -> Result<bool, String> {
+        if !base_allowed || !self.grant_bound() {
             return Ok(false);
         }
-        match (&current.grant.confirmation, &current.sender) {
+        match (&self.grant.confirmation, &self.sender) {
             (Confirmation::Dpop(key), SenderObservation::Dpop(proof))
-                if current.dpop_bound(key, proof) =>
+                if self.dpop_bound(key, proof) =>
             {
-                let mut reserved = self
-                    .reserved
-                    .lock()
-                    .map_err(|_| "OAuth replay lock poisoned")?;
-                Ok(reserved.insert((
-                    current.grant.identity.issuer.clone(),
+                reserve((
+                    self.grant.identity.issuer.clone(),
                     key.clone(),
                     proof.proof_id.clone(),
-                )))
+                ))
             }
             (Confirmation::Mtls(certificate), SenderObservation::Mtls(observed)) => {
                 Ok(!certificate.is_empty() && observed == certificate)
             }
             _ => Ok(false),
         }
+    }
+}
+
+pub(super) type ProofReservation = (String, String, String);
+
+/// Process-local replay reference. Deployments need an authoritative shared
+/// reservation across workers and restarts for the accepted proof window.
+#[derive(Default)]
+pub struct ReplayGuard {
+    reserved: Mutex<HashSet<ProofReservation>>,
+}
+
+impl ReplayGuard {
+    /// Run at each actual use with current verified observations and the
+    /// existing Gateway decision. An OAuth acceptance is not a send permit.
+    pub fn admit(&self, base_allowed: bool, current: &CurrentUse) -> Result<bool, String> {
+        current.admit_with(base_allowed, |key| {
+            let mut reserved = self
+                .reserved
+                .lock()
+                .map_err(|_| "OAuth replay lock poisoned")?;
+            Ok(reserved.insert(key))
+        })
     }
 }
 

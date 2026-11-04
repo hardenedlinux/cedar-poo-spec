@@ -1,20 +1,21 @@
 //! Nonrotating, sender-constrained refresh families for the confidential-client profile.
 use super::oauth::{CurrentUse, Grant, ReplayGuard};
 use super::oauth_par::{ParRedeemed, Registration, TokenSender, VerifiedClient};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
 /// Trusted digest of an opaque refresh token presented to the issuer.
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct RefreshDigest(pub String);
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 struct FamilyKey {
     issuer: String,
     refresh: RefreshDigest,
 }
 
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
 struct Family {
     registration: Registration,
     original: Grant,
@@ -37,15 +38,20 @@ impl Family {
     }
 }
 
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
 struct Access {
     family: FamilyKey,
     grant: Grant,
 }
 
-#[derive(Clone, Default, PartialEq, Eq)]
-struct State {
-    position: u64,
+#[derive(Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(super) struct State {
+    pub(super) position: u64,
+    #[serde(
+        serialize_with = "serialize_families",
+        deserialize_with = "deserialize_families"
+    )]
     families: HashMap<FamilyKey, Family>,
     access: HashMap<String, Access>,
 }
@@ -61,7 +67,7 @@ impl State {
         Ok(state)
     }
 
-    fn contains_active(&self, current: &CurrentUse) -> bool {
+    pub(super) fn contains_active(&self, current: &CurrentUse) -> bool {
         self.access
             .get(&current.grant.token_hash)
             .is_some_and(|access| {
@@ -76,6 +82,121 @@ impl State {
     fn unissued(&self, digest: &str) -> bool {
         !digest.is_empty() && !self.access.contains_key(digest)
     }
+
+    pub(super) fn enroll(image: &mut Arc<Self>, input: RefreshEnrollment) -> Result<bool, String> {
+        let grant = input.redeemed.redeemed.grant();
+        if input.digest.0.is_empty() || input.now >= input.expires_at {
+            return Ok(false);
+        }
+        let key = FamilyKey {
+            issuer: grant.identity.issuer.clone(),
+            refresh: input.digest,
+        };
+        if !image.unissued(&grant.token_hash) || image.families.contains_key(&key) {
+            return Ok(false);
+        }
+        let state = Self::advance(image)?;
+        state.families.insert(
+            key.clone(),
+            Family {
+                registration: input.redeemed.registration,
+                original: grant.clone(),
+                expires_at: input.expires_at,
+                revoked: false,
+            },
+        );
+        state.access.insert(
+            grant.token_hash.clone(),
+            Access {
+                family: key,
+                grant: grant.clone(),
+            },
+        );
+        Ok(true)
+    }
+
+    pub(super) fn refresh(
+        image: &mut Arc<Self>,
+        input: RefreshExchange,
+    ) -> Result<Option<Grant>, String> {
+        let RefreshExchange {
+            verified,
+            next,
+            now,
+        } = input;
+        let key = FamilyKey {
+            issuer: verified.issuer.clone(),
+            refresh: verified.request.digest.clone(),
+        };
+        let Some(family) = image.families.get(&key) else {
+            return Ok(None);
+        };
+        if family.revoked
+            || now >= family.expires_at
+            || !verified.matches(&family.registration)
+            || !verified
+                .request
+                .sender
+                .matches(&verified.credential, &family.original.confirmation)
+            || !family.permits(&next)
+            || !image.unissued(&next.token_hash)
+            || now < next.not_before
+            || now >= next.expires_at
+        {
+            return Ok(None);
+        }
+        Self::advance(image)?.access.insert(
+            next.token_hash.clone(),
+            Access {
+                family: key,
+                grant: next.clone(),
+            },
+        );
+        Ok(Some(next))
+    }
+
+    pub(super) fn revoke(
+        image: &mut Arc<Self>,
+        verified: VerifiedClient<RefreshDigest>,
+    ) -> Result<bool, String> {
+        let key = FamilyKey {
+            issuer: verified.issuer.clone(),
+            refresh: verified.request.clone(),
+        };
+        let Some(family) = image.families.get(&key) else {
+            return Ok(false);
+        };
+        if !verified.matches(&family.registration) {
+            return Ok(false);
+        }
+        if !family.revoked {
+            let family = Self::advance(image)?
+                .families
+                .get_mut(&key)
+                .ok_or("OAuth refresh family disappeared")?;
+            family.revoked = true;
+        }
+        Ok(true)
+    }
+}
+
+fn serialize_families<S: serde::Serializer>(
+    records: &HashMap<FamilyKey, Family>,
+    serializer: S,
+) -> Result<S::Ok, S::Error> {
+    serializer.collect_seq(records)
+}
+
+fn deserialize_families<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> Result<HashMap<FamilyKey, Family>, D::Error> {
+    let entries = Vec::<(FamilyKey, Family)>::deserialize(deserializer)?;
+    let count = entries.len();
+    let records: HashMap<_, _> = entries.into_iter().collect();
+    if records.len() != count {
+        return Err(serde::de::Error::custom("duplicate OAuth refresh family"));
+    }
+    Ok(records)
 }
 
 /// Refresh metadata attached to a successful PAR redemption.
@@ -136,81 +257,20 @@ impl RefreshLedger {
     /// Register the initial access grant and its refresh family together.
     /// Consumes the access-only redemption capability.
     pub fn enroll(&self, input: RefreshEnrollment) -> Result<bool, String> {
-        let grant = input.redeemed.redeemed.grant();
-        if input.digest.0.is_empty() || input.now >= input.expires_at {
-            return Ok(false);
-        }
         let mut image = self
             .image
             .lock()
             .map_err(|_| "OAuth refresh lock poisoned")?;
-        let key = FamilyKey {
-            issuer: grant.identity.issuer.clone(),
-            refresh: input.digest,
-        };
-        if !image.unissued(&grant.token_hash) || image.families.contains_key(&key) {
-            return Ok(false);
-        }
-        let state = State::advance(&mut image)?;
-        state.families.insert(
-            key.clone(),
-            Family {
-                registration: input.redeemed.registration,
-                original: grant.clone(),
-                expires_at: input.expires_at,
-                revoked: false,
-            },
-        );
-        state.access.insert(
-            grant.token_hash.clone(),
-            Access {
-                family: key,
-                grant: grant.clone(),
-            },
-        );
-        Ok(true)
+        State::enroll(&mut image, input)
     }
 
     /// Issue a fresh access grant while keeping the original refresh handle.
     pub fn refresh(&self, input: RefreshExchange) -> Result<Option<Grant>, String> {
-        let RefreshExchange {
-            verified,
-            next,
-            now,
-        } = input;
         let mut image = self
             .image
             .lock()
             .map_err(|_| "OAuth refresh lock poisoned")?;
-        let key = FamilyKey {
-            issuer: verified.issuer.clone(),
-            refresh: verified.request.digest.clone(),
-        };
-        let Some(family) = image.families.get(&key) else {
-            return Ok(None);
-        };
-        if family.revoked
-            || now >= family.expires_at
-            || !verified.matches(&family.registration)
-            || !verified
-                .request
-                .sender
-                .matches(&verified.credential, &family.original.confirmation)
-            || !family.permits(&next)
-            || !image.unissued(&next.token_hash)
-            || now < next.not_before
-            || now >= next.expires_at
-        {
-            return Ok(None);
-        }
-        State::advance(&mut image)?.access.insert(
-            next.token_hash.clone(),
-            Access {
-                family: key,
-                grant: next.clone(),
-            },
-        );
-        Ok(Some(next))
+        State::refresh(&mut image, input)
     }
 
     /// Revoke the authenticated client's family even if its sender key is lost.
@@ -219,24 +279,7 @@ impl RefreshLedger {
             .image
             .lock()
             .map_err(|_| "OAuth refresh lock poisoned")?;
-        let key = FamilyKey {
-            issuer: verified.issuer.clone(),
-            refresh: verified.request.clone(),
-        };
-        let Some(family) = image.families.get(&key) else {
-            return Ok(false);
-        };
-        if !verified.matches(&family.registration) {
-            return Ok(false);
-        }
-        if !family.revoked {
-            let family = State::advance(&mut image)?
-                .families
-                .get_mut(&key)
-                .ok_or("OAuth refresh family disappeared")?;
-            family.revoked = true;
-        }
-        Ok(true)
+        State::revoke(&mut image, verified)
     }
 
     /// Resolve the actual grant to its family and check current resource authority.

@@ -30,6 +30,13 @@ fn digest() -> RefreshDigest {
 }
 
 fn enroll(ledger: &RefreshLedger, confirmation: Confirmation) -> Grant {
+    enroll_with(confirmation, |input| ledger.enroll(input).unwrap())
+}
+
+fn enroll_with(
+    confirmation: Confirmation,
+    commit: impl FnOnce(RefreshEnrollment) -> bool,
+) -> Grant {
     let session = oauth_code::Session {
         issuer: "issuer".into(),
         client: "client".into(),
@@ -112,16 +119,12 @@ fn enroll(ledger: &RefreshLedger, confirmation: Confirmation) -> Grant {
         )
         .unwrap()
         .unwrap();
-    assert!(
-        ledger
-            .enroll(RefreshEnrollment {
-                redeemed,
-                digest: digest(),
-                now: 12,
-                expires_at: 40,
-            })
-            .unwrap()
-    );
+    assert!(commit(RefreshEnrollment {
+        redeemed,
+        digest: digest(),
+        now: 12,
+        expires_at: 40,
+    }));
     grant
 }
 
@@ -434,4 +437,190 @@ fn final_observer_and_revocation_share_the_same_ordering() {
             .execute_final(input(), || panic!("late effect"))
             .unwrap()
     );
+}
+
+#[cfg(unix)]
+use crate::gateway::oauth_refresh_durable::{
+    DurableFinalUse, DurableRefreshLedger, DurableRevocationCheckpoint,
+};
+
+#[cfg(unix)]
+fn durable_directory(case: &str) -> std::path::PathBuf {
+    let directory = std::env::temp_dir().join(format!("cedar-oauth-{case}-{}", std::process::id()));
+    std::fs::create_dir(&directory).unwrap();
+    directory
+}
+
+#[cfg(unix)]
+#[test]
+fn durable_worker_revocation_survives_reopening_and_refuses_stale_replica() {
+    const WORKER_DIR: &str = "CEDAR_OAUTH_DURABLE_TEST_WORKER_DIR";
+    if let Some(directory) = std::env::var_os(WORKER_DIR) {
+        let worker = DurableRefreshLedger::new(std::path::Path::new(&directory), "authority");
+        assert!(worker.revoke(verified(digest())).unwrap());
+        return;
+    }
+
+    let directory = durable_directory("restart");
+    let (grant, saved) = {
+        let writer = DurableRefreshLedger::new(&directory, "authority");
+        assert!(writer.checkpoint().is_err());
+        writer.initialize().unwrap();
+        assert!(writer.initialize().is_err());
+        let original = enroll_with(Confirmation::Dpop("key".into()), |input| {
+            writer.enroll(input).unwrap()
+        });
+        let grant = writer
+            .refresh(exchange(&original, "issued", 13))
+            .unwrap()
+            .unwrap();
+        let checked = writer.checkpoint().unwrap();
+        let actual = actual(grant.clone(), 14, "persisted-proof");
+        assert!(
+            writer
+                .execute_final(
+                    DurableFinalUse {
+                        checked: &checked,
+                        replica: &checked,
+                        current: &actual,
+                        base_allowed: true,
+                    },
+                    || {}
+                )
+                .unwrap()
+        );
+        (grant, serde_json::to_vec(&checked).unwrap())
+    };
+
+    let restored = DurableRefreshLedger::new(&directory, "authority");
+    let replica: DurableRevocationCheckpoint = serde_json::from_slice(&saved).unwrap();
+    assert!(restored.recover(&replica).unwrap());
+    let replay = actual(grant.clone(), 14, "persisted-proof");
+    assert!(
+        !restored
+            .execute_final(
+                DurableFinalUse {
+                    checked: &replica,
+                    replica: &replica,
+                    current: &replay,
+                    base_allowed: true,
+                },
+                || panic!("replayed effect")
+            )
+            .unwrap()
+    );
+
+    let worker = std::process::Command::new(std::env::current_exe().unwrap())
+        .args(["--exact", "gateway::oauth_refresh::tests::durable_worker_revocation_survives_reopening_and_refuses_stale_replica"])
+        .env(WORKER_DIR, &directory)
+        .output()
+        .unwrap();
+    assert!(
+        worker.status.success(),
+        "{}",
+        String::from_utf8_lossy(&worker.stdout)
+    );
+    assert!(String::from_utf8_lossy(&worker.stdout).contains("1 passed"));
+
+    let restarted = DurableRefreshLedger::new(&directory, "authority");
+    assert!(!restarted.recover(&replica).unwrap());
+    assert!(
+        restarted
+            .refresh(exchange(&grant, "after-revoke", 14))
+            .unwrap()
+            .is_none()
+    );
+    let live = restarted.checkpoint().unwrap();
+    assert!(restarted.recover(&live).unwrap());
+    let mut forged: serde_json::Value = serde_json::from_slice(&saved).unwrap();
+    forged["ledger"]["position"] =
+        serde_json::to_value(&live).unwrap()["ledger"]["position"].clone();
+    let forged = serde_json::from_value(forged).unwrap();
+    assert!(!restarted.recover(&forged).unwrap());
+    let current = actual(grant, 14, "fresh-proof");
+    for (checked, view) in [
+        (&replica, &replica),
+        (&forged, &forged),
+        (&replica, &live),
+        (&live, &live),
+    ] {
+        assert!(
+            !restarted
+                .execute_final(
+                    DurableFinalUse {
+                        checked,
+                        replica: view,
+                        current: &current,
+                        base_allowed: true,
+                    },
+                    || panic!("revoked effect")
+                )
+                .unwrap()
+        );
+    }
+    assert!(
+        DurableRefreshLedger::new(&directory, "another-authority")
+            .recover(&live)
+            .is_err()
+    );
+    std::fs::write(directory.join("checkpoint.json"), b"invalid").unwrap();
+    assert!(restarted.recover(&live).is_err());
+    assert!(restarted.initialize().is_err());
+    std::fs::remove_file(directory.join("checkpoint.json")).unwrap();
+    assert!(restarted.recover(&replica).is_err());
+    std::fs::remove_dir_all(directory).unwrap();
+}
+
+#[cfg(unix)]
+#[test]
+fn durable_final_effect_and_revocation_share_the_writer_lock() {
+    let directory = durable_directory("ordering");
+    let reader = DurableRefreshLedger::new(&directory, "authority");
+    let writer = DurableRefreshLedger::new(&directory, "authority");
+    reader.initialize().unwrap();
+    let grant = enroll_with(Confirmation::Mtls("cert".into()), |input| {
+        reader.enroll(input).unwrap()
+    });
+    let checked = reader.checkpoint().unwrap();
+    let current = actual(grant, 14, "certificate");
+    let input = || DurableFinalUse {
+        checked: &checked,
+        replica: &checked,
+        current: &current,
+        base_allowed: true,
+    };
+    let (enter, effect_started) = std::sync::mpsc::channel();
+    let (revoke, writer_started) = std::sync::mpsc::channel();
+    std::thread::scope(|workers| {
+        let writer = workers.spawn(move || {
+            effect_started.recv().unwrap();
+            revoke.send(()).unwrap();
+            writer.revoke(verified(digest())).unwrap()
+        });
+        assert!(
+            reader
+                .execute_final(input(), || {
+                    enter.send(()).unwrap();
+                    drop(enter);
+                    writer_started.recv().unwrap();
+                    let independent = std::fs::OpenOptions::new()
+                        .read(true)
+                        .write(true)
+                        .open(directory.join("checkpoint.lock"))
+                        .unwrap();
+                    assert!(matches!(
+                        independent.try_lock(),
+                        Err(std::fs::TryLockError::WouldBlock)
+                    ));
+                })
+                .unwrap()
+        );
+        assert!(writer.join().unwrap());
+    });
+    assert!(
+        !reader
+            .execute_final(input(), || panic!("late effect"))
+            .unwrap()
+    );
+    std::fs::remove_dir_all(directory).unwrap();
 }
