@@ -20,7 +20,7 @@ impl Credential {
 }
 
 /// Trusted issuer-side OAuth client registration.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Registration {
     pub issuer: String,
     pub client: String,

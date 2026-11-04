@@ -327,3 +327,111 @@ fn a_stale_replica_cannot_observe_an_acknowledged_revocation() {
             .is_some()
     );
 }
+
+#[test]
+fn final_effect_rejects_old_forked_and_changed_checkpoints() {
+    let ledger = RefreshLedger::default();
+    let original = enroll(&ledger, Confirmation::Dpop("key".into()));
+    let issued = ledger
+        .refresh(exchange(&original, "issued", 13))
+        .unwrap()
+        .unwrap();
+    let checked = ledger.checkpoint().unwrap();
+    let current = actual(issued, 14, "actual-proof");
+    let guard = ReplayGuard::default();
+    let input = |checked, replica| super::FinalRefreshUse {
+        checked,
+        replica,
+        current: &current,
+        guard: &guard,
+        base_allowed: true,
+    };
+
+    let unrelated = RefreshLedger::default();
+    enroll(&unrelated, Confirmation::Dpop("key".into()));
+    unrelated
+        .refresh(exchange(&original, "issued", 13))
+        .unwrap()
+        .unwrap();
+    let foreign = unrelated.checkpoint().unwrap();
+    assert_eq!(foreign.image.position, checked.image.position);
+    assert!(
+        !ledger
+            .execute_final(input(&foreign, &foreign), || panic!("foreign effect"))
+            .unwrap()
+    );
+
+    let inspected = actual(current.grant.clone(), 14, "preview");
+    assert!(
+        ledger
+            .admit_use(&ReplayGuard::default(), true, &inspected)
+            .unwrap()
+    );
+    assert!(ledger.revoke(verified(digest())).unwrap());
+    let live = ledger.checkpoint().unwrap();
+    let mut forged = checked.clone();
+    std::sync::Arc::make_mut(&mut forged.image).position = live.image.position;
+    for (prepared, replica) in [
+        (&checked, &checked),
+        (&forged, &forged),
+        (&checked, &live),
+        (&live, &live),
+    ] {
+        assert!(
+            !ledger
+                .execute_final(input(prepared, replica), || panic!("revoked effect"))
+                .unwrap()
+        );
+    }
+}
+
+#[test]
+fn final_observer_and_revocation_share_the_same_ordering() {
+    let ledger = RefreshLedger::default();
+    let grant = enroll(&ledger, Confirmation::Dpop("key".into()));
+    let checked = ledger.checkpoint().unwrap();
+    let current = actual(grant, 14, "first");
+    let guard = ReplayGuard::default();
+    let input = || super::FinalRefreshUse {
+        checked: &checked,
+        replica: &checked,
+        current: &current,
+        guard: &guard,
+        base_allowed: true,
+    };
+    let (entered, wait_for_effect) = std::sync::mpsc::channel();
+    let (revoking, wait_for_revoke) = std::sync::mpsc::channel();
+    let completed = std::sync::atomic::AtomicBool::new(false);
+    use std::sync::atomic::Ordering;
+    std::thread::scope(|threads| {
+        let completed = &completed;
+        let ledger = &ledger;
+        let writer = threads.spawn(move || {
+            wait_for_effect.recv().unwrap();
+            revoking.send(()).unwrap();
+            assert!(ledger.revoke(verified(digest())).unwrap());
+            completed.store(true, Ordering::SeqCst);
+        });
+        assert!(
+            ledger
+                .execute_final(input(), || {
+                    entered.send(()).unwrap();
+                    drop(entered);
+                    wait_for_revoke.recv().unwrap();
+                    assert!(matches!(
+                        ledger.image.try_lock(),
+                        Err(std::sync::TryLockError::WouldBlock)
+                    ));
+                    assert!(!completed.load(Ordering::SeqCst));
+                })
+                .unwrap()
+        );
+        writer.join().unwrap();
+    });
+    assert!(completed.load(Ordering::SeqCst));
+    assert!(
+        !ledger
+            .execute_final(input(), || panic!("late effect"))
+            .unwrap()
+    );
+}

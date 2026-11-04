@@ -2,7 +2,7 @@
 use super::oauth::{CurrentUse, Grant, ReplayGuard};
 use super::oauth_par::{ParRedeemed, Registration, TokenSender, VerifiedClient};
 use std::collections::HashMap;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
 /// Trusted digest of an opaque refresh token presented to the issuer.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -14,6 +14,7 @@ struct FamilyKey {
     refresh: RefreshDigest,
 }
 
+#[derive(Clone, PartialEq, Eq)]
 struct Family {
     registration: Registration,
     original: Grant,
@@ -36,18 +37,42 @@ impl Family {
     }
 }
 
+#[derive(Clone, PartialEq, Eq)]
 struct Access {
     family: FamilyKey,
     grant: Grant,
 }
 
-#[derive(Default)]
+#[derive(Clone, Default, PartialEq, Eq)]
 struct State {
+    position: u64,
     families: HashMap<FamilyKey, Family>,
     access: HashMap<String, Access>,
 }
 
 impl State {
+    fn advance(image: &mut Arc<Self>) -> Result<&mut Self, String> {
+        let next = image
+            .position
+            .checked_add(1)
+            .ok_or("OAuth refresh position exhausted")?;
+        let state = Arc::make_mut(image);
+        state.position = next;
+        Ok(state)
+    }
+
+    fn contains_active(&self, current: &CurrentUse) -> bool {
+        self.access
+            .get(&current.grant.token_hash)
+            .is_some_and(|access| {
+                access.grant == current.grant
+                    && self
+                        .families
+                        .get(&access.family)
+                        .is_some_and(|family| !family.revoked)
+            })
+    }
+
     fn unissued(&self, digest: &str) -> bool {
         !digest.is_empty() && !self.access.contains_key(digest)
     }
@@ -74,10 +99,38 @@ pub struct RefreshExchange {
     pub now: u64,
 }
 
+/// Immutable replica image with a source identity and committed position.
+/// The process-local reference uses exact state equality as its content binding.
+#[derive(Clone)]
+pub struct RevocationCheckpoint {
+    authority: Arc<()>,
+    image: Arc<State>,
+}
+
+impl RevocationCheckpoint {
+    fn matches(&self, authority: &Arc<()>, current: &Arc<State>) -> bool {
+        Arc::ptr_eq(&self.authority, authority)
+            && self.image.position == current.position
+            && (Arc::ptr_eq(&self.image, current) || self.image == *current)
+    }
+}
+
+/// Actual inputs for the final effect boundary, including the original check.
+pub struct FinalRefreshUse<'a> {
+    pub checked: &'a RevocationCheckpoint,
+    pub replica: &'a RevocationCheckpoint,
+    pub current: &'a CurrentUse,
+    pub guard: &'a ReplayGuard,
+    pub base_allowed: bool,
+}
+
 /// Process-local reference. Enrollment, refresh, revocation, and resource
 /// admission serialize on one ledger shared by all routes.
 #[derive(Default)]
-pub struct RefreshLedger(Mutex<State>);
+pub struct RefreshLedger {
+    authority: Arc<()>,
+    image: Mutex<Arc<State>>,
+}
 
 impl RefreshLedger {
     /// Register the initial access grant and its refresh family together.
@@ -87,14 +140,18 @@ impl RefreshLedger {
         if input.digest.0.is_empty() || input.now >= input.expires_at {
             return Ok(false);
         }
-        let mut state = self.0.lock().map_err(|_| "OAuth refresh lock poisoned")?;
+        let mut image = self
+            .image
+            .lock()
+            .map_err(|_| "OAuth refresh lock poisoned")?;
         let key = FamilyKey {
             issuer: grant.identity.issuer.clone(),
             refresh: input.digest,
         };
-        if !state.unissued(&grant.token_hash) || state.families.contains_key(&key) {
+        if !image.unissued(&grant.token_hash) || image.families.contains_key(&key) {
             return Ok(false);
         }
+        let state = State::advance(&mut image)?;
         state.families.insert(
             key.clone(),
             Family {
@@ -121,12 +178,15 @@ impl RefreshLedger {
             next,
             now,
         } = input;
-        let mut state = self.0.lock().map_err(|_| "OAuth refresh lock poisoned")?;
+        let mut image = self
+            .image
+            .lock()
+            .map_err(|_| "OAuth refresh lock poisoned")?;
         let key = FamilyKey {
             issuer: verified.issuer.clone(),
             refresh: verified.request.digest.clone(),
         };
-        let Some(family) = state.families.get(&key) else {
+        let Some(family) = image.families.get(&key) else {
             return Ok(None);
         };
         if family.revoked
@@ -137,13 +197,13 @@ impl RefreshLedger {
                 .sender
                 .matches(&verified.credential, &family.original.confirmation)
             || !family.permits(&next)
-            || !state.unissued(&next.token_hash)
+            || !image.unissued(&next.token_hash)
             || now < next.not_before
             || now >= next.expires_at
         {
             return Ok(None);
         }
-        state.access.insert(
+        State::advance(&mut image)?.access.insert(
             next.token_hash.clone(),
             Access {
                 family: key,
@@ -155,18 +215,27 @@ impl RefreshLedger {
 
     /// Revoke the authenticated client's family even if its sender key is lost.
     pub fn revoke(&self, verified: VerifiedClient<RefreshDigest>) -> Result<bool, String> {
-        let mut state = self.0.lock().map_err(|_| "OAuth refresh lock poisoned")?;
+        let mut image = self
+            .image
+            .lock()
+            .map_err(|_| "OAuth refresh lock poisoned")?;
         let key = FamilyKey {
             issuer: verified.issuer.clone(),
             refresh: verified.request.clone(),
         };
-        let Some(family) = state.families.get_mut(&key) else {
+        let Some(family) = image.families.get(&key) else {
             return Ok(false);
         };
         if !verified.matches(&family.registration) {
             return Ok(false);
         }
-        family.revoked = true;
+        if !family.revoked {
+            let family = State::advance(&mut image)?
+                .families
+                .get_mut(&key)
+                .ok_or("OAuth refresh family disappeared")?;
+            family.revoked = true;
+        }
         Ok(true)
     }
 
@@ -177,19 +246,46 @@ impl RefreshLedger {
         base_allowed: bool,
         current: &CurrentUse,
     ) -> Result<bool, String> {
-        let state = self.0.lock().map_err(|_| "OAuth refresh lock poisoned")?;
-        let Some(access) = state.access.get(&current.grant.token_hash) else {
-            return Ok(false);
-        };
-        if access.grant != current.grant
-            || state
-                .families
-                .get(&access.family)
-                .is_none_or(|family| family.revoked)
+        let image = self
+            .image
+            .lock()
+            .map_err(|_| "OAuth refresh lock poisoned")?;
+        guard.admit(base_allowed && image.contains_active(current), current)
+    }
+
+    /// Capture an immutable image of the authoritative position and contents.
+    pub fn checkpoint(&self) -> Result<RevocationCheckpoint, String> {
+        let image = self
+            .image
+            .lock()
+            .map_err(|_| "OAuth refresh lock poisoned")?;
+        Ok(RevocationCheckpoint {
+            authority: self.authority.clone(),
+            image: image.clone(),
+        })
+    }
+
+    /// Check against the independent live ledger and reserve the proof before
+    /// invoking the synchronous effect observer, while revocation is excluded.
+    /// The observer must not re-enter the ledger.
+    pub fn execute_final(
+        &self,
+        input: FinalRefreshUse<'_>,
+        observe_effect: impl FnOnce(),
+    ) -> Result<bool, String> {
+        let image = self
+            .image
+            .lock()
+            .map_err(|_| "OAuth refresh lock poisoned")?;
+        if !input.replica.matches(&self.authority, &image)
+            || !input.checked.matches(&self.authority, &image)
+            || !image.contains_active(input.current)
+            || !input.guard.admit(input.base_allowed, input.current)?
         {
             return Ok(false);
         }
-        guard.admit(base_allowed, current)
+        observe_effect();
+        Ok(true)
     }
 }
 

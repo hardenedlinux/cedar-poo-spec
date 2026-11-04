@@ -13,3 +13,4 @@ import CedarPooSpec.Gateway.OAuth
 import CedarPooSpec.Gateway.OAuthCode
 import CedarPooSpec.Gateway.OAuthPAR
 import CedarPooSpec.Gateway.OAuthRefresh
+import CedarPooSpec.Gateway.OAuthRevocation

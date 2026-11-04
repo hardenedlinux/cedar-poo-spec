@@ -1090,12 +1090,49 @@ It protects a decision only when the required minimum includes the
 relevant revoke commit. A floor carried by one caller does not protect
 another caller whose floor is older. Strict post-acknowledgment semantics
 add an authoritative read or commit fence that orders revocation with the
-actual protected effect. For this profile, the next model should reuse
-the independent frontier used by Gateway publication. It should bind the
-authority identity and authenticated committed prefix, reject an equal
-position with a different snapshot, and check the fence again at final
-mediation. A caller-supplied epoch or a watermark read from the same
-restored replica cannot detect whole-view rollback.
+actual protected effect. The Gateway publication design supplies the same
+independent-reader requirement. A caller-supplied epoch or a watermark
+read from the same restored replica cannot detect whole-view rollback.
+
+*** Independent revocation frontier at final mediation
+
+=Gateway.OAuth.Revocation= binds the authority identity, committed
+position, and exact ledger in one checkpoint. The precheck checkpoint
+and the replica used for the actual request must both match the
+independently read current checkpoint. A missing independent read, an
+older position, or different contents at the same position all refuse.
+An intervening commit invalidates a precheck and requires a new one,
+including an unrelated ledger change. That is the strict policy for
+this adapter.
+
+=protect= refines the existing Gateway =FinalUse.mediated= obligation
+and the same Host slot used for continuing effects. A successful
+invocation retains the original mediation requirement, authentic
+checkpoint evidence, exact sender and family checks, and the committed
+OAuth replay reservation. =revoked_descendant_refused= connects the
+authenticated prefix to a committed revocation through the existing
+Zero Trust run relation. The theorem applies when the independent
+checkpoint is a genuine descendant and the access digest resolves to
+the revoked family.
+
+The Rust reference retains immutable process-local checkpoints and
+checks them against the live ledger while holding the writer lock.
+Every enrollment, refresh, or first revocation advances its position.
+The final method reserves the DPoP proof and calls a synchronous effect
+observer before releasing that lock. The replay verifies that an
+acknowledged revoke refuses a stale request, a fork at the current
+position, a check superseded before execution, and a newly checked use
+of a revoked grant. It also checks the reverse ordering, where an
+effect already inside final mediation finishes before a waiting
+revocation can commit.
+
+The native boundary remains explicit. A deployment must obtain the
+current prefix from an independently authenticated, rollback-resistant
+authority and bind its exact ledger contents to the position. It must
+serialize the reservation and final effect with all revocation writers.
+The reference uses exact in-memory equality and a synchronous observer.
+Distributed proof transport, persistent checkpoint custody, and
+external effect atomicity remain adapter obligations.
 
 
 References include [[https://www.rfc-editor.org/rfc/rfc9700.html#section-2.3][OAuth Security BCP]],

@@ -1,4 +1,4 @@
-import CedarPooSpec.Gateway.OAuthRefresh
+import CedarPooSpec.Gateway.OAuthRevocation
 
 namespace Tests.Gateway.OAuthRefresh
 open CedarPooSpec.Gateway.OAuth
@@ -52,6 +52,9 @@ private def exercise (confirmation replacement : Confirmation) : Bool := Id.run 
     match binding with
     | .mtls peer => .mtls peer
     | .dpop key => .dpop ⟨key, target.method, target.uri, g.tokenHash, 14, proofId, true, true, false⟩
+  let before : Revocation.Checkpoint := ⟨"issuer-ledger", 3, current⟩
+  let frontier : Revocation.Checkpoint := ⟨before.authorityId, 4, revoked.result⟩
+  let forged := { frontier with ledger := current }
   let after : RefreshInput := { retry with ledger := current, next := { next with tokenHash := "after" } }
   return (refresh { exchange with verified := verified ⟨digest, tokenSender replacement⟩ }).isNone &&
     (refresh { exchange with next := { next with confirmation := replacement } }).isNone &&
@@ -66,7 +69,16 @@ private def exercise (confirmation replacement : Confirmation) : Bool := Id.run 
       let attempt : Attempt := ⟨g, target, sender g confirmation "same-attempt", true⟩
       (useAccess current authority attempt).isSome &&
       (useAccess current authority ⟨g, target, sender g replacement "changed", true⟩).isNone &&
-      (useAccess revoked.result authority attempt).isNone)
+      (useAccess revoked.result authority attempt).isNone &&
+      let read : Revocation.FinalRead := ⟨⟨before, before, authority, attempt⟩, some before⟩
+      let fork : Revocation.FinalRead := ⟨⟨forged, forged, authority, attempt⟩, some frontier⟩
+      let renewed : Revocation.FinalRead := ⟨⟨frontier, frontier, authority, attempt⟩, some frontier⟩
+      (Revocation.contract.invoke Revocation.prepare read).isOk &&
+      (Revocation.check { read with independent := none }).isNone &&
+      (Revocation.check { read with independent := some frontier }).isNone &&
+      (Revocation.check fork).isNone &&
+      (Revocation.check { renewed with checked := before }).isNone &&
+      (Revocation.check renewed).isNone)
 
 /-- The identical request still passes with a pre-revocation snapshot even
 when the authoritative revocation has already committed. -/
@@ -86,3 +98,7 @@ end Tests.Gateway.OAuthRefresh
 #print axioms CedarPooSpec.Gateway.OAuth.Refresh.committed_run_preserves_revocation
 #print axioms CedarPooSpec.Gateway.OAuth.Refresh.committed_descendant_blocks_access
 #print axioms CedarPooSpec.Gateway.OAuth.Refresh.committed_descendant_blocks_refresh
+
+#print axioms CedarPooSpec.Gateway.OAuth.Revocation.mediation_retains_original_and_frontier
+#print axioms CedarPooSpec.Gateway.OAuth.Revocation.revoked_descendant_refused
+#print axioms CedarPooSpec.Gateway.OAuth.Revocation.final_use_refused_without_current_check
