@@ -24,7 +24,7 @@ pub use wire::{
     EffectIdentity, Envelope, FactBinding, Origin, ReviewBinding, Signed, Version, public_key,
     verify,
 };
-pub use witness::{Checkpoint, Commit, LogSnapshot, Witness, verify_log};
+pub use witness::{Checkpoint, Commit, LogSnapshot, Witness, WitnessFrontier, verify_log};
 
 pub use review::{
     AnalysisKind, GainApproval, PreparedPublications, PublicationDelivery, PublicationRecord,

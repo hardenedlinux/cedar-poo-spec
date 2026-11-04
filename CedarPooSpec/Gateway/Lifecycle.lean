@@ -96,9 +96,11 @@ structure HistoryInput where
   logKey : String
   entries : List CommitRef
   valid : Bool
+  independent : Option WitnessFrontier := none
 
 def checkHistory (input : HistoryInput) : Except String WitnessFrontier :=
-  if input.valid && input.prior.all (fun prior => prior.extends input.logKey input.entries) then
+  if input.valid && input.prior.all (fun prior => prior.extends input.logKey input.entries) &&
+      input.independent.all (fun pin => pin.extends input.logKey input.entries) then
     .ok (WitnessFrontier.observe input.logKey input.entries)
   else .error "witness frontier regressed or changed prefix"
 
@@ -118,13 +120,13 @@ theorem history_invocation_is_bound
 
 theorem rollback_frontier_is_refused (prior : WitnessFrontier) (logKey : String)
     (entries : List CommitRef) (valid : Bool) (shorter : entries.length < prior.size) :
-    (checkHistory ⟨some prior, logKey, entries, valid⟩).isOk = false := by
+    (checkHistory ⟨some prior, logKey, entries, valid, none⟩).isOk = false := by
   simp [checkHistory, WitnessFrontier.extends, Nat.not_le_of_lt shorter, Except.isOk, Except.toBool]
 
 theorem changed_frontier_is_refused (prior : WitnessFrontier) (logKey : String)
     (entries : List CommitRef) (valid : Bool)
     (changed : (entries.take prior.size).getLast? ≠ prior.boundary) :
-    (checkHistory ⟨some prior, logKey, entries, valid⟩).isOk = false := by
+    (checkHistory ⟨some prior, logKey, entries, valid, none⟩).isOk = false := by
   by_cases within : prior.size ≤ entries.length
   · have bound := indexed_boundary_matches_verified_prefix prior.size entries within
     simp [checkHistory, WitnessFrontier.extends, bound, changed, Except.isOk, Except.toBool]
@@ -141,8 +143,29 @@ theorem history_result_retains_observed_frontier
 
 theorem changed_witness_key_is_refused (prior : WitnessFrontier) (logKey : String)
     (entries : List CommitRef) (valid : Bool) (changed : prior.logKey ≠ logKey) :
-    (checkHistory ⟨some prior, logKey, entries, valid⟩).isOk = false := by
+    (checkHistory ⟨some prior, logKey, entries, valid, none⟩).isOk = false := by
   simp [checkHistory, WitnessFrontier.extends, changed, Except.isOk, Except.toBool]
+
+/-- An independent pin is required alongside, rather than replaced by, the
+surviving local prefix. A valid signature flag cannot bypass either boundary. -/
+theorem history_invocation_extends_independent
+    (receipt : Invocation historyContract prepareHistory input)
+    (configured : input.independent = some pin) :
+    pin.extends input.logKey input.entries = true := by
+  have bound := history_invocation_is_bound receipt
+  cases accepted : pin.extends input.logKey input.entries
+  · simp [checkHistory, configured, accepted] at bound
+  · rfl
+
+theorem same_length_fork_refused (prior : Option WitnessFrontier) (pin : WitnessFrontier)
+    (logKey : String) (entries : List CommitRef) (valid : Bool)
+    (sameSize : pin.size = entries.length)
+    (differentHead : WitnessFrontier.boundaryAt entries.length entries ≠ pin.boundary) :
+    (checkHistory ⟨prior, logKey, entries, valid, some pin⟩).isOk = false := by
+  have different : WitnessFrontier.boundaryAt pin.size entries ≠ pin.boundary := by
+    simpa only [sameSize] using differentHead
+  simp [checkHistory, WitnessFrontier.extends, different,
+    Except.isOk, Except.toBool]
 
 structure State where
   current : Current
@@ -297,9 +320,10 @@ theorem audited_recovery_preserves_burn (state : State) (committed observed : Bo
   simp [recoverAudited, recover, spent]
 
 /-- Recovery consumes the actual retained-state Contract, then rotates ownership. -/
-def recoverChecked (state : State) (evidence : RecoveryEvidence) : Except String State := do
+def recoverChecked (state : State) (evidence : RecoveryEvidence)
+    (independent : Option WitnessFrontier := none) : Except String State := do
   let history ← (historyContract.invoke prepareHistory
-    ⟨state.witnessFrontier, evidence.logKey, evidence.entries, !evidence.report.invalidLog⟩).mapError
+    ⟨state.witnessFrontier, evidence.logKey, evidence.entries, !evidence.report.invalidLog, independent⟩).mapError
       (fun _ => "history extension Contract refused")
   let receipt ← (recoveryContract.invoke prepareRecovery
     ⟨state.current.effect.operation, state.retainedIntent, evidence⟩).mapError
@@ -345,9 +369,10 @@ def prepareProviderRecovery (trust : ProviderAuditTrust) (input : State × Provi
   pure (checked, ())
 
 def recoverFromProviderChecked (trust : ProviderAuditTrust) (state : State)
-    (evidence : ProviderRecoveryEvidence) : Except String State := do
+    (evidence : ProviderRecoveryEvidence) (independent : Option WitnessFrontier := none) :
+    Except String State := do
   let history ← (historyContract.invoke prepareHistory
-    ⟨state.witnessFrontier, trust.logKey, evidence.entries, evidence.logValid⟩).mapError
+    ⟨state.witnessFrontier, trust.logKey, evidence.entries, evidence.logValid, independent⟩).mapError
       (fun _ => "provider history extension Contract refused")
   let receipt ← ((providerRecoveryContract trust).invoke (prepareProviderRecovery trust)
     (state, evidence)).mapError (fun _ => "provider recovery Contract refused")

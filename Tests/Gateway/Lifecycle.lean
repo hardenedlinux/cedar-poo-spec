@@ -74,3 +74,5 @@ import CedarPooSpec.Gateway.Lifecycle
 
 #print axioms CedarPooSpec.Gateway.Lifecycle.revoked_trace_blocks_use_and_publication
 #print axioms CedarPooSpec.Gateway.Lifecycle.burned_trace_stays_burned
+#print axioms CedarPooSpec.Gateway.Lifecycle.history_invocation_extends_independent
+#print axioms CedarPooSpec.Gateway.Lifecycle.same_length_fork_refused

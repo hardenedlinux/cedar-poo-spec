@@ -23,10 +23,25 @@ pub struct AuditAuthority {
     pub log_key: VerifyingKey,
     pub facts: FactAuthority,
     pub minimum_size: u64,
+    /// An independently retained committed prefix, when configured.
+    pub independent_frontier: Option<super::WitnessFrontier>,
     pub review_trust: Option<super::ReviewTrust>,
     pub prepared_publications: Option<super::PreparedPublications>,
 }
 impl AuditAuthority {
+    pub(super) fn check_history(
+        &self,
+        history: &super::witness::VerifiedLog<'_>,
+    ) -> Result<(), String> {
+        if history.key() != self.log_key || (history.records().len() as u64) < self.minimum_size {
+            return Err("verified log does not satisfy the independent key or floor".into());
+        }
+        if let Some(frontier) = &self.independent_frontier {
+            history.check_frontier(frontier)?;
+        }
+        Ok(())
+    }
+
     /// Verify an exact public prefix; prepared material never supplies an Allow.
     pub fn verify_publications(
         &self,
@@ -152,7 +167,11 @@ fn reconcile_source(
     intent: Option<&Signed>,
 ) -> Reconciliation {
     let view = snapshot.view();
-    let history = super::witness::verify_view(view, &authority.log_key, authority.minimum_size);
+    let history = super::witness::verify_view(view, &authority.log_key, authority.minimum_size)
+        .and_then(|history| {
+            authority.check_history(&history)?;
+            Ok(history)
+        });
     reconcile_records(
         journal,
         receipts,
@@ -174,13 +193,10 @@ pub(super) fn reconcile_recovery(
     provider_key: Option<&VerifyingKey>,
     intent: Option<&Signed>,
 ) -> Reconciliation {
-    let verified = if history.key() == authority.log_key
-        && history.records().len() as u64 >= authority.minimum_size
-    {
-        Ok(history)
-    } else {
-        Err(())
-    };
+    let verified = authority
+        .check_history(history)
+        .map(|()| history)
+        .map_err(|_| ());
     reconcile_records(
         journal,
         receipts,

@@ -145,12 +145,34 @@ pub(super) fn verify_view<'a>(
 /// Compact trusted progress, retained only after a complete public-log check.
 /// The boundary digest binds the prefix under the verified chain assumption.
 #[derive(Clone)]
-pub(crate) struct WitnessFrontier {
+pub struct WitnessFrontier {
     key: VerifyingKey,
     size: usize,
     root: String,
 }
 impl WitnessFrontier {
+    /// Bind a checkpoint read from independent durable authority. Signature
+    /// verification does not establish freshness or consensus on its own.
+    pub fn from_checkpoint(checkpoint: &Signed, key: &VerifyingKey) -> Result<Self, String> {
+        let head: Checkpoint = verify(checkpoint, key)?;
+        if head.version != (Version { major: 1, minor: 0 })
+            || (head.size == 0 && !head.root.is_empty())
+            || (head.size != 0
+                && (head.root.len() != 64
+                    || !head
+                        .root
+                        .bytes()
+                        .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))))
+        {
+            return Err("invalid independent checkpoint".into());
+        }
+        Ok(Self {
+            key: *key,
+            size: usize::try_from(head.size).map_err(|_| "checkpoint size exceeds platform")?,
+            root: head.root,
+        })
+    }
+
     pub(crate) fn check(&self, entries: &[Signed], key: &VerifyingKey) -> Result<(), String> {
         if self.key != *key || entries.len() < self.size {
             return Err("recovery witness frontier regressed or changed key".into());

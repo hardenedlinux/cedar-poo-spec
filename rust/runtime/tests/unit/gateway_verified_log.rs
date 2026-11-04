@@ -30,6 +30,7 @@ fn verified_log_reuse_keeps_the_original_root_and_current_independent_floor() {
         log_key: log.verifying_key(),
         facts,
         minimum_size: 0,
+        independent_frontier: None,
         review_trust: None,
         prepared_publications: None,
     };
@@ -43,4 +44,56 @@ fn verified_log_reuse_keeps_the_original_root_and_current_independent_floor() {
     authority.log_key = log.verifying_key();
     authority.minimum_size = 1;
     assert!(reconcile_recovery(&journal, &[], &history, &authority, None, None).invalid_log);
+
+    // Two authenticated writers using the same key can produce distinct,
+    // same-height branches. The independent checkpoint chooses the prefix.
+    let mut chosen = Witness::simulation();
+    let mut fork = Witness::simulation();
+    let effect = crate::gateway::EffectIdentity {
+        operation: "operation".into(),
+        object: "object".into(),
+        generation: 0,
+        payload: "payload".into(),
+        action_schema: "schema".into(),
+        audience: "audience".into(),
+    };
+    let review = crate::gateway::ReviewBinding {
+        before: "before".into(),
+        after: "after".into(),
+        schema: "schema".into(),
+        source: "source".into(),
+        epoch: 0,
+        report: "report".into(),
+    };
+    let append = |witness: &mut Witness, world| {
+        witness
+            .append(crate::gateway::witness::PrecommitInput {
+                current_world: world,
+                effect: &effect,
+                review: &review,
+                facts: &[],
+                publications: &[],
+            })
+            .unwrap();
+    };
+    append(&mut chosen, "chosen");
+    append(&mut fork, "fork");
+    let chosen_snapshot = chosen.snapshot();
+    let fork_snapshot = fork.snapshot();
+    assert!(crate::gateway::verify_log(&fork_snapshot, &authority.log_key, 1).is_ok());
+    assert!(!super::reconcile(&journal, &[], &fork_snapshot, &authority).invalid_log);
+    authority.independent_frontier = Some(
+        crate::gateway::WitnessFrontier::from_checkpoint(
+            &chosen_snapshot.checkpoint,
+            &authority.log_key,
+        )
+        .unwrap(),
+    );
+    assert!(!super::reconcile(&journal, &[], &chosen_snapshot, &authority).invalid_log);
+    assert!(super::reconcile(&journal, &[], &fork_snapshot, &authority).invalid_log);
+    let verified_fork =
+        crate::gateway::witness::verify_view(fork.view(), &authority.log_key, 1).unwrap();
+    assert!(reconcile_recovery(&journal, &[], &verified_fork, &authority, None, None).invalid_log);
+    append(&mut chosen, "extension");
+    assert!(!super::reconcile(&journal, &[], &chosen.snapshot(), &authority).invalid_log);
 }

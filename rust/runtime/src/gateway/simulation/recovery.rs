@@ -118,6 +118,7 @@ impl Simulator {
                 .audit
                 .minimum_size
                 .max(evidence.witness.minimum_size()),
+            independent_frontier: evidence.audit.independent_frontier.clone(),
             review_trust: evidence.audit.review_trust.clone(),
             prepared_publications: evidence.audit.prepared_publications.clone(),
         };
@@ -161,7 +162,7 @@ impl Simulator {
                 .map(|retained| retained.entry.as_ref()),
         );
         if report.invalid_log {
-            return Err("recovery witness is below the trusted floor".into());
+            return Err("recovery witness fails the independent history constraint".into());
         }
         let committed = retained_effect.is_some();
         let complete = retained_effect.is_some_and(|effect| {

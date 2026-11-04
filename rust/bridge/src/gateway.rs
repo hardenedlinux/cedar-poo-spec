@@ -529,6 +529,8 @@ struct AuditTrust {
     gateway_key: Vec<u8>,
     log_key: Vec<u8>,
     minimum_size: u64,
+    #[serde(default)]
+    independent_checkpoint: Option<cedar_poo_runtime::gateway::Signed>,
     facts: Vec<cedar_poo_runtime::gateway::FactBinding>,
     source_keys: BTreeMap<String, Vec<u8>>,
     observed_at: u64,
@@ -568,6 +570,13 @@ pub(crate) fn audit(input: &str, trust_path: &str) -> Result<Value, String> {
         log_key,
         facts,
         minimum_size: trust.minimum_size,
+        independent_frontier: trust
+            .independent_checkpoint
+            .as_ref()
+            .map(|checkpoint| {
+                cedar_poo_runtime::gateway::WitnessFrontier::from_checkpoint(checkpoint, &log_key)
+            })
+            .transpose()?,
         review_trust: match (trust.review_key, trust.approval_key) {
             (None, None) => None,
             (Some(review), Some(approval)) => Some(cedar_poo_runtime::gateway::ReviewTrust {

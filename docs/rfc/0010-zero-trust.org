@@ -421,6 +421,46 @@ surviving owner and independently signed outcome are explicit premises.
 A distributed Host would require a separate agreement and durability model
 before this result could cover concurrent writers across failures.
 
+** Distributed writer and recovery boundaries
+
+A signature authenticates the writer's bytes. If two processes can use the
+same witness key, two signed histories can have the same length and disagree
+at the same position. The audit authority may now supply an independently
+retained signed checkpoint through =independent_checkpoint= in the trust
+configuration. The runtime verifies that checkpoint against the configured
+witness key, then requires the authenticated candidate history to extend the
+pinned boundary. Recovery also checks its surviving local frontier. A pin must
+come from a durable authority independent of the candidate. Selecting a pin
+from the history being audited gives no independent fork protection.
+
+=Lifecycle.historyContract= binds both frontiers to the same checked history.
+=history_invocation_extends_independent= extracts the independent extension
+from a successful invocation. =same_length_fork_refused= checks that signature
+validity and equal length cannot override a different boundary. The Rust
+control constructs two valid chains with the same signer and height, confirms
+the old floor alone admits both, then exercises independent audit and recovery
+refusal as well as acceptance of a proper extension.
+
+Three separate obligations remain at the distributed Host boundary.
+
+| Boundary | Required Host premise | Failure when absent |
+|----------+-----------------------+---------------------|
+| Committed history | One authenticated committed prefix per authority and configuration, with a durable checkpoint reader that does not roll back. Raft's leader completeness and membership-change protocol are reference mechanisms for a crash-fault deployment. | Two writers can certify different state at the same position, or recovery can reopen a retired cut. |
+| Revocation and Delta publication | Order both in the same authority and enforce the authenticated current cut at the final resource or publication receiver. Chubby's sequencer puts the check at the recipient. | A delayed writer can act after revocation even when its earlier local check passed. |
+| Independent effect recovery | Verify the retained intent and a provider outcome under independent keys and retain quarantine while the outcome remains unresolved. | Agreement about the intent log alone cannot establish whether external IO took place. |
+
+The existing =PublicationReview.Final= binds the original review and the
+current registrar, cut and Host commit relation. The finite revocation trace
+covers the modeled maintenance transitions. A replicated deployment still
+needs to establish the premises of both results: configuration transitions,
+durable non-reuse of cuts, and receiver-side fencing ordered with each actual
+write. An independent checkpoint detects a divergent presented history.
+Quorum agreement and external effect settlement require their own witnesses.
+
+Sources: [[https://www.usenix.org/conference/atc14/technical-sessions/presentation/ongaro][Ongaro and Ousterhout, Raft]],
+[[https://research.google.com/archive/chubby-osdi06.pdf][Burrows, Chubby, Section 2.4]],
+and [[https://arxiv.org/abs/cs/0408036][Gray and Lamport, Consensus on Transaction Commit]].
+
 ** P0–P2 as one acceptance unit
 
 | Phase | Work in existing owners | Exit evidence |

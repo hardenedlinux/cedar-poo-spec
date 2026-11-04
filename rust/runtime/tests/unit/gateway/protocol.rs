@@ -361,6 +361,7 @@ fn gateway_public_auditor_needs_no_signer_and_refuses_old_checkpoint() {
         log_key: log.verifying_key(),
         facts: simulator.fact_authority(),
         minimum_size: 1,
+        independent_frontier: None,
         review_trust: None,
     };
     let receipts = vec![receipt.unwrap()];

@@ -237,6 +237,7 @@ impl Simulator {
             log_key: witness.verifying_key(),
             facts: self.fact_authority(),
             minimum_size: witness.minimum_size(),
+            independent_frontier: None,
             review_trust: Some(self.review_trust.clone()),
             prepared_publications: None,
         }
