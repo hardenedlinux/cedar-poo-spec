@@ -1,4 +1,5 @@
 import CedarPooSpec.AgenticAI.Boundary
+import CedarPooSpec.Data.CumulativeDisclosure
 
 namespace Tests.AgenticAI.Boundary
 
@@ -33,5 +34,16 @@ theorem sinkAndBaseChecksCannotBeOverridden :
     admitted { { selection with sink := .remoteModel } with
       remoteModelApproved := true } = true := by
   native_decide
+
+/-- A workspace edit and a second-channel tool response can each preserve two
+candidates in isolation while their shared history singles out one. -/
+theorem isolatedChannelsAdmitButSharedHistoryRefuses :
+    let initial : CedarPooSpec.Data.CumulativeDisclosure.Ledger := ⟨["p1", "p2", "p3"], 2⟩
+    let workspace := ["p1", "p2"]
+    let tool := ["p2", "p3"]
+    initial.admits workspace = true ∧ initial.admits tool = true ∧
+      (initial.record workspace).bind (fun next => next.record tool) = none ∧
+      (initial.record tool).bind (fun next => next.record workspace) = none := by
+  decide
 
 end Tests.AgenticAI.Boundary

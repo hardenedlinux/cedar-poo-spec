@@ -258,6 +258,7 @@ impl PolicyBundle {
 /// Prepared authority for one exact effect at specific Host state revisions.
 #[derive(Clone, Debug)]
 pub struct Ticket {
+    scope: Arc<()>,
     effect: Effect,
     authority_id: AuthorityId,
     epoch: u64,
@@ -288,6 +289,13 @@ pub struct CommitReceipt {
     pub remaining_budget: u64,
     pub remaining_candidates: usize,
     pub selection_mutation: bool,
+}
+
+/// An attempted send is charged even when its outcome is unknown.
+#[derive(Debug)]
+pub enum DispatchOutcome {
+    Confirmed(CommitReceipt),
+    Unknown(CommitReceipt),
 }
 
 struct Inner {
@@ -379,6 +387,7 @@ fn commit_admitted(
 /// approval consumption, budget debit, cohort update, and the audit entry
 /// under one mutex.
 pub struct InMemoryDisclosureHost {
+    scope: Arc<()>,
     inner: Mutex<Inner>,
 }
 
@@ -389,6 +398,7 @@ impl InMemoryDisclosureHost {
         authority: AuthorityLedger<Effect>,
     ) -> Self {
         Self {
+            scope: Arc::new(()),
             inner: Mutex::new(Inner {
                 policies: Arc::clone(&policy.0),
                 evidence,
@@ -416,6 +426,7 @@ impl InMemoryDisclosureHost {
         }
         let state = &inner.evidence;
         Ok(Some(Ticket {
+            scope: Arc::clone(&self.scope),
             effect,
             authority_id,
             epoch: state.epoch,
@@ -430,10 +441,28 @@ impl InMemoryDisclosureHost {
     /// Durable stores must implement an equivalent single transaction.
     pub fn commit(&self, ticket: Ticket, actual: &Effect) -> Result<Option<CommitReceipt>, String> {
         let mut inner = self.inner.lock().map_err(|_| "Host lock poisoned")?;
-        if !ticket_current(&inner, &ticket, actual)? {
+        if !Arc::ptr_eq(&self.scope, &ticket.scope) || !ticket_current(&inner, &ticket, actual)? {
             return Ok(None);
         }
         commit_admitted(&mut inner, &ticket, actual).map(Some)
+    }
+
+    /// The trusted adapter receives the exact admitted effect once. A failed
+    /// call is ambiguous, so the charge and operation admission remain.
+    /// The process-local ledger provides no restart durability.
+    pub fn commit_and_dispatch(
+        &self,
+        ticket: Ticket,
+        actual: &Effect,
+        send: impl FnOnce(&Effect) -> Result<(), String>,
+    ) -> Result<Option<DispatchOutcome>, String> {
+        let Some(receipt) = self.commit(ticket, actual)? else {
+            return Ok(None);
+        };
+        Ok(Some(match send(actual) {
+            Ok(()) => DispatchOutcome::Confirmed(receipt),
+            Err(_) => DispatchOutcome::Unknown(receipt),
+        }))
     }
 
     pub fn observe_output(&self, digest: String, candidate_ids: Vec<String>) -> Result<(), String> {

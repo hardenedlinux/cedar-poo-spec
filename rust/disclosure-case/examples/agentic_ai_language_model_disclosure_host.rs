@@ -4,7 +4,8 @@ use cedar_poo_agentic::boundary::SelectionDelta;
 use cedar_poo_core::authority_consumption::{AuthorityGrant, AuthorityId, AuthorityLedger};
 use cedar_poo_core::operation_identity::OperationId;
 use cedar_poo_disclosure_host::{
-    Effect, Evidence, Grant, InMemoryDisclosureHost, RecipientGrant, ValidatedDisclosurePolicy,
+    DispatchOutcome, Effect, Evidence, Grant, InMemoryDisclosureHost, RecipientGrant,
+    ValidatedDisclosurePolicy,
 };
 use cedar_poo_runtime::ValidatedManifest;
 use serde_json::json;
@@ -239,6 +240,75 @@ fn run() -> Result<(), String> {
         return Err("independent second release was denied".into());
     }
 
+    // Both channels see the same authenticated result and shared ledger revision.
+    let mut alternate = independent.clone();
+    alternate.channel = "message".into();
+    for workspace_first in [true, false] {
+        let shared = InMemoryDisclosureHost::new(
+            &policy,
+            evidence(),
+            authority(&first, &alternate, &second),
+        );
+        let separate_scope = InMemoryDisclosureHost::new(
+            &policy,
+            evidence(),
+            authority(&first, &alternate, &second),
+        );
+        let workspace = shared
+            .prepare(AuthorityId::from("approval-first"), first.clone())?
+            .ok_or("workspace preparation denied")?;
+        let message = shared
+            .prepare(AuthorityId::from("approval-independent"), alternate.clone())?
+            .ok_or("message preparation denied")?;
+        if separate_scope.commit(workspace.clone(), &first)?.is_some() {
+            return Err("foreign observer scope accepted a prepared ticket".into());
+        }
+        let (winner, effect, loser, other) = if workspace_first {
+            (workspace, &first, message, &alternate)
+        } else {
+            (message, &alternate, workspace, &first)
+        };
+        if shared.commit(winner, effect)?.is_none()
+            || shared.commit(loser, other)?.is_some()
+            || shared.audit()?.len() != 1
+        {
+            return Err("cross-channel tickets did not share one deciding revision".into());
+        }
+    }
+
+    let mut replan = first.clone();
+    replan.channel = "message".into();
+    let ambiguous =
+        InMemoryDisclosureHost::new(&policy, evidence(), authority(&first, &replan, &second));
+    let original = ambiguous
+        .prepare(AuthorityId::from("approval-first"), first.clone())?
+        .ok_or("dispatch preparation denied")?;
+    let retry = ambiguous
+        .prepare(AuthorityId::from("approval-independent"), replan.clone())?
+        .ok_or("alternative channel was not initially eligible")?;
+    let mut sends = 0;
+    let dispatched = ambiguous.commit_and_dispatch(original, &first, |actual| {
+        assert_eq!(actual, &first);
+        sends += 1;
+        Err("simulated lost provider reply".into())
+    })?;
+    if !matches!(dispatched, Some(DispatchOutcome::Unknown(receipt)) if receipt.remaining_budget == 1)
+        || ambiguous
+            .commit_and_dispatch(retry, &replan, |_| {
+                sends += 1;
+                Ok(())
+            })?
+            .is_some()
+        || ambiguous
+            .prepare(AuthorityId::from("approval-independent"), replan)?
+            .is_some()
+        || ambiguous.authority_used(&AuthorityId::from("approval-independent"))? != Some(0)
+        || ambiguous.audit()?.len() != 1
+        || sends != 1
+    {
+        return Err("lost reply allowed a second send or changed the original charge".into());
+    }
+
     let first_delta = SelectionDelta {
         before: (1..=6).map(|n| format!("p{n}")).collect(),
         after: ["p1", "p2", "p3", "p4"].map(str::to_owned).to_vec(),
@@ -451,6 +521,8 @@ fn run() -> Result<(), String> {
             "candidateSubstitutionDenied": candidate_substitution_denied,
             "unobservedSelectionDenied": unobserved_selection_denied,
             "cumulativeSelectionDenied": cumulative_selection_denied,
+            "crossChannelRevisionSerialized": true,
+            "lostReplyCrossChannelRetryDenied": true,
             "auditEntries": host.audit()?.len(),
         })
     );

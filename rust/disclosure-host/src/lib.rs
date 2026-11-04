@@ -3,8 +3,8 @@
 
 mod host;
 pub use host::{
-    CommitReceipt, Effect, Evidence, Grant, InMemoryDisclosureHost, RecipientGrant, Ticket,
-    ValidatedDisclosurePolicy,
+    CommitReceipt, DispatchOutcome, Effect, Evidence, Grant, InMemoryDisclosureHost,
+    RecipientGrant, Ticket, ValidatedDisclosurePolicy,
 };
 
 #[cfg(test)]

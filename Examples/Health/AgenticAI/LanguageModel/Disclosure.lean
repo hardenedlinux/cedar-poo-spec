@@ -339,6 +339,27 @@ def redeem
         let next := { next with audit := state.audit ++ [effect.payloadDigest] }
         some next
 
+theorem redeem_advances_shared_revision (state next : State) (ticket : Ticket) (effect : Effect)
+    (committed : redeem state ticket effect = some next) : next.epoch = state.epoch + 1 := by
+  unfold redeem at committed
+  split at committed
+  · contradiction
+  · split at committed
+    · contradiction
+    · cases committed
+      rfl
+
+/-- Every successful release retires the prepared cut for every channel. -/
+theorem shared_revision_retires_competing_ticket (state next : State)
+    (winner competitor : Ticket) (first second : Effect)
+    (committed : redeem state winner first = some next)
+    (sameCut : competitor.epoch = state.epoch) :
+    redeem next competitor second = none := by
+  have advanced := redeem_advances_shared_revision state next winner first committed
+  have stale : competitor.epoch ≠ next.epoch := by omega
+  simp [redeem, stale]
+
+
 def release
      (root : DeployableRoot) (state : State) (effect : Effect)
     (programContext : CedarPooSpec.Functional.Program CedarPooSpec.AgenticAI.LanguageModel.Disclosure.publicationModel CedarPooSpec.AgenticAI.LanguageModel.Disclosure.publicationSchema :=
