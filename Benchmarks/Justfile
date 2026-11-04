@@ -167,6 +167,8 @@ bench-gateway-history:
     evidence="$repository/.lake/build/resources/history-comparison"
     binaries="$repository/.lake/build/history-comparison/bin"
     scratch=$(mktemp -d "${TMPDIR:-/tmp}/cedar-history-XXXXXX")
+    scratch=$(cd "$scratch" && pwd -P)
+    target="$scratch/target"
     mkdir -p "$evidence" "$binaries"
     before=3d75c77f2e169458cf4887f6d2409c56d079e56a
     retained=4f8a4a3b7300552d4b3fc9fc4e10a46feb94c328
@@ -177,18 +179,30 @@ bench-gateway-history:
     if test -f /sys/fs/cgroup/cpu.max; then cat /sys/fs/cgroup/cpu.max > "$evidence/cpu.max"; fi
     cargo build --release --locked -p cedar-poo-bridge --features gateway
     cp rust/target/release/cedar-poo-bridge "$binaries/C"
+    mkdir -p "$target"
+    cp -a rust/target/release "$target/release"
     for label in A B; do
         if test "$label" = A; then revision="$before"; else revision="$retained"; fi
         if ! git cat-file -e "$revision^{commit}" 2>/dev/null; then
             git fetch --no-tags --depth=1 origin "$revision"
         fi
         mkdir -p "$scratch/$label"
-        git archive "$revision" Cargo.toml Cargo.lock rust | tar -x -C "$scratch/$label"
+        git rev-parse "$revision^{tree}" > "$evidence/$label-source-tree.txt"
+        git archive "$revision^{tree}" Cargo.toml Cargo.lock rust | tar -x -C "$scratch/$label"
         cmp Cargo.lock "$scratch/$label/Cargo.lock"
         printf '%s\n' "$revision" > "$evidence/$label-commit.txt"
-        cargo build --release --locked --manifest-path "$scratch/$label/Cargo.toml" --target-dir "$repository/rust/target" -p cedar-poo-bridge --features gateway
-        cp rust/target/release/cedar-poo-bridge "$binaries/$label"
+        # Git's tree archive uses current mtimes while preserving exact source
+        # blobs. Require fresh workspace compilation and the emitted executable.
+        cargo build --release --locked --manifest-path "$scratch/$label/Cargo.toml" --target-dir "$target" -p cedar-poo-bridge --features gateway --message-format=json > "$evidence/$label-build.jsonl"
+        for package in core runtime bridge; do
+            jq -s -e --arg manifest "$scratch/$label/rust/$package/Cargo.toml" 'any(.[]; .reason == "compiler-artifact" and .manifest_path == $manifest and .fresh == false)' "$evidence/$label-build.jsonl" >/dev/null
+        done
+        executable=$(jq -rs --arg manifest "$scratch/$label/rust/bridge/Cargo.toml" '[.[] | select(.reason == "compiler-artifact" and .manifest_path == $manifest and .fresh == false and (.target.kind | index("bin")) and .executable != null)] | last | .executable' "$evidence/$label-build.jsonl")
+        test -f "$executable"
+        cp "$executable" "$binaries/$label"
     done
+    sha256sum "$binaries/A" "$binaries/B" "$binaries/C" > "$evidence/binary-identities.sha256"
+    test "$(cut -d ' ' -f 1 "$evidence/binary-identities.sha256" | sort -u | wc -l)" -eq 3
     sha256sum "$binaries/A" "$binaries/B" "$binaries/C" Cargo.lock .lake/build/functional-catalog.json .lake/build/reviewed-effects/*.json > "$evidence/inputs.sha256"
     for sample in A1 B1 C1 C2 B2 A2; do
         label=${sample:0:1}

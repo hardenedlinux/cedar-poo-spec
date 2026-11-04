@@ -1492,8 +1492,9 @@ It consumes this revision's complete validated inputs from =reviewed-effects= an
 executes =bench-gateway-history=: fixed
 =A1 B1 C1 C2 B2 A2= order on one runner, using exact committed sources for
 =A= (3d75c77), =B= (4f8a4a3) and the current verified-view implementation =C=.
-All binaries use the same Cargo lockfile, compiler, target directory and complete
-current Lean-produced inputs. Each process must exit naturally under the original
+All binaries use the same Cargo lockfile, compiler, release settings and complete
+current Lean-produced inputs. Historical workspace builds use a private target
+seeded with compatible dependencies, with explicit source rebuild admission. Each process must exit naturally under the original
 120-second watchdog, retain all 28,989 states and compare every output byte with
 the full current replay. A changed source, incomplete output or failed process
 cannot be admitted by timing. All six raw outputs, hashes, CPU/RSS receipts and
@@ -1550,3 +1551,39 @@ original semantic/native workloads. A selected diagnostic still runs all six
 samples and every byte/count/watchdog control; the switch does not permit a
 shortened cohort. Its separate job consumes same-revision validated fixtures
 and preserves the existing 20-minute job and 120-second process limits.
+
+*** Rejecting stale historical build artifacts
+
+The first six-process diagnostic (run 41776812606) completed every runtime and
+wire control, but independent artifact review found identical A/B/C executable
+SHA-256 values. Historical A/B builds reported completion in 0.07/0.06 seconds
+without recompiling the workspace sources. This is rejected as a historical
+version comparison. Its complete six outputs/resources remain retained; they
+cannot support a revision speedup or frontier-cost estimate. The same-byte
+cross-runner observation is a separate valid environment control.
+
+The source archive retains commit-time file mtimes, while Cargo target artifacts
+are relocatable and source freshness is mtime-sensitive. Reusing a newer shared
+target without a rebuild allowed the current artifact to appear under historical
+labels. The diagnostic now archives the exact recorded Git tree: Git's documented tree
+mode gives extracted files current mtimes while preserving their source bytes.
+It requires Cargo's structured compiler-artifact messages to bind the exact
+archived manifest and report actual recompilation of core/runtime/bridge, and
+copies the executable path emitted by Cargo. All three known-different versions
+must have distinct executable digests before any timed process is admitted.
+The experiment seeds a private temporary target with compatible dependencies,
+then rebuilds the archived workspace sources there, leaving the normal target
+untouched. Dependency artifacts may still be shared; no cache-version fallback, workload
+reduction, environment tuning or timeout widening substitutes for source custody.
+The entire fixed six-sample cohort is rerun after this admission correction.
+
+Primary build-system references: [[https://git-scm.com/docs/git-archive][Git archive documentation]] distinguishes
+commit-time and current-time tree archives; [[https://doc.rust-lang.org/stable/nightly-rustc/cargo/compiler/fingerprint/index.html][Cargo fingerprint documentation]]
+describes mtime-based path-source freshness. Recorded commit/tree identities,
+actual compilation messages and distinct output hashes jointly govern admission.
+
+Local admission preflight rebuilt all three workspace packages for each archive
+and produced distinct known-source products: A =f2aa1c00...=, B =63bf5ac7...=,
+and C =a5e13722...=. The tree-mode preflight repeats this result without manual
+source timestamp edits. These are build/admission observations, not timed runtime
+samples. The normal target is preserved and no dependency or compiler flag changes.
