@@ -1,26 +1,12 @@
-use super::{receipt, validated};
+use super::{setup, signed};
 use crate::gateway::{
     AuditAuthority, EffectIo, Envelope, FactAuthority, FactBinding, Fault, Lineage, LogSnapshot,
-    Origin, ProviderJournal, Reconciliation, RecoveryEvidence, Signed, Simulator, Version, Witness,
+    Origin, ProviderJournal, Reconciliation, RecoveryEvidence, Simulator, Version, Witness,
     reconcile, verify_log,
 };
-use p256::ecdsa::{Signature, SigningKey, signature::Signer};
+use p256::ecdsa::SigningKey;
 use std::sync::{Arc, Barrier};
 
-fn setup() -> (crate::Case, cedar_poo_core::SchemaSourceJson, Simulator) {
-    let case = receipt();
-    let schema = validated(case.clone()).schema;
-    let simulator = Simulator::new(&case, Some(&schema)).unwrap();
-    (case, schema, simulator)
-}
-fn signed(value: &impl serde::Serialize, key: &SigningKey) -> Signed {
-    let payload = serde_json::to_vec(value).unwrap();
-    let signature: Signature = key.sign(&payload);
-    Signed {
-        payload,
-        signature: signature.to_bytes().to_vec(),
-    }
-}
 #[test]
 fn gateway_real_signature_preparation_keeps_source_inventory_time_and_key_checks() {
     let key = SigningKey::from_slice(&[11; 32]).unwrap();

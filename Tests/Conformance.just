@@ -223,12 +223,12 @@ check-effect-protocol: check-functional-catalog
 [script("bash")]
 check-reviewed-effects: check-functional-catalog
     set -euo pipefail
-    lake build Tests.Gateway.ReviewedEffect Tests.Gateway.Lifecycle Examples.Gateway.ReviewedEffects
+    lake build Tests.Gateway.ReviewedEffect Tests.Gateway.Lifecycle reviewedEffectsNative
     mkdir -p .lake/build/reviewed-effects .lake/build/resources
     jq -r '.entries | keys[]' .lake/build/functional-catalog.json > .lake/build/reviewed-effects/entries.txt
     status=0
     while IFS= read -r entry; do
-        if timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 --run Examples/Gateway/ReviewedEffects.lean "$entry" > ".lake/build/reviewed-effects/$entry.json" 2> ".lake/build/reviewed-effects/$entry.log"; then
+        if timeout --signal=TERM --kill-after=3s 120s .lake/build/bin/reviewedEffectsNative "$entry" > ".lake/build/reviewed-effects/$entry.json" 2> ".lake/build/reviewed-effects/$entry.log"; then
             echo "REVIEWED-PRODUCER-OK: $entry"
         else
             code=$?

@@ -50,12 +50,77 @@ struct VerifiedOutcome {
     action: super::ProviderAction,
     commit_index: usize,
 }
+#[derive(Clone, Copy)]
+enum OutcomeSource<'a> {
+    Gateway,
+    Provider(&'a VerifyingKey),
+}
+
+fn verify_outcome(
+    signed: &Signed,
+    authority: &AuditAuthority,
+    source: OutcomeSource<'_>,
+) -> Result<Receipt, String> {
+    match source {
+        OutcomeSource::Gateway => verify(signed, &authority.gateway_key),
+        OutcomeSource::Provider(key) => {
+            let outcome: super::ProviderOutcome = verify(signed, key)?;
+            if outcome.version != (Version { major: 1, minor: 0 })
+                || outcome.domain != super::provider::PROVIDER_OUTCOME_DOMAIN
+                || outcome.log_key != authority.log_key.to_encoded_point(false).as_bytes()
+            {
+                return Err("provider outcome domain, version or witness key differs".into());
+            }
+            Ok(outcome.outcome)
+        }
+    }
+}
+
 /// External auditor entrypoint: no private signer or gateway state is required.
 pub fn reconcile(
     journal: &ProviderJournal,
     receipts: &[Signed],
     snapshot: &LogSnapshot,
     authority: &AuditAuthority,
+) -> Reconciliation {
+    reconcile_source(
+        journal,
+        receipts,
+        snapshot,
+        authority,
+        OutcomeSource::Gateway,
+    )
+}
+
+/// Independently configured provider root composed with the existing audit roots.
+#[derive(Clone, Copy)]
+pub struct ProviderAuditTrust<'a> {
+    pub authority: &'a AuditAuthority,
+    pub provider_key: &'a VerifyingKey,
+}
+/// Verify detached provider outcomes without any Gateway or provider private key.
+/// Trust comes from the explicit provider root, not an incoming proof or journal.
+pub fn reconcile_provider_outcomes(
+    journal: &ProviderJournal,
+    outcomes: &[Signed],
+    snapshot: &LogSnapshot,
+    trust: ProviderAuditTrust<'_>,
+) -> Reconciliation {
+    reconcile_source(
+        journal,
+        outcomes,
+        snapshot,
+        trust.authority,
+        OutcomeSource::Provider(trust.provider_key),
+    )
+}
+
+fn reconcile_source(
+    journal: &ProviderJournal,
+    receipts: &[Signed],
+    snapshot: &LogSnapshot,
+    authority: &AuditAuthority,
+    source: OutcomeSource<'_>,
 ) -> Reconciliation {
     let history = verify_log(snapshot, &authority.log_key, authority.minimum_size);
     let mut report = Reconciliation {
@@ -82,7 +147,7 @@ pub fn reconcile(
             if report.invalid_log {
                 return Err("invalid witness history".into());
             }
-            let receipt: Receipt = verify(signed, &authority.gateway_key)?;
+            let receipt = verify_outcome(signed, authority, source)?;
             let commit: Commit = verify(&receipt.commit, &authority.log_key)?;
             let facts = authority.facts.accepts(&receipt.facts)?;
             if facts.iter().any(|fact| fact.source != commit.current_world) {

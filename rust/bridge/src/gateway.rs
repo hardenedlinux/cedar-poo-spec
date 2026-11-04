@@ -534,6 +534,7 @@ struct AuditTrust {
     observed_at: u64,
     review_key: Option<Vec<u8>>,
     approval_key: Option<Vec<u8>>,
+    provider_key: Option<Vec<u8>>,
 }
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -541,6 +542,7 @@ struct AuditInput {
     snapshot: cedar_poo_runtime::gateway::LogSnapshot,
     journal: ProviderJournal,
     receipts: Vec<cedar_poo_runtime::gateway::Signed>,
+    provider_outcomes: Option<Vec<cedar_poo_runtime::gateway::Signed>>,
 }
 pub(crate) fn audit(input: &str, trust_path: &str) -> Result<Value, String> {
     let trust: AuditTrust =
@@ -574,11 +576,30 @@ pub(crate) fn audit(input: &str, trust_path: &str) -> Result<Value, String> {
             _ => return Err("both independent review and approval keys are required".into()),
         },
     };
-    serde_json::to_value(cedar_poo_runtime::gateway::reconcile(
-        &input.journal,
-        &input.receipts,
-        &input.snapshot,
-        &authority,
-    ))
-    .map_err(|e| e.to_string())
+    let report = match (trust.provider_key, input.provider_outcomes) {
+        (None, None) => cedar_poo_runtime::gateway::reconcile(
+            &input.journal,
+            &input.receipts,
+            &input.snapshot,
+            &authority,
+        ),
+        (Some(key), Some(outcomes)) if input.receipts.is_empty() => {
+            let provider_key = cedar_poo_runtime::gateway::public_key(&key)?;
+            cedar_poo_runtime::gateway::reconcile_provider_outcomes(
+                &input.journal,
+                &outcomes,
+                &input.snapshot,
+                cedar_poo_runtime::gateway::ProviderAuditTrust {
+                    authority: &authority,
+                    provider_key: &provider_key,
+                },
+            )
+        }
+        _ => {
+            return Err(
+                "completion evidence differs from independently configured audit mode".into(),
+            );
+        }
+    };
+    serde_json::to_value(report).map_err(|e| e.to_string())
 }

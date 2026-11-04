@@ -134,6 +134,7 @@ pub struct Simulator {
     pub(super) current: Arc<Mutex<Current>>,
     pub(super) source_keys: Arc<BTreeMap<String, SigningKey>>,
     pub(super) receipt_key: SigningKey,
+    pub(super) provider_key: VerifyingKey,
     pub(super) review_trust: ReviewTrust,
     pub(super) initial: Envelope,
 }
@@ -205,6 +206,7 @@ impl Simulator {
             current: Arc::new(Mutex::new(snapshot)),
             source_keys: Arc::clone(&self.source_keys),
             receipt_key: self.receipt_key.clone(),
+            provider_key: self.provider_key,
             review_trust: self.review_trust.clone(),
             initial: self.initial.clone(),
         })
@@ -243,6 +245,10 @@ impl Simulator {
     }
     pub fn verifying_key(&self) -> VerifyingKey {
         *self.receipt_key.verifying_key()
+    }
+    /// Independently configured fixed mock provider root, never selected by evidence.
+    pub fn provider_verifying_key(&self) -> VerifyingKey {
+        self.provider_key
     }
     pub fn prepare(&self, envelope: &Envelope) -> Result<PreparedEffect, String> {
         let current = self.current.lock().map_err(|_| "poisoned authority")?;
@@ -337,7 +343,14 @@ impl Simulator {
         });
         outcome.precommitted = true;
         outcome.sent = true;
-        let action = match provider.send(&current.effect) {
+        let action = match provider.send(crate::gateway::provider::ProviderRequest {
+            effect: &current.effect,
+            commit: &commit,
+            log_key: &witness.verifying_key(),
+            bindings: &facts,
+            facts: &envelope.facts,
+            publications: &current.publications,
+        }) {
             Ok(action) => action,
             Err(_) => {
                 outcome.unknown = true;

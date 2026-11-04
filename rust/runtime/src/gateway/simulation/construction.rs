@@ -137,6 +137,7 @@ impl Simulator {
             })),
             source_keys,
             receipt_key: simulation_key(3),
+            provider_key: *simulation_key(8).verifying_key(),
             review_trust: crate::gateway::ReviewTrust::simulation(),
             initial,
         })

@@ -110,7 +110,7 @@ pub struct Envelope {
 }
 
 pub(super) fn simulation_key(byte: u8) -> SigningKey {
-    static KEYS: std::sync::LazyLock<[SigningKey; 7]> = std::sync::LazyLock::new(|| {
+    static KEYS: std::sync::LazyLock<[SigningKey; 8]> = std::sync::LazyLock::new(|| {
         std::array::from_fn(|index| {
             SigningKey::from_slice(&[index as u8 + 1; 32]).expect("fixed simulation scalar")
         })

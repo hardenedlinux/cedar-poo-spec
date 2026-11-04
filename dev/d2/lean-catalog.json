@@ -20,7 +20,7 @@
     "dev/sysml/lean-catalog.sysml": "ab7215eb4846306aec3ef2b0f16ec55dda87179efb10ea762f02b78d0c6234e5",
     "Examples/ManifestCatalog.lean": "7c1c1eb2d288dfc7d3601062f2fe452d302b693d231ac455dcf24238a3a8219c",
     "lake-manifest.json": "5c10e81300af9d9572dac82e27172f8dab81088e551a23103e010a6473ad3d16",
-    "lakefile.toml": "db0941cbf316d0991b698708d54e206285eeae6a6f1eed0decae69752a8d2507",
+    "lakefile.toml": "7f2c1651560c4668b44bf6d80afa3d26efe2f868ad539e9385f653d093023c39",
     "lean-toolchain": "ca5f1f601d34c49079e38d7e7041eb0f2a9c227fbc1df0f404820069a052330c"
   },
   "binaries": {
@@ -239,12 +239,12 @@
       "samples": 18,
       "requiredMinimum": 12
     },
-    "inputSHA256": "c64f18bf21ea1c65e878a6282f89f1375163334fe4b151326caeb75da03ab17c",
+    "inputSHA256": "322e66303655f705283096730c192889954d03b98e5716a67b7ed730b2978f3f",
     "scenes": [],
     "svgSHA256": [
-      "034922554e568a14ccc6e08c9a36515664d35ceec001c196fefc174592b526cf"
+      "83fed47d46d61db77cbce8f384eee413ac84b6aa2d269391ff4d76ad01894929"
     ],
-    "composedHTMLSHA256": "08078234132af023654806521367949041d563e44576eb63141bc50beb2042aa",
+    "composedHTMLSHA256": "d29e320ba57a327f5f38784ece48e526e11a4537dd66665adba65fa5c031ba4e",
     "dependencies": {
       "@fontsource/inter": "5.3.0",
       "@fontsource/kalam": "5.3.0",
@@ -257,12 +257,12 @@
       "web-worker": "1.5.0"
     },
     "regionSHA256": {},
-    "htmlSHA256": "806c3a4e519b4f02319a620c93e5d6929ee3150e4354f7561d2082eecc3fcce3",
+    "htmlSHA256": "290d5b6d2f8e7b5472c96a924d659b7d9ba022597e2b2c27f286e6f3d64893de",
     "drawing": "precise",
     "routing": "none",
     "assetSHA256": {
-      "@fontsource/inter/files/inter-latin-700-normal.woff2": "6f56409fd3d64bb85f7d070bce20749db2d66b6d63cec586cc22d1c761be2491",
-      "@fontsource/inter/files/inter-latin-400-normal.woff2": "8909904ab6c872eb994093482a88a28eca2cd95912d7b6fecd72103b0dc07edc"
+      "@fontsource/inter/files/inter-latin-400-normal.woff2": "8909904ab6c872eb994093482a88a28eca2cd95912d7b6fecd72103b0dc07edc",
+      "@fontsource/inter/files/inter-latin-700-normal.woff2": "6f56409fd3d64bb85f7d070bce20749db2d66b6d63cec586cc22d1c761be2491"
     },
     "pngSHA256": "a37590b5273ab2d29ea3a1f64199076eb107cb61a57341e100c568836e7b1cf0",
     "browser": "156.0.8078.4",

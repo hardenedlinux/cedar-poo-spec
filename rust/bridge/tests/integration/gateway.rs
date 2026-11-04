@@ -173,3 +173,82 @@ fn gateway_public_auditor_cli_requires_only_public_trust_material() {
     assert_eq!(report["missing_receipts"], json!([]));
     std::fs::remove_file(temp).unwrap();
 }
+
+#[test]
+#[ignore = "requires Production vectors; run just check-effect-protocol"]
+fn gateway_public_provider_auditor_verifies_a_lost_gateway_receipt() {
+    let (manifest, case) = fixture();
+    let simulator = Simulator::new(&case, Some(&manifest.schema)).unwrap();
+    let envelope = simulator.envelope();
+    let mut witness = Witness::simulation();
+    let mut provider = ProviderJournal::default();
+    let (outcome, receipt) = simulator
+        .execute(
+            simulator.prepare(&envelope).unwrap(),
+            &envelope,
+            EffectIo {
+                witness: &mut witness,
+                provider: &mut provider,
+                crash_after_send: true,
+            },
+        )
+        .unwrap();
+    assert!(outcome.unknown && receipt.is_none());
+    let outcomes: Vec<_> = provider.signed_outcomes().cloned().collect();
+    assert_eq!(outcomes.len(), 1);
+    let (facts, source_keys, observed_at) = simulator.fact_authority().public_material();
+    let mut trust = json!({"gateway_key":simulator.verifying_key().to_encoded_point(false).as_bytes(),
+        "log_key":witness.verifying_key().to_encoded_point(false).as_bytes(),"minimum_size":1,
+        "facts":facts,"source_keys":source_keys,"observed_at":observed_at,
+        "provider_key":simulator.provider_verifying_key().to_encoded_point(false).as_bytes()});
+    let input = json!({"snapshot":witness.snapshot(),"journal":provider,"receipts":[],"provider_outcomes":outcomes});
+    let temp =
+        std::env::temp_dir().join(format!("cedar-provider-audit-{}.json", std::process::id()));
+    for valid_root in [true, false] {
+        if !valid_root {
+            trust["provider_key"] = trust["gateway_key"].clone();
+        }
+        std::fs::write(&temp, serde_json::to_vec(&trust).unwrap()).unwrap();
+        let mut child = Command::new(env!("CARGO_BIN_EXE_cedar-poo-bridge"))
+            .args(["gateway-reconcile", temp.to_str().unwrap()])
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .spawn()
+            .unwrap();
+        serde_json::to_writer(child.stdin.take().unwrap(), &input).unwrap();
+        let output = child.wait_with_output().unwrap();
+        assert!(output.status.success());
+        let report: cedar_poo_runtime::gateway::Reconciliation =
+            serde_json::from_slice(&output.stdout).unwrap();
+        if valid_root {
+            assert_eq!(report, Default::default());
+        } else {
+            assert_eq!(report.invalid_receipts, 1);
+            assert!(!report.unresolved_precommits.is_empty());
+        }
+    }
+    trust["provider_key"] = json!(
+        simulator
+            .provider_verifying_key()
+            .to_encoded_point(false)
+            .as_bytes()
+    );
+    std::fs::write(&temp, serde_json::to_vec(&trust).unwrap()).unwrap();
+    let mut downgraded = input.clone();
+    downgraded
+        .as_object_mut()
+        .unwrap()
+        .remove("provider_outcomes");
+    let mut child = Command::new(env!("CARGO_BIN_EXE_cedar-poo-bridge"))
+        .args(["gateway-reconcile", temp.to_str().unwrap()])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    serde_json::to_writer(child.stdin.take().unwrap(), &downgraded).unwrap();
+    let output = child.wait_with_output().unwrap();
+    assert!(!output.status.success());
+    assert!(String::from_utf8_lossy(&output.stderr).contains("configured audit mode"));
+    std::fs::remove_file(temp).unwrap();
+}

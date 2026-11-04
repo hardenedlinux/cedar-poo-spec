@@ -9,9 +9,11 @@ mod simulation;
 mod sources;
 mod wire;
 mod witness;
-pub use audit::{AuditAuthority, Reconciliation, reconcile};
+pub use audit::{
+    AuditAuthority, ProviderAuditTrust, Reconciliation, reconcile, reconcile_provider_outcomes,
+};
 pub use lineage::{Lineage, LineageBatch, LineageEdge, LineageState};
-pub use provider::{ProviderAction, ProviderJournal, Receipt};
+pub use provider::{ProviderAction, ProviderJournal, ProviderOutcome, Receipt};
 pub use simulation::{
     EffectIo, Fault, LifecycleView, Outcome, PreparedEffect, PublicationTicket, RecoveryEvidence,
     ReviewSubmission, Simulator,

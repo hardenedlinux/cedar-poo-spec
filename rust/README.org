@@ -357,7 +357,9 @@ now have explicit process ownership, so each operation does not derive the same
 provider keys again. This retains the same separate issuer identities and exact
 signature checks. Facts, leases, world generations, availability and grants stay
 operation-local. Real provider credential rotation and custody are not supplied
-by these fixed mock keys.
+by these fixed mock keys. The independent provider-outcome role uses an eighth
+cached key, distinct from Gateway, witness, source, review and approval roots.
+A provider signature attests its own outcome domain; it is not a Gateway signature.
 
 =bench-gateway-runtime= retains fresh-source preparation and constructor samples,
 and adds =program.prepare=, =sdk.replay.prepared= and
@@ -376,3 +378,20 @@ regressed (43.636 to 45.335 seconds). Its OS process elapsed also grew; the oute
 observer gap was only about 65 ms. That is not evidence of stable wall-time
 acceleration. Full results and resource limitations are recorded in the protocol
 guide; failed and non-winning samples are not selectively rerun or omitted.
+
+* Independent provider completion evidence
+
+A lost Gateway receipt can be reconciled through
+=ProviderJournal::signed_outcomes= and =reconcile_provider_outcomes= with explicit
+=ProviderAuditTrust=. The distinct provider signature covers a versioned domain,
+exact witness precommit, full action/result and original source/publication
+material. The existing public auditor supports this mode using a trusted
+=provider_key= plus detached =provider_outcomes=; mixed or downgraded modes fail.
+
+=Simulator::recover_with_provider_outcomes= still requires the surviving
+retained intent and generation fence. Completion clears historical uncertainty,
+keeps the original burn and current resource/revocation/source image, and never
+resends. Missing, invalid or uncorroborated proofs retain uncertainty. Plain
+serialized journals remain read-only observations, not live provider authority.
+Provider record durability and eventual delivery are not supplied by this
+in-memory model. See [[file:../docs/protocol/gateway-effect.org][the shared boundary and evidence audit]].

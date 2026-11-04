@@ -187,6 +187,46 @@ def recoverChecked (state : State) (evidence : RecoveryEvidence) : Except String
       (fun _ => "retained recovery Contract refused")
   pure (recover state receipt.result.committed receipt.result.complete)
 
+structure ProviderRecoveryEvidence where
+  actions : List AuditRecord
+  outcomes : List ProviderOutcome
+  entries : List CommitRef
+  logValid : Bool
+  expected : AuditRecord
+
+private def providerEvidence (trust : ProviderAuditTrust) (evidence : ProviderRecoveryEvidence) : RecoveryEvidence :=
+  ⟨evidence.entries, trust.logKey,
+    reconcileProvider trust evidence.actions evidence.outcomes evidence.logValid evidence.entries,
+    evidence.actions.any (fun action => decide (action = evidence.expected))⟩
+
+def checkProviderRecovery (trust : ProviderAuditTrust) (state : State)
+    (evidence : ProviderRecoveryEvidence) : Except String RecoveryStatus :=
+  if evidence.expected.operation != state.current.effect.operation then .error "different operation"
+  else checkRecovery ⟨state.current.effect.operation, state.retainedIntent, providerEvidence trust evidence⟩
+
+def providerRecoveryContract (trust : ProviderAuditTrust) :
+    Contract Unit (State × ProviderRecoveryEvidence) RecoveryStatus where
+  input := ⟨"independent-provider-recovery", fun _ => True, fun _ => inferInstance⟩
+  output := ⟨"bound-provider-completion", fun _ => True, fun _ => inferInstance⟩
+  meaning := fun _ input result => checkProviderRecovery trust input.1 input.2 = .ok result
+  decide := fun _ _ _ => inferInstance
+  rule := .atom ()
+
+def prepareProviderRecovery (trust : ProviderAuditTrust) (input : State × ProviderRecoveryEvidence) :
+    Except String (RecoveryStatus × Unit) := do
+  let checked ← checkProviderRecovery trust input.1 input.2
+  pure (checked, ())
+
+def recoverFromProviderChecked (trust : ProviderAuditTrust) (state : State)
+    (evidence : ProviderRecoveryEvidence) : Except String State := do
+  let receipt ← ((providerRecoveryContract trust).invoke (prepareProviderRecovery trust)
+    (state, evidence)).mapError (fun _ => "provider recovery Contract refused")
+  pure (recover state receipt.result.committed receipt.result.complete)
+
+theorem provider_recovery_invocation_is_bound
+    (receipt : Invocation (providerRecoveryContract trust) (prepareProviderRecovery trust) (state, evidence)) :
+    checkProviderRecovery trust state evidence = .ok receipt.result := receipt.logic
+
 theorem missing_retained_intent_is_refused (operation : String) (retained : RetainedIntent)
     (evidence : RecoveryEvidence)
     (missing : evidence.entries.any (fun entry => decide (entry = retained.commit)) = false) :
@@ -337,4 +377,30 @@ theorem fresh_use_is_actual_error_free
   have current := accepted_retains_current accepted
   rw [bound] at current
   exact EffectProtocol.receipt_bound_effect_is_error_free receipt state.current envelope current
+
+theorem provider_recovery_exact_retained_history
+    (state : State) (evidence : ProviderRecoveryEvidence) (trust : ProviderAuditTrust)
+    (retained : RetainedIntent) (present : state.retainedIntent = some retained)
+    (receipt : Invocation (providerRecoveryContract trust) (prepareProviderRecovery trust) (state, evidence)) :
+    trust.logKey = retained.logKey ∧ retained.commit ∈ evidence.entries := by
+  have checked := provider_recovery_invocation_is_bound receipt
+  simp only [checkProviderRecovery] at checked
+  split at checked
+  · cases checked
+  · exact retained_recovery_requires_exact_history state.current.effect.operation retained
+      (providerEvidence trust evidence) receipt.result (by simpa [present] using checked)
+
+theorem provider_settlement_does_not_remint
+    (receipt : Invocation (providerRecoveryContract trust) (prepareProviderRecovery trust) (state, evidence))
+    (spent : state.spent = true) :
+    allowed (recover state receipt.result.committed receipt.result.complete) handle envelope = false :=
+  recovery_preserves_burn state _ _ spent
+theorem provider_settlement_preserves_current_image
+    (receipt : Invocation (providerRecoveryContract trust) (prepareProviderRecovery trust) (state, evidence)) :
+    (recover state receipt.result.committed receipt.result.complete).current.effect = state.current.effect ∧
+    (recover state receipt.result.committed receipt.result.complete).current.mapped = state.current.mapped ∧
+    (recover state receipt.result.committed receipt.result.complete).current.revoked = state.current.revoked ∧
+    (recover state receipt.result.committed receipt.result.complete).current.authority = state.current.authority :=
+  ⟨rfl, rfl, rfl, rfl⟩
+
 end CedarPooSpec.Gateway.Lifecycle

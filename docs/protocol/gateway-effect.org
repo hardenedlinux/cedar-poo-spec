@@ -766,7 +766,7 @@ key atomically with consumption and unknown exposure, before the provider call.
 Recovery requires that exact record in the verified history under that key.
 Missing/substituted history is refused before owner rotation. If the surviving
 state has no recorded intent, an externally supplied same-operation intent is
-also refused. A clean audit and exact current provider effect are still required
+also refused. A clean audit and the exact retained historical effect are still required
 for completion; the retained anchor does not replace those checks.
 
 The retained record uses one immutable shared owner per operation. State
@@ -792,7 +792,7 @@ Renewal/recovery preservation laws retain the original anchor.
 | Concurrency | Recovery preparation is checked against the surviving generation again under the deciding mutex before attachment. | Distributed fencing and physical atomic storage are Backend obligations. |
 | Publication exposure | Exact publication history and release roots remain required; source refresh and recovery do not clear unresolved publication delivery. | Durable publication acknowledgement and physical IO authenticity are not proved by a signed observation. |
 | Historical trust | Historical source evidence remains separate from the current source window; it cannot create current permission. | Signer custody/rotation, cold-host recovery and nonrollback persistence are outside the simulator's theorem claims. |
-| Lost outcome | Without the required signed outcome, independent observation does not silently clear unknown exposure or consumption. | Authenticated provider-outcome reconstruction, compensation and eventual completion are not modeled; these safety laws do not establish liveness. |
+| Lost outcome | Gateway-only missing outcomes retain uncertainty. Explicit provider mode can settle an exact retained intent using independently signed provider evidence and matching observations. | Provider record availability, truthful physical execution, crash-safe retention and eventual delivery remain premises. Compensation and general liveness are not proved. |
 
 The real nonidentity review/publication/current-use catalog adds substituted,
 truncated and unbound-history controls for every executable Case. Negative Cases
@@ -864,3 +864,160 @@ native output and timing-only CI logs. The largest append bucket retains all
 768 samples, with p99 0.814 ms and maximum 1.523 ms. These local observations
 establish neither stable whole-process acceleration nor a production latency,
 retained-heap or RSS bound. All existing watchdog and heap limits remain.
+
+* Independent provider evidence after a lost Gateway receipt
+
+The shared simulator now distinguishes a missing Gateway signature from missing
+completion evidence altogether. A provider-owned result is signed under its
+own configured root and the =cedar-poo/provider-outcome= domain, version 1.0.
+The unsigned outcome projection carries the exact witness-signed precommit,
+full action/result, original signed source statements and publication evidence.
+The provider signature covers that complete projection and the witness public
+key. It is not a reconstructed Gateway signature.
+
+| Stage | Owner and evidence | Resulting state |
+|-------+--------------------+-----------------|
+| Original use | Gateway checks current authorization and records the exact witnessed intent before provider use. | Original consumption is burned; outcome is initially unknown. |
+| Provider completion | The live provider verifies the witnessed request, performs the simulated effect, and retains its own signed outcome. | Its private operation ledger prevents a second send. |
+| Lost Gateway receipt | The mediator fails after provider use. The independent reader obtains provider evidence and a journal observation. | Plain journal entries alone keep the effect unknown. |
+| Independent audit | A configured provider root verifies domain, version, witness, source, publication and exact action/intent identity through the shared auditor. | Missing, invalid, duplicate or mismatching evidence does not establish completion. |
+| Recovery | The surviving authority matches its exact retained intent and rechecks generation before changing ownership. | A complete historical outcome clears unknown; consumption and current resource, time, revocation and publication controls survive. |
+
+=ProviderJournal::signed_outcomes= exposes immutable detached evidence created
+at the actual send boundary. Its private operation index is authoritative even
+if the public observation vector is damaged; an unavailable signature retains
+the operation tombstone. Ordinary journal serialization exports observations,
+not the live provider ledger or signing capability. A deserialized observation
+cannot execute effects or manufacture signed outcomes. This is an in-memory
+provider model, not a claim of cold-provider restart or durable storage.
+
+=ProviderAuditTrust= combines the original independently configured audit roots
+with a separate provider root. =reconcile_provider_outcomes= uses the same
+full-byte intent indexes, historical source checks, publication verification and
+independent observation comparisons as Gateway-receipt reconciliation. The
+original Gateway path does not infer completion from provider journal labels.
+=Simulator::recover_with_provider_outcomes= is an explicit completion channel;
+nonempty Gateway receipts in that call are refused rather than ignored.
+
+The existing public =gateway-reconcile= command accepts provider mode only when
+its trusted configuration supplies =provider_key= and the input supplies
+=provider_outcomes= with an empty =receipts= list. The trusted file selects the
+mode. Incoming evidence cannot select a different root or downgrade the mode.
+Both verification modes require only public input material. A real child-process
+regression checks genuine lost-receipt evidence, a wrong configured root and
+a refused downgrade from configured provider mode.
+
+** Historical settlement preserves a replaced current image
+
+A second genuine regression found that recovery compared provider observations
+with the current resource incarnation even when the retained intent named the
+original incarnation. This kept an authentic original completion unresolved
+following resource replacement. Recovery now extracts the historical effect
+from the verified record selected by exact retained signed bytes. It settles
+that effect while preserving the replacement, mapping guard, revocation, clock,
+source state and original consumption. The same correction applies to both
+Gateway and provider evidence. A single retained snapshot is verified and reused;
+its first parsed history is released before independent reconciliation.
+
+The shared Production control changes resource incarnation, advances the clock
+to expiry and revokes the operation before provider settlement. Successful
+settlement never restores the old resource or dispatches again.
+
+** Typed model, Contract and proof scope
+
+The Lean provider verification interpretation is supplied by trusted setup and
+receives the configured provider key. It is not a candidate's verified flag.
+=accepted_provider_is_bound_to_configured_trust= establishes the actual
+verification premise, supported version, signed domain and witness identity.
+=provider_without_outcomes_remains_unresolved= retains pending intents even
+when ordinary provider actions are present.
+
+=providerRecoveryContract= drives actual Production Invocations through
+=recoverFromProviderChecked=. Its laws bind the computed recovery result to the
+original retained-history checker, preserve the current resource/mapping,
+revocation and source authority, and forbid reminting a consumed execution.
+The finite Lean signature interpretation is a simulator input, not a theorem of
+P-256 or external IO. Native controls use real signatures and public-key-only
+audit, and compare actual outcomes against the shared typed model.
+
+All original scenarios remain. Six additional provider controls cover every
+executable Case: absent evidence, invalid signature, missing corroborating
+observation, completion, repeated completion, and completion after current
+resource/revocation/time changes. Repeated recovery reads retained evidence;
+it never calls the effect writer again. Proof unavailability retains unknown
+exposure. Eventual provider availability, truthful physical actions, durable
+nonrollback retention, distributed fencing, credential custody/rotation and
+compensation remain explicit Backend/Host obligations.
+
+The eight-second non-CPU gap remains independent. The installed tool inventory
+confirms separate =Thread State Trace= and =System Call Trace= instruments, which
+permit investigating a smaller collector than the previous multi-instrument
+System Trace template. Inventory discovery is not wait-object or waker evidence.
+Earlier failed/partial captures and every non-winning sample remain retained.
+
+** Qualification and producer startup cost
+
+The complete shared replay covers 51 entries, 211 groups, 1,253 Cases and 39
+refusals, with 3,759 publications. The six provider controls add 3,810 states
+across all 635 executable Cases, for 22,004 actual lifecycle outcomes. Removing
+only those six new labels reproduces every original 18,194-state output byte;
+the entire 41,669-row effect/audit output also remains byte-identical. All 99
+Runtime tests pass, with the original five fixture-dependent tests still
+explicitly ignored by the ordinary unit command and exercised by their owners.
+
+A five-to-six-minute test complaint was traced to the producer loop, separately
+from single-call Runtime latency and the unresolved mid-process non-CPU gap.
+The 51 interpreted producers' first-to-last output modification span was
+330.483 seconds, excluding the first producer's own duration. Two separately
+observed interpreted entries took 4.164 seconds (metadata-only handoff) and
+9.356 seconds (validated payment), each peaking at approximately 1.08 GiB. This is repeated
+frontend/environment loading, not an authorization operation taking minutes.
+
+The existing producer now has a standard Lake native executable target,
+=reviewedEffectsNative=. Its main algorithm, all Case construction, solver
+queries and output encoding are unchanged. All 51 native outputs compare
+byte-for-byte against the interpreted oracle. The observed native process
+elapsed sum is 47.465 seconds, including child solvers; the maximum per-process
+RSS is 52,314,112 bytes (49.891 MiB). The handoff and payment observations are
+0.077 and 1.633 seconds respectively. These are local sequential observations,
+not paired cold-start percentiles or a universal speedup claim. The span and
+sum have different endpoints; neither is total workflow wall time.
+
+The unchanged 120-second per-producer watchdog still applies. The first import
+sets the exact Lean 4.35 runtime equivalents of =-M 2048= and =-T 10000000=
+before catalog initialization. Only that small FFI budget module is precompiled
+as a shared library; the Examples library is not globally precompiled. Generated
+C confirms the budget initializer precedes the manifest catalog initializer.
+The compiled Lean workload owns computation; Python observes external process
+and resource accounting only.
+
+Earlier native-build attempts are retained as failures: importing private Shell
+APIs, importing an unloaded FFI implementation, and globally precompiling
+Examples (dependency cycles and watchdog termination). The scoped standard Lake
+build succeeds. This does not retroactively turn the failed cold build into an
+accepted cold-build result or justify widening any deadline. All raw outputs,
+resource receipts and failures remain ignored local build artifacts, not Git
+CSV files or archive deliverables.
+
+The standard combined local command =just check-reviewed-effects
+check-effect-protocol check-gateway-delta= completes successfully in 220.20
+seconds wall time (173.31 user / 33.22 system seconds), including catalog
+preparation, all producers, unit/child-process controls and full native replays.
+The expanded 22,004-state lifecycle replay takes 55.833 seconds, consumes 53.54
+CPU seconds and peaks at 107.703 MiB. These are complete regression processes,
+not single-call API response times. The original 330.483-second producer span
+is not a matched measurement of this combined command. The residual non-CPU
+interval and the previous RSS/tail non-wins are not erased by producer savings.
+
+The follow-up native API observation retains all 211 program, 1,253 Case and
+1,024 append samples. Execution now also signs independent provider evidence;
+it is not the old receipt-only workload. Current empty-log execution p95/p99
+is 1.902/2.428 ms, shared construction 1.982/3.025 ms, prepared SDK replay
+0.328/0.504 ms and source renewal 2.344/3.619 ms. These observations are slower
+than the preceding receipt-only sample and remain non-wins. Unchanged preparation
+phases also vary, so this run does not isolate signer cost from environmental
+tails. Shared construction reaches 29.101 ms, two-publication review 61.569 ms,
+and the largest append bucket 39.371 ms. No observations are removed or rerun
+selectively to obtain a win. The complete API benchmark process is 18.412 s
+with 121.031 MiB peak RSS; its process time and memory are not per-request bounds.
+All compiled Lean profile/reuse/root-scale and nine family workloads pass.

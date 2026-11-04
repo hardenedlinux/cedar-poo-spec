@@ -55,6 +55,35 @@ private def recoveryBoundaries (original : State) : Except String (List Lean.Jso
   return [← row "substituted-recovery" uncertain,
     ← row "truncated-recovery" uncertain, ← row "unbound-recovery" original]
 
+private def providerTrust : ProviderAuditTrust :=
+  ⟨"provider", "witness", fun key outcome => key == "provider" && outcome.signature == [1]⟩
+
+private def providerRecovery (original : State) : Except String (List Lean.Json) := do
+  if !original.cedarAllowed then return []
+  let pending := { original with
+    spent := true
+    retainedIntent := some intent
+    current := { original.current with unknown := true } }
+  let action : AuditRecord := ⟨"operation", "original"⟩
+  let outcome : ProviderOutcome :=
+    ⟨⟨1,0⟩, "cedar-poo/provider-outcome", "witness", ⟨action, intent.commit⟩, [1]⟩
+  let observed : ProviderRecoveryEvidence := ⟨[action], [outcome], [intent.commit], true, action⟩
+  let missing ← recoverFromProviderChecked providerTrust pending {observed with outcomes := []}
+  let invalid ← recoverFromProviderChecked providerTrust pending
+    {observed with outcomes := [{outcome with signature := [0]}]}
+  let unobserved ← recoverFromProviderChecked providerTrust pending {observed with actions := []}
+  let complete ← recoverFromProviderChecked providerTrust pending observed
+  let repeated ← recoverFromProviderChecked providerTrust complete observed
+  let expired := { pending with current := { pending.current with
+    authority := { pending.current.authority with now := 100 } } }
+  let replaced := { expired with current := { expired.current with
+    effect := { expired.current.effect with object := "replacement-incarnation", generation := 8 }
+    mapped := false } }
+  let controls ← recoverFromProviderChecked providerTrust (revoke replaced) observed
+  return [← row "provider-missing" missing, ← row "provider-invalid" invalid,
+    ← row "provider-unobserved" unobserved, ← row "provider-complete" complete,
+    ← row "provider-repeated" repeated, ← row "provider-current-controls" controls]
+
 /-- Outcomes are produced by actual POO Contract invocations; the Case producer
 supplies real Cedar decisions for the current, empty-entity and held worlds. -/
 def project (reviewed : Authorization.Delta.ReviewedInteraction) (model : PolicyModules.Model)
@@ -85,6 +114,7 @@ def project (reviewed : Authorization.Delta.ReviewedInteraction) (model : Policy
   let recoveredUnknown ← recoverChecked uncertain unresolved
   let recoveredRevoked ← recoverChecked revoked (evidence false)
   let boundaries ← recoveryBoundaries original
+  let providerStates ← providerRecovery original
   let active : Authorization.Delta.ReleaseState :=
     ⟨reviewed.snapshot.base.root, reviewed.snapshot.base.policies, .enforcing, reviewed.snapshot.epoch⟩
   let checked := (publicationContract reviewed model schema active changed "source" (envelope changed)).invoke
@@ -96,5 +126,5 @@ def project (reviewed : Authorization.Delta.ReviewedInteraction) (model : Policy
     ← row "recovered-complete" recoveredComplete,
     ← row "recovered-unknown" recoveredUnknown,
     ← row "failed-refresh" failed, ← row "recovered-failed-refresh" failedRecovered,
-    ← row "repaired-refresh" repaired] ++ boundaries))]
+    ← row "repaired-refresh" repaired] ++ boundaries ++ providerStates))]
 end CedarPooSpec.Production.Lifecycle

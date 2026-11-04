@@ -38,3 +38,11 @@ import CedarPooSpec.Gateway.Lifecycle
 
 #print axioms CedarPooSpec.Gateway.Lifecycle.renewal_preserves_retained_intent
 #print axioms CedarPooSpec.Gateway.Lifecycle.recovery_preserves_retained_intent
+
+#print axioms CedarPooSpec.Gateway.EffectProtocol.accepted_provider_is_bound_to_configured_trust
+#print axioms CedarPooSpec.Gateway.EffectProtocol.provider_without_outcomes_remains_unresolved
+#print axioms CedarPooSpec.Gateway.Lifecycle.provider_recovery_invocation_is_bound
+#print axioms CedarPooSpec.Gateway.Lifecycle.provider_recovery_exact_retained_history
+#print axioms CedarPooSpec.Gateway.Lifecycle.provider_settlement_does_not_remint
+
+#print axioms CedarPooSpec.Gateway.Lifecycle.provider_settlement_preserves_current_image

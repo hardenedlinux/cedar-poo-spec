@@ -379,6 +379,99 @@ fn recovery_boundaries(
     ])
 }
 
+fn provider_recovery(
+    seed: &Simulator,
+    prepared: &PreparedPublications,
+) -> Result<Vec<Value>, String> {
+    if seed.prepare(&seed.envelope()).is_err() {
+        return Ok(Vec::new());
+    }
+    let pending = seed.fork_simulation()?;
+    let mut witness = Witness::simulation();
+    let mut provider = ProviderJournal::default();
+    let envelope = pending.envelope();
+    let (_, lost) = pending.execute(
+        pending.prepare(&envelope)?,
+        &envelope,
+        EffectIo {
+            witness: &mut witness,
+            provider: &mut provider,
+            crash_after_send: true,
+        },
+    )?;
+    if lost.is_some() {
+        return Err("lost Gateway outcome unexpectedly returned".into());
+    }
+    let outcomes: Vec<_> = provider.signed_outcomes().cloned().collect();
+    if outcomes.len() != 1 {
+        return Err("provider did not retain its signed outcome".into());
+    }
+    let mut audit = pending.audit_authority(&witness);
+    audit.prepared_publications = Some(prepared.clone());
+    if cedar_poo_runtime::gateway::reconcile_provider_outcomes(
+        &provider,
+        &outcomes,
+        &witness.snapshot(),
+        cedar_poo_runtime::gateway::ProviderAuditTrust {
+            authority: &audit,
+            provider_key: &pending.provider_verifying_key(),
+        },
+    ) != Default::default()
+    {
+        return Err("independent provider audit failed".into());
+    }
+    let history = pending.publication_history()?;
+    let settle = |authority: &Simulator,
+                  journal: &ProviderJournal,
+                  proofs: &[cedar_poo_runtime::gateway::Signed]| {
+        Simulator::recover_with_provider_outcomes(
+            authority,
+            RecoveryEvidence {
+                witness: &witness,
+                publications: &history,
+                audit: &audit,
+                receipts: &[],
+                provider: journal,
+            },
+            proofs,
+        )
+    };
+    let mut rows = Vec::new();
+    let missing = settle(&pending.fork_simulation()?, &provider, &[])?;
+    rows.push(observe("provider-missing", &missing, prepared)?);
+    let mut invalid = outcomes.clone();
+    invalid[0].signature[0] ^= 1;
+    let refused = settle(&pending.fork_simulation()?, &provider, &invalid)?;
+    rows.push(observe("provider-invalid", &refused, prepared)?);
+    let unobserved = settle(
+        &pending.fork_simulation()?,
+        &ProviderJournal::default(),
+        &outcomes,
+    )?;
+    rows.push(observe("provider-unobserved", &unobserved, prepared)?);
+    let controlled = pending.fork_simulation()?;
+    controlled.advance_time(100)?;
+    controlled.revoke()?;
+    controlled.replace_resource("replacement-incarnation".into(), 8)?;
+    let replacement = controlled.envelope().effect;
+    let complete = settle(&pending, &provider, &outcomes)?;
+    rows.push(observe("provider-complete", &complete, prepared)?);
+    if pending.prepare(&envelope).is_ok() {
+        return Err("old provider-recovery owner admitted".into());
+    }
+    let repeated = settle(&complete, &provider, &outcomes)?;
+    rows.push(observe("provider-repeated", &repeated, prepared)?);
+    let controls = settle(&controlled, &provider, &outcomes)?;
+    rows.push(observe("provider-current-controls", &controls, prepared)?);
+    if controls.envelope().effect != replacement {
+        return Err("provider settlement rolled back the current resource image".into());
+    }
+    if provider.actions.len() != 1 || provider.signed_outcomes().count() != 1 {
+        return Err("provider recovery resent the effect".into());
+    }
+    Ok(rows)
+}
+
 pub(super) fn run_case(data: &Prepared, index: usize, group: &Group) -> Result<Value, String> {
     let (case, seed) = install_prepared(data, index)?;
     let prepared = PreparedPublications::new(
@@ -392,6 +485,7 @@ pub(super) fn run_case(data: &Prepared, index: usize, group: &Group) -> Result<V
     rows.push(burned(&seed, true, &prepared)?);
     rows.extend(failed_source(data, index, &seed, &prepared)?);
     rows.extend(recovery_boundaries(&case, &seed, &prepared)?);
+    rows.extend(provider_recovery(&seed, &prepared)?);
     let actual = json!({"states":rows,"publication":publication});
     if actual != group.plan.lifecycle[index] {
         return Err(format!(

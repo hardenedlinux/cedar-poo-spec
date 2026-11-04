@@ -58,3 +58,15 @@ globs = ["Benchmarks.ManifestInitialization", "Benchmarks.CatalogLifecycle"]
 [[lean_exe]]
 name = "manifestLifecycleNative"
 root = "Benchmarks.ManifestLifecycle"
+
+# Same producer and limits as the interpreted oracle; ordinary native execution.
+[[lean_exe]]
+name = "reviewedEffectsNative"
+root = "Examples.Gateway.ReviewedEffects"
+
+# Only the runtime budget adapter needs interpreter FFI loading.
+[[lean_lib]]
+name = "Examples.Gateway.ReviewedEffectsLimits"
+roots = ["Examples.Gateway.ReviewedEffectsLimits"]
+globs = ["Examples.Gateway.ReviewedEffectsLimits"]
+precompileLibrary = true

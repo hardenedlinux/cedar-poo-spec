@@ -239,6 +239,44 @@ matching operation label or the absence of signature errors. -/
 def AuditReport.clean (report : AuditReport) : Bool :=
   decide (report = ⟨[], [], [], [], [], 0, false⟩)
 
+/-- Projection of a detached provider-signed outcome after native decoding.
+The signature interpretation is supplied by independently configured trust. -/
+structure ProviderOutcome where
+  version : Version
+  domain : String
+  logKey : String
+  receipt : AuditReceipt
+  signature : List UInt8
+  deriving DecidableEq, BEq, Repr
+
+structure ProviderAuditTrust where
+  providerKey : String
+  logKey : String
+  verified : String → ProviderOutcome → Bool
+
+def ProviderAuditTrust.accepts (trust : ProviderAuditTrust) (outcome : ProviderOutcome) : Bool :=
+  trust.verified trust.providerKey outcome && outcome.version.supported &&
+    decide (outcome.domain = "cedar-poo/provider-outcome") && decide (outcome.logKey = trust.logKey)
+
+/-- Native interpretation verifies signatures and the original fact/publication
+projection. This pure model does not claim a proof of cryptography or physical IO. -/
+def reconcileProvider (trust : ProviderAuditTrust) (actions : List AuditRecord)
+    (outcomes : List ProviderOutcome) (logValid : Bool) (precommits : List CommitRef) : AuditReport :=
+  let accepted := outcomes.filter trust.accepts
+  reconcile actions (accepted.map (·.receipt)) (outcomes.length - accepted.length) logValid precommits
+
+theorem accepted_provider_is_bound_to_configured_trust (trust : ProviderAuditTrust)
+    (outcome : ProviderOutcome) (accepted : trust.accepts outcome = true) :
+    trust.verified trust.providerKey outcome = true ∧ outcome.version.supported = true ∧
+      outcome.domain = "cedar-poo/provider-outcome" ∧ outcome.logKey = trust.logKey := by
+  simpa [ProviderAuditTrust.accepts, Bool.and_eq_true_iff, and_assoc] using accepted
+
+theorem provider_without_outcomes_remains_unresolved (trust : ProviderAuditTrust)
+    (actions : List AuditRecord) (logValid : Bool) (precommits : List CommitRef) (operation : String) :
+    operation ∈ (reconcileProvider trust actions [] logValid precommits).unresolvedPrecommits ↔
+      operation ∈ precommits.map (·.operation) := by
+  simp [reconcileProvider, reconcile, ids]
+
 structure LineageEdge where
   source : String
   operation : String
