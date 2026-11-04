@@ -444,6 +444,59 @@ theorem publication_exact_and_current
   exact ⟨ReviewedEffect.invocation_installs_exact_successor original,
     of_decide_eq_true (Bool.and_eq_true_iff.mp checked.2.2).1, checked.2.1⟩
 
+/-- Receiver-side fencing binds the original reviewed release to the actual
+authority cut. The caller's previously checked view grants no permission. -/
+def receiverPublicationContract (reviewed : Authorization.Delta.ReviewedInteraction)
+    (model : PolicyModules.Model) (schema : Cedar.Validation.Schema)
+    (before : Authorization.Delta.ReleaseState) (actual : State) (ticket : Handle)
+    (pinned : String) (envelope : Envelope) :=
+  let original := publicationContract reviewed model schema before actual pinned envelope
+  original.withMeaning
+    (fun atom approved result =>
+      original.meaning atom approved result ∧ ticket = freshHandle actual)
+    (fun atom approved result => by
+      letI := original.decide atom approved result
+      infer_instance)
+
+theorem receiver_retains_release_contract
+    (receipt : Invocation
+      (receiverPublicationContract reviewed model schema before actual ticket pinned envelope)
+      (ReviewedEffect.prepare reviewed model schema before ()) approved) :
+    reviewed.advanceReviewed model schema before (fun _ _ => approved) = .ok receipt.result ∧
+    ticket = freshHandle actual := by
+  have checked := receipt.logic
+  change (publicationContract reviewed model schema before actual pinned envelope).meaning
+    () approved receipt.result ∧ ticket = freshHandle actual at checked
+  let original : Invocation (publicationContract reviewed model schema before actual pinned envelope)
+      (ReviewedEffect.prepare reviewed model schema before ()) approved :=
+    ⟨receipt.result, receipt.state, receipt.called, receipt.input, receipt.output, checked.1⟩
+  exact ⟨(publication_exact_and_current original).1, checked.2⟩
+
+theorem revocation_retires_publication_cut (state : State) :
+    freshHandle state ≠ freshHandle (revoke state) := by
+  intro same
+  have generation := congrArg Handle.generation same
+  simp [freshHandle, revoke] at generation
+
+theorem stale_receiver_cannot_publish
+    (stale : ticket ≠ freshHandle actual) :
+    ¬ Nonempty (Invocation
+      (receiverPublicationContract reviewed model schema before actual ticket pinned envelope)
+      (ReviewedEffect.prepare reviewed model schema before ()) approved) :=
+  fun ⟨receipt⟩ => stale (receiver_retains_release_contract receipt).2
+
+theorem revoked_receiver_cannot_publish
+    (revoked : actual.current.revoked = true) :
+    ¬ Nonempty (Invocation
+      (receiverPublicationContract reviewed model schema before actual ticket pinned envelope)
+      (ReviewedEffect.prepare reviewed model schema before ()) approved) := by
+  rintro ⟨receipt⟩
+  have checked := receipt.logic
+  change ((ReviewedEffect.contract reviewed model schema before).meaning () approved receipt.result ∧
+    before.epoch = actual.current.review.epoch ∧ publicationGuard actual pinned envelope = true) ∧
+    ticket = freshHandle actual at checked
+  simp [publicationGuard, revoked] at checked
+
 theorem different_world_blocks_publication (state : State) (pinned envelope)
     (different : state.current.world ≠ pinned) : publicationGuard state pinned envelope = false := by
   simp [publicationGuard, different]

@@ -461,6 +461,46 @@ Sources: [[https://www.usenix.org/conference/atc14/technical-sessions/presentati
 [[https://research.google.com/archive/chubby-osdi06.pdf][Burrows, Chubby, Section 2.4]],
 and [[https://arxiv.org/abs/cs/0408036][Gray and Lamport, Consensus on Transaction Commit]].
 
+** Receiver ordering and independent checkpoint custody
+
+=Lifecycle.receiverPublicationContract= refines the actual reviewed publication
+Contract with the receiver's current owner and generation. The release result
+still comes from the original Delta invocation. The Lean proofs reject a
+retired ticket even if the reviewed policy and source bytes remain equal, and
+reject publication after revocation even with a fresh cut. Revocation advances
+the same cut used by publication. In the Rust simulator, the final receiver
+checks the private ticket, the current guards and the release under the same
+deciding lock used by revocation. The replay covers both commit orders and a
+two-thread race. If publication wins, the committed epoch remains visible
+after revocation. If revocation wins, the old ticket cannot install a release.
+
+The Unix =CheckpointStore= is a local adapter for the independent history
+Contract. An operator bootstraps it with a trusted signed checkpoint in a
+separate trusted directory. Recovery uses =load= to obtain the typed pin for
+=AuditAuthority.independent_frontier=. =advance= takes the writer lock before
+reading that pin and verifies that the complete signed candidate chain extends
+it. Persistence stages the signed checkpoint, synchronizes its bytes, replaces
+the live name atomically and synchronizes the directory before reporting
+success. Reopening the store must use the existing pin. Missing or invalid
+state fails closed. Errors after replacement require rereading the store
+because the replacement might already be visible.
+
+The file adapter assumes a trusted, non-rollback local filesystem and stable
+lock-file identity. The test races two same-key, same-height writers and
+reopens the store to verify that only the winning prefix survives, a proper
+extension advances it, and a corrupt pin cannot be replaced from candidate
+data. Reopening exercises custody across handle restart. Power-loss behavior
+and remote storage semantics require separate qualification.
+
+A replicated Host must serialize receiver fencing with the actual publication
+or effect write, using the authenticated current authority cut. A receiver
+that only remembers its latest observed cut cannot detect a revocation it
+has yet to observe. Chubby's receiver-side sequencer check motivates the
+boundary. Raft's committed-log properties explain the separate premise that
+an independent durable pin represents one committed history across replica
+failover. The local lock and file adapter establish neither replicated
+consensus nor external effect settlement.
+
 ** P0–P2 as one acceptance unit
 
 | Phase | Work in existing owners | Exit evidence |

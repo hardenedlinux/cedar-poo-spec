@@ -2,6 +2,8 @@
 //! Public source and audit verification require independently configured keys.
 //! No production persistence, network sandbox or signer custody is provided.
 mod audit;
+#[cfg(unix)]
+mod checkpoint_store;
 mod lineage;
 mod provider;
 mod review;
@@ -13,6 +15,8 @@ pub use audit::{
     AuditAuthority, IntentAuditTrust, ProviderAuditTrust, Reconciliation, reconcile,
     reconcile_intent, reconcile_provider_outcomes,
 };
+#[cfg(unix)]
+pub use checkpoint_store::CheckpointStore;
 pub use lineage::{Lineage, LineageBatch, LineageEdge, LineageState};
 pub use provider::{ProviderAction, ProviderJournal, ProviderOutcome, Receipt};
 pub use simulation::{

@@ -96,4 +96,54 @@ fn verified_log_reuse_keeps_the_original_root_and_current_independent_floor() {
     assert!(reconcile_recovery(&journal, &[], &verified_fork, &authority, None, None).invalid_log);
     append(&mut chosen, "extension");
     assert!(!super::reconcile(&journal, &[], &chosen.snapshot(), &authority).invalid_log);
+
+    #[cfg(unix)]
+    {
+        let directory =
+            std::env::temp_dir().join(format!("cedar-checkpoint-store-{}", std::process::id()));
+        std::fs::create_dir(&directory).unwrap();
+        let key = authority.log_key;
+        let store = crate::gateway::CheckpointStore::new(&directory, &key);
+        assert!(store.load().is_err());
+        assert!(store.advance(&chosen_snapshot).is_err());
+        let empty = Witness::simulation().snapshot();
+        store.initialize(&empty.checkpoint).unwrap();
+        assert!(store.initialize(&chosen_snapshot.checkpoint).is_err());
+
+        let barrier = std::sync::Barrier::new(2);
+        let (left, right) = std::thread::scope(|race| {
+            let left = race.spawn(|| {
+                barrier.wait();
+                store.advance(&chosen_snapshot)
+            });
+            let right = race.spawn(|| {
+                barrier.wait();
+                store.advance(&fork_snapshot)
+            });
+            (left.join().unwrap(), right.join().unwrap())
+        });
+        assert_ne!(left.is_ok(), right.is_ok());
+        let (winner, loser) = if left.is_ok() {
+            (&chosen_snapshot, &fork_snapshot)
+        } else {
+            (&fork_snapshot, &chosen_snapshot)
+        };
+        let reopened = crate::gateway::CheckpointStore::new(&directory, &key);
+        let pin = reopened.load().unwrap();
+        assert!(pin.verify_extension(winner).is_ok());
+        assert!(pin.verify_extension(loser).is_err());
+        assert!(reopened.advance(&empty).is_err());
+        let extension = if left.is_ok() {
+            chosen.snapshot()
+        } else {
+            append(&mut fork, "extension");
+            fork.snapshot()
+        };
+        reopened.advance(&extension).unwrap();
+        assert!(reopened.load().unwrap().verify_extension(winner).is_err());
+        std::fs::write(directory.join("checkpoint.json"), b"incomplete checkpoint").unwrap();
+        assert!(reopened.load().is_err());
+        assert!(reopened.advance(&extension).is_err());
+        std::fs::remove_dir_all(directory).unwrap();
+    }
 }

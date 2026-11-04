@@ -132,6 +132,9 @@ fn replaced_foreign_stale_and_non_enforcing_publications_refuse() {
             .register_review(submit(&data, index, 0, None))
             .is_err()
     );
+    first.revoke().unwrap();
+    assert_eq!(first.publication_view().unwrap().epoch, 8);
+    assert!(first.prepare(&first.envelope()).is_err());
     let paused = simulator(&data, index);
     let ticket = paused
         .register_review(submit(&data, index, 0, None))
@@ -160,6 +163,34 @@ fn replaced_foreign_stale_and_non_enforcing_publications_refuse() {
     assert_eq!(revoked.publication_view().unwrap().epoch, 7);
     assert_eq!(revoked.publication_history().unwrap().len(), before.len());
     assert!(revoked.prepare(&revoked.envelope()).is_err());
+
+    // Publication and revocation race at the final receiver. The resulting
+    // epoch tells which action acquired the same deciding lock first.
+    let racing = simulator(&data, index);
+    let ticket = racing
+        .register_review(submit(&data, index, 0, None))
+        .unwrap();
+    let before = racing.publication_history().unwrap().len();
+    let barrier = std::sync::Barrier::new(2);
+    let published = std::thread::scope(|scope| {
+        let publish = scope.spawn(|| {
+            barrier.wait();
+            racing.publish_review(ticket, PublicationDelivery::Complete)
+        });
+        barrier.wait();
+        racing.revoke().unwrap();
+        publish.join().unwrap().is_ok()
+    });
+    assert_eq!(
+        racing.publication_view().unwrap().epoch,
+        7 + u64::from(published)
+    );
+    assert_eq!(
+        racing.publication_history().unwrap().len(),
+        before + usize::from(published)
+    );
+    assert!(racing.lifecycle_view().unwrap().revoked);
+    assert!(racing.prepare(&racing.envelope()).is_err());
 }
 #[test]
 #[ignore = "requires actual Lean Delta output; run just check-reviewed-effects"]

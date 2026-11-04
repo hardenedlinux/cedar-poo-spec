@@ -151,6 +151,12 @@ pub struct WitnessFrontier {
     root: String,
 }
 impl WitnessFrontier {
+    /// Check that a candidate extends the independently retained committed prefix.
+    pub fn verify_extension(&self, candidate: &LogSnapshot) -> Result<(), String> {
+        let verified = verify_view(candidate.view(), &self.key, self.size as u64)?;
+        verified.check_frontier(self)
+    }
+
     /// Bind a checkpoint read from independent durable authority. Signature
     /// verification does not establish freshness or consensus on its own.
     pub fn from_checkpoint(checkpoint: &Signed, key: &VerifyingKey) -> Result<Self, String> {

@@ -76,3 +76,7 @@ import CedarPooSpec.Gateway.Lifecycle
 #print axioms CedarPooSpec.Gateway.Lifecycle.burned_trace_stays_burned
 #print axioms CedarPooSpec.Gateway.Lifecycle.history_invocation_extends_independent
 #print axioms CedarPooSpec.Gateway.Lifecycle.same_length_fork_refused
+#print axioms CedarPooSpec.Gateway.Lifecycle.receiver_retains_release_contract
+#print axioms CedarPooSpec.Gateway.Lifecycle.revocation_retires_publication_cut
+#print axioms CedarPooSpec.Gateway.Lifecycle.revoked_receiver_cannot_publish
+#print axioms CedarPooSpec.Gateway.Lifecycle.stale_receiver_cannot_publish
