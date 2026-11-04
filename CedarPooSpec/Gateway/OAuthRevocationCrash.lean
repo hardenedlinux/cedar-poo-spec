@@ -26,7 +26,7 @@ inductive CommitBoundary where
 
 /-- A staged write cannot be recovered as a committed image. The durable
 image survives even if the acknowledgment was lost. -/
-def recoverImage (boundary : CommitBoundary) (before after : Image) : Image :=
+def recoverImage (boundary : CommitBoundary) (before after : α) : α :=
   match boundary with
   | .staged => before
   | .durable => after

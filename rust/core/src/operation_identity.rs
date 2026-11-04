@@ -13,6 +13,14 @@ impl From<&str> for OperationId {
     }
 }
 
+/// Authority identity and generation obtained through the trusted control plane.
+#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ReceiverCut {
+    pub scope: String,
+    pub generation: u64,
+}
+
 /// Admission identity, not a record of delivery to a remote target.
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct OperationLedger<Effect> {

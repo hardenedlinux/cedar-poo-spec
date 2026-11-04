@@ -57,7 +57,7 @@ pub struct ReviewBinding {
     pub report: String,
 }
 /// Sign exact serialized payload bytes, with a trusted key selected outside it.
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Signed {
     #[serde(with = "base64url")]

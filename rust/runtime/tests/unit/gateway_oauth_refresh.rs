@@ -677,14 +677,18 @@ fn staged_and_durable_revoke_crashes_restore_the_correct_image() {
 #[cfg(unix)]
 #[test]
 fn durable_lost_effect_reply_requires_independent_settlement_and_fences_old_writer() {
+    use crate::gateway::checkpoint_store::CheckpointStage;
     use crate::gateway::oauth_refresh_durable::{DurableEffectRecovery, DurableEffectUse};
-    use crate::gateway::provider::ProviderRequest;
+    use crate::gateway::provider_durable::{
+        DurableReceiver, ReceiverDelivery, ReceiverDispatch, ReceiverTrust,
+    };
     use crate::gateway::wire::{sign, simulation_key};
     use crate::gateway::witness::PrecommitInput;
     use crate::gateway::{
         AuditAuthority, EffectIdentity, FactAuthority, FactBinding, Origin, ProviderAuditTrust,
         ProviderJournal, ReviewBinding, Witness, WitnessFrontier,
     };
+    use cedar_poo_core::operation_identity::OperationId;
 
     let directory = durable_directory("outcome");
     let old = DurableRefreshLedger::new(&directory, "authority");
@@ -734,9 +738,57 @@ fn durable_lost_effect_reply_requires_independent_settlement_and_fences_old_writ
             publications: &[],
         })
         .unwrap();
+    let fresh = EffectIdentity {
+        operation: "unspent-effect".into(),
+        ..effect.clone()
+    };
+    let fresh_intent = witness
+        .append(PrecommitInput {
+            current_world: "world",
+            effect: &fresh,
+            review: &review,
+            facts: std::slice::from_ref(&fact),
+            publications: &[],
+        })
+        .unwrap();
     let history = witness.snapshot();
     let log_key = witness.verifying_key();
-    let provider_key = *simulation_key(8).verifying_key();
+    let provider_signer = simulation_key(8);
+    let provider_key = *provider_signer.verifying_key();
+    let sender = simulation_key(4);
+    let receiver_directory = durable_directory("receiver-outcome");
+    let open_receiver = || {
+        DurableReceiver::new(
+            &receiver_directory,
+            ReceiverTrust {
+                scope: "receiver",
+                sender: sender.verifying_key(),
+                witness: &log_key,
+                provider: &provider_signer,
+            },
+        )
+    };
+    let receiver = open_receiver();
+    assert!(receiver.cut().is_err());
+    receiver.initialize().unwrap();
+    let receiver_cut = receiver.cut().unwrap();
+    assert!(
+        receiver
+            .crash_advance(&receiver_cut, CheckpointStage::Staged)
+            .is_err()
+    );
+    let receiver = open_receiver();
+    assert_eq!(receiver.cut().unwrap(), receiver_cut);
+    let first_dispatch =
+        ReceiverDispatch::sign(receiver_cut.clone(), "channel-one", &intent, &sender).unwrap();
+    let deliver = |authorization, channel, effect| ReceiverDelivery {
+        authorization,
+        channel,
+        effect,
+        bindings: std::slice::from_ref(&fact),
+        facts: &facts,
+        publications: &[],
+    };
     let audit = AuditAuthority {
         gateway_key: *simulation_key(4).verifying_key(),
         log_key,
@@ -746,7 +798,7 @@ fn durable_lost_effect_reply_requires_independent_settlement_and_fences_old_writ
             14,
         )
         .unwrap(),
-        minimum_size: 1,
+        minimum_size: 2,
         independent_frontier: Some(
             WitnessFrontier::from_checkpoint(&history.checkpoint, &log_key).unwrap(),
         ),
@@ -769,22 +821,47 @@ fn durable_lost_effect_reply_requires_independent_settlement_and_fences_old_writ
         history: &history,
         trust,
     };
-    let mut provider = ProviderJournal::default();
     assert_eq!(
-        old.execute_effect(use_effect(&checked, &current), |effect| {
-            provider.send(ProviderRequest {
-                effect,
-                commit: &intent,
-                log_key: &log_key,
-                bindings: std::slice::from_ref(&fact),
-                facts: &facts,
-                publications: &[],
-            })?;
-            Err("simulated loss of effect reply".into())
+        old.execute_effect(use_effect(&checked, &current), |actual| {
+            assert_eq!(actual, &effect);
+            receiver.crash_receive(
+                deliver(&first_dispatch, "channel-one", &effect),
+                CheckpointStage::Durable,
+            )?;
+            panic!("receiver should lose the committed reply")
         })
         .unwrap_err(),
-        "simulated loss of effect reply"
+        "simulated receiver crash"
     );
+    assert!(
+        receiver
+            .crash_advance(&receiver_cut, CheckpointStage::Durable)
+            .is_err()
+    );
+    let receiver = open_receiver();
+    let advanced = receiver.cut().unwrap();
+    assert_eq!(advanced.generation, receiver_cut.generation + 1);
+    let stale_unspent =
+        ReceiverDispatch::sign(receiver_cut, "channel-two", &fresh_intent, &sender).unwrap();
+    assert!(
+        receiver
+            .receive(deliver(&stale_unspent, "channel-two", &fresh))
+            .unwrap()
+            .is_none()
+    );
+    let changed_channel =
+        ReceiverDispatch::sign(advanced.clone(), "channel-two", &intent, &sender).unwrap();
+    assert!(
+        receiver
+            .receive(deliver(&changed_channel, "channel-two", &effect))
+            .unwrap()
+            .is_none()
+    );
+    let retained = receiver
+        .evidence(&OperationId(effect.operation.clone()))
+        .unwrap()
+        .unwrap();
+    let provider = retained.journal;
     assert_eq!(provider.actions.len(), 1);
 
     let cut = old.rotate_writer().unwrap();
@@ -805,7 +882,7 @@ fn durable_lost_effect_reply_requires_independent_settlement_and_fences_old_writ
     );
     assert!(reopened.revoke(verified(digest())).unwrap());
 
-    let outcomes: Vec<_> = provider.signed_outcomes().cloned().collect();
+    let outcomes = [retained.outcome];
     let evidence = |journal, outcomes| DurableEffectRecovery {
         effect: &effect,
         journal,
@@ -862,5 +939,40 @@ fn durable_lost_effect_reply_requires_independent_settlement_and_fences_old_writ
             .unwrap()
     );
     assert_eq!(provider.actions.len(), 1);
+    let fresh_dispatch =
+        ReceiverDispatch::sign(advanced, "channel-two", &fresh_intent, &sender).unwrap();
+    let fresh_id = OperationId(fresh.operation.clone());
+    assert!(
+        receiver
+            .receive(deliver(&fresh_dispatch, "channel-one", &fresh))
+            .unwrap()
+            .is_none()
+    );
+    let mut tampered = fresh_dispatch.clone();
+    tampered.signature[0] ^= 1;
+    assert!(
+        receiver
+            .receive(deliver(&tampered, "channel-two", &fresh))
+            .is_err()
+    );
+    assert!(
+        receiver
+            .crash_receive(
+                deliver(&fresh_dispatch, "channel-two", &fresh),
+                CheckpointStage::Staged
+            )
+            .is_err()
+    );
+    let receiver = open_receiver();
+    assert!(receiver.evidence(&fresh_id).unwrap().is_none());
+    let delivered = receiver
+        .receive(deliver(&fresh_dispatch, "channel-two", &fresh))
+        .unwrap()
+        .unwrap();
+    assert_eq!(
+        receiver.evidence(&fresh_id).unwrap().unwrap().outcome,
+        delivered
+    );
+    std::fs::remove_dir_all(receiver_directory).unwrap();
     std::fs::remove_dir_all(directory).unwrap();
 }

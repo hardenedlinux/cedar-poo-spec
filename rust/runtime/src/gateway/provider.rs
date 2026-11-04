@@ -2,7 +2,7 @@
 use super::wire::{sign, simulation_key};
 use super::{Commit, EffectIdentity, FactBinding, Signed, Version, verify};
 use crate::json_sha256;
-use p256::ecdsa::VerifyingKey;
+use p256::ecdsa::{SigningKey, VerifyingKey};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 /// Independent provider observation of one exact simulated effect.
@@ -54,7 +54,59 @@ pub(super) struct ProviderRequest<'a> {
     pub publications: &'a [Signed],
 }
 
+impl ProviderRequest<'_> {
+    pub(super) fn validate(&self) -> Result<(), String> {
+        let commit: Commit = verify(self.commit, self.log_key)?;
+        if commit.version != (Version { major: 1, minor: 0 })
+            || commit.effect != *self.effect
+            || commit.facts
+                != self
+                    .bindings
+                    .iter()
+                    .map(json_sha256)
+                    .collect::<Result<Vec<_>, _>>()?
+            || commit.publications
+                != self
+                    .publications
+                    .iter()
+                    .map(Signed::source_sha256)
+                    .collect::<Result<Vec<_>, _>>()?
+        {
+            return Err("provider input differs from the witnessed intent".into());
+        }
+        Ok(())
+    }
+
+    pub(super) fn sign_outcome(
+        &self,
+        action: ProviderAction,
+        signer: &SigningKey,
+    ) -> Result<Signed, String> {
+        let outcome = ProviderOutcome {
+            version: Version { major: 1, minor: 0 },
+            domain: PROVIDER_OUTCOME_DOMAIN.into(),
+            log_key: self.log_key.to_encoded_point(false).as_bytes().to_vec(),
+            outcome: Receipt {
+                version: Version { major: 1, minor: 0 },
+                commit: self.commit.clone(),
+                action,
+                facts: self.facts.to_vec(),
+                publications: self.publications.to_vec(),
+            },
+        };
+        sign(&outcome, signer)
+    }
+}
+
 impl ProviderJournal {
+    pub(super) fn observation(action: ProviderAction) -> Self {
+        Self {
+            actions: vec![action],
+            outcomes: BTreeMap::new(),
+            live: false,
+        }
+    }
+
     /// Detached signed evidence from the provider's actual send boundary.
     /// Deserializing an unsigned journal never creates this evidence.
     pub fn signed_outcomes(&self) -> impl Iterator<Item = &Signed> {
@@ -65,45 +117,18 @@ impl ProviderJournal {
         if !self.live || self.outcomes.contains_key(&effect.operation) {
             return Err("provider is an observation or operation already exists".into());
         }
-        let commit: Commit = verify(request.commit, request.log_key)?;
-        if commit.version != (Version { major: 1, minor: 0 })
-            || commit.effect != *effect
-            || commit.facts
-                != request
-                    .bindings
-                    .iter()
-                    .map(json_sha256)
-                    .collect::<Result<Vec<_>, _>>()?
-            || commit.publications
-                != request
-                    .publications
-                    .iter()
-                    .map(Signed::source_sha256)
-                    .collect::<Result<Vec<_>, _>>()?
-        {
-            return Err("provider input differs from the witnessed intent".into());
-        }
+        request.validate()?;
         let action = ProviderAction {
             effect: effect.clone(),
             result: format!("provider-{}", self.outcomes.len()),
         };
         self.actions.push(action.clone());
-        let outcome = ProviderOutcome {
-            version: Version { major: 1, minor: 0 },
-            domain: PROVIDER_OUTCOME_DOMAIN.into(),
-            log_key: request.log_key.to_encoded_point(false).as_bytes().to_vec(),
-            outcome: Receipt {
-                version: Version { major: 1, minor: 0 },
-                commit: request.commit.clone(),
-                action: action.clone(),
-                facts: request.facts.to_vec(),
-                publications: request.publications.to_vec(),
-            },
-        };
         // A failed outcome signature cannot undo the effect or permit a resend.
         self.outcomes.insert(
             effect.operation.clone(),
-            sign(&outcome, &simulation_key(8)).ok(),
+            request
+                .sign_outcome(action.clone(), &simulation_key(8))
+                .ok(),
         );
         Ok(action)
     }

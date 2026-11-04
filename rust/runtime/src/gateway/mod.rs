@@ -12,6 +12,8 @@ pub mod oauth_refresh;
 #[cfg(unix)]
 pub mod oauth_refresh_durable;
 mod provider;
+#[cfg(unix)]
+pub mod provider_durable;
 mod review;
 mod simulation;
 mod sources;

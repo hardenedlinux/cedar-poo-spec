@@ -1,6 +1,7 @@
 //! Trusted local persistence and a simulated final receiver for disclosure.
 use super::Effect;
 use cedar_poo_core::operation_identity::OperationId;
+pub use cedar_poo_core::operation_identity::ReceiverCut;
 use cedar_poo_runtime::gateway::{Signed, public_key, verify};
 use cedar_poo_runtime::gateway_source_sha256;
 use serde::{Deserialize, Serialize};
@@ -31,14 +32,6 @@ impl AcknowledgedImage {
         }
         Ok(())
     }
-}
-
-/// Authority identity and generation obtained through the trusted control plane.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct ReceiverCut {
-    pub scope: String,
-    pub generation: u64,
 }
 
 /// Exact admitted operation, transmitted by an authenticated Host adapter.

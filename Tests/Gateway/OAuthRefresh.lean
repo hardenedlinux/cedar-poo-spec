@@ -1,4 +1,4 @@
-import CedarPooSpec.Gateway.OAuthRevocationCrash
+import CedarPooSpec.Gateway.OAuthReceiver
 
 namespace Tests.Gateway.OAuthRefresh
 open CedarPooSpec.Gateway.OAuth
@@ -37,9 +37,28 @@ private def crashExercise (durable : Revocation.Recovery.Store)
   let action : CedarPooSpec.Gateway.EffectProtocol.AuditRecord := ⟨intent.operation, "result"⟩
   let outcome : CedarPooSpec.Gateway.EffectProtocol.ProviderOutcome :=
     ⟨{}, "cedar-poo/provider-outcome", "log", ⟨action, intent⟩, [7]⟩
+  let cut : CedarPooSpec.Admission.ReceiverCut := ⟨"receiver", 0⟩
+  let receiver : Receiver.Image := { cut := cut }
+  let dispatch : CedarPooSpec.Admission.DispatchBinding := ⟨⟨intent.operation⟩, "effect-digest", cut⟩
+  let delivery : Receiver.Delivery := ⟨dispatch, "channel-one", outcome⟩
+  let request : Receiver.Input := ⟨receiver, delivery, dispatch, "channel-one", intent, true⟩
+  let .ok delivered := Receiver.contract.invoke Receiver.prepare request | return false
+  let some advanced := Receiver.advance delivered.result cut | return false
+  let restored := Revocation.Crash.recoverImage .durable delivered.result advanced
+  let staged := Revocation.Crash.recoverImage .staged receiver delivered.result
+  let some (action, outcome) := Receiver.evidence restored dispatch.operation | return false
+  let newDispatch := { dispatch with cut := restored.cut }
+  let retry : Receiver.Input := ⟨restored, ⟨newDispatch, "channel-two", outcome⟩,
+    newDispatch, "channel-two", intent, true⟩
   let reconcile : Revocation.Crash.ReconcileInput := ⟨live, 1, intent.operation, trust, source, history, [action], [outcome]⟩
   let .ok settled := Revocation.Crash.reconcileContract.invoke Revocation.Crash.prepareReconcile reconcile | return false
-  return decide (stale.oauth = handed.oauth) &&
+  return (Receiver.evidence staged dispatch.operation).isNone &&
+    decide (restored.cut.generation = cut.generation + 1) &&
+    (Receiver.receive { request with image := restored }).isNone &&
+    (Receiver.receive retry).isNone &&
+    (Receiver.receive { request with observedChannel := "channel-two" }).isNone &&
+    (Receiver.receive { request with senderAuthenticated := false }).isNone &&
+    decide (stale.oauth = handed.oauth) &&
     decide ((Refresh.RevocationInput.key ⟨durable.checkpoint.ledger, verified digest⟩) ∈ live.oauth.checkpoint.ledger.revoked) &&
     (Revocation.Crash.revoke handed 0 (verified digest)).isNone &&
     (Revocation.Crash.begin { begin with image := handed }).isNone &&
@@ -170,3 +189,8 @@ end Tests.Gateway.OAuthRefresh
 #print axioms CedarPooSpec.Gateway.OAuth.Revocation.Crash.reconciliation_preserves_burn_and_revocations
 #print axioms CedarPooSpec.Gateway.OAuth.Revocation.Crash.unclean_evidence_cannot_settle
 #print axioms CedarPooSpec.Gateway.OAuth.Revocation.Crash.settlement_cannot_reopen_operation
+
+#print axioms CedarPooSpec.Gateway.OAuth.Receiver.receive_retains_reservation_and_outcome
+#print axioms CedarPooSpec.Gateway.OAuth.Receiver.committed_cut_refuses_old_dispatch
+#print axioms CedarPooSpec.Gateway.OAuth.Receiver.cut_advance_keeps_no_resend
+#print axioms CedarPooSpec.Gateway.OAuth.Receiver.committed_receipt_recovered

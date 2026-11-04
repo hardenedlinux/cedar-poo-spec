@@ -1210,6 +1210,44 @@ another effect. The Rust observer is a simulation; the external
 recipient's own journal and stable operation identity remain required.
 
 
+*** Durable receiver cut and detached delivery evidence
+
+=Gateway.OAuth.Receiver= composes the existing stable operation
+ledger and receiver-cut check with an atomic provider delivery record.
+The sender signs the exact witnessed intent, receiver cut and channel.
+The receiver verifies that signature under its configured sender root,
+checks the actual channel, and verifies the witnessed effect under
+its configured witness root. Scope and the sender, witness, and
+provider roots are pinned to the receiver's independently held image.
+
+The receiver advances its cut under the same lock as effect
+admission. A staged cut update leaves the previous cut authoritative.
+An installed and synced cut survives a lost acknowledgment. The
+reopened receiver refuses the older cut even for an operation that
+has never been delivered. Advancing the cut preserves prior
+reservations and outcomes. Channel and worker identity are excluded
+from the deduplication key, which remains the stable operation ID.
+An authenticated dispatch for a new channel can deliver a fresh
+operation, while the same operation remains consumed.
+
+The Rust reference represents the simulated effect as the provider's
+durable action record. It stores that action, the authenticated
+dispatch, and the signed outcome in one checkpoint before returning
+a reply. After reopening, evidence is read from the receiver's own
+store and passed to the existing scoped provider reconciliation.
+The sender may settle after revocation or writer handoff without
+reopening the operation. The replay also refuses a forged dispatch,
+a mismatched observed channel, and a stale cut carrying an unspent
+operation.
+
+The fault injection distinguishes failure before checkpoint install
+from acknowledgment loss after sync on the trusted Unix filesystem.
+The receiver directory and lock inode remain under independent
+custody. A real external effect requires an equivalent recipient
+transaction or durable idempotency protocol. The simulation provides
+no physical power-loss or external transport guarantee.
+
+
 References include [[https://www.rfc-editor.org/rfc/rfc9700.html#section-2.3][OAuth Security BCP]],
 [[https://www.rfc-editor.org/rfc/rfc8707.html][Resource Indicators]],
 [[https://www.rfc-editor.org/rfc/rfc7662.html][Token Introspection]],
