@@ -71,3 +71,6 @@ import CedarPooSpec.Gateway.Lifecycle
 #print axioms CedarPooSpec.Gateway.Lifecycle.observed_recovery_preserves_current_authority
 
 #print axioms CedarPooSpec.Gateway.Lifecycle.indexed_boundary_matches_verified_prefix
+
+#print axioms CedarPooSpec.Gateway.Lifecycle.revoked_trace_blocks_use_and_publication
+#print axioms CedarPooSpec.Gateway.Lifecycle.burned_trace_stays_burned

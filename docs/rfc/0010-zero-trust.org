@@ -394,6 +394,33 @@ safety goal; it establishes neither liveness nor the delegated-agent paper's
 expected-utility guarantee. Already admitted bytes are outside a retroactive
 revocation claim.
 
+** Terminal revocation across maintenance histories
+
+The UCON continuity requirement motivates testing the effect boundary after
+each change of authority. The current simulator represents terminal revocation
+for one original operation. Its maintenance trace includes monotone clock
+updates, fact renewal, source invalidation and observed settlement.
+=Gateway.Lifecycle.revoked_trace_blocks_use_and_publication= proves by induction
+that any finite maintenance suffix preserves refusal by both the current-use
+guard and the reviewed publication guard. The theorem quantifies over every
+handle and envelope, including a fresh one. =burned_trace_stays_burned= shows
+that the same suffix preserves recorded consumption.
+
+The publication result applies to the guard used by =publicationContract=.
+Rust also exercises the concrete publication path with a ticket issued before
+revocation and checks that refusal leaves the epoch and history length intact.
+The existing recovery control checks that renewal and mediator replacement
+preserve revocation even when the current Cedar evaluation allows the request.
+These are safety results for the modeled simulator transitions. The trace
+takes observed settlement as an input. The recovery Contract and native
+independent verification govern how that input is obtained.
+
+Gray and Lamport's [[https://arxiv.org/abs/cs/0408036][Consensus on Transaction Commit]]
+provides a separate comparison for distributed recovery. The simulator's
+surviving owner and independently signed outcome are explicit premises.
+A distributed Host would require a separate agreement and durability model
+before this result could cover concurrent writers across failures.
+
 ** P0–P2 as one acceptance unit
 
 | Phase | Work in existing owners | Exit evidence |

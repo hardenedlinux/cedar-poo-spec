@@ -145,6 +145,21 @@ fn replaced_foreign_stale_and_non_enforcing_publications_refuse() {
             .is_err()
     );
     assert_eq!(paused.publication_view().unwrap().epoch, 7);
+
+    let revoked = simulator(&data, index);
+    let ticket = revoked
+        .register_review(submit(&data, index, 0, None))
+        .unwrap();
+    let before = revoked.publication_history().unwrap();
+    revoked.revoke().unwrap();
+    assert!(
+        revoked
+            .publish_review(ticket, PublicationDelivery::Complete)
+            .is_err()
+    );
+    assert_eq!(revoked.publication_view().unwrap().epoch, 7);
+    assert_eq!(revoked.publication_history().unwrap().len(), before.len());
+    assert!(revoked.prepare(&revoked.envelope()).is_err());
 }
 #[test]
 #[ignore = "requires actual Lean Delta output; run just check-reviewed-effects"]

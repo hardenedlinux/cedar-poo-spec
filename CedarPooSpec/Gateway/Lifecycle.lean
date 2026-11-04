@@ -557,4 +557,54 @@ theorem provider_settlement_preserves_source_views
     (recover state receipt.result.committed receipt.result.complete).factGeneration = state.factGeneration :=
   ⟨rfl, rfl, rfl⟩
 
+/-- The simulator's maintenance transitions. A rejected clock rollback
+stutters. Settlement uses the projection of an independently checked recovery. -/
+inductive Maintenance where
+  | tick (now : Nat)
+  | renewFacts (authority : CedarPooSpec.ZeroTrust.FactAuthority String String)
+      (required : List String) (world : String) (cedarAllowed : Bool)
+  | invalidate
+  | settle (status : RecoveryStatus) (frontier : WitnessFrontier)
+
+def Maintenance.apply (state : State) : Maintenance → State
+  | .tick now =>
+    if state.current.authority.now ≤ now then
+      let authority := { state.current.authority with now := now }
+      { state with
+        current := { state.current with authority := authority }
+        generation := state.generation + 1 }
+    else state
+  | .renewFacts authority required world cedarAllowed => renew state authority required world cedarAllowed
+  | .invalidate => invalidateSources state
+  | .settle status frontier => recoverObserved state status frontier
+
+theorem maintenance_preserves_revocation (state : State) (step : Maintenance) :
+    (step.apply state).current.revoked = state.current.revoked := by
+  cases step <;> simp [Maintenance.apply, renew, invalidateSources, recoverObserved, recover, apply_ite]
+
+theorem maintenance_preserves_burn (state : State) (step : Maintenance)
+    (burned : state.spent = true) : (step.apply state).spent = true := by
+  cases step <;> simp [Maintenance.apply, renew, invalidateSources, recoverObserved, recover, apply_ite, burned]
+
+/-- Terminal revocation survives any finite sequence of maintenance writes.
+The endpoint refuses both fresh effect use and reviewed Delta publication. -/
+theorem revoked_trace_blocks_use_and_publication (state : State) (steps : List Maintenance)
+    (revoked : state.current.revoked = true) (handle : Handle) (pinned : String)
+    (envelope : Envelope) :
+    let final := steps.foldl (fun s step => step.apply s) state
+    allowed final handle envelope = false ∧ publicationGuard final pinned envelope = false := by
+  induction steps generalizing state with
+  | nil =>
+    exact ⟨by simp [allowed, accepts, revoked], by simp [publicationGuard, revoked]⟩
+  | cons step rest ih =>
+    exact ih (step.apply state) ((maintenance_preserves_revocation state step).trans revoked)
+
+/-- Maintenance cannot turn reconciliation into a second execution right. -/
+theorem burned_trace_stays_burned (state : State) (steps : List Maintenance)
+    (burned : state.spent = true) :
+    (steps.foldl (fun s step => step.apply s) state).spent = true := by
+  induction steps generalizing state with
+  | nil => exact burned
+  | cons step rest ih => exact ih (step.apply state) (maintenance_preserves_burn state step burned)
+
 end CedarPooSpec.Gateway.Lifecycle
