@@ -799,3 +799,46 @@ A whole-reader rollback counterexample retains the nonrollback premise. Native
 fault controls reject ahead and behind frontiers even after registration and
 recovery. These are shared adapter laws and simulated controls, not physical
 persistence, credential custody or production IO.
+
+** OAuth evidence at the Gateway resource boundary
+
+=Gateway.OAuth= is a sender-constrained resource-side profile. Its Contract
+binds an authenticated, active grant to the issuer, subject, client, resource
+audience, required scopes and time of the actual use. The Gateway selects
+the expected identity and required scopes independently of the token claims.
+The resulting OAuth requirement strengthens existing Cedar and Zero Trust
+checks. It cannot waive effect authorization, consumption or final mediation.
+
+The Host verifies token bytes and current grant status, including revocation
+according to its issuer profile. JWT verification or authenticated token
+introspection must supply these facts. DPoP uses verified proof bytes, the
+effective request method and RFC-normalized target URI, token hash, key
+thumbprint, freshness, applicable nonce validation and a committed replay
+reservation. The Host owns the replay policy and storage. DPoP URI binding
+does not bind query parameters or request content. The original Gateway
+Contract still binds the exact effect. Mutual TLS uses the certificate
+thumbprint of the authenticated request connection. An unauthenticated
+forwarded certificate header cannot provide that observation.
+
+The proof is conditional on these Host observations. The model has no
+authorization server, token parser, signature verifier, TLS terminator or
+distributed replay store. A deployment must bind the authenticated evidence
+to the same deciding view used by the Gateway. AgentCore and FHIR expose the same strengthening over their resource
+policies. FHIR patient, session and inactivity checks remain in its base
+policy. AgentCore retains its principal and action restrictions.
+
+The Rust Gateway accepts the trusted current-use projection at its OAuth
+boundary. One shared process-local replay guard admits at most one use of
+an issuer, proof key and proof ID. A deployment must supply bounded replay
+retention and a shared atomic reservation across processes and restarts.
+The native controls race two applicable routes, reject a replaced peer
+certificate, and deny a fresh proof after revocation. Each use requires
+fresh grant status. The adapter must obtain it under the same authority
+boundary as final effect admission. This repository does not contain the
+deployed OAuth verifier or a production shared replay store.
+
+References include [[https://www.rfc-editor.org/rfc/rfc9700.html#section-2.3][OAuth Security BCP]],
+[[https://www.rfc-editor.org/rfc/rfc8707.html][Resource Indicators]],
+[[https://www.rfc-editor.org/rfc/rfc7662.html][Token Introspection]],
+[[https://www.rfc-editor.org/rfc/rfc9449.html][DPoP]], and
+[[https://www.rfc-editor.org/rfc/rfc8705.html][Certificate-Bound Access Tokens]].

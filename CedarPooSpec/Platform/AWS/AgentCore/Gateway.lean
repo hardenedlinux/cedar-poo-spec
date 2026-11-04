@@ -1,3 +1,4 @@
+import CedarPooSpec.Gateway.OAuth
 import CedarPooSpec.PolicyJson
 
 /-! Reusable AgentCore Gateway projection. Business-specific Cedar rules and
@@ -37,5 +38,11 @@ def gatewayPolicy (id : String) (effect : Effect)
 def scopedPolicy (id : String) (effect : Effect) (gatewayUID : EntityUID)
     (actions : ActionScope) (conditions : Conditions := []) : Policy :=
   gatewayPolicy id effect (.principalScope (.is userType)) gatewayUID actions conditions
+
+/-- Apply current Host-verified OAuth evidence to the existing resource policy.
+The caller supplies the observation from the actual deciding view. -/
+def withOAuth (base : CedarPooSpec.ZeroTrust.Framework E V)
+    (observe : E → V → CedarPooSpec.Gateway.OAuth.CurrentUse) :=
+  CedarPooSpec.Gateway.OAuth.strengthen base observe
 
 end CedarPooSpec.Platform.AWS.AgentCore

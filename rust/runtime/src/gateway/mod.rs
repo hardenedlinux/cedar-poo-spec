@@ -5,6 +5,7 @@ mod audit;
 #[cfg(unix)]
 mod checkpoint_store;
 mod lineage;
+pub mod oauth;
 mod provider;
 mod review;
 mod simulation;
