@@ -172,7 +172,7 @@ def authorize (input : AuthorizationInput) : Option Authorized := do
       pushed.registration.client = input.session.client ∧
       input.key ∉ input.ledger.consumed ∧ input.now < pushed.expiresAt ∧
       pushed.request.permits input.grant = true ∧ input.code ≠ "" ∧
-      input.now < input.codeExpiresAt ∧
+      input.now < input.codeExpiresAt ∧ input.codeExpiresAt ≤ input.now + 60 ∧
       (input.ledger.codes.issued.any fun item =>
         item.session.issuer == input.session.issuer && item.code == input.code) = false ∧
       (input.session.issuer, input.code) ∉ input.ledger.codes.spent then
@@ -202,7 +202,8 @@ theorem authorization_retains_binding
     result.pushed.registration.issuer = input.session.issuer ∧
     result.pushed.registration.client = input.session.client ∧
     result.issued.session = input.session ∧
-    result.pushed.request.permits result.issued.grant = true ∧ input.key ∈ result.ledger.consumed := by
+    result.pushed.request.permits result.issued.grant = true ∧ input.key ∈ result.ledger.consumed ∧
+    input.now < result.issued.expiresAt ∧ result.issued.expiresAt ≤ input.now + 60 := by
   cases found : input.ledger.lookup input.session.issuer input.uri with
   | none => simp [authorize, found] at accepted
   | some pushed =>
@@ -210,8 +211,8 @@ theorem authorization_retains_binding
     split at accepted
     · rename_i valid
       cases accepted
-      obtain ⟨uri, client, extras, session, issuer, owner, _, _, grant, _⟩ := valid
-      exact ⟨rfl, uri, client, extras, session, issuer, owner, session, grant, by simp⟩
+      obtain ⟨uri, client, extras, session, issuer, owner, _, _, grant, _, unexpired, lifetime, _⟩ := valid
+      exact ⟨rfl, uri, client, extras, session, issuer, owner, session, grant, by simp, unexpired, lifetime⟩
     · contradiction
 
 theorem consumed_reference_refused (input : AuthorizationInput)
@@ -425,7 +426,7 @@ theorem authorized_reference_cannot_be_reused
     (current : retry.ledger = receipt.result.ledger) : authorize retry = none := by
   apply consumed_reference_refused
   rw [sameKey, current]
-  obtain ⟨_, _, _, _, _, _, _, _, _, consumed⟩ := authorization_retains_binding receipt.logic
+  obtain ⟨_, _, _, _, _, _, _, _, _, consumed, _⟩ := authorization_retains_binding receipt.logic
   exact consumed
 
 theorem redeemed_code_cannot_be_reused

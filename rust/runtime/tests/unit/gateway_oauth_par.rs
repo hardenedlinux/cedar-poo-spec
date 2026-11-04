@@ -241,6 +241,25 @@ fn rejects_par_replacement_and_cross_client_or_issuer_reference() {
 }
 
 #[test]
+fn rejects_overlong_codes_without_consuming_the_par_reference() {
+    let f = Fixture::new(Credential::Mtls("client-cert".into()));
+    let ledger = ParLedger::default();
+    assert!(ledger.push(f.push("par")).unwrap());
+    let mut input = f.authorization();
+    input.code_expires_at = input.now + 61;
+    assert!(ledger.authorize(input).unwrap().is_none());
+    let mut input = f.authorization();
+    input.code_expires_at = input.now;
+    assert!(ledger.authorize(input).unwrap().is_none());
+    let mut input = f.authorization();
+    input.code_expires_at = input.now + 60;
+    let expiry = input.code_expires_at;
+    let authorized = ledger.authorize(input).unwrap().unwrap();
+    assert!(authorized.redeem(&f.token(), expiry).unwrap().is_none());
+    assert!(authorized.redeem(&f.token(), expiry - 1).unwrap().is_some());
+}
+
+#[test]
 fn authenticates_the_bound_code_once_and_checks_current_resource_access() {
     for credential in [
         Credential::Mtls("client-cert".into()),

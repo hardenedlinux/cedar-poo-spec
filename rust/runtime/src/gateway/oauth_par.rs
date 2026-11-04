@@ -208,6 +208,7 @@ impl ParLedger {
             || input.has_extra_parameters
             || input.code.is_empty()
             || input.now >= input.code_expires_at
+            || input.code_expires_at - input.now > 60
         {
             return Ok(None);
         }

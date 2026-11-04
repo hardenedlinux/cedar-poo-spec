@@ -927,7 +927,8 @@ code injection. The library checks each at a different point:
   challenge, audiences and scopes for fewer than 600 seconds.
 - Authorization compares the front-channel reference with the independently
   retained pending session and handle. Extra parameters are refused. The
-  transition consumes the handle when issuing the code and binds the issued
+  transition consumes the handle when issuing the code, limits the code
+  lifetime to 60 seconds from issuance, and binds the issued
   grant to the saved client and issuer. Its scopes and audiences can only
   narrow the pushed request. This profile requires one use at authorization,
   allowing a page load to precede the decision without consuming the handle.

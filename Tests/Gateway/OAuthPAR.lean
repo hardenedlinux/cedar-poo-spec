@@ -32,7 +32,10 @@ private def authorizationChecks : Bool := Id.run do
   let some ledger := push { pushed with ledger, uri := "replacement" } | return false
   let input := authorization ledger
   let some result := authorize input | return false
-  return (authorize { input with uri := "replacement" }).isNone &&
+  return (authorize { input with codeExpiresAt := input.now + 60 }).isSome &&
+    (authorize { input with codeExpiresAt := input.now + 61 }).isNone &&
+    (authorize { input with codeExpiresAt := input.now }).isNone &&
+    (authorize { input with uri := "replacement" }).isNone &&
     (authorize { input with client := "other" }).isNone &&
     (authorize { input with session := { session with issuer := "other" } }).isNone &&
     (authorize { input with session := { session with browser := "other" } }).isNone &&
