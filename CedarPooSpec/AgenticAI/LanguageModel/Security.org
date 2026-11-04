@@ -188,6 +188,35 @@ does not provide durable outcome settlement. The trusted dispatch adapter
 must send the exact admitted effect. Remote fencing and authenticated
 reconciliation are separate deployment obligations.
 
+* Restart reservation and receiver fencing
+
+The Unix dispatch journal reserves the authenticated logical operation before
+a send can run. The immutable file binds that operation to the complete effect
+digest and to the receiver scope and generation. Creation is exclusive. The
+file and containing directory are synchronized before dispatch. A partially
+written reservation fails closed. The trusted directory must remain bound to
+one workflow authority across restart. The journal is a dispatch barrier.
+The deploying Host must restore budget, cohort, approval and audit state from
+its own transaction. A crash after reservation but before send can require
+operator resolution, because automatic retry could duplicate an effect.
+
+The receiver checks the independently supplied current scope and generation
+and recomputes the exact observed effect binding. It reserves the operation
+in its own journal before applying the effect. The simulation orders control
+updates and application under the same lock. A real transport must authenticate
+the sender and recover the current cut from its trusted control plane before
+accepting a request. Reading an old cut or letting the request choose the cut
+would defeat receiver fencing.
+
+A detached provider outcome is verified against an independently configured
+provider key and the exact retained binding. Its result does not release the
+send reservation. The native replay drops the original mediator, reopens the
+same journal, and tries a different channel and approval before and after
+reading the signed outcome. It also replays the original request at the
+receiver and presents a delayed request after a receiver cut change.
+This is a local filesystem and simulated receiver qualification. It does
+not implement a network transport or a production provider outcome store.
+
 * Host transaction contract
 
 1. Resolve the current source, token, transformation, purpose, delegation,

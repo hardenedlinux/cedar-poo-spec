@@ -309,6 +309,9 @@ fn run() -> Result<(), String> {
         return Err("lost reply allowed a second send or changed the original charge".into());
     }
 
+    #[cfg(unix)]
+    check_restarted_dispatch(&policy, &first, &second)?;
+
     let first_delta = SelectionDelta {
         before: (1..=6).map(|n| format!("p{n}")).collect(),
         after: ["p1", "p2", "p3", "p4"].map(str::to_owned).to_vec(),
@@ -523,10 +526,213 @@ fn run() -> Result<(), String> {
             "cumulativeSelectionDenied": cumulative_selection_denied,
             "crossChannelRevisionSerialized": true,
             "lostReplyCrossChannelRetryDenied": true,
+            "restartReconciliationAndFencing": cfg!(unix),
             "auditEntries": host.audit()?.len(),
         })
     );
     Ok(())
+}
+
+#[cfg(unix)]
+fn check_restarted_dispatch(
+    policy: &ValidatedDisclosurePolicy,
+    first: &Effect,
+    second: &Effect,
+) -> Result<(), String> {
+    use cedar_poo_disclosure_host::{
+        DisclosureOutcome, DisclosureReceiver, DispatchJournal, ReceiverCut, RecoverableDispatch,
+    };
+    use cedar_poo_runtime::gateway::Signed;
+    use p256::ecdsa::{Signature, SigningKey, signature::Signer};
+
+    let path = env::temp_dir().join(format!("cedar-disclosure-restart-{}", process::id()));
+    let sender_path = path.join("sender");
+    let receiver_path = path.join("receiver");
+    fs::create_dir(&path).map_err(|e| e.to_string())?;
+    let result = (|| {
+        fs::create_dir(&sender_path).map_err(|e| e.to_string())?;
+        fs::create_dir(&receiver_path).map_err(|e| e.to_string())?;
+        let mut replan = first.clone();
+        replan.channel = "message".into();
+        let cut = ReceiverCut {
+            scope: "study-observers".into(),
+            generation: 7,
+        };
+        let receiver = DisclosureReceiver::new(cut.clone());
+        let provider = SigningKey::from_slice(&[11; 32]).map_err(|e| e.to_string())?;
+        let foreign = SigningKey::from_slice(&[12; 32]).map_err(|e| e.to_string())?;
+        let key = provider.verifying_key().to_encoded_point(false);
+        let mut independent = None;
+        let mut sends = 0;
+        {
+            let sender =
+                InMemoryDisclosureHost::new(policy, evidence(), authority(first, &replan, second));
+            let ticket = sender
+                .prepare(AuthorityId::from("approval-first"), first.clone())?
+                .ok_or("restart fixture denied initial dispatch")?;
+            let result = sender.commit_and_dispatch_recoverable(
+                ticket,
+                first,
+                RecoverableDispatch {
+                    journal: &DispatchJournal::new(&sender_path),
+                    receiver_cut: cut.clone(),
+                },
+                |request, actual| {
+                    independent = receiver.receive(
+                        &DispatchJournal::new(&receiver_path),
+                        request,
+                        actual,
+                        |_| {
+                            sends += 1;
+                            Ok(DisclosureOutcome {
+                                domain: DisclosureOutcome::DOMAIN.into(),
+                                binding: request.clone(),
+                                delivered: true,
+                            })
+                        },
+                    )?;
+                    Err("lost reply after receiver effect".into())
+                },
+            )?;
+            assert!(matches!(result, Some(DispatchOutcome::Unknown(_))));
+        }
+
+        let journal = DispatchJournal::new(&sender_path);
+        let restarted =
+            InMemoryDisclosureHost::new(policy, evidence(), authority(first, &replan, second));
+        let retry = restarted
+            .prepare(AuthorityId::from("approval-independent"), replan.clone())?
+            .ok_or("restart control did not present a locally eligible replacement")?;
+        assert!(
+            restarted
+                .commit_and_dispatch_recoverable(
+                    retry,
+                    &replan,
+                    RecoverableDispatch {
+                        journal: &journal,
+                        receiver_cut: cut.clone()
+                    },
+                    |_, _| {
+                        sends += 1;
+                        Ok(())
+                    }
+                )?
+                .is_none()
+        );
+        assert_eq!(
+            restarted.authority_used(&AuthorityId::from("approval-independent"))?,
+            Some(0)
+        );
+
+        let outcome = independent.ok_or("missing independent provider observation")?;
+        assert!(
+            receiver
+                .receive(
+                    &DispatchJournal::new(&receiver_path),
+                    &outcome.binding,
+                    first,
+                    |_| {
+                        sends += 1;
+                        Ok(())
+                    }
+                )?
+                .is_none()
+        );
+        let payload = serde_json::to_vec(&outcome).map_err(|e| e.to_string())?;
+        let signature: Signature = provider.sign(&payload);
+        let signed = Signed {
+            payload,
+            signature: signature.to_bytes().to_vec(),
+        };
+        assert!(journal.reconcile(&first.operation_id, &signed, key.as_bytes())?);
+        let mut substituted: serde_json::Value =
+            serde_json::from_slice(&signed.payload).map_err(|e| e.to_string())?;
+        substituted["binding"]["effect"] = json!("different observed effect");
+        let payload = serde_json::to_vec(&substituted).map_err(|e| e.to_string())?;
+        let signature: Signature = provider.sign(&payload);
+        let substituted = Signed {
+            payload,
+            signature: signature.to_bytes().to_vec(),
+        };
+        assert!(
+            journal
+                .reconcile(&first.operation_id, &substituted, key.as_bytes())
+                .is_err()
+        );
+
+        assert!(
+            journal
+                .reconcile(
+                    &first.operation_id,
+                    &signed,
+                    foreign.verifying_key().to_encoded_point(false).as_bytes()
+                )
+                .is_err()
+        );
+
+        let retry = restarted
+            .prepare(AuthorityId::from("approval-independent"), replan.clone())?
+            .ok_or("post-settlement control could not prepare locally")?;
+        assert!(
+            restarted
+                .commit_and_dispatch_recoverable(
+                    retry,
+                    &replan,
+                    RecoverableDispatch {
+                        journal: &journal,
+                        receiver_cut: cut.clone()
+                    },
+                    |_, _| {
+                        sends += 1;
+                        Ok(())
+                    }
+                )?
+                .is_none()
+        );
+
+        let newer = ReceiverCut {
+            generation: 8,
+            ..cut.clone()
+        };
+        receiver.advance(newer.clone())?;
+        let reopened_receiver = DisclosureReceiver::new(newer);
+        let mut delayed = first.clone();
+        delayed.operation_id = OperationId::from("delayed-operation");
+        let delayed_sender =
+            InMemoryDisclosureHost::new(policy, evidence(), authority(&delayed, &replan, second));
+        let delayed_ticket = delayed_sender
+            .prepare(AuthorityId::from("approval-first"), delayed.clone())?
+            .ok_or("delayed control did not prepare")?;
+        let sent = delayed_sender.commit_and_dispatch_recoverable(
+            delayed_ticket,
+            &delayed,
+            RecoverableDispatch {
+                journal: &journal,
+                receiver_cut: cut,
+            },
+            |binding, actual| {
+                assert!(
+                    reopened_receiver
+                        .receive(
+                            &DispatchJournal::new(&receiver_path),
+                            binding,
+                            actual,
+                            |_| {
+                                sends += 1;
+                                Ok(())
+                            }
+                        )?
+                        .is_none()
+                );
+                Err("receiver rejected retired fence".into())
+            },
+        )?;
+        assert!(matches!(sent, Some(DispatchOutcome::Unknown(_))));
+        assert_eq!(sends, 1);
+        Ok(())
+    })();
+    let cleanup = fs::remove_dir_all(path).map_err(|e| e.to_string());
+    result.and(cleanup)
 }
 
 fn main() {

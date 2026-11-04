@@ -406,6 +406,7 @@ dependencies = [
  "cedar-poo-core",
  "cedar-poo-disclosure-host",
  "cedar-poo-runtime",
+ "p256",
  "serde_json",
 ]
 

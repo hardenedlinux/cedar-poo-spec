@@ -7,7 +7,7 @@ publish.workspace = true
 description = "In-memory language-model disclosure Host reference"
 
 [dependencies]
-cedar-poo-runtime.workspace = true
+cedar-poo-runtime = { workspace = true, features = ["gateway"] }
 cedar-poo-core.workspace = true
 cedar-poo-agentic.workspace = true
 cedar-policy = { workspace = true, features = ["ipaddr", "decimal", "datetime"] }

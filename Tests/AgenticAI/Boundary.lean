@@ -1,5 +1,6 @@
 import CedarPooSpec.AgenticAI.Boundary
 import CedarPooSpec.Data.CumulativeDisclosure
+import CedarPooSpec.Admission.OperationIdentity
 
 namespace Tests.AgenticAI.Boundary
 
@@ -47,3 +48,10 @@ theorem isolatedChannelsAdmitButSharedHistoryRefuses :
   decide
 
 end Tests.AgenticAI.Boundary
+
+
+#print axioms CedarPooSpec.Admission.OperationLedger.reserved_operation_refused
+#print axioms CedarPooSpec.Admission.retired_cut_refused
+#print axioms CedarPooSpec.Admission.receive_requires_exact_current_effect
+#print axioms CedarPooSpec.Admission.reconciliation_requires_independent_exact_binding
+#print axioms CedarPooSpec.Admission.dispatch_invocation_fences_and_reserves

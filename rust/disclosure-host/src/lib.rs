@@ -1,6 +1,13 @@
 //! In-memory Host reference for a tool-using language-model disclosure effect.
 //! Authenticated inputs and durable storage remain the deploying Host's duty.
 
+#[cfg(unix)]
+mod dispatch;
+#[cfg(unix)]
+pub use dispatch::{
+    DisclosureOutcome, DisclosureReceiver, DispatchBinding, DispatchJournal, ReceiverCut,
+    RecoverableDispatch,
+};
 mod host;
 pub use host::{
     CommitReceipt, DispatchOutcome, Effect, Evidence, Grant, InMemoryDisclosureHost,

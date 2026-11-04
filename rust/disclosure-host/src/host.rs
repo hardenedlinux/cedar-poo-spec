@@ -465,6 +465,32 @@ impl InMemoryDisclosureHost {
         }))
     }
 
+    /// The deploying Host must restore its other admission state separately.
+    /// The journal protects the operation even if a fresh mediator is started.
+    #[cfg(unix)]
+    pub fn commit_and_dispatch_recoverable(
+        &self,
+        ticket: Ticket,
+        actual: &Effect,
+        dispatch: crate::RecoverableDispatch<'_>,
+        send: impl FnOnce(&crate::DispatchBinding, &Effect) -> Result<(), String>,
+    ) -> Result<Option<DispatchOutcome>, String> {
+        let binding = crate::DispatchBinding::new(actual, dispatch.receiver_cut)?;
+        let mut inner = self.inner.lock().map_err(|_| "Host lock poisoned")?;
+        if !Arc::ptr_eq(&self.scope, &ticket.scope)
+            || !ticket_current(&inner, &ticket, actual)?
+            || !dispatch.journal.reserve(&binding)?
+        {
+            return Ok(None);
+        }
+        let receipt = commit_admitted(&mut inner, &ticket, actual)?;
+        drop(inner);
+        Ok(Some(match send(&binding, actual) {
+            Ok(()) => DispatchOutcome::Confirmed(receipt),
+            Err(_) => DispatchOutcome::Unknown(receipt),
+        }))
+    }
+
     pub fn observe_output(&self, digest: String, candidate_ids: Vec<String>) -> Result<(), String> {
         let mut inner = self.inner.lock().map_err(|_| "Host lock poisoned")?;
         inner.evidence.observed_digest = digest;
