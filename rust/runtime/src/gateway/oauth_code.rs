@@ -82,6 +82,16 @@ impl CodeLedger {
         request: &Request,
         now: u64,
     ) -> Result<Option<RedeemedGrant>, String> {
+        self.redeem_with(session, request, now, |_| true)
+    }
+
+    pub(super) fn redeem_with(
+        &self,
+        session: &Session,
+        request: &Request,
+        now: u64,
+        admit: impl FnOnce(&Grant) -> bool,
+    ) -> Result<Option<RedeemedGrant>, String> {
         if session.issuer.is_empty()
             || session.client.is_empty()
             || session.redirect.is_empty()
@@ -109,6 +119,7 @@ impl CodeLedger {
             || now >= item.expires_at
             || item.grant.identity.issuer != session.issuer
             || item.grant.identity.client != session.client
+            || !admit(&item.grant)
         {
             return Ok(None);
         }

@@ -1,5 +1,5 @@
 //! Pushed authorization reference for confidential clients.
-use super::oauth::Grant;
+use super::oauth::{Confirmation, Grant};
 use super::oauth_code::{self, CodeLedger, Issued, RedeemedGrant, Session};
 use std::collections::{HashMap, HashSet};
 use std::sync::Mutex;
@@ -47,11 +47,48 @@ impl<T> VerifiedClient<T> {
     }
 }
 
+/// Key from a DPoP proof verified for the actual PAR request.
+pub struct VerifiedParDpop(pub String);
+
+/// Sender constraint requested over the authenticated PAR back channel.
+pub enum ParSender {
+    Dpop {
+        jkt: Option<String>,
+        proof: Option<VerifiedParDpop>,
+    },
+    Mtls,
+}
+
+impl ParSender {
+    fn key<'a>(jkt: Option<&'a str>, proof: Option<&'a VerifiedParDpop>) -> Option<&'a str> {
+        let key = jkt.or(proof.map(|observed| observed.0.as_str()))?;
+        (!key.is_empty() && proof.is_none_or(|observed| observed.0 == key)).then_some(key)
+    }
+
+    fn valid(&self) -> bool {
+        match self {
+            Self::Dpop { jkt, proof } => Self::key(jkt.as_deref(), proof.as_ref()).is_some(),
+            Self::Mtls => true,
+        }
+    }
+
+    fn permits(&self, confirmation: &Confirmation) -> bool {
+        match (self, confirmation) {
+            (Self::Dpop { jkt, proof }, Confirmation::Dpop(key)) => {
+                Self::key(jkt.as_deref(), proof.as_ref()) == Some(key.as_str())
+            }
+            (Self::Mtls, Confirmation::Mtls(certificate)) => !certificate.is_empty(),
+            _ => false,
+        }
+    }
+}
+
 /// Authorization parameters received in the authenticated back channel.
 pub struct ParRequest {
     pub session: Session,
     pub audiences: Vec<String>,
     pub scopes: Vec<String>,
+    pub sender: ParSender,
 }
 
 impl ParRequest {
@@ -63,6 +100,7 @@ impl ParRequest {
                 .iter()
                 .all(|audience| self.audiences.contains(audience))
             && grant.scopes.iter().all(|scope| self.scopes.contains(scope))
+            && self.sender.permits(&grant.confirmation)
     }
 }
 
@@ -144,6 +182,7 @@ impl ParLedger {
                 .scopes
                 .iter()
                 .all(|scope| registration.scopes.contains(scope))
+            || !verified.request.sender.valid()
             || uri.0.is_empty()
             || expires_at <= now
             || expires_at - now >= 600
@@ -207,16 +246,54 @@ impl ParLedger {
     }
 }
 
+/// Key from a DPoP proof verified for the actual token request.
+pub struct VerifiedTokenDpop(pub String);
+
+/// Sender evidence verified on the actual token request.
+pub enum TokenSender {
+    Dpop(VerifiedTokenDpop),
+    Mtls(String),
+}
+
+impl TokenSender {
+    fn matches(&self, client: &Credential, confirmation: &Confirmation) -> bool {
+        match (self, confirmation) {
+            (Self::Dpop(proof), Confirmation::Dpop(key)) => !key.is_empty() && proof.0 == *key,
+            (Self::Mtls(peer), Confirmation::Mtls(certificate)) => {
+                !certificate.is_empty()
+                    && peer == certificate
+                    && match client {
+                        Credential::Mtls(authenticated) => peer == authenticated,
+                        Credential::PrivateKeyJwt(_) => true,
+                    }
+            }
+            _ => false,
+        }
+    }
+}
+
+/// Token request with code redemption and sender-constraint evidence.
+pub struct ParTokenRequest {
+    pub redemption: oauth_code::Request,
+    pub sender: TokenSender,
+}
+
 impl Authorized {
     pub fn redeem(
         &self,
-        verified: &VerifiedClient<oauth_code::Request>,
+        verified: &VerifiedClient<ParTokenRequest>,
         now: u64,
     ) -> Result<Option<RedeemedGrant>, String> {
         if !verified.matches(&self.registration) {
             return Ok(None);
         }
-        self.codes.redeem(&self.session, &verified.request, now)
+        self.codes
+            .redeem_with(&self.session, &verified.request.redemption, now, |grant| {
+                verified
+                    .request
+                    .sender
+                    .matches(&verified.credential, &grant.confirmation)
+            })
     }
 }
 

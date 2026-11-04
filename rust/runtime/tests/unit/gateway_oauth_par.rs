@@ -1,9 +1,10 @@
 use super::{
-    Authorization, Credential, ParLedger, ParRequest, ParUri, Push, Registration, Session,
-    VerifiedClient,
+    Authorization, Credential, ParLedger, ParRequest, ParSender, ParTokenRequest, ParUri, Push,
+    Registration, Session, TokenSender, VerifiedClient, VerifiedParDpop, VerifiedTokenDpop,
 };
 use crate::gateway::oauth::{
-    Confirmation, CurrentUse, Grant, Identity, ReplayGuard, SenderObservation, Target,
+    Confirmation, CurrentUse, DpopObservation, Grant, Identity, ReplayGuard, SenderObservation,
+    Target,
 };
 use crate::gateway::oauth_code;
 use std::sync::Barrier;
@@ -24,6 +25,10 @@ impl Fixture {
             browser: "browser".into(),
             s256: "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM".into(),
         };
+        let sender_cert = match &credential {
+            Credential::Mtls(peer) => peer.clone(),
+            Credential::PrivateKeyJwt(_) => "sender-cert".into(),
+        };
         let registration = Registration {
             issuer: session.issuer.clone(),
             client: session.client.clone(),
@@ -42,7 +47,7 @@ impl Fixture {
             token_hash: "token-hash".into(),
             not_before: 10,
             expires_at: 20,
-            confirmation: Confirmation::Mtls("sender-cert".into()),
+            confirmation: Confirmation::Mtls(sender_cert),
         };
         Self {
             registration,
@@ -65,6 +70,13 @@ impl Fixture {
             session: self.session.clone(),
             audiences: self.grant.audiences.clone(),
             scopes: self.grant.scopes.clone(),
+            sender: match &self.grant.confirmation {
+                Confirmation::Dpop(key) => ParSender::Dpop {
+                    jkt: Some(key.clone()),
+                    proof: None,
+                },
+                Confirmation::Mtls(_) => ParSender::Mtls,
+            },
         })
     }
 
@@ -92,15 +104,21 @@ impl Fixture {
         }
     }
 
-    fn token(&self) -> VerifiedClient<oauth_code::Request> {
-        self.verified(oauth_code::Request {
-            code: "code".into(),
-            response_issuer: self.session.issuer.clone(),
-            client: self.session.client.clone(),
-            redirect: self.session.redirect.clone(),
-            state: self.session.state.clone(),
-            browser: self.session.browser.clone(),
-            verifier: "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk".into(),
+    fn token(&self) -> VerifiedClient<ParTokenRequest> {
+        self.verified(ParTokenRequest {
+            sender: match &self.grant.confirmation {
+                Confirmation::Dpop(key) => TokenSender::Dpop(VerifiedTokenDpop(key.clone())),
+                Confirmation::Mtls(peer) => TokenSender::Mtls(peer.clone()),
+            },
+            redemption: oauth_code::Request {
+                code: "code".into(),
+                response_issuer: self.session.issuer.clone(),
+                client: self.session.client.clone(),
+                redirect: self.session.redirect.clone(),
+                state: self.session.state.clone(),
+                browser: self.session.browser.clone(),
+                verifier: "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk".into(),
+            },
         })
     }
 }
@@ -237,9 +255,9 @@ fn authenticates_the_bound_code_once_and_checks_current_resource_access() {
         let mut wrong_credential = f.token();
         wrong_credential.credential = Credential::Mtls("replacement".into());
         let mut wrong_callback = f.token();
-        wrong_callback.request.response_issuer = "other".into();
+        wrong_callback.request.redemption.response_issuer = "other".into();
         let mut wrong_verifier = f.token();
-        wrong_verifier.request.verifier = "a".repeat(43);
+        wrong_verifier.request.redemption.verifier = "a".repeat(43);
         let mut wrong_endpoint = f.token();
         wrong_endpoint.issuer = "other".into();
         for token in [
@@ -251,9 +269,15 @@ fn authenticates_the_bound_code_once_and_checks_current_resource_access() {
         ] {
             assert!(authorized.redeem(&token, 13).unwrap().is_none());
         }
+        let mut wrong_peer = f.token();
+        wrong_peer.request.sender = TokenSender::Mtls("other-peer".into());
+        assert!(authorized.redeem(&wrong_peer, 13).unwrap().is_none());
         let redeemed = authorized.redeem(&f.token(), 13).unwrap().unwrap();
         assert!(authorized.redeem(&f.token(), 13).unwrap().is_none());
         let guard = ReplayGuard::default();
+        let TokenSender::Mtls(peer) = f.token().request.sender else {
+            unreachable!()
+        };
         let mut actual = CurrentUse {
             target: Target {
                 identity: f.grant.identity.clone(),
@@ -263,7 +287,7 @@ fn authenticates_the_bound_code_once_and_checks_current_resource_access() {
                 uri: "https://gateway.example/patient".into(),
             },
             grant: f.grant,
-            sender: SenderObservation::Mtls("sender-cert".into()),
+            sender: SenderObservation::Mtls(peer.clone()),
             now: 13,
             max_proof_age: 5,
             token_authenticated: true,
@@ -271,7 +295,113 @@ fn authenticates_the_bound_code_once_and_checks_current_resource_access() {
         };
         assert!(redeemed.admit_use(&guard, true, &actual).unwrap());
         assert!(!redeemed.admit_use(&guard, false, &actual).unwrap());
+        actual.sender = SenderObservation::Mtls("other-peer".into());
+        assert!(!redeemed.admit_use(&guard, true, &actual).unwrap());
+        actual.sender = SenderObservation::Mtls(peer);
         actual.active = false;
         assert!(!redeemed.admit_use(&guard, true, &actual).unwrap());
     }
+}
+
+#[test]
+fn binds_par_dpop_key_through_issuance_and_resource_use() {
+    let mut f = Fixture::new(Credential::Mtls("client-cert".into()));
+    f.grant.confirmation = Confirmation::Dpop("key".into());
+    for (jkt, proof) in [
+        (Some("key"), None),
+        (None, Some("key")),
+        (Some("key"), Some("key")),
+    ] {
+        let ledger = ParLedger::default();
+        let mut push = f.push("par");
+        push.verified.request.sender = ParSender::Dpop {
+            jkt: Some("key".into()),
+            proof: Some(VerifiedParDpop("other".into())),
+        };
+        assert!(!ledger.push(push).unwrap());
+        let mut push = f.push("par");
+        push.verified.request.sender = ParSender::Dpop {
+            jkt: None,
+            proof: None,
+        };
+        assert!(!ledger.push(push).unwrap());
+        let mut push = f.push("par");
+        push.verified.request.sender = ParSender::Dpop {
+            jkt: jkt.map(str::to_owned),
+            proof: proof.map(|key| VerifiedParDpop(key.into())),
+        };
+        assert!(ledger.push(push).unwrap());
+        for confirmation in [
+            Confirmation::Dpop("other".into()),
+            Confirmation::Mtls("client-cert".into()),
+        ] {
+            let mut replaced = f.authorization();
+            replaced.grant.confirmation = confirmation;
+            assert!(ledger.authorize(replaced).unwrap().is_none());
+        }
+        let authorized = ledger.authorize(f.authorization()).unwrap().unwrap();
+        for sender in [
+            TokenSender::Dpop(VerifiedTokenDpop("other".into())),
+            TokenSender::Mtls("client-cert".into()),
+        ] {
+            let mut token = f.token();
+            token.request.sender = sender;
+            assert!(authorized.redeem(&token, 13).unwrap().is_none());
+        }
+        let redeemed = authorized.redeem(&f.token(), 13).unwrap().unwrap();
+        assert!(authorized.redeem(&f.token(), 13).unwrap().is_none());
+
+        let target = Target {
+            identity: f.grant.identity.clone(),
+            audience: "fhir".into(),
+            required_scopes: vec!["patient.read".into()],
+            method: "GET".into(),
+            uri: "https://gateway.example/patient".into(),
+        };
+        let proof = DpopObservation {
+            thumbprint: "key".into(),
+            method: target.method.clone(),
+            uri: target.uri.clone(),
+            token_hash: f.grant.token_hash.clone(),
+            issued_at: 13,
+            proof_id: "original".into(),
+            signature_verified: true,
+            nonce_satisfied: true,
+        };
+        let mut actual = CurrentUse {
+            grant: f.grant.clone(),
+            target,
+            sender: SenderObservation::Dpop(DpopObservation {
+                thumbprint: "other".into(),
+                ..proof.clone()
+            }),
+            now: 13,
+            max_proof_age: 5,
+            token_authenticated: true,
+            active: true,
+        };
+        let guard = ReplayGuard::default();
+        assert!(!redeemed.admit_use(&guard, true, &actual).unwrap());
+        actual.sender = SenderObservation::Dpop(proof.clone());
+        assert!(redeemed.admit_use(&guard, true, &actual).unwrap());
+        assert!(!redeemed.admit_use(&guard, true, &actual).unwrap());
+        actual.active = false;
+        actual.sender = SenderObservation::Dpop(DpopObservation {
+            proof_id: "fresh".into(),
+            ..proof
+        });
+        assert!(!redeemed.admit_use(&guard, true, &actual).unwrap());
+    }
+}
+
+#[test]
+fn mtls_authentication_and_binding_share_the_token_connection() {
+    let mut f = Fixture::new(Credential::Mtls("client-cert".into()));
+    f.grant.confirmation = Confirmation::Mtls("different-peer".into());
+    let ledger = ParLedger::default();
+    assert!(ledger.push(f.push("par")).unwrap());
+    let authorized = ledger.authorize(f.authorization()).unwrap().unwrap();
+    // The proposed grant matches the presented sender value, but that value
+    // disagrees with the mTLS client authentication on the same connection.
+    assert!(authorized.redeem(&f.token(), 13).unwrap().is_none());
 }

@@ -962,6 +962,47 @@ Full FAPI conformance also depends on the surrounding protocol, deployment
 and attacker model.
 
 
+*** Sender binding from PAR to protected resource use
+
+The [[https://openid.net/specs/fapi-security-profile-2_0-final.html#section-5.3.2][FAPI 2.0 Security Profile]]
+requires sender-constrained access tokens and support for authorization-code
+binding when using DPoP. [[https://datatracker.ietf.org/doc/html/rfc9449#section-10.1][RFC 9449, Section 10.1]]
+provides two PAR inputs: =dpop_jkt= in the pushed request body, or a DPoP
+proof header verified at the PAR endpoint. The model accepts either form
+and checks agreement when both are supplied. In the DPoP branch, a missing
+or empty key or disagreement between inputs refuses the push. An invalid
+proof header must be rejected by the adapter before constructing an
+observation, even if the body supplies a valid thumbprint.
+
+Authorization records a grant candidate whose =cnf.jkt= must match that
+PAR key. Token redemption checks a DPoP proof verified for the actual token
+request against the exact code record before spending the code and returning
+the grant. A rejected sender check leaves the code unspent. Resource
+admission checks the exact redeemed grant and binds the resource proof to
+its key, token hash and actual request. It still consults current
+revocation and reserves the resource proof against replay.
+
+[[https://datatracker.ietf.org/doc/html/rfc8705#section-3][RFC 8705]]
+separates client authentication from certificate-bound access tokens. In
+the certificate-bound branch, the token's =cnf.x5t#S256= must match the
+authenticated peer certificate at the token endpoint. When mTLS also
+authenticates the client there, both observations must describe the same
+TLS peer. With =private_key_jwt=, the client assertion key and the TLS
+certificate serve different purposes and can differ. The resource endpoint
+compares its own TLS peer to the certificate thumbprint carried by the
+redeemed grant. A valid client authentication observation cannot replace
+resource proof of possession. An mTLS-authenticated client can instead use
+the DPoP branch, where the certificate and the DPoP key remain independent.
+
+The Lean model and Rust reference distinguish verified PAR observations
+from verified token endpoint observations. They
+assume sound JWK and certificate thumbprint calculation, proof signature,
+HTTP target, freshness, nonce and applicable replay checks at the PAR and
+token endpoints, and TLS peer provenance. These transitions establish
+binding and refusal properties under those assumptions. They do not
+implement TLS, JOSE, endpoint discovery or refresh-token issuance.
+
+
 References include [[https://www.rfc-editor.org/rfc/rfc9700.html#section-2.3][OAuth Security BCP]],
 [[https://www.rfc-editor.org/rfc/rfc8707.html][Resource Indicators]],
 [[https://www.rfc-editor.org/rfc/rfc7662.html][Token Introspection]],
