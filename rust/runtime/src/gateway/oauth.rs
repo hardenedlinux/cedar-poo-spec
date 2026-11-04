@@ -3,6 +3,7 @@
 use std::collections::HashSet;
 use std::sync::Mutex;
 
+/// Issuer-qualified resource owner and OAuth client identity.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Identity {
     pub issuer: String,
@@ -10,12 +11,14 @@ pub struct Identity {
     pub client: String,
 }
 
+/// Sender constraint carried by the verified grant.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Confirmation {
     Dpop(String),
     Mtls(String),
 }
 
+/// Verified token claims used by the resource authorization model.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Grant {
     pub identity: Identity,
@@ -27,6 +30,7 @@ pub struct Grant {
     pub confirmation: Confirmation,
 }
 
+/// Identity, audience, and permissions required by the actual resource request.
 #[derive(Clone, Debug)]
 pub struct Target {
     pub identity: Identity,
@@ -36,6 +40,7 @@ pub struct Target {
     pub uri: String,
 }
 
+/// Effective DPoP claims and verification results supplied by the adapter.
 #[derive(Clone, Debug)]
 pub struct DpopObservation {
     pub thumbprint: String,
@@ -48,6 +53,7 @@ pub struct DpopObservation {
     pub nonce_satisfied: bool,
 }
 
+/// Observed proof or authenticated certificate for the current request.
 #[derive(Clone, Debug)]
 pub enum SenderObservation {
     Dpop(DpopObservation),

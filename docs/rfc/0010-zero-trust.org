@@ -864,7 +864,7 @@ follows the resource-centered architecture in
 | Source | Design obligation for this library | Scope of the result |
 |--------+------------------------------------+---------------------|
 | [[https://arxiv.org/abs/1601.01229][Fett, Küsters and Schmitz, A Comprehensive Formal Security Analysis of OAuth 2.0]] | Separate authorization, authentication and session integrity. Treat the configured issuer and verified grant as distinct from caller claims. | Their authorization-server and browser flow results are conditional on their web model and protocol assumptions. The resource transition here does not prove those flows. |
-| [[https://openid.net/wordpress-content/uploads/2022/12/Formal-Security-Analysis-of-FAPI-2.0_FINAL_2022-10.pdf][Formal Security Analysis of FAPI 2.0]] | Model sender constraint explicitly. Select the DPoP or certificate check from the grant and refuse a mismatched mechanism. | FAPI's protocol and attacker model cover more than the resource boundary. This library claims neither full profile conformance nor session integrity. |
+| [[https://openid.net/wordpress-content/uploads/2022/12/Formal-Security-Analysis-of-FAPI-2.0_FINAL_2022-10.pdf][Formal Security Analysis of FAPI 2.0]] | Model sender constraint explicitly. Select the DPoP or certificate check from the grant and refuse a mismatched mechanism. | FAPI's protocol and attacker model cover more than the resource boundary. The resource transition establishes current-use properties. The PAR and code transitions below establish specific request and session bindings under trusted endpoint inputs. |
 | [[https://www.rfc-editor.org/rfc/rfc9700.html][RFC 9700]], [[https://www.rfc-editor.org/rfc/rfc9449.html][RFC 9449]] and [[https://www.rfc-editor.org/rfc/rfc8705.html][RFC 8705]] | Check audience and scope against the actual target. For DPoP retain proof freshness, token hash, method, URI, key, nonce and replay state. For mTLS use the authenticated connection certificate. | The Lean checks assume sound cryptographic verification and trusted current observations. The model does not prove key custody, transport integrity or distributed storage correctness. |
 
 A useful counterexample is an authenticated, unexpired token presented to
@@ -903,12 +903,63 @@ The OAuth formal analysis motivates independent issuer selection and session
 integrity. The FAPI 2.0 analysis motivates the hardened authorization-code
 profile and sender-constrained use. This local transition assumes secure
 session custody, authenticated issuer metadata, authorization server
-issuance, and trustworthy cryptographic inputs. It does not model browser
-and network behavior, PAR, client authentication, authorization request
-integrity, or token endpoint discovery. It establishes no end-to-end FAPI
-conformance claim. Protocol references include
+issuance, and trustworthy cryptographic inputs. The model treats browser
+and network behavior, endpoint discovery, and cryptographic verification as
+adapter responsibilities. Protocol references include
 [[https://www.rfc-editor.org/rfc/rfc9207.html][Authorization Server Issuer Identification]]
 and [[https://www.rfc-editor.org/rfc/rfc7636.html][PKCE]].
+
+
+*** Pushed authorization requests and confidential clients
+
+The [[https://www.rfc-editor.org/rfc/rfc9126.html][PAR specification]]
+moves authorization parameters to an authenticated back-channel request.
+The [[https://openid.net/specs/fapi-security-profile-2_0-final.html#section-5.3][FAPI 2.0 Security Profile]]
+restricts the client front channel to the client ID and request URI. The
+OAuth and FAPI analyses distinguish issuer mix-up, request substitution and
+code injection. The library checks each at a different point:
+
+- Push authenticates the submitted payload against issuer and client
+  registration. The configured credential method is mTLS or
+  =private_key_jwt=. The credential identity and exact registered redirect
+  must match, and the requested scopes must be permitted by registration.
+  The issuer-scoped handle holds the submitted session, S256
+  challenge, audiences and scopes for fewer than 600 seconds.
+- Authorization compares the front-channel reference with the independently
+  retained pending session and handle. Extra parameters are refused. The
+  transition consumes the handle when issuing the code and binds the issued
+  grant to the saved client and issuer. Its scopes and audiences can only
+  narrow the pushed request. This profile requires one use at authorization,
+  allowing a page load to precede the decision without consuming the handle.
+- Redemption authenticates the token request again and checks the recorded
+  credential binding, exact code record, callback issuer, redirect, session
+  and S256 verifier. It spends the code through the existing code Contract.
+  The redeemed grant enters the shared AgentCore and FHIR resource
+  refinement, where the current sender constraint, revocation and Cedar
+  decision still govern admission.
+
+The adapter must independently select the issuer and pending handle, parse
+the front channel without losing duplicates, and authenticate the mTLS
+connection or JWT assertion against current client registration for the
+actual endpoint and request. JWT key
+trust, issuer and subject claims, audience, expiry and any required assertion
+replay checks are part of that verification. The reference pins the
+registered credential through redemption, so a credential change requires
+a new flow. Trusted inputs also include the clock, a fresh opaque handle,
+the user's authorization decision, and the issued code and grant. The
+modeled authorization payload covers redirect, state, browser session,
+PKCE, audiences and scopes. Rich authorization details and other extensions
+require their own bindings.
+
+Lean proves retention of the pushed payload, authorization binding,
+single-use transitions against their committed successors, and refusal
+after revocation. The Rust reference exercises both credential methods,
+handle replacement, wrong client and issuer, rejected overrides, and two
+threads competing for one handle. A downstream deployment must serialize
+authorization and code redemption in its authoritative store. The model
+establishes these local safety properties under its adapter assumptions.
+Full FAPI conformance also depends on the surrounding protocol, deployment
+and attacker model.
 
 
 References include [[https://www.rfc-editor.org/rfc/rfc9700.html#section-2.3][OAuth Security BCP]],

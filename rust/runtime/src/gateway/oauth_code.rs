@@ -5,16 +5,28 @@ use sha2::{Digest, Sha256};
 use std::collections::HashSet;
 use std::sync::Mutex;
 
+/// OAuth response correlation value retained by the pending client session.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct OAuthState(pub String);
+
+impl From<&str> for OAuthState {
+    fn from(value: &str) -> Self {
+        Self(value.into())
+    }
+}
+
+/// Pending authorization session selected by the trusted client.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Session {
     pub issuer: String,
     pub client: String,
     pub redirect: String,
-    pub state: String,
+    pub state: OAuthState,
     pub browser: String,
     pub s256: String,
 }
 
+/// Authorization-server code record bound to a session and grant.
 #[derive(Clone, Debug)]
 pub struct Issued {
     pub code: String,
@@ -23,13 +35,14 @@ pub struct Issued {
     pub expires_at: u64,
 }
 
+/// Callback and token request evidence for code redemption.
 #[derive(Clone, Debug)]
 pub struct Request {
     pub code: String,
     pub response_issuer: String,
     pub client: String,
     pub redirect: String,
-    pub state: String,
+    pub state: OAuthState,
     pub browser: String,
     pub verifier: String,
 }
@@ -41,6 +54,7 @@ pub struct CodeLedger {
     spent: Mutex<HashSet<(String, String)>>,
 }
 
+/// Grant returned by a successful single-use code redemption.
 pub struct RedeemedGrant(Grant);
 
 impl RedeemedGrant {
@@ -71,7 +85,7 @@ impl CodeLedger {
         if session.issuer.is_empty()
             || session.client.is_empty()
             || session.redirect.is_empty()
-            || session.state.is_empty()
+            || session.state.0.is_empty()
             || session.browser.is_empty()
             || request.code.is_empty()
             || request.response_issuer != session.issuer
