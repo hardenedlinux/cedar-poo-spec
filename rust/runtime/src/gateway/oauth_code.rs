@@ -58,6 +58,10 @@ pub struct CodeLedger {
 pub struct RedeemedGrant(Grant);
 
 impl RedeemedGrant {
+    pub(super) fn grant(&self) -> &Grant {
+        &self.0
+    }
+
     pub fn admit_use(
         &self,
         guard: &ReplayGuard,

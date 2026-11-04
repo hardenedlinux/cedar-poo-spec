@@ -1000,7 +1000,56 @@ assume sound JWK and certificate thumbprint calculation, proof signature,
 HTTP target, freshness, nonce and applicable replay checks at the PAR and
 token endpoints, and TLS peer provenance. These transitions establish
 binding and refusal properties under those assumptions. They do not
-implement TLS, JOSE, endpoint discovery or refresh-token issuance.
+implement TLS, JOSE, endpoint discovery or wire token signing.
+
+
+*** Nonrotating refresh families and revocation
+
+The [[https://openid.net/specs/fapi-security-profile-2_0-final.html#section-5.3.2.1][FAPI 2.0 Security Profile]]
+uses nonrotating refresh tokens in ordinary operation. This library models
+that path for confidential clients. An enrollment consumes a successful
+PAR-backed redemption and records the initial access grant and an opaque
+refresh-token digest in the same issuer-qualified family. The digest is
+unique within the issuer. It is retained along with access lineage after
+revocation, so a revoked family or access digest cannot be re-enrolled.
+
+Refresh uses the current family record, the original client registration
+and sender binding, and a DPoP proof verified for the actual token request
+or the actual mTLS peer. Each successful exchange issues a distinct access
+grant with the same identity and confirmation. Audiences and scopes can
+narrow within the original authorization. The refresh handle and its
+expiry remain unchanged. A refresh can outlive an individual access grant,
+and refresh expiry by itself does not revoke a still-valid access grant.
+
+[[https://datatracker.ietf.org/doc/html/rfc9449#section-5][RFC 9449, Section 5]]
+describes DPoP refresh binding for public clients. This profile also
+requires possession of the original DPoP key for confidential-client
+refresh. The mTLS branch pins the certificate and checks client
+authentication independently, following the distinctions in
+[[https://datatracker.ietf.org/doc/html/rfc8705#section-4][RFC 8705, Section 4]].
+The adapter authenticates the current registration and verifies DPoP
+proofs, including freshness, target, nonce and applicable replay
+reservation, on each token request. Sender keys and certificates are
+fixed for the lifetime of the modeled family.
+
+In the revocation policy selected from
+[[https://datatracker.ietf.org/doc/html/rfc7009#section-2.1][RFC 7009, Section 2.1]],
+the authenticated client can revoke the refresh family after loss of
+its sender key. The family marker refuses every later refresh and every
+linked access grant, including the original token and earlier refresh
+outputs. Resource admission resolves the exact presented access digest
+to its stored lineage and evaluates the current family marker, sender
+proof and existing Zero Trust rules. The family check complements
+individual access-token validity, expiry, and revocation.
+
+The Rust reference serializes the refresh, revoke, and resource
+admission decisions under one process-local ledger. If refresh wins the
+race, the newly linked grant is covered by the subsequent revocation.
+If revocation wins, refresh is refused. A downstream deployment must
+enroll lineage before making tokens available, supply a current
+authoritative view at each resource decision, and serialize these
+transitions across workers. The model does not prove propagation delays
+through distributed caches or cancellation of a previously mediated effect.
 
 
 References include [[https://www.rfc-editor.org/rfc/rfc9700.html#section-2.3][OAuth Security BCP]],

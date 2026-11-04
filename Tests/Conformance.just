@@ -33,7 +33,7 @@ check-google-table-batch-v1:
 check-delta: check-gateway-delta check-authorization-delta check-authorization-delta-operational check-authorization-delta-reasons check-authorization-delta-effective-reasons check-payment-delta check-payment-interaction check-agent-trace-delta check-health-authorization-impact
 
 check-gateway:
-    lake build CedarPooSpec.Gateway Tests.Gateway.Contracts Tests.Gateway.OAuth Tests.Gateway.OAuthCode Tests.Gateway.OAuthPAR Tests.Gateway.Counterexamples Tests.Gateway.Objects Tests.Gateway.Publication Tests.Gateway.Delta Tests.Gateway.ZeroTrust Tests.Gateway.PublicationReview Tests.ZeroTrust.UsageControl Tests.ZeroTrust.ImportBoundary Tests.ZeroTrust.Functional
+    lake build CedarPooSpec.Gateway Tests.Gateway.Contracts Tests.Gateway.OAuth Tests.Gateway.OAuthCode Tests.Gateway.OAuthPAR Tests.Gateway.OAuthRefresh Tests.Gateway.Counterexamples Tests.Gateway.Objects Tests.Gateway.Publication Tests.Gateway.Delta Tests.Gateway.ZeroTrust Tests.Gateway.PublicationReview Tests.ZeroTrust.UsageControl Tests.ZeroTrust.ImportBoundary Tests.ZeroTrust.Functional
     cargo test --locked -p cedar-poo-runtime --features gateway --lib gateway::oauth
 
 check-gateway-delta: check-gateway

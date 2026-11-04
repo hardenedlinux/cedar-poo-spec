@@ -1,5 +1,5 @@
 //! Pushed authorization reference for confidential clients.
-use super::oauth::{Confirmation, Grant};
+use super::oauth::{Confirmation, CurrentUse, Grant, ReplayGuard};
 use super::oauth_code::{self, CodeLedger, Issued, RedeemedGrant, Session};
 use std::collections::{HashMap, HashSet};
 use std::sync::Mutex;
@@ -39,7 +39,7 @@ pub struct VerifiedClient<T> {
 }
 
 impl<T> VerifiedClient<T> {
-    fn matches(&self, registration: &Registration) -> bool {
+    pub(super) fn matches(&self, registration: &Registration) -> bool {
         self.issuer == registration.issuer
             && self.client == registration.client
             && self.credential == registration.credential
@@ -256,7 +256,7 @@ pub enum TokenSender {
 }
 
 impl TokenSender {
-    fn matches(&self, client: &Credential, confirmation: &Confirmation) -> bool {
+    pub(super) fn matches(&self, client: &Credential, confirmation: &Confirmation) -> bool {
         match (self, confirmation) {
             (Self::Dpop(proof), Confirmation::Dpop(key)) => !key.is_empty() && proof.0 == *key,
             (Self::Mtls(peer), Confirmation::Mtls(certificate)) => {
@@ -278,12 +278,30 @@ pub struct ParTokenRequest {
     pub sender: TokenSender,
 }
 
+/// Successful PAR-backed redemption with the authenticated client lineage.
+pub struct ParRedeemed {
+    pub(super) redeemed: RedeemedGrant,
+    pub(super) registration: Registration,
+}
+
+impl ParRedeemed {
+    /// Check an access-only grant against current resource evidence.
+    pub fn admit_use(
+        &self,
+        guard: &ReplayGuard,
+        base_allowed: bool,
+        current: &CurrentUse,
+    ) -> Result<bool, String> {
+        self.redeemed.admit_use(guard, base_allowed, current)
+    }
+}
+
 impl Authorized {
     pub fn redeem(
         &self,
         verified: &VerifiedClient<ParTokenRequest>,
         now: u64,
-    ) -> Result<Option<RedeemedGrant>, String> {
+    ) -> Result<Option<ParRedeemed>, String> {
         if !verified.matches(&self.registration) {
             return Ok(None);
         }
@@ -293,6 +311,12 @@ impl Authorized {
                     .request
                     .sender
                     .matches(&verified.credential, &grant.confirmation)
+            })
+            .map(|redeemed| {
+                redeemed.map(|redeemed| ParRedeemed {
+                    redeemed,
+                    registration: self.registration.clone(),
+                })
             })
     }
 }
