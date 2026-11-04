@@ -43,6 +43,7 @@ jobs:
     - name: Native API latency and append-only log scale across all qualified Cases
       run: just bench-gateway-runtime
     - name: Publish validated full-history comparison inputs
+      if: ${{ github.event_name == 'workflow_dispatch' && inputs.history_comparison }}
       uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
       with:
         name: shared-history-inputs-${{ github.sha }}
@@ -53,6 +54,7 @@ jobs:
           .lake/build/gateway-lifecycle.jsonl
           .lake/build/reviewed-effects/
   history-comparison:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.history_comparison }}
     needs: reviewed-effects
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -100,4 +102,10 @@ jobs:
   pull_request:
     branches:
     - main
-  workflow_dispatch: null
+  workflow_dispatch:
+    inputs:
+      history_comparison:
+        description: Run the fixed historical A-B-C-C-B-A experiment on validated complete inputs
+        type: boolean
+        required: false
+        default: false

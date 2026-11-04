@@ -1486,8 +1486,9 @@ fraction or make added frontier work free. Normalizing lifecycle CPU by the
 reviewed-catalog control leaves about a 1.7 percent increase, but this ratio is
 not an isolated algorithm-cost measurement.
 
-A dedicated =history-comparison= job in the existing Zero Trust workflow
-consumes this revision's complete validated inputs from =reviewed-effects= and
+A dedicated =history-comparison= diagnostic job in the existing Zero Trust
+workflow is explicitly selected with =workflow_dispatch.history_comparison=.
+It consumes this revision's complete validated inputs from =reviewed-effects= and
 executes =bench-gateway-history=: fixed
 =A1 B1 C1 C2 B2 A2= order on one runner, using exact committed sources for
 =A= (3d75c77), =B= (4f8a4a3) and the current verified-view implementation =C=.
@@ -1542,3 +1543,10 @@ slower/higher-RSS observation remains a non-win. Cross-run local timings do not
 replace the fixed same-job Ubuntu experiment. Runtime qualification retains 107
 passing tests and the unchanged five fixture-owned ignored tests, plus the full
 source/Delta/Contract/replay gates. Current metadata reuse is never an Allow.
+
+The fixed historical experiment is an explicit diagnostic, not a permanent
+schema gate over future Case additions. Default push/PR verification keeps its
+original semantic/native workloads. A selected diagnostic still runs all six
+samples and every byte/count/watchdog control; the switch does not permit a
+shortened cohort. Its separate job consumes same-revision validated fixtures
+and preserves the existing 20-minute job and 120-second process limits.
