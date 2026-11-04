@@ -277,6 +277,36 @@ a previously unseen old-cut operation when recovery instead reads the stale
 generation. The provider receipt Contract preserves the reserved operation
 and its exact binding while recording a terminal observation.
 
+* Qualification at a quiesced promotion barrier
+
+The sender and receiver expose an exact acknowledged image fingerprint.
+Capture both while admission, delivery and control writers are quiesced.
+Persist the pair in trusted independent custody, keep the old writer fenced,
+and qualify both candidate directories before enabling either endpoint.
+The sender image includes accounting, reservations and signed settlements.
+The receiver image includes the cut, every operation reservation, and the
+signed receipt files. Unresolved reservations are included. Lock files and
+staging paths are excluded. Copying only the latest cut can leave an unsafe
+candidate if the copy omits a reservation or receipt.
+
+The native promotion entrypoints synchronize copied committed files and the
+candidate directory, then require exact equality with the independently
+supplied image. An image produced from the candidate itself provides no
+independent protection. Qualification is an activation barrier for a quiesced
+snapshot, with non-rollback storage required after activation. It does not
+establish distributed lease ownership, continuous anti-rollback monitoring
+or safe promotion of an unverified successor.
+
+The =promotionContract= preserves the modeled sender and receiver images,
+including settlements and reservations. The native replay first rejects
+older sender and receiver copies. It rejects a current-cut copy missing
+an acknowledged receipt and a copy missing an unresolved reservation.
+A complete copy recovers the original signed payload and signature and
+continues to reject an old cut, contradictory signed evidence and a retry
+under another channel and approval. This is controlled replica-copy and
+restart validation. It does not exercise a real remote storage outage,
+physical power loss or an automatic promotion controller.
+
 * Host transaction contract
 
 1. Resolve the current source, token, transformation, purpose, delegation,

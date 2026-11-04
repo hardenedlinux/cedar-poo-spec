@@ -73,3 +73,8 @@ theorem staleReplicaCanAcceptPreviouslyUnseenOperation :
     (receiveDispatch old request request {}).isSome = true ∧
       receiveDispatch current request request {} = none := by
   decide
+
+#print axioms CedarPooSpec.Admission.promotion_retains_acknowledged_image
+#print axioms CedarPooSpec.Admission.promoted_receiver_rejects_retired_cut
+#print axioms CedarPooSpec.Admission.promoted_sender_preserves_no_retry
+#print axioms CedarPooSpec.Admission.promoted_sender_retains_settlements

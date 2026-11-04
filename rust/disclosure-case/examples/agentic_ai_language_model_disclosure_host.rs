@@ -186,16 +186,26 @@ fn run() -> Result<(), String> {
         evidence(),
         authority(&first, &independent, &second),
     ));
-    let attempts = (0..2)
+    let prepared = (0..2)
         .map(|_| {
-            let host = Arc::clone(&concurrent);
-            let effect = first.clone();
-            let ticket = host
-                .prepare(AuthorityId::from("approval-first"), effect.clone())?
-                .ok_or("parallel prepare denied")?;
-            Ok(thread::spawn(move || host.commit(ticket, &effect)))
+            concurrent
+                .prepare(AuthorityId::from("approval-first"), first.clone())?
+                .ok_or_else(|| "parallel prepare denied".to_owned())
         })
         .collect::<Result<Vec<_>, String>>()?;
+    let start = Arc::new(std::sync::Barrier::new(2));
+    let attempts = prepared
+        .into_iter()
+        .map(|ticket| {
+            let host = Arc::clone(&concurrent);
+            let start = Arc::clone(&start);
+            let effect = first.clone();
+            thread::spawn(move || {
+                start.wait();
+                host.commit(ticket, &effect)
+            })
+        })
+        .collect::<Vec<_>>();
     let mut committed_parallel = 0;
     for attempt in attempts {
         if attempt
@@ -581,6 +591,10 @@ fn check_restarted_dispatch(
             grants,
         )?;
         DisclosureReceiver::initialize(&receiver_path, &cut)?;
+        let stale_sender = path.join("stale-sender");
+        let stale_receiver = path.join("stale-receiver");
+        copy_replica(&sender_path, &stale_sender)?;
+        copy_replica(&receiver_path, &stale_receiver)?;
         let receiver = DisclosureReceiver::open(&receiver_path)?;
         let mut sends = 0;
         let provider = SigningKey::from_slice(&[11; 32]).map_err(|e| e.to_string())?;
@@ -754,7 +768,51 @@ fn check_restarted_dispatch(
         let stale_cut = serde_json::to_vec(&cut).map_err(|e| e.to_string())?;
         fs::write(receiver_path.join("receiver.staged"), stale_cut).map_err(|e| e.to_string())?;
         drop(receiver);
-        let reopened = DisclosureReceiver::open(&receiver_path)?;
+        let receiver = DisclosureReceiver::open(&receiver_path)?;
+        let sender_point = restarted.recovery_point()?;
+        let receiver_point = receiver.recovery_point()?;
+        assert!(
+            PersistentDisclosureHost::open_failover(&stale_sender, policy, &sender_point).is_err()
+        );
+        assert!(DisclosureReceiver::open_failover(&stale_receiver, &receiver_point).is_err());
+
+        let promoted_sender = path.join("promoted-sender");
+        let promoted_receiver = path.join("promoted-receiver");
+        let missing_receipt = path.join("missing-receipt");
+        copy_replica(&sender_path, &promoted_sender)?;
+        copy_replica(&receiver_path, &promoted_receiver)?;
+        copy_replica(&receiver_path, &missing_receipt)?;
+        let receipt_hash = cedar_poo_runtime::gateway_source_sha256(&first.operation_id.0)?;
+        fs::remove_file(missing_receipt.join(format!("outcome-{receipt_hash}.json")))
+            .map_err(|e| e.to_string())?;
+        assert!(DisclosureReceiver::open_failover(&missing_receipt, &receiver_point).is_err());
+
+        drop(receiver);
+        drop(restarted);
+        drop(settled);
+        let sender_path = promoted_sender;
+        let receiver_path = promoted_receiver;
+        let restarted =
+            PersistentDisclosureHost::open_failover(&sender_path, policy, &sender_point)?;
+        let reopened = DisclosureReceiver::open_failover(&receiver_path, &receiver_point)?;
+        let recovered = reopened
+            .outcome(&first.operation_id, key.as_bytes())?
+            .ok_or("promoted receiver lost the signed outcome")?;
+        assert_eq!(recovered.payload, signed.payload);
+        assert_eq!(recovered.signature, signed.signature);
+        let mut alternate_channel = first.clone();
+        alternate_channel.channel = "message".into();
+        assert!(
+            restarted
+                .prepare(approval("approval-independent"), alternate_channel)?
+                .is_none()
+        );
+        assert!(
+            restarted
+                .reconcile(&first.operation_id, &conflict, key.as_bytes())
+                .is_err()
+        );
+        assert!(restarted.reconcile(&first.operation_id, &recovered, key.as_bytes())?);
         assert!(reopened.advance(&cut).is_err());
         let delayed_ticket = restarted
             .prepare(approval("approval-second"), delayed.clone())?
@@ -812,10 +870,28 @@ fn check_restarted_dispatch(
             matches!(failed, Some(DispatchOutcome::Unknown(receipt)) if receipt.remaining_budget == 0)
         );
         assert_eq!(sends, 2);
+        let pending_point = reopened.recovery_point()?;
+        let missing_reservation = path.join("missing-reservation");
+        copy_replica(&receiver_path, &missing_reservation)?;
+        fs::remove_file(missing_reservation.join(digest)).map_err(|e| e.to_string())?;
+        assert!(DisclosureReceiver::open_failover(&missing_reservation, &pending_point).is_err());
         Ok(())
     })();
     let cleanup = fs::remove_dir_all(path).map_err(|e| e.to_string());
     result.and(cleanup)
+}
+
+#[cfg(unix)]
+fn copy_replica(source: &std::path::Path, destination: &std::path::Path) -> Result<(), String> {
+    fs::create_dir(destination).map_err(|e| e.to_string())?;
+    for entry in fs::read_dir(source).map_err(|e| e.to_string())? {
+        let entry = entry.map_err(|e| e.to_string())?;
+        if entry.file_type().map_err(|e| e.to_string())?.is_file() {
+            fs::copy(entry.path(), destination.join(entry.file_name()))
+                .map_err(|e| e.to_string())?;
+        }
+    }
+    Ok(())
 }
 
 fn main() {

@@ -5,8 +5,33 @@ use cedar_poo_runtime::gateway::{Signed, public_key, verify};
 use cedar_poo_runtime::gateway_source_sha256;
 use serde::{Deserialize, Serialize};
 use std::fs::{File, OpenOptions};
-use std::io;
+use std::io::{self, Read};
 use std::path::{Path, PathBuf};
+
+/// Exact acknowledged image identity retained independently of a candidate
+/// replica. A fingerprint is evidence of equality, not an authority signature.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct AcknowledgedImage {
+    domain: String,
+    digest: String,
+}
+
+impl AcknowledgedImage {
+    pub(crate) fn capture(domain: &str, files: &impl Serialize) -> Result<Self, String> {
+        Ok(Self {
+            domain: domain.into(),
+            digest: gateway_source_sha256(&(domain, files))?,
+        })
+    }
+
+    pub(crate) fn require(&self, actual: &Self) -> Result<(), String> {
+        if self != actual {
+            return Err("candidate differs from independently acknowledged image".into());
+        }
+        Ok(())
+    }
+}
 
 /// Authority identity and generation obtained through the trusted control plane.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -153,6 +178,15 @@ pub(crate) fn atomic_write(
     sync_directory(directory)
 }
 
+pub(crate) fn durable_contents(path: &Path) -> Result<String, String> {
+    let mut file = File::open(path).map_err(|e| e.to_string())?;
+    let mut contents = String::new();
+    file.read_to_string(&mut contents)
+        .map_err(|e| e.to_string())?;
+    file.sync_all().map_err(|e| e.to_string())?;
+    Ok(contents)
+}
+
 pub(crate) fn sync_directory(directory: &Path) -> Result<(), String> {
     File::open(directory)
         .and_then(|dir| dir.sync_all())
@@ -185,6 +219,22 @@ impl DisclosureReceiver {
         if current.scope.is_empty() {
             return Err("missing receiver scope".into());
         }
+        Ok(Self {
+            directory: directory.into(),
+        })
+    }
+
+    /// Capture under the receiver lock at the promotion barrier. Persist the
+    /// result in an independent trusted store before losing the source replica.
+    pub fn recovery_point(&self) -> Result<AcknowledgedImage, String> {
+        let _guard = lock(&self.directory, "receiver")?;
+        receiver_point(&self.directory)
+    }
+
+    /// Quiesce the old writer and qualify the candidate before enabling it.
+    pub fn open_failover(directory: &Path, expected: &AcknowledgedImage) -> Result<Self, String> {
+        let _guard = lock(directory, "receiver")?;
+        expected.require(&receiver_point(directory)?)?;
         Ok(Self {
             directory: directory.into(),
         })
@@ -249,4 +299,38 @@ impl DisclosureReceiver {
 
 fn outcome_name(operation: &str) -> Result<String, String> {
     Ok(format!("outcome-{}", gateway_source_sha256(&operation)?))
+}
+
+// Include unresolved reservations as well as acknowledged receipts. Ignore
+// staged writes and lock files, which are not part of the committed image.
+fn receiver_point(directory: &Path) -> Result<AcknowledgedImage, String> {
+    let current: ReceiverCut = read(directory, "receiver")?;
+    if current.scope.is_empty() {
+        return Err("missing receiver scope".into());
+    }
+    let mut files = std::collections::BTreeMap::new();
+    for entry in std::fs::read_dir(directory).map_err(|e| e.to_string())? {
+        let entry = entry.map_err(|e| e.to_string())?;
+        let name = entry.file_name();
+        let Some(name) = name.to_str() else { continue };
+        let digest = name
+            .strip_prefix("outcome-")
+            .and_then(|part| part.strip_suffix(".json"));
+        if name == "receiver.json" || is_digest(name) || digest.is_some_and(is_digest) {
+            let contents = durable_contents(&entry.path())?;
+            files.insert(name.to_owned(), gateway_source_sha256(&contents)?);
+        }
+    }
+    if !files.contains_key("receiver.json") {
+        return Err("missing committed receiver cut".into());
+    }
+    sync_directory(directory)?;
+    AcknowledgedImage::capture("cedar-poo/disclosure-receiver-image/v1", &files)
+}
+
+fn is_digest(name: &str) -> bool {
+    name.len() == 64
+        && name
+            .bytes()
+            .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
 }

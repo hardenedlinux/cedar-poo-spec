@@ -286,4 +286,64 @@ theorem acknowledged_fence_survives_remote_reopen
   restored_receiver_refuses_old_cut request actual ledger reopened
     (Nat.lt_of_lt_of_le retired nonRollback)
 
+/-- Projection of a quiesced sender/receiver promotion barrier. The native
+adapter must bind complete persisted bytes and receive the expected image
+from independent trusted custody. -/
+structure PromotionImage where
+  sender : SenderImage
+  senderSettlements : List (DispatchBinding × Bool)
+  receiverCut : ReceiverCut
+  receiverOperations : OperationLedger
+  providerReceipts : List (DispatchBinding × Bool)
+  deriving DecidableEq
+
+def qualifyPromotion (expected candidate : PromotionImage) : Option PromotionImage :=
+  if candidate = expected then some candidate else none
+
+def promotionContract : Contract Unit (PromotionImage × PromotionImage) PromotionImage where
+  input := ⟨"independent-image-and-candidate", fun _ => True, fun _ => inferInstance⟩
+  output := ⟨"exact-promoted-image", fun _ => True, fun _ => inferInstance⟩
+  meaning := fun _ input result => qualifyPromotion input.1 input.2 = some result
+  decide := fun _ _ _ => inferInstance
+  rule := .atom ()
+
+def preparePromotion (input : PromotionImage × PromotionImage) :
+    Except String (PromotionImage × Unit) :=
+  match qualifyPromotion input.1 input.2 with
+  | none => .error "candidate lost acknowledged state"
+  | some image => .ok (image, ())
+
+theorem promotion_retains_acknowledged_image
+    (receipt : Invocation promotionContract preparePromotion (expected, candidate)) :
+    receipt.result = expected := by
+  have checked := receipt.logic
+  change qualifyPromotion expected candidate = some receipt.result at checked
+  unfold qualifyPromotion at checked
+  split at checked
+  · rename_i exactImage
+    exact (Option.some.inj checked).symm.trans exactImage
+  · contradiction
+
+theorem promoted_receiver_rejects_retired_cut
+    (receipt : Invocation promotionContract preparePromotion (expected, candidate))
+    (request actual : DispatchBinding)
+    (retired : request.cut.generation < expected.receiverCut.generation) :
+    receiveDispatch receipt.result.receiverCut request actual receipt.result.receiverOperations =
+      none := by
+  rw [promotion_retains_acknowledged_image receipt]
+  exact restored_receiver_refuses_old_cut request actual _ _ retired
+
+theorem promoted_sender_preserves_no_retry
+    (receipt : Invocation promotionContract preparePromotion (expected, candidate))
+    (operation : OperationId) (reserved : expected.sender.operations.check operation = false) :
+    receipt.result.sender.operations.check operation = false := by
+  rw [promotion_retains_acknowledged_image receipt]
+  exact reserved
+
+theorem promoted_sender_retains_settlements
+    (receipt : Invocation promotionContract preparePromotion (expected, candidate)) :
+    receipt.result.senderSettlements = expected.senderSettlements :=
+  congrArg PromotionImage.senderSettlements (promotion_retains_acknowledged_image receipt)
+
+
 end CedarPooSpec.Admission

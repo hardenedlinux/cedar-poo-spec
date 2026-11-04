@@ -3,7 +3,9 @@ use super::{
     CommitReceipt, DispatchOutcome, Effect, Evidence, InMemoryDisclosureHost, Inner, Ticket,
     ValidatedDisclosurePolicy, commit_admitted, ticket_current,
 };
-use crate::dispatch::{DispatchBinding, ReceiverCut, atomic_write, lock, read, verify_outcome};
+use crate::dispatch::{
+    AcknowledgedImage, DispatchBinding, ReceiverCut, atomic_write, lock, read, verify_outcome,
+};
 use cedar_poo_core::authority_consumption::{AuthorityId, AuthorityLedger};
 use cedar_poo_core::operation_identity::{OperationId, OperationLedger};
 use cedar_poo_runtime::gateway::Signed;
@@ -49,6 +51,35 @@ impl PersistentDisclosureHost {
         let _guard = lock(directory, "sender")?;
         host.load()?;
         Ok(host)
+    }
+
+    /// Capture a durable exact sender image at the promotion barrier.
+    pub fn recovery_point(&self) -> Result<AcknowledgedImage, String> {
+        let _guard = lock(&self.directory, "sender")?;
+        self.recovery_point_locked()
+    }
+
+    /// Check the independently retained source image before using a replica.
+    pub fn open_failover(
+        directory: &Path,
+        policy: &ValidatedDisclosurePolicy,
+        expected: &AcknowledgedImage,
+    ) -> Result<Self, String> {
+        let host = Self {
+            directory: directory.into(),
+            policy: policy.clone(),
+            scope: Arc::new(()),
+        };
+        let _guard = lock(directory, "sender")?;
+        expected.require(&host.recovery_point_locked()?)?;
+        Ok(host)
+    }
+
+    fn recovery_point_locked(&self) -> Result<AcknowledgedImage, String> {
+        self.load()?;
+        let bytes = crate::dispatch::durable_contents(&self.directory.join("sender.json"))?;
+        crate::dispatch::sync_directory(&self.directory)?;
+        AcknowledgedImage::capture("cedar-poo/disclosure-sender-image/v1", &bytes)
     }
 
     /// Only explicit provisioning may create an image. Recovery never does.

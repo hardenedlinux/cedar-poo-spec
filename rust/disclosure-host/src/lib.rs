@@ -4,7 +4,9 @@
 #[cfg(unix)]
 mod dispatch;
 #[cfg(unix)]
-pub use dispatch::{DisclosureOutcome, DisclosureReceiver, DispatchBinding, ReceiverCut};
+pub use dispatch::{
+    AcknowledgedImage, DisclosureOutcome, DisclosureReceiver, DispatchBinding, ReceiverCut,
+};
 mod host;
 #[cfg(unix)]
 pub use host::persistent::PersistentDisclosureHost;
