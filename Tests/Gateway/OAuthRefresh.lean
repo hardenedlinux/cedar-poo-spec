@@ -52,6 +52,7 @@ private def exercise (confirmation replacement : Confirmation) : Bool := Id.run 
     match binding with
     | .mtls peer => .mtls peer
     | .dpop key => .dpop ⟨key, target.method, target.uri, g.tokenHash, 14, proofId, true, true, false⟩
+  let after : RefreshInput := { retry with ledger := current, next := { next with tokenHash := "after" } }
   return (refresh { exchange with verified := verified ⟨digest, tokenSender replacement⟩ }).isNone &&
     (refresh { exchange with next := { next with confirmation := replacement } }).isNone &&
     (refresh { exchange with next := { next with scopes := ["patient.write"] } }).isNone &&
@@ -59,13 +60,17 @@ private def exercise (confirmation replacement : Confirmation) : Bool := Id.run 
     (refresh { retry with now := 40 }).isNone &&
     (enroll { enrollment with ledger := revoked.result, refreshDigest := ⟨"new-refresh"⟩ }).isNone &&
     (revoke { revocation with verified := { revocation.verified with client := "other" } }).isNone &&
-    (refresh { retry with ledger := revoked.result, next := { next with tokenHash := "after" } }).isNone &&
+    (refresh after).isSome &&
+    (refresh { after with ledger := revoked.result }).isNone &&
     [grant, first.result.1, second.result.1].all (fun g =>
-      (useAccess current authority ⟨g, target, sender g confirmation "before", true⟩).isSome &&
+      let attempt : Attempt := ⟨g, target, sender g confirmation "same-attempt", true⟩
+      (useAccess current authority attempt).isSome &&
       (useAccess current authority ⟨g, target, sender g replacement "changed", true⟩).isNone &&
-      (useAccess revoked.result authority ⟨g, target, sender g confirmation "fresh", true⟩).isNone)
+      (useAccess revoked.result authority attempt).isNone)
 
-example :
+/-- The identical request still passes with a pre-revocation snapshot even
+when the authoritative revocation has already committed. -/
+theorem stale_snapshot_counterexample_and_current_refusal :
     exercise (.dpop "key") (.dpop "replacement-key") = true ∧
     exercise (.mtls "cert") (.mtls "replacement-cert") = true := by native_decide
 
@@ -77,3 +82,7 @@ end Tests.Gateway.OAuthRefresh
 #print axioms CedarPooSpec.Gateway.OAuth.Refresh.revocation_retains_lineage
 #print axioms CedarPooSpec.Gateway.OAuth.Refresh.revocation_blocks_refresh
 #print axioms CedarPooSpec.Gateway.OAuth.Refresh.revoked_family_blocks_resource_contract
+
+#print axioms CedarPooSpec.Gateway.OAuth.Refresh.committed_run_preserves_revocation
+#print axioms CedarPooSpec.Gateway.OAuth.Refresh.committed_descendant_blocks_access
+#print axioms CedarPooSpec.Gateway.OAuth.Refresh.committed_descendant_blocks_refresh

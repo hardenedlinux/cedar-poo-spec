@@ -1,4 +1,5 @@
 import CedarPooSpec.Gateway.OAuthPAR
+import CedarPooSpec.ZeroTrust.Continuous
 
 /-! Nonrotating, sender-constrained refresh families for the confidential-client
 profile. The current family ledger governs refresh and resource admission. -/
@@ -197,7 +198,8 @@ def prepareRevoke (input : RevocationInput) : Except String (Ledger × Unit) :=
 
 theorem revocation_retains_lineage (receipt : Invocation revokeContract prepareRevoke input) :
     input.key ∈ receipt.result.revoked ∧
-    receipt.result.access = input.ledger.access ∧ receipt.result.families = input.ledger.families := by
+    receipt.result.access = input.ledger.access ∧ receipt.result.families = input.ledger.families ∧
+    (∀ key ∈ input.ledger.revoked, key ∈ receipt.result.revoked) := by
   have accepted := receipt.logic
   change revoke input = some receipt.result at accepted
   cases found : input.ledger.family input.key with
@@ -208,10 +210,48 @@ theorem revocation_retains_lineage (receipt : Invocation revokeContract prepareR
     · split at accepted
       · rename_i already
         rw [← Option.some.inj accepted]
-        exact ⟨already, rfl, rfl⟩
+        exact ⟨already, rfl, rfl, fun _ prior => prior⟩
       · rw [← Option.some.inj accepted]
-        exact ⟨by simp, rfl, rfl⟩
+        exact ⟨by simp, rfl, rfl, fun _ prior => List.mem_cons_of_mem _ prior⟩
     · contradiction
+
+/-- Actual committed ledger transitions projected from a Gateway run.
+An effect may leave this ledger unchanged while advancing other authority. -/
+inductive LedgerStep (E : Type) : Ledger → Option E → Ledger → Prop where
+  | unchanged (view : Ledger) (effect : Option E) : LedgerStep E view effect view
+  | enrolled (receipt : Invocation (enrollmentContract redemption) prepareEnrollment input) :
+      LedgerStep E input.ledger none receipt.result
+  | refreshed (receipt : Invocation contract prepare input) :
+      LedgerStep E input.ledger none receipt.result.2
+  | revoked (receipt : Invocation revokeContract prepareRevoke input) :
+      LedgerStep E input.ledger none receipt.result
+
+theorem step_preserves_revocation (step : LedgerStep E before effect after)
+    (revoked : key ∈ before.revoked) : key ∈ after.revoked := by
+  cases step with
+  | unchanged => exact revoked
+  | enrolled receipt =>
+    simpa only [(enrollment_retains_sender receipt).2.2] using revoked
+  | refreshed receipt =>
+    rename_i input
+    cases found : input.ledger.family input.key with
+    | none =>
+      have accepted := receipt.logic
+      change refresh input = some receipt.result at accepted
+      simp [refresh, found] at accepted
+    | some family =>
+      simpa only [(refresh_preserves_sender found receipt).2.2.2.1] using revoked
+  | revoked receipt => exact (revocation_retains_lineage receipt).2.2.2 key revoked
+
+/-- An authenticated descendant of the revocation commit cannot lose the
+marker through enrollment, refresh, revocation or an unchanged ledger step. -/
+theorem committed_run_preserves_revocation (framework : CedarPooSpec.ZeroTrust.Framework E Ledger)
+    (receipt : Invocation revokeContract prepareRevoke input)
+    (run : CedarPooSpec.ZeroTrust.Run framework (LedgerStep E) receipt.result later) :
+    input.key ∈ later.revoked :=
+  CedarPooSpec.ZeroTrust.run_preserves (fun ledger => input.key ∈ ledger.revoked)
+    (fun _ _ _ step marked => step_preserves_revocation step marked)
+    (revocation_retains_lineage receipt).1 run
 
 def useAccess (ledger : Ledger) (authority : Authority) (attempt : Attempt) : Option Authority := do
   let entry ← ledger.accessEntry attempt.grant.tokenHash
@@ -238,7 +278,7 @@ theorem revocation_blocks_linked_access
     (linked : input.ledger.accessEntry attempt.grant.tokenHash = some entry)
     (family : entry.family = input.key) :
     useAccess receipt.result authority attempt = none := by
-  have ⟨revoked, access, _⟩ := revocation_retains_lineage receipt
+  have ⟨revoked, access, _, _⟩ := revocation_retains_lineage receipt
   have found : receipt.result.accessEntry attempt.grant.tokenHash = some entry := by
     simpa only [Ledger.accessEntry, access] using linked
   exact revoked_access_refused _ found (family.symm ▸ revoked)
@@ -257,6 +297,24 @@ theorem revoked_family_blocks_resource_contract
     (observe effect actual).2.2).isSome = true at checked
   rw [current, revocation_blocks_linked_access receipt linked family] at checked
   contradiction
+
+theorem committed_descendant_blocks_access
+    (framework : CedarPooSpec.ZeroTrust.Framework E Ledger)
+    (receipt : Invocation revokeContract prepareRevoke input)
+    (run : CedarPooSpec.ZeroTrust.Run framework (LedgerStep E) receipt.result later)
+    (linked : later.accessEntry attempt.grant.tokenHash = some entry)
+    (family : entry.family = input.key) : useAccess later authority attempt = none :=
+  revoked_access_refused later linked (family.symm ▸ committed_run_preserves_revocation framework receipt run)
+
+theorem committed_descendant_blocks_refresh
+    (framework : CedarPooSpec.ZeroTrust.Framework E Ledger)
+    (receipt : Invocation revokeContract prepareRevoke input)
+    (retry : RefreshInput) (same : retry.key = input.key)
+    (run : CedarPooSpec.ZeroTrust.Run framework (LedgerStep E) receipt.result retry.ledger) :
+    refresh retry = none := by
+  apply revoked_refresh_refused
+  rw [same]
+  exact committed_run_preserves_revocation framework receipt run
 
 theorem revocation_blocks_refresh
     (receipt : Invocation revokeContract prepareRevoke input)

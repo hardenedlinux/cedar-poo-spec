@@ -1053,6 +1053,51 @@ transitions across workers. The model does not prove propagation delays
 through distributed caches or cancellation of a previously mediated effect.
 
 
+*** Research boundary for revocation across replicas
+
+Sender possession and revocation freshness establish different facts. A
+resource can receive a valid DPoP proof or the original mTLS certificate
+while its local copy of the family still looks active. The Lean fixture
+=stale_snapshot_counterexample_and_current_refusal= evaluates the same
+refresh or resource attempt at the same time against two views. The
+pre-revocation snapshot permits the attempt even after the authority
+committed revocation. The successor refuses it, including for access
+tokens already issued by refresh.
+
+| Source | Property used here | Additional premise for this library |
+|--------+--------------------+-------------------------------------|
+| [[https://eprint.iacr.org/2024/1540][Hosseyni, Küsters and Würtele, Formal Security Analysis of the OpenID FAPI 2.0 Family of Protocols]] | Use the web attacker model to distinguish protocol authorization, authentication and session integrity. | Prove that the actual deciding OAuth ledger contains the revocation. The cited results do not establish that a recovered replica in this system has applied that commit. |
+| [[https://www.usenix.org/conference/atc19/presentation/pang][Pang et al., Zanzibar, ATC 2019, Sections 2.2 and 2.4]] | A consistency token can require a snapshot at least as fresh as a causally preceding change. | Bind the minimum position to the actual authority and authenticate the snapshot's committed prefix. The floor must be obtained independently of the replica being checked. |
+| [[https://www.cs.princeton.edu/courses/archive/spr22/cos418/papers/cap.pdf][Gilbert and Lynch, 2002, Section 2]] | A partition can separate a reader from a completed write. Availability and atomic reads cannot both be guaranteed in that execution model. | For strict post-acknowledgment revocation, an isolated reader without the required proof must defer or refuse. A positive cache hit alone provides no ordering evidence. |
+
+[[https://datatracker.ietf.org/doc/html/rfc7009#section-2.1][RFC 7009]]
+recognizes revocation propagation delays, and
+[[https://datatracker.ietf.org/doc/html/rfc7662#section-4][RFC 7662]]
+describes the security trade-off of caching introspection. A cache TTL
+limits how long that cached response is reused. Even a short TTL permits
+the stale-positive execution while the entry remains valid.
+
+=committed_run_preserves_revocation= uses the existing Zero Trust run
+relation. Enrollment, refresh, further revocations and unchanged ledger
+steps preserve every acknowledged revocation marker. The descendant laws
+then refuse refresh and linked access after any finite such history.
+This result assumes that the reader has a genuine descendant of the
+revocation commit. It does not compare replica clocks or implement
+consensus, and it makes no claim about a route using a different ledger.
+
+An authority-scoped minimum commit position can support causal reads.
+It protects a decision only when the required minimum includes the
+relevant revoke commit. A floor carried by one caller does not protect
+another caller whose floor is older. Strict post-acknowledgment semantics
+add an authoritative read or commit fence that orders revocation with the
+actual protected effect. For this profile, the next model should reuse
+the independent frontier used by Gateway publication. It should bind the
+authority identity and authenticated committed prefix, reject an equal
+position with a different snapshot, and check the fence again at final
+mediation. A caller-supplied epoch or a watermark read from the same
+restored replica cannot detect whole-view rollback.
+
+
 References include [[https://www.rfc-editor.org/rfc/rfc9700.html#section-2.3][OAuth Security BCP]],
 [[https://www.rfc-editor.org/rfc/rfc8707.html][Resource Indicators]],
 [[https://www.rfc-editor.org/rfc/rfc7662.html][Token Introspection]],

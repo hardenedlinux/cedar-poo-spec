@@ -286,3 +286,44 @@ fn racing_refresh_is_either_refused_or_revoked_with_its_family() {
             .is_none()
     );
 }
+
+#[test]
+fn a_stale_replica_cannot_observe_an_acknowledged_revocation() {
+    let authority = RefreshLedger::default();
+    let replica = RefreshLedger::default();
+    let original = enroll(&authority, Confirmation::Dpop("key".into()));
+    assert_eq!(original, enroll(&replica, Confirmation::Dpop("key".into())));
+    let issued = authority
+        .refresh(exchange(&original, "issued", 13))
+        .unwrap()
+        .unwrap();
+    assert_eq!(
+        replica.refresh(exchange(&original, "issued", 13)).unwrap(),
+        Some(issued.clone())
+    );
+
+    assert!(authority.revoke(verified(digest())).unwrap());
+    let request = actual(issued, 14, "same-fresh-proof");
+    assert!(
+        !authority
+            .admit_use(&ReplayGuard::default(), true, &request)
+            .unwrap()
+    );
+    assert!(
+        replica
+            .admit_use(&ReplayGuard::default(), true, &request)
+            .unwrap()
+    );
+    assert!(
+        authority
+            .refresh(exchange(&original, "later", 14))
+            .unwrap()
+            .is_none()
+    );
+    assert!(
+        replica
+            .refresh(exchange(&original, "later", 14))
+            .unwrap()
+            .is_some()
+    );
+}
