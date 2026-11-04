@@ -307,6 +307,21 @@ under another channel and approval. This is controlled replica-copy and
 restart validation. It does not exercise a real remote storage outage,
 physical power loss or an automatic promotion controller.
 
+* Optional Rust recovery replay
+
+The =recovery-replay= feature belongs to the Rust disclosure case package.
+It enables fault and replica scenarios in the existing healthcare example.
+The healthcare recipe explicitly enables it. Normal builds leave it off.
+No external cluster or Kubernetes service is required for this replay.
+
+The Lean =promotionContract= specifies the admitted state. The Rust
+replay checks the existing receiver and sender adapters against the same
+boundary using staged writes and copied images. A sender replica at the
+correct admission revision but missing the accepted settlement is refused.
+These checks model authorization and recovery decisions on an intact local
+filesystem. Physical power interruption and remote storage conformance
+remain distinct deployment tests.
+
 * Host transaction contract
 
 1. Resolve the current source, token, transformation, purpose, delegation,

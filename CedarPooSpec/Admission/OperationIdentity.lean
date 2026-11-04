@@ -346,4 +346,12 @@ theorem promoted_sender_retains_settlements
   congrArg PromotionImage.senderSettlements (promotion_retains_acknowledged_image receipt)
 
 
+/-- Matching admission and cut cannot compensate for lost terminal evidence. -/
+theorem missing_settlement_refuses_promotion (expected candidate : PromotionImage)
+    (lost : candidate.senderSettlements ≠ expected.senderSettlements) :
+    qualifyPromotion expected candidate = none := by
+  have different : candidate ≠ expected :=
+    fun equal => lost (congrArg PromotionImage.senderSettlements equal)
+  simp [qualifyPromotion, different]
+
 end CedarPooSpec.Admission

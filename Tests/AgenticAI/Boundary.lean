@@ -78,3 +78,4 @@ theorem staleReplicaCanAcceptPreviouslyUnseenOperation :
 #print axioms CedarPooSpec.Admission.promoted_receiver_rejects_retired_cut
 #print axioms CedarPooSpec.Admission.promoted_sender_preserves_no_retry
 #print axioms CedarPooSpec.Admission.promoted_sender_retains_settlements
+#print axioms CedarPooSpec.Admission.missing_settlement_refuses_promotion

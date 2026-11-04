@@ -6,6 +6,9 @@ license.workspace = true
 publish.workspace = true
 description = "Language-model disclosure executable case"
 
+[features]
+recovery-replay = []
+
 [dependencies]
 cedar-poo-disclosure-host.workspace = true
 cedar-poo-runtime.workspace = true

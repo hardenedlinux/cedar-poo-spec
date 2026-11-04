@@ -319,7 +319,7 @@ fn run() -> Result<(), String> {
         return Err("lost reply allowed a second send or changed the original charge".into());
     }
 
-    #[cfg(unix)]
+    #[cfg(all(unix, feature = "recovery-replay"))]
     check_restarted_dispatch(&policy, &first)?;
 
     let first_delta = SelectionDelta {
@@ -536,14 +536,14 @@ fn run() -> Result<(), String> {
             "cumulativeSelectionDenied": cumulative_selection_denied,
             "crossChannelRevisionSerialized": true,
             "lostReplyCrossChannelRetryDenied": true,
-            "restartReconciliationAndFencing": cfg!(unix),
+            "restartReconciliationAndFencing": cfg!(all(unix, feature = "recovery-replay")),
             "auditEntries": host.audit()?.len(),
         })
     );
     Ok(())
 }
 
-#[cfg(unix)]
+#[cfg(all(unix, feature = "recovery-replay"))]
 fn check_restarted_dispatch(
     policy: &ValidatedDisclosurePolicy,
     first: &Effect,
@@ -722,6 +722,10 @@ fn check_restarted_dispatch(
         );
         assert_eq!(restarted.audit()?.len(), 1);
         fs::remove_dir(&staged).map_err(|e| e.to_string())?;
+        // This replica has the correct admission revision and reservation,
+        // but was copied before the independently accepted settlement.
+        let unsettled_sender = path.join("unsettled-sender");
+        copy_replica(&sender_path, &unsettled_sender)?;
         assert!(restarted.reconcile(&first.operation_id, &signed, key.as_bytes())?);
         let mut conflict = serde_json::to_value(&outcome).map_err(|e| e.to_string())?;
         conflict["delivered"] = json!(false);
@@ -770,6 +774,11 @@ fn check_restarted_dispatch(
         drop(receiver);
         let receiver = DisclosureReceiver::open(&receiver_path)?;
         let sender_point = restarted.recovery_point()?;
+        assert!(
+            PersistentDisclosureHost::open_failover(&unsettled_sender, policy, &sender_point)
+                .is_err()
+        );
+
         let receiver_point = receiver.recovery_point()?;
         assert!(
             PersistentDisclosureHost::open_failover(&stale_sender, policy, &sender_point).is_err()
@@ -881,7 +890,7 @@ fn check_restarted_dispatch(
     result.and(cleanup)
 }
 
-#[cfg(unix)]
+#[cfg(all(unix, feature = "recovery-replay"))]
 fn copy_replica(source: &std::path::Path, destination: &std::path::Path) -> Result<(), String> {
     fs::create_dir(destination).map_err(|e| e.to_string())?;
     for entry in fs::read_dir(source).map_err(|e| e.to_string())? {
