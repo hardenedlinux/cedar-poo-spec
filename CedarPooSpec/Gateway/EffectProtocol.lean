@@ -252,28 +252,32 @@ structure ProviderOutcome where
 structure ProviderAuditTrust where
   providerKey : String
   logKey : String
-  verified : String → ProviderOutcome → Bool
+  verified : FactAuthority String String → String → ProviderOutcome → Bool
 
-def ProviderAuditTrust.accepts (trust : ProviderAuditTrust) (outcome : ProviderOutcome) : Bool :=
-  trust.verified trust.providerKey outcome && outcome.version.supported &&
+def ProviderAuditTrust.accepts (trust : ProviderAuditTrust) (source : FactAuthority String String)
+    (outcome : ProviderOutcome) : Bool :=
+  trust.verified source trust.providerKey outcome && outcome.version.supported &&
     decide (outcome.domain = "cedar-poo/provider-outcome") && decide (outcome.logKey = trust.logKey)
 
 /-- Native interpretation verifies signatures and the original fact/publication
 projection. This pure model does not claim a proof of cryptography or physical IO. -/
-def reconcileProvider (trust : ProviderAuditTrust) (actions : List AuditRecord)
+def reconcileProvider (trust : ProviderAuditTrust) (source : FactAuthority String String)
+    (actions : List AuditRecord)
     (outcomes : List ProviderOutcome) (logValid : Bool) (precommits : List CommitRef) : AuditReport :=
-  let accepted := outcomes.filter trust.accepts
+  let accepted := outcomes.filter (trust.accepts source)
   reconcile actions (accepted.map (·.receipt)) (outcomes.length - accepted.length) logValid precommits
 
 theorem accepted_provider_is_bound_to_configured_trust (trust : ProviderAuditTrust)
-    (outcome : ProviderOutcome) (accepted : trust.accepts outcome = true) :
-    trust.verified trust.providerKey outcome = true ∧ outcome.version.supported = true ∧
+    (source : FactAuthority String String)
+    (outcome : ProviderOutcome) (accepted : trust.accepts source outcome = true) :
+    trust.verified source trust.providerKey outcome = true ∧ outcome.version.supported = true ∧
       outcome.domain = "cedar-poo/provider-outcome" ∧ outcome.logKey = trust.logKey := by
   simpa [ProviderAuditTrust.accepts, Bool.and_eq_true_iff, and_assoc] using accepted
 
 theorem provider_without_outcomes_remains_unresolved (trust : ProviderAuditTrust)
+    (source : FactAuthority String String)
     (actions : List AuditRecord) (logValid : Bool) (precommits : List CommitRef) (operation : String) :
-    operation ∈ (reconcileProvider trust actions [] logValid precommits).unresolvedPrecommits ↔
+    operation ∈ (reconcileProvider trust source actions [] logValid precommits).unresolvedPrecommits ↔
       operation ∈ precommits.map (·.operation) := by
   simp [reconcileProvider, reconcile, ids]
 

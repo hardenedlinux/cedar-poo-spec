@@ -89,6 +89,10 @@ impl FactAuthority {
             ..self.clone()
         })
     }
+    /// Recovery pins issuer roots while selecting its own retained historical window.
+    pub(super) fn same_roots(&self, other: &Self) -> bool {
+        self.keys == other.keys
+    }
     pub fn public_material(&self) -> (Vec<FactBinding>, BTreeMap<String, Vec<u8>>, u64) {
         (
             self.expected.values().cloned().collect(),

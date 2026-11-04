@@ -310,3 +310,120 @@ fn provider_settlement_retains_a_replaced_resource_image() {
     assert!(recovered.prepare(&recovered.envelope()).is_err());
     assert_eq!(provider.actions.len(), 1);
 }
+
+#[test]
+fn gateway_recovery_uses_retained_sources_after_the_live_source_window_changes() {
+    let mut unresolved = Vec::new();
+    for provider_mode in [false, true] {
+        for phase in ["expired", "renewed", "quarantined", "repaired"] {
+            let (case, _, first) = setup();
+            let mut witness = Witness::simulation();
+            let mut provider = ProviderJournal::default();
+            let envelope = first.envelope();
+            let (_, receipt) = first
+                .execute(
+                    first.prepare(&envelope).unwrap(),
+                    &envelope,
+                    EffectIo {
+                        witness: &mut witness,
+                        provider: &mut provider,
+                        crash_after_send: provider_mode,
+                    },
+                )
+                .unwrap();
+            let outcomes: Vec<_> = provider.signed_outcomes().cloned().collect();
+            first.advance_time(100).unwrap();
+            if matches!(phase, "quarantined" | "repaired") {
+                assert!(first.refresh_facts(&case, 100).is_err());
+            }
+            if matches!(phase, "renewed" | "repaired") {
+                first.refresh_facts(&case, 200).unwrap();
+            }
+            let before = first.lifecycle_view().unwrap();
+            let audit = first.audit_authority(&witness);
+            let receipts: Vec<_> = receipt.into_iter().collect();
+            let evidence = RecoveryEvidence {
+                witness: &witness,
+                publications: &[],
+                audit: &audit,
+                receipts: &receipts,
+                provider: &provider,
+            };
+            let recovered = if provider_mode {
+                Simulator::recover_with_provider_outcomes(&first, evidence, &outcomes)
+            } else {
+                Simulator::recover(&first, evidence)
+            }
+            .unwrap();
+            let after = recovered.lifecycle_view().unwrap();
+            if after.unknown {
+                unresolved.push((provider_mode, phase));
+            }
+            assert!(after.spent);
+            assert_eq!(after.fact_generation, before.fact_generation);
+            assert_eq!(after.now, before.now);
+            assert_eq!(after.sources_current, before.sources_current);
+            assert_eq!(provider.actions.len(), 1);
+        }
+    }
+    assert!(
+        unresolved.is_empty(),
+        "historical completion rejected by live source view: {unresolved:?}"
+    );
+}
+
+#[test]
+fn gateway_recovery_refuses_reconfigured_source_roots_without_rotating_the_owner() {
+    for provider_mode in [false, true] {
+        let (_, _, first) = setup();
+        let mut witness = Witness::simulation();
+        let mut provider = ProviderJournal::default();
+        let envelope = first.envelope();
+        let (_, receipt) = first
+            .execute(
+                first.prepare(&envelope).unwrap(),
+                &envelope,
+                EffectIo {
+                    witness: &mut witness,
+                    provider: &mut provider,
+                    crash_after_send: provider_mode,
+                },
+            )
+            .unwrap();
+        let outcomes: Vec<_> = provider.signed_outcomes().cloned().collect();
+        let receipts: Vec<_> = receipt.into_iter().collect();
+        let before = first.lifecycle_view().unwrap();
+        let mut audit = first.audit_authority(&witness);
+        let (facts, mut keys, now) = audit.facts.public_material();
+        *keys.values_mut().next().unwrap() = SigningKey::from_slice(&[99; 32])
+            .unwrap()
+            .verifying_key()
+            .to_encoded_point(false)
+            .as_bytes()
+            .to_vec();
+        audit.facts = crate::gateway::FactAuthority::new(
+            facts,
+            keys.into_iter()
+                .map(|(issuer, key)| (issuer, crate::gateway::public_key(&key).unwrap()))
+                .collect(),
+            now,
+        )
+        .unwrap();
+        let evidence = RecoveryEvidence {
+            witness: &witness,
+            publications: &[],
+            audit: &audit,
+            receipts: &receipts,
+            provider: &provider,
+        };
+        let restored = if provider_mode {
+            Simulator::recover_with_provider_outcomes(&first, evidence, &outcomes)
+        } else {
+            Simulator::recover(&first, evidence)
+        };
+        assert!(matches!(restored, Err(error) if error.contains("source issuer roots changed")));
+        assert_eq!(first.lifecycle_view().unwrap(), before);
+        first.advance_time(11).unwrap();
+        assert_eq!(provider.actions.len(), 1);
+    }
+}

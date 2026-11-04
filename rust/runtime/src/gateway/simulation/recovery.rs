@@ -1,6 +1,6 @@
 //! Recovery reads surviving trusted state; history cannot reconstruct live authority.
 use super::{RecoveryEvidence, Simulator};
-use crate::gateway::{Reconciliation, publication_matches, reconcile, verify_log};
+use crate::gateway::{AuditAuthority, Reconciliation, publication_matches, reconcile, verify_log};
 use crate::{json_sha256, value_sha256};
 use std::sync::Arc;
 
@@ -77,6 +77,24 @@ impl Simulator {
         {
             return Err("recovery audit trust changed".into());
         }
+        // The deciding writer retained the original source interpretation with
+        // the exact intent. Current source renewal cannot rewrite historical
+        // admission, and incoming audit configuration cannot select new roots.
+        let facts = snapshot
+            .retained_intent
+            .as_ref()
+            .map_or(&snapshot.authority, |retained| &retained.facts);
+        if !facts.same_roots(&evidence.audit.facts) {
+            return Err("recovery source issuer roots changed".into());
+        }
+        let audit = AuditAuthority {
+            gateway_key: evidence.audit.gateway_key,
+            log_key: evidence.audit.log_key,
+            facts: facts.clone(),
+            minimum_size: evidence.audit.minimum_size,
+            review_trust: evidence.audit.review_trust.clone(),
+            prepared_publications: evidence.audit.prepared_publications.clone(),
+        };
         let retained_effect = match &snapshot.retained_intent {
             Some(retained) => {
                 if retained.log_key != evidence.audit.log_key {
@@ -110,18 +128,13 @@ impl Simulator {
         };
         drop(records);
         let report = match outcomes {
-            None => reconcile(
-                evidence.provider,
-                evidence.receipts,
-                &history,
-                evidence.audit,
-            ),
+            None => reconcile(evidence.provider, evidence.receipts, &history, &audit),
             Some(outcomes) => crate::gateway::reconcile_provider_outcomes(
                 evidence.provider,
                 outcomes,
                 &history,
                 crate::gateway::ProviderAuditTrust {
-                    authority: evidence.audit,
+                    authority: &audit,
                     provider_key: &self.provider_verifying_key(),
                 },
             ),

@@ -68,9 +68,22 @@ structure State where
   factGeneration : Nat := 7
   spent : Bool := false
   retainedIntent : Option RetainedIntent := none
+  retainedAuthority : Option (CedarPooSpec.ZeroTrust.FactAuthority String String) := none
   sourcesCurrent : Bool := true
   publicationUnknown : Bool := false
   cedarAllowed : Bool
+
+/-- Mirror the deciding precommit write: source interpretation, exact intent,
+consumption and uncertainty belong to the same surviving authority update. -/
+def retainIntent (state : State) (intent : RetainedIntent) : State :=
+  { state with
+    retainedIntent := some intent
+    retainedAuthority := some state.current.authority
+    spent := true
+    current := { state.current with unknown := true } }
+
+theorem retained_source_is_original (state : State) (intent : RetainedIntent) :
+    (retainIntent state intent).retainedAuthority = some state.current.authority := rfl
 
 structure Handle where
   generation : Nat
@@ -165,7 +178,7 @@ def recover (state : State) (committed complete : Bool) : State :=
       if spent || state.current.unknown then !(committed && complete) else state.current.unknown } }
 
 /-- Compose verified reconciliation with recovery. The independent provider
-must also observe the exact current effect, as in the native recovery owner. -/
+must also observe the exact retained effect; current authorization is preserved. -/
 def recoverAudited (state : State) (committed observed : Bool) (report : AuditReport) : State :=
   recover state committed (observed && report.clean)
 
@@ -194,15 +207,19 @@ structure ProviderRecoveryEvidence where
   logValid : Bool
   expected : AuditRecord
 
-private def providerEvidence (trust : ProviderAuditTrust) (evidence : ProviderRecoveryEvidence) : RecoveryEvidence :=
+private def providerEvidence (trust : ProviderAuditTrust)
+    (source : CedarPooSpec.ZeroTrust.FactAuthority String String) (evidence : ProviderRecoveryEvidence) : RecoveryEvidence :=
   ⟨evidence.entries, trust.logKey,
-    reconcileProvider trust evidence.actions evidence.outcomes evidence.logValid evidence.entries,
+    reconcileProvider trust source evidence.actions evidence.outcomes evidence.logValid evidence.entries,
     evidence.actions.any (fun action => decide (action = evidence.expected))⟩
 
 def checkProviderRecovery (trust : ProviderAuditTrust) (state : State)
     (evidence : ProviderRecoveryEvidence) : Except String RecoveryStatus :=
-  if evidence.expected.operation != state.current.effect.operation then .error "different operation"
-  else checkRecovery ⟨state.current.effect.operation, state.retainedIntent, providerEvidence trust evidence⟩
+  match state.retainedAuthority with
+  | none => .error "missing retained source authority"
+  | some source =>
+    if evidence.expected.operation != state.current.effect.operation then .error "different operation"
+    else checkRecovery ⟨state.current.effect.operation, state.retainedIntent, providerEvidence trust source evidence⟩
 
 def providerRecoveryContract (trust : ProviderAuditTrust) :
     Contract Unit (State × ProviderRecoveryEvidence) RecoveryStatus where
@@ -384,11 +401,14 @@ theorem provider_recovery_exact_retained_history
     (receipt : Invocation (providerRecoveryContract trust) (prepareProviderRecovery trust) (state, evidence)) :
     trust.logKey = retained.logKey ∧ retained.commit ∈ evidence.entries := by
   have checked := provider_recovery_invocation_is_bound receipt
-  simp only [checkProviderRecovery] at checked
-  split at checked
-  · cases checked
-  · exact retained_recovery_requires_exact_history state.current.effect.operation retained
-      (providerEvidence trust evidence) receipt.result (by simpa [present] using checked)
+  cases source : state.retainedAuthority with
+  | none => simp [checkProviderRecovery, source] at checked
+  | some historical =>
+    simp only [checkProviderRecovery, source] at checked
+    split at checked
+    · cases checked
+    · exact retained_recovery_requires_exact_history state.current.effect.operation retained
+        (providerEvidence trust historical evidence) receipt.result (by simpa [present] using checked)
 
 theorem provider_settlement_does_not_remint
     (receipt : Invocation (providerRecoveryContract trust) (prepareProviderRecovery trust) (state, evidence))
@@ -402,5 +422,26 @@ theorem provider_settlement_preserves_current_image
     (recover state receipt.result.committed receipt.result.complete).current.revoked = state.current.revoked ∧
     (recover state receipt.result.committed receipt.result.complete).current.authority = state.current.authority :=
   ⟨rfl, rfl, rfl, rfl⟩
+
+theorem missing_retained_source_is_refused (trust : ProviderAuditTrust) (state : State)
+    (evidence : ProviderRecoveryEvidence) (missing : state.retainedAuthority = none) :
+    (checkProviderRecovery trust state evidence).isOk = false := by
+  simp [checkProviderRecovery, missing, Except.isOk, Except.toBool]
+
+theorem provider_recovery_is_independent_of_current_authority (trust : ProviderAuditTrust)
+    (state : State) (evidence : ProviderRecoveryEvidence)
+    (current : CedarPooSpec.ZeroTrust.FactAuthority String String) :
+    checkProviderRecovery trust {state with current := {state.current with authority := current}} evidence =
+      checkProviderRecovery trust state evidence := rfl
+
+theorem renewal_preserves_retained_source (state : State) (authority required world cedarAllowed) :
+    (renew state authority required world cedarAllowed).retainedAuthority = state.retainedAuthority := rfl
+
+theorem provider_settlement_preserves_source_views
+    (receipt : Invocation (providerRecoveryContract trust) (prepareProviderRecovery trust) (state, evidence)) :
+    (recover state receipt.result.committed receipt.result.complete).retainedAuthority = state.retainedAuthority ∧
+    (recover state receipt.result.committed receipt.result.complete).sourcesCurrent = state.sourcesCurrent ∧
+    (recover state receipt.result.committed receipt.result.complete).factGeneration = state.factGeneration :=
+  ⟨rfl, rfl, rfl⟩
 
 end CedarPooSpec.Gateway.Lifecycle

@@ -380,6 +380,8 @@ fn recovery_boundaries(
 }
 
 fn provider_recovery(
+    data: &Prepared,
+    index: usize,
     seed: &Simulator,
     prepared: &PreparedPublications,
 ) -> Result<Vec<Value>, String> {
@@ -449,6 +451,56 @@ fn provider_recovery(
         &outcomes,
     )?;
     rows.push(observe("provider-unobserved", &unobserved, prepared)?);
+    let mut evolved = Vec::new();
+    for phase in ["expired", "renewed", "quarantined", "repaired", "world"] {
+        let live = pending.fork_simulation()?;
+        live.advance_time(100)?;
+        match phase {
+            "renewed" => live.refresh_facts(&data.restored.cases[index], 200)?,
+            "quarantined" | "repaired" => {
+                if live.refresh_facts(&data.restored.cases[index], 100).is_ok() {
+                    return Err("expired source renewal succeeded".into());
+                }
+                if phase == "repaired" {
+                    live.refresh_facts(&data.restored.cases[index], 200)?;
+                }
+            }
+            "world" => live.refresh_facts(&data.empty_current.cases[index], 200)?,
+            _ => (),
+        }
+        let before = live.lifecycle_view()?;
+        let mut current_audit = live.audit_authority(&witness);
+        current_audit.prepared_publications = Some(prepared.clone());
+        let recovered = Simulator::recover_with_provider_outcomes(
+            &live,
+            RecoveryEvidence {
+                witness: &witness,
+                publications: &history,
+                audit: &current_audit,
+                receipts: &[],
+                provider: &provider,
+            },
+            &outcomes,
+        )?;
+        let after = recovered.lifecycle_view()?;
+        if after.unknown
+            || !after.spent
+            || after.fact_generation != before.fact_generation
+            || after.sources_current != before.sources_current
+            || after.now != before.now
+            || after.world != before.world
+            || after.revoked != before.revoked
+        {
+            return Err(format!(
+                "provider settlement rewrote the live source image: {phase}"
+            ));
+        }
+        evolved.push(observe(
+            &format!("provider-{phase}-current-audit"),
+            &recovered,
+            prepared,
+        )?);
+    }
     let controlled = pending.fork_simulation()?;
     controlled.advance_time(100)?;
     controlled.revoke()?;
@@ -466,6 +518,7 @@ fn provider_recovery(
     if controls.envelope().effect != replacement {
         return Err("provider settlement rolled back the current resource image".into());
     }
+    rows.extend(evolved);
     if provider.actions.len() != 1 || provider.signed_outcomes().count() != 1 {
         return Err("provider recovery resent the effect".into());
     }
@@ -485,7 +538,7 @@ pub(super) fn run_case(data: &Prepared, index: usize, group: &Group) -> Result<V
     rows.push(burned(&seed, true, &prepared)?);
     rows.extend(failed_source(data, index, &seed, &prepared)?);
     rows.extend(recovery_boundaries(&case, &seed, &prepared)?);
-    rows.extend(provider_recovery(&seed, &prepared)?);
+    rows.extend(provider_recovery(data, index, &seed, &prepared)?);
     let actual = json!({"states":rows,"publication":publication});
     if actual != group.plan.lifecycle[index] {
         return Err(format!(

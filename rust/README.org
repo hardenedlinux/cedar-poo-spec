@@ -395,3 +395,11 @@ resends. Missing, invalid or uncorroborated proofs retain uncertainty. Plain
 serialized journals remain read-only observations, not live provider authority.
 Provider record durability and eventual delivery are not supplied by this
 in-memory model. See [[file:../docs/protocol/gateway-effect.org][the shared boundary and evidence audit]].
+
+The surviving authority also retains the original immutable fact interpretation
+at precommit. Both recovery channels use that historical source window while
+preserving the current clock, renewal, source quarantine/repair and SDK world.
+A supplied current audit view must retain the same issuer roots; replacing them
+is refused before ownership changes. This historical audit cannot renew current
+authorization or remint a consumed effect. See the shared protocol's historical
+source authority section for the typed laws and full Case matrix.

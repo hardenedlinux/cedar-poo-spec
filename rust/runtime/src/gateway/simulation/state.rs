@@ -92,6 +92,7 @@ impl Outcome {
 pub(super) struct RetainedIntent {
     pub(super) entry: Arc<Signed>,
     pub(super) log_key: VerifyingKey,
+    pub(super) facts: FactAuthority,
 }
 #[derive(Clone)]
 pub(super) struct Current {
@@ -340,6 +341,7 @@ impl Simulator {
         current.retained_intent = Some(RetainedIntent {
             entry: Arc::new(commit.clone()),
             log_key: witness.verifying_key(),
+            facts: current.authority.clone(),
         });
         outcome.precommitted = true;
         outcome.sent = true;

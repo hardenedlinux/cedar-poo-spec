@@ -1021,3 +1021,95 @@ and the largest append bucket 39.371 ms. No observations are removed or rerun
 selectively to obtain a win. The complete API benchmark process is 18.412 s
 with 121.031 MiB peak RSS; its process time and memory are not per-request bounds.
 All compiled Lean profile/reuse/root-scale and nine family workloads pass.
+
+** Retained historical source authority
+
+After exact-head CI qualification of =53c3d7f= (all 16 checks successful), a new
+native regression reproduced four failures: both Gateway and provider completion
+channels rejected authentic historical completion after expiry or renewal when
+supplied the current audit view. The original signed intent was present, but
+recovery interpreted its source statements using the later source window. This
+could keep a lost receipt unresolved or regress an already completed effect to
+unknown. The failed test and all four combinations remain retained.
+
+The deciding writer now retains the original immutable =FactAuthority= together
+with its exact witness-signed intent, witness key, burn and unknown status.
+The retained authority shares existing immutable field, issuer and prepared
+statement owners; it does not retain a Cedar SDK Program or cache an Allow.
+Recovery selects this owned historical source interpretation for both completion
+channels. Supplied source issuer roots must match; substitution is refused before
+ownership changes. The incoming current audit view cannot select a different
+historical inventory, lease time or issuer configuration.
+
+| Boundary | Historical evidence used | Current state preserved |
+|----------+--------------------------+-------------------------|
+| Source expiry | The retained original source window validates the original signed statements. | Clock stays expired; source generation does not move backward. |
+| Successful renewal | Completion still names the original witnessed facts. | Fresh source window and generation survive; consumption remains burned. |
+| Failed renewal | Original completion can settle independently of current source health. | Failed-source quarantine stays closed. |
+| Source repair | The original intent is settled exactly once. | Repaired current source owner is retained. |
+| Entity-world change | The historical world remains bound to the intent. | The newly evaluated SDK world and current Cedar result survive. |
+| Issuer-root substitution | Recovery refuses the new source registry. | Generation, owner, uncertainty and current controls remain unchanged. |
+
+The Lean source verification interpretation now receives the explicitly retained
+source authority. =retainIntent= captures that authority at the precommit write;
+=providerRecoveryContract= refuses a missing retained source. Kernel laws bind
+the original capture, renewal preservation, independence from later current
+authority, and preservation of both retained and current source views. These
+are laws of the typed model and actual Contract result, not a proof of Rust,
+cryptographic primitives or truthful physical observations.
+
+Five additional shared controls exercise expiry, renewal, quarantine, repair and
+entity-world change with a freshly obtained current audit view across every
+executable Case. Existing controls are preserved. Native unit controls cover
+both Gateway and provider channels, including refusal without owner rotation
+when the source issuer configuration is substituted. External public-key-only
+=gateway-reconcile= remains an independent audit: its configured historical
+source view must still be supplied by a trusted reader. It does not acquire
+private simulator retention or an execution capability.
+
+The eight-second investigation remains separate. Two prior ordinary observations
+have the same executable SHA-256 and command arguments but elapsed-minus-accounted
+CPU totals of 30.573 and 1.052 seconds. This is not proof of one wait, and the
+historical argument-file paths alone do not establish immutable input hashes.
+Both complete oracle outputs were checked; all timing/resource observations are
+retained. The reduced scheduler collector also exited its target with complete
+byte-identical output but timed out in recorder finalization at the unchanged
+120-second outer limit. No complete scheduler archive, waiting object or waker
+is admitted. No security setting, workload, deadline or negative control changes.
+
+Qualification covers all 51 entries / 211 groups / 1,253 Cases / 39 refusals and
+3,759 publications. Five new controls across 635 executable Cases add 3,175
+states, for 25,179 counted lifecycle outcomes. Removing exactly those five labels
+reproduces every original 22,004-state output byte; all 41,669 effect/audit rows
+also compare byte-for-byte. Runtime qualification is 101 passed / the original
+five explicitly ignored. The standard combined gate completes in 237.74 seconds;
+the expanded lifecycle process is 62.385 seconds with 109.484 MiB peak RSS.
+The prior expanded lifecycle was 55.833 seconds / 107.703 MiB. Additional controls
+and retained source ownership change the workload and lifetime; the time/RSS
+increase is retained, not presented as an isolated allocation measurement.
+
+| Audited boundary | Executable or formal evidence | Remaining assumption |
+|------------------+-------------------------------+----------------------|
+| Historical completion versus fresh authorization | Actual recovery Contract; retained source and current-image laws; both native receipt channels; all-Case source matrix. | Trusted source interpretations certify statements, not physical truth. |
+| Same-operation history substitution | Exact retained signed bytes and witness root; clean alternate-history refusal controls remain. | Retained deciding authority is not rolled back externally. |
+| Configured-root and evidence-channel substitution | Provider domain/version/witness checks, explicit audit mode and source-root refusal without owner rotation. | Immutable mock roots; production rotation/compromise-time policy is not modeled. |
+| Missing, corrupt, duplicate or uncorroborated outcomes | Independent public auditor and retained existing negative controls; uncertainty stays closed. | An independent reader eventually obtaining evidence is not guaranteed. |
+| Source expiry, renewal, failure, repair and world change | Five additional controls for every executable Case; current clock/source/SDK state preserved. | Source writers and recovery ownership changes obey the deciding lock. |
+| Revocation, resource replacement and replay | Existing all-Case controls, preserved burn, old-owner rejection and provider operation tombstones. | In-memory provider retention is not durable restart recovery. |
+| Concurrent deciding writers | Existing owner/generation validation before recovery attachment and current-use commit. | Cross-host fencing and nonrollback persistence need a Backend realization. |
+| Runtime non-CPU tails | Complete native outputs and resources, source-bound executable accounting, retained failed scheduler captures. | The original wait object and waker remain unidentified. |
+
+Follow-up compiled Lean profile/reuse/root-scale and all nine family workloads
+pass. Native Runtime retains all 211 Program / 1,253 Case / 1,024 append samples.
+Current empty-log execution p95/p99 is 1.857/2.073 ms, shared construction
+1.894/2.043 ms and prepared SDK replay 0.304/0.344 ms. The largest append bucket
+retains all 768 samples (p99 1.589 ms, maximum 2.628 ms). The complete API process
+is 16.880 seconds with 123.656 MiB peak RSS, versus the preceding 18.412 seconds /
+121.031 MiB. The higher RSS remains a non-win, as does =prepare.allowed='s maximum
+of 0.475 ms versus 0.186 ms. The expanded source/oracle input and retained-source
+lifetime differ; these observations do not isolate the retained snapshot's heap
+cost or establish stable whole-process improvement. All raw per-Case samples,
+including the earlier slower tails, remain retained. The new ordinary effect
+replay's elapsed-minus-accounted-CPU total is 0.599 seconds; it does not reproduce
+or explain the original eight-second interval. No further scheduler-recording
+retry substitutes for the missing wait-object and waker evidence.

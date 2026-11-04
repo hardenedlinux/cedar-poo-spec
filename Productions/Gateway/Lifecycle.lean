@@ -56,14 +56,12 @@ private def recoveryBoundaries (original : State) : Except String (List Lean.Jso
     ← row "truncated-recovery" uncertain, ← row "unbound-recovery" original]
 
 private def providerTrust : ProviderAuditTrust :=
-  ⟨"provider", "witness", fun key outcome => key == "provider" && outcome.signature == [1]⟩
+  ⟨"provider", "witness", fun source key outcome => key == "provider" && outcome.signature == [1] &&
+    source.accepts Production.EffectProtocol.baseFact⟩
 
-private def providerRecovery (original : State) : Except String (List Lean.Json) := do
+private def providerRecovery (original : State) (emptyAllowed worldChanged : Bool) : Except String (List Lean.Json) := do
   if !original.cedarAllowed then return []
-  let pending := { original with
-    spent := true
-    retainedIntent := some intent
-    current := { original.current with unknown := true } }
+  let pending := retainIntent original intent
   let action : AuditRecord := ⟨"operation", "original"⟩
   let outcome : ProviderOutcome :=
     ⟨⟨1,0⟩, "cedar-poo/provider-outcome", "witness", ⟨action, intent.commit⟩, [1]⟩
@@ -80,9 +78,23 @@ private def providerRecovery (original : State) : Except String (List Lean.Json)
     effect := { expired.current.effect with object := "replacement-incarnation", generation := 8 }
     mapped := false } }
   let controls ← recoverFromProviderChecked providerTrust (revoke replaced) observed
+  let expiredResult ← recoverFromProviderChecked providerTrust expired observed
+  let renewed ← renewAt expired "source" original.cedarAllowed
+  let renewedResult ← recoverFromProviderChecked providerTrust renewed observed
+  let quarantined := invalidateSources expired
+  let quarantinedResult ← recoverFromProviderChecked providerTrust quarantined observed
+  let repaired ← renewAt quarantined "source" original.cedarAllowed
+  let repairedResult ← recoverFromProviderChecked providerTrust repaired observed
+  let changed ← renewAt expired (if worldChanged then "empty-world" else "source") emptyAllowed
+  let changedResult ← recoverFromProviderChecked providerTrust changed observed
   return [← row "provider-missing" missing, ← row "provider-invalid" invalid,
     ← row "provider-unobserved" unobserved, ← row "provider-complete" complete,
-    ← row "provider-repeated" repeated, ← row "provider-current-controls" controls]
+    ← row "provider-repeated" repeated, ← row "provider-current-controls" controls,
+    ← row "provider-expired-current-audit" expiredResult,
+    ← row "provider-renewed-current-audit" renewedResult,
+    ← row "provider-quarantined-current-audit" quarantinedResult,
+    ← row "provider-repaired-current-audit" repairedResult,
+    ← row "provider-world-current-audit" changedResult]
 
 /-- Outcomes are produced by actual POO Contract invocations; the Case producer
 supplies real Cedar decisions for the current, empty-entity and held worlds. -/
@@ -114,7 +126,7 @@ def project (reviewed : Authorization.Delta.ReviewedInteraction) (model : Policy
   let recoveredUnknown ← recoverChecked uncertain unresolved
   let recoveredRevoked ← recoverChecked revoked (evidence false)
   let boundaries ← recoveryBoundaries original
-  let providerStates ← providerRecovery original
+  let providerStates ← providerRecovery original emptyAllowed worldChanged
   let active : Authorization.Delta.ReleaseState :=
     ⟨reviewed.snapshot.base.root, reviewed.snapshot.base.policies, .enforcing, reviewed.snapshot.epoch⟩
   let checked := (publicationContract reviewed model schema active changed "source" (envelope changed)).invoke

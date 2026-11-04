@@ -46,3 +46,9 @@ import CedarPooSpec.Gateway.Lifecycle
 #print axioms CedarPooSpec.Gateway.Lifecycle.provider_settlement_does_not_remint
 
 #print axioms CedarPooSpec.Gateway.Lifecycle.provider_settlement_preserves_current_image
+
+#print axioms CedarPooSpec.Gateway.Lifecycle.retained_source_is_original
+#print axioms CedarPooSpec.Gateway.Lifecycle.missing_retained_source_is_refused
+#print axioms CedarPooSpec.Gateway.Lifecycle.provider_recovery_is_independent_of_current_authority
+#print axioms CedarPooSpec.Gateway.Lifecycle.renewal_preserves_retained_source
+#print axioms CedarPooSpec.Gateway.Lifecycle.provider_settlement_preserves_source_views
