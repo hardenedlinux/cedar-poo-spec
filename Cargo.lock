@@ -337,6 +337,7 @@ name = "cedar-poo-agentic"
 version = "0.1.0"
 dependencies = [
  "asp-rust",
+ "serde",
 ]
 
 [[package]]

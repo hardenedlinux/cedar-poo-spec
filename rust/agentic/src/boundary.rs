@@ -4,7 +4,7 @@
 use std::collections::HashSet;
 
 /// Before and after candidate sets visible to a sink after a selection tool call.
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct SelectionDelta {
     pub before: Vec<String>,
     pub after: Vec<String>,

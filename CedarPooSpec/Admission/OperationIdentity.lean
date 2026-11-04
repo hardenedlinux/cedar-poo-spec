@@ -1,4 +1,4 @@
-import Lean.Data.Json
+import CedarPooSpec.Admission.AuthorityConsumption
 import LeanPoo.Functional.DeclarativeMetadata
 
 /-!
@@ -96,6 +96,74 @@ theorem dispatch_invocation_fences_and_reserves
     (receipt : Invocation dispatchContract prepareDispatch (current, request, actual, ledger)) :
     request.cut = current ∧ request = actual ∧ receipt.result.check request.operation = false :=
   receive_requires_exact_current_effect current request actual ledger receipt.result receipt.logic
+
+/-- All components restored from one committed sender image. -/
+structure SenderImage where
+  revision : Nat
+  budget : Nat
+  approvals : AuthorityLedger String
+  operations : OperationLedger
+  audit : List DispatchBinding
+  deriving DecidableEq
+
+structure SenderCommit where
+  expectedRevision : Nat
+  approval : String
+  dispatch : DispatchBinding
+  currentAuthorized : Bool
+
+/-- Current Cedar and cohort checks are supplied by the Host. The resulting
+image is persisted as one unit before the adapter can attempt delivery. -/
+def SenderImage.commit (state : SenderImage) (request : SenderCommit) : Option SenderImage :=
+  if request.expectedRevision = state.revision ∧ state.budget > 0 ∧ request.currentAuthorized then
+    match state.approvals.consume request.approval request.dispatch.effect,
+        state.operations.admit request.dispatch.operation with
+    | .ok approvals, some operations =>
+      some ⟨state.revision + 1, state.budget - 1, approvals, operations,
+        state.audit ++ [request.dispatch]⟩
+    | _, _ => none
+  else none
+
+def senderCommitContract : Contract Unit (SenderImage × SenderCommit) SenderImage where
+  input := ⟨"current-sender-image", fun _ => True, fun _ => inferInstance⟩
+  output := ⟨"atomic-sender-successor", fun _ => True, fun _ => inferInstance⟩
+  meaning := fun _ input result => input.1.commit input.2 = some result
+  decide := fun _ _ _ => inferInstance
+  rule := .atom ()
+
+def prepareSenderCommit (input : SenderImage × SenderCommit) :
+    Except String (SenderImage × Unit) :=
+  match input.1.commit input.2 with
+  | none => .error "disclosure commit refused"
+  | some next => .ok (next, ())
+
+theorem sender_commit_retains_all_components
+    (receipt : Invocation senderCommitContract prepareSenderCommit (state, request)) :
+    receipt.result.revision = state.revision + 1 ∧
+    receipt.result.budget = state.budget - 1 ∧
+    state.approvals.consume request.approval request.dispatch.effect = .ok receipt.result.approvals ∧
+    receipt.result.operations.check request.dispatch.operation = false ∧
+    receipt.result.audit = state.audit ++ [request.dispatch] := by
+  have committed := receipt.logic
+  change state.commit request = some receipt.result at committed
+  unfold SenderImage.commit at committed
+  split at committed
+  · cases used : state.approvals.consume request.approval request.dispatch.effect <;>
+      cases reserved : state.operations.admit request.dispatch.operation <;>
+      simp [used, reserved] at committed
+    rw [← committed]
+    exact ⟨rfl, rfl, rfl, OperationLedger.reserved_operation_refused _ _ _ reserved, rfl⟩
+  · contradiction
+
+/-- The old generation cannot match a receiver that reopens its committed cut. -/
+theorem restored_receiver_refuses_old_cut
+    (request actual : DispatchBinding) (ledger : OperationLedger) (persisted : ReceiverCut)
+    (older : request.cut.generation < persisted.generation) :
+    receiveDispatch persisted request actual ledger = none := by
+  apply retired_cut_refused
+  intro equal
+  rw [equal] at older
+  exact Nat.lt_irrefl _ older
 
 /-- Authentication is a separate provider-verification premise. Reading a
 matching outcome returns its observation and does not edit the send ledger. -/

@@ -12,11 +12,11 @@ structure AuthorityGrant (Effect : Type) where
   effect : Effect
   maxUses : Nat
   used : Nat := 0
-  deriving BEq, Repr
+  deriving DecidableEq, BEq, Repr
 
 structure AuthorityLedger (Effect : Type) where
   grants : List (AuthorityGrant Effect) := []
-  deriving BEq, Repr
+  deriving DecidableEq, BEq, Repr
 
 namespace AuthorityLedger
 

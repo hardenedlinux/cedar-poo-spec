@@ -7,6 +7,7 @@ publish.workspace = true
 description = "Tool-action and sink boundary contracts"
 
 [dependencies]
+serde.workspace = true
 
 [dev-dependencies]
 asp-rust.workspace = true

@@ -4,11 +4,10 @@
 #[cfg(unix)]
 mod dispatch;
 #[cfg(unix)]
-pub use dispatch::{
-    DisclosureOutcome, DisclosureReceiver, DispatchBinding, DispatchJournal, ReceiverCut,
-    RecoverableDispatch,
-};
+pub use dispatch::{DisclosureOutcome, DisclosureReceiver, DispatchBinding, ReceiverCut};
 mod host;
+#[cfg(unix)]
+pub use host::persistent::PersistentDisclosureHost;
 pub use host::{
     CommitReceipt, DispatchOutcome, Effect, Evidence, Grant, InMemoryDisclosureHost,
     RecipientGrant, Ticket, ValidatedDisclosurePolicy,

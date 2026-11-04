@@ -188,34 +188,38 @@ does not provide durable outcome settlement. The trusted dispatch adapter
 must send the exact admitted effect. Remote fencing and authenticated
 reconciliation are separate deployment obligations.
 
-* Restart reservation and receiver fencing
+* Persistent sender transaction and receiver fencing
 
-The Unix dispatch journal reserves the authenticated logical operation before
-a send can run. The immutable file binds that operation to the complete effect
-digest and to the receiver scope and generation. Creation is exclusive. The
-file and containing directory are synchronized before dispatch. A partially
-written reservation fails closed. The trusted directory must remain bound to
-one workflow authority across restart. The journal is a dispatch barrier.
-The deploying Host must restore budget, cohort, approval and audit state from
-its own transaction. A crash after reservation but before send can require
-operator resolution, because automatic retry could duplicate an effect.
+The Unix reference provisions an authoritative sender image explicitly.
+Under one stable file lock, the sender reloads that image, rechecks the
+exact effect and current Cedar evidence, consumes approval, debits budget,
+updates the cohort, reserves the logical operation and appends the audit
+receipt. A staged file is synchronized, atomically renamed and followed by
+a directory sync before any send. Reopen restores the complete image and
+checks the identity of the independently supplied validated Cedar policy.
+A staging failure leaves the previous image in force. An error after
+replacement may leave the successor visible, so the caller must reopen
+and reconcile. A reservation with an unknown result continues to block a
+send, including when a crash occurred before the external attempt.
 
-The receiver checks the independently supplied current scope and generation
-and recomputes the exact observed effect binding. It reserves the operation
-in its own journal before applying the effect. The simulation orders control
-updates and application under the same lock. A real transport must authenticate
-the sender and recover the current cut from its trusted control plane before
-accepting a request. Reading an old cut or letting the request choose the cut
-would defeat receiver fencing.
+The receiver keeps its current scope and generation in a separate trusted
+directory. Cut advancement and effect application use the same stable file
+lock. The receiver reloads the cut on each use and reserves the exact
+operation before applying the effect. Reopen takes the directory alone,
+so a caller cannot supply an older in-memory cut to the recovery entrypoint.
+The transport must authenticate the Host and protect the observed effect.
+Both directories require non-rollback storage and trusted provisioning.
 
 A detached provider outcome is verified against an independently configured
-provider key and the exact retained binding. Its result does not release the
-send reservation. The native replay drops the original mediator, reopens the
-same journal, and tries a different channel and approval before and after
-reading the signed outcome. It also replays the original request at the
-receiver and presents a delayed request after a receiver cut change.
-This is a local filesystem and simulated receiver qualification. It does
-not implement a network transport or a production provider outcome store.
+provider key and the exact retained binding. Reading it never releases the
+send reservation. The native replay forces a staging failure, drops and
+reopens the sender after a lost reply, and checks the recovered budget,
+approval usage, cohort and audit. It rejects a different channel and
+approval before and after reading the signed outcome. A reopened receiver
+rejects a delayed, previously unseen operation carrying the retired cut.
+These checks use a local Unix filesystem and a simulated receiver.
+Power-loss qualification, remote transport and a production provider
+outcome store are separate deployment work.
 
 * Host transaction contract
 

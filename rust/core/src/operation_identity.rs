@@ -4,7 +4,7 @@
 use std::collections::HashMap;
 
 /// Stable identity of one workflow operation across approval renewal and retry.
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct OperationId(pub String);
 
 impl From<&str> for OperationId {
@@ -14,7 +14,7 @@ impl From<&str> for OperationId {
 }
 
 /// Admission identity, not a record of delivery to a remote target.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct OperationLedger<Effect> {
     admitted: HashMap<OperationId, Effect>,
 }

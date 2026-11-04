@@ -55,3 +55,5 @@ end Tests.AgenticAI.Boundary
 #print axioms CedarPooSpec.Admission.receive_requires_exact_current_effect
 #print axioms CedarPooSpec.Admission.reconciliation_requires_independent_exact_binding
 #print axioms CedarPooSpec.Admission.dispatch_invocation_fences_and_reserves
+#print axioms CedarPooSpec.Admission.sender_commit_retains_all_components
+#print axioms CedarPooSpec.Admission.restored_receiver_refuses_old_cut
