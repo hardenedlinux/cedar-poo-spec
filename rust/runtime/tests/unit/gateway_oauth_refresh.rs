@@ -624,3 +624,243 @@ fn durable_final_effect_and_revocation_share_the_writer_lock() {
     );
     std::fs::remove_dir_all(directory).unwrap();
 }
+
+#[cfg(unix)]
+#[test]
+fn staged_and_durable_revoke_crashes_restore_the_correct_image() {
+    use crate::gateway::checkpoint_store::CheckpointStage;
+    for (phase, name) in [
+        (CheckpointStage::Staged, "staged"),
+        (CheckpointStage::Durable, "durable"),
+    ] {
+        let directory = durable_directory(name);
+        let (grant, old) = {
+            let writer = DurableRefreshLedger::new(&directory, "authority");
+            writer.initialize().unwrap();
+            let grant = enroll_with(Confirmation::Mtls("cert".into()), |input| {
+                writer.enroll(input).unwrap()
+            });
+            let old = writer.checkpoint().unwrap();
+            assert_eq!(
+                writer
+                    .revoke_with_crash(verified(digest()), phase)
+                    .unwrap_err(),
+                "simulated checkpoint crash"
+            );
+            (grant, old)
+        };
+        let reopened = DurableRefreshLedger::new(&directory, "authority");
+        let staged = phase == CheckpointStage::Staged;
+        assert_eq!(directory.join("checkpoint.staged").exists(), staged);
+        assert_eq!(reopened.recover(&old).unwrap(), staged);
+        let current = actual(grant, 14, "proof");
+        assert_eq!(
+            reopened
+                .execute_final(
+                    DurableFinalUse {
+                        checked: &old,
+                        replica: &old,
+                        current: &current,
+                        base_allowed: true,
+                    },
+                    || {}
+                )
+                .unwrap(),
+            staged
+        );
+        assert!(reopened.revoke(verified(digest())).unwrap());
+        assert!(!reopened.recover(&old).unwrap());
+        std::fs::remove_dir_all(directory).unwrap();
+    }
+}
+
+#[cfg(unix)]
+#[test]
+fn durable_lost_effect_reply_requires_independent_settlement_and_fences_old_writer() {
+    use crate::gateway::oauth_refresh_durable::{DurableEffectRecovery, DurableEffectUse};
+    use crate::gateway::provider::ProviderRequest;
+    use crate::gateway::wire::{sign, simulation_key};
+    use crate::gateway::witness::PrecommitInput;
+    use crate::gateway::{
+        AuditAuthority, EffectIdentity, FactAuthority, FactBinding, Origin, ProviderAuditTrust,
+        ProviderJournal, ReviewBinding, Witness, WitnessFrontier,
+    };
+
+    let directory = durable_directory("outcome");
+    let old = DurableRefreshLedger::new(&directory, "authority");
+    old.initialize().unwrap();
+    let grant = enroll_with(Confirmation::Dpop("key".into()), |input| {
+        old.enroll(input).unwrap()
+    });
+    let checked = old.checkpoint().unwrap();
+    let current = actual(grant.clone(), 14, "first-proof");
+    let effect = EffectIdentity {
+        operation: "effect".into(),
+        object: "object".into(),
+        generation: 0,
+        payload: "payload".into(),
+        action_schema: "schema".into(),
+        audience: "fhir".into(),
+    };
+    let fact = FactBinding {
+        issuer: "facts".into(),
+        subject: "subject".into(),
+        audience: "fhir".into(),
+        source: "world".into(),
+        field: "field".into(),
+        value: "value".into(),
+        generation: 0,
+        origin: Origin::Observed,
+        not_before: 10,
+        expires_at: 20,
+    };
+    let facts = [sign(&fact, &simulation_key(3)).unwrap()];
+    let mut review = ReviewBinding {
+        before: "policy".into(),
+        after: "policy".into(),
+        schema: "schema".into(),
+        source: "world".into(),
+        epoch: 0,
+        report: String::new(),
+    };
+    review.report = crate::json_sha256(&review).unwrap();
+    let mut witness = Witness::simulation();
+    let intent = witness
+        .append(PrecommitInput {
+            current_world: "world",
+            effect: &effect,
+            review: &review,
+            facts: std::slice::from_ref(&fact),
+            publications: &[],
+        })
+        .unwrap();
+    let history = witness.snapshot();
+    let log_key = witness.verifying_key();
+    let provider_key = *simulation_key(8).verifying_key();
+    let audit = AuditAuthority {
+        gateway_key: *simulation_key(4).verifying_key(),
+        log_key,
+        facts: FactAuthority::new(
+            vec![fact.clone()],
+            [("facts".into(), *simulation_key(3).verifying_key())].into(),
+            14,
+        )
+        .unwrap(),
+        minimum_size: 1,
+        independent_frontier: Some(
+            WitnessFrontier::from_checkpoint(&history.checkpoint, &log_key).unwrap(),
+        ),
+        review_trust: None,
+        prepared_publications: None,
+    };
+    let trust = ProviderAuditTrust {
+        authority: &audit,
+        provider_key: &provider_key,
+    };
+    let use_effect = |checkpoint, current| DurableEffectUse {
+        admission: DurableFinalUse {
+            checked: checkpoint,
+            replica: checkpoint,
+            current,
+            base_allowed: true,
+        },
+        effect: &effect,
+        intent: &intent,
+        history: &history,
+        trust,
+    };
+    let mut provider = ProviderJournal::default();
+    assert_eq!(
+        old.execute_effect(use_effect(&checked, &current), |effect| {
+            provider.send(ProviderRequest {
+                effect,
+                commit: &intent,
+                log_key: &log_key,
+                bindings: std::slice::from_ref(&fact),
+                facts: &facts,
+                publications: &[],
+            })?;
+            Err("simulated loss of effect reply".into())
+        })
+        .unwrap_err(),
+        "simulated loss of effect reply"
+    );
+    assert_eq!(provider.actions.len(), 1);
+
+    let cut = old.rotate_writer().unwrap();
+    let reopened = DurableRefreshLedger::new(&directory, "authority").for_writer(cut);
+    let live = reopened.checkpoint().unwrap();
+    let retry = actual(grant, 14, "fresh-proof");
+    assert!(old.revoke(verified(digest())).is_err());
+    assert!(old.rotate_writer().is_err());
+    assert!(
+        old.execute_effect(use_effect(&live, &retry), |_| panic!("fenced writer"))
+            .is_err()
+    );
+    assert!(!reopened.recover(&checked).unwrap());
+    assert!(
+        !reopened
+            .execute_effect(use_effect(&live, &retry), |_| panic!("burned effect"))
+            .unwrap()
+    );
+    assert!(reopened.revoke(verified(digest())).unwrap());
+
+    let outcomes: Vec<_> = provider.signed_outcomes().cloned().collect();
+    let evidence = |journal, outcomes| DurableEffectRecovery {
+        effect: &effect,
+        journal,
+        outcomes,
+        history: &history,
+        trust,
+    };
+    let absent = ProviderJournal::default();
+    let mut forged = outcomes.clone();
+    forged[0].signature[0] ^= 1;
+    assert!(!reopened.reconcile_effect(evidence(&provider, &[])).unwrap());
+    assert!(
+        !reopened
+            .reconcile_effect(evidence(&provider, &forged))
+            .unwrap()
+    );
+    assert!(
+        !reopened
+            .reconcile_effect(evidence(&absent, &outcomes))
+            .unwrap()
+    );
+    let alternate = simulation_key(9);
+    let decoded: crate::gateway::ProviderOutcome =
+        crate::gateway::verify(&outcomes[0], &provider_key).unwrap();
+    let substituted = [sign(&decoded, &alternate).unwrap()];
+    assert!(
+        !reopened
+            .reconcile_effect(DurableEffectRecovery {
+                trust: ProviderAuditTrust {
+                    authority: &audit,
+                    provider_key: alternate.verifying_key()
+                },
+                ..evidence(&provider, &substituted)
+            })
+            .unwrap()
+    );
+    assert!(
+        reopened
+            .reconcile_effect(evidence(&provider, &outcomes))
+            .unwrap()
+    );
+    let reopened = DurableRefreshLedger::new(&directory, "authority").for_writer(cut);
+    assert!(
+        reopened
+            .reconcile_effect(evidence(&provider, &outcomes))
+            .unwrap()
+    );
+    let checkpoint = reopened.checkpoint().unwrap();
+    assert!(
+        !reopened
+            .execute_effect(use_effect(&checkpoint, &retry), |_| panic!(
+                "settled effect"
+            ))
+            .unwrap()
+    );
+    assert_eq!(provider.actions.len(), 1);
+    std::fs::remove_dir_all(directory).unwrap();
+}

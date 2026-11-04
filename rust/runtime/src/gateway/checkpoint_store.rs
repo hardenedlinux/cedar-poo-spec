@@ -47,6 +47,12 @@ pub(super) struct LockedCheckpoint<'a> {
     _lock: File,
 }
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(super) enum CheckpointStage {
+    Staged,
+    Durable,
+}
+
 impl<'a> LockedCheckpoint<'a> {
     pub(super) fn initialize(&self, value: &impl Serialize) -> Result<(), String> {
         match fs::symlink_metadata(self.directory.join("checkpoint.json")) {
@@ -77,6 +83,14 @@ impl<'a> LockedCheckpoint<'a> {
     }
 
     pub(super) fn persist(&self, checkpoint: &impl Serialize) -> Result<(), String> {
+        self.persist_at(checkpoint, |_| Ok(()))
+    }
+
+    pub(super) fn persist_at(
+        &self,
+        checkpoint: &impl Serialize,
+        mut observe: impl FnMut(CheckpointStage) -> Result<(), String>,
+    ) -> Result<(), String> {
         let staged = self.directory.join("checkpoint.staged");
         match fs::remove_file(&staged) {
             Ok(()) => {}
@@ -91,8 +105,10 @@ impl<'a> LockedCheckpoint<'a> {
         serde_json::to_writer(&mut file, checkpoint).map_err(|e| e.to_string())?;
         file.flush().map_err(|e| e.to_string())?;
         file.sync_all().map_err(|e| e.to_string())?;
+        observe(CheckpointStage::Staged)?;
         fs::rename(staged, self.directory.join("checkpoint.json")).map_err(|e| e.to_string())?;
-        self.sync_directory()
+        self.sync_directory()?;
+        observe(CheckpointStage::Durable)
     }
 
     pub(super) fn sync_directory(&self) -> Result<(), String> {

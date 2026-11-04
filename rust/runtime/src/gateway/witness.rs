@@ -144,7 +144,7 @@ pub(super) fn verify_view<'a>(
 }
 /// Compact trusted progress, retained only after a complete public-log check.
 /// The boundary digest binds the prefix under the verified chain assumption.
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct WitnessFrontier {
     key: VerifyingKey,
     size: usize,

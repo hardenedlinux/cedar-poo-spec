@@ -1,10 +1,16 @@
 //! Durable OAuth final mediation on the shared trusted Unix checkpoint store.
 use super::oauth_refresh::{RefreshDigest, RefreshEnrollment, RefreshExchange, State};
-use crate::gateway::checkpoint_store::LockedCheckpoint;
+use crate::gateway::audit::reconcile_recovery;
+use crate::gateway::checkpoint_store::{CheckpointStage, LockedCheckpoint};
 use crate::gateway::oauth::{CurrentUse, Grant, ProofReservation};
 use crate::gateway::oauth_par::VerifiedClient;
+use crate::gateway::witness::{VerifiedLog, verify_view};
+use crate::gateway::{
+    AuditAuthority, EffectIdentity, LogSnapshot, ProviderAuditTrust, ProviderJournal,
+    Reconciliation, Signed, WitnessFrontier,
+};
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
 use std::sync::Arc;
 
@@ -15,6 +21,8 @@ use std::sync::Arc;
 pub struct DurableRevocationCheckpoint {
     version: u32,
     authority: String,
+    #[serde(default)]
+    writer: WriterCut,
     ledger: State,
 }
 
@@ -23,7 +31,23 @@ pub struct DurableRevocationCheckpoint {
 struct Image {
     checkpoint: DurableRevocationCheckpoint,
     reserved: BTreeSet<ProofReservation>,
+    #[serde(default)]
+    effects: BTreeMap<String, RetainedEffect>,
 }
+
+#[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct RetainedEffect {
+    intent: Signed,
+    anchor: Signed,
+    provider_key: Vec<u8>,
+    resolved: bool,
+}
+
+/// Authority-assigned writer incarnation. Trusted configuration binds it
+/// to the worker that received the handoff.
+#[derive(Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct WriterCut(u64);
 
 /// Actual final-use observations and the checkpoint retained at precheck.
 pub struct DurableFinalUse<'a> {
@@ -33,11 +57,42 @@ pub struct DurableFinalUse<'a> {
     pub base_allowed: bool,
 }
 
+/// Actual effect and its exact independently witnessed intent.
+pub struct DurableEffectUse<'a> {
+    pub admission: DurableFinalUse<'a>,
+    pub effect: &'a EffectIdentity,
+    pub intent: &'a Signed,
+    pub history: &'a LogSnapshot,
+    pub trust: ProviderAuditTrust<'a>,
+}
+
+/// Detached provider evidence and the independently selected audit roots.
+pub struct DurableEffectRecovery<'a> {
+    pub effect: &'a EffectIdentity,
+    pub journal: &'a ProviderJournal,
+    pub outcomes: &'a [Signed],
+    pub history: &'a LogSnapshot,
+    pub trust: ProviderAuditTrust<'a>,
+}
+
+fn anchored_history<'a>(
+    history: &'a LogSnapshot,
+    authority: &AuditAuthority,
+) -> Result<VerifiedLog<'a>, String> {
+    let verified = verify_view(history.view(), &authority.log_key, authority.minimum_size)?;
+    authority.check_history(&verified)?;
+    if authority.independent_frontier.as_ref() != Some(&verified.frontier()) {
+        return Err("OAuth effect lacks an exact independent witness frontier".into());
+    }
+    Ok(verified)
+}
+
 /// Trusted independent directory for one OAuth authority. Every worker and
 /// writer must use the same directory and retain the lock inode across recovery.
 pub struct DurableRefreshLedger<'a> {
     directory: &'a Path,
     authority: &'a str,
+    writer: WriterCut,
 }
 
 impl<'a> DurableRefreshLedger<'a> {
@@ -46,7 +101,28 @@ impl<'a> DurableRefreshLedger<'a> {
         Self {
             directory,
             authority,
+            writer: WriterCut::default(),
         }
+    }
+
+    /// Reopen for the incarnation assigned by the trusted authority.
+    pub fn for_writer(&self, writer: WriterCut) -> Self {
+        Self { writer, ..*self }
+    }
+
+    /// Serialize an authority-approved handoff with every final effect and write.
+    pub fn rotate_writer(&self) -> Result<WriterCut, String> {
+        let file = LockedCheckpoint::open(self.directory)?;
+        let mut image = self.read(&file)?;
+        let next = WriterCut(
+            self.writer
+                .0
+                .checked_add(1)
+                .ok_or("OAuth writer cut exhausted")?,
+        );
+        image.checkpoint.writer = next;
+        file.persist(&image)?;
+        Ok(next)
     }
 
     /// Explicit empty bootstrap. Recovery never bootstraps from replica data.
@@ -58,9 +134,11 @@ impl<'a> DurableRefreshLedger<'a> {
             checkpoint: DurableRevocationCheckpoint {
                 version: 1,
                 authority: self.authority.into(),
+                writer: self.writer,
                 ledger: State::default(),
             },
             reserved: BTreeSet::new(),
+            effects: BTreeMap::new(),
         })
     }
 
@@ -72,6 +150,9 @@ impl<'a> DurableRefreshLedger<'a> {
         {
             return Err("wrong OAuth checkpoint authority or version".into());
         }
+        if image.checkpoint.writer != self.writer {
+            return Err("OAuth writer fenced".into());
+        }
         file.sync_directory()?;
         Ok(image)
     }
@@ -80,6 +161,14 @@ impl<'a> DurableRefreshLedger<'a> {
         &self,
         step: impl FnOnce(&mut Arc<State>) -> Result<T, String>,
     ) -> Result<T, String> {
+        self.update_at(step, |_| Ok(()))
+    }
+
+    fn update_at<T>(
+        &self,
+        step: impl FnOnce(&mut Arc<State>) -> Result<T, String>,
+        observe: impl FnMut(CheckpointStage) -> Result<(), String>,
+    ) -> Result<T, String> {
         let file = LockedCheckpoint::open(self.directory)?;
         let mut image = self.read(&file)?;
         let position = image.checkpoint.ledger.position;
@@ -87,7 +176,7 @@ impl<'a> DurableRefreshLedger<'a> {
         let result = step(&mut ledger)?;
         if ledger.position != position {
             image.checkpoint.ledger = Arc::unwrap_or_clone(ledger);
-            file.persist(&image)?;
+            file.persist_at(&image, observe)?;
         }
         Ok(result)
     }
@@ -107,6 +196,24 @@ impl<'a> DurableRefreshLedger<'a> {
         self.update(|ledger| State::revoke(ledger, verified))
     }
 
+    #[cfg(test)]
+    pub(super) fn revoke_with_crash(
+        &self,
+        verified: VerifiedClient<RefreshDigest>,
+        crash_at: CheckpointStage,
+    ) -> Result<bool, String> {
+        self.update_at(
+            |ledger| State::revoke(ledger, verified),
+            |stage| {
+                if stage == crash_at {
+                    Err("simulated checkpoint crash".into())
+                } else {
+                    Ok(())
+                }
+            },
+        )
+    }
+
     /// Read the independently retained committed checkpoint.
     pub fn checkpoint(&self) -> Result<DurableRevocationCheckpoint, String> {
         let file = LockedCheckpoint::open(self.directory)?;
@@ -118,7 +225,105 @@ impl<'a> DurableRefreshLedger<'a> {
         Ok(self.checkpoint()? == *replica)
     }
 
-    /// Re-read the current frontier, persist any proof reservation and observe
+    fn reserve(image: &mut Image, input: DurableFinalUse<'_>) -> Result<bool, String> {
+        if input.checked != &image.checkpoint
+            || input.replica != &image.checkpoint
+            || !image.checkpoint.ledger.contains_active(input.current)
+        {
+            return Ok(false);
+        }
+        input
+            .current
+            .admit_with(input.base_allowed, |key| Ok(image.reserved.insert(key)))
+    }
+
+    /// Persist the exact intent and proof reservation before the external
+    /// observer. An observer error retains the intent and never permits resend.
+    pub fn execute_effect(
+        &self,
+        input: DurableEffectUse<'_>,
+        observe_effect: impl FnOnce(&EffectIdentity) -> Result<(), String>,
+    ) -> Result<bool, String> {
+        let history = anchored_history(input.history, input.trust.authority)?;
+        let commit = history
+            .intent(input.intent)
+            .ok_or("OAuth effect intent is not witnessed")?;
+        let operation = &commit.effect.operation;
+        if operation.is_empty()
+            || &commit.effect != input.effect
+            || commit.effect.audience != input.admission.current.target.audience
+            || history
+                .records()
+                .iter()
+                .filter(|entry| &entry.effect.operation == operation)
+                .count()
+                != 1
+        {
+            return Ok(false);
+        }
+        let file = LockedCheckpoint::open(self.directory)?;
+        let mut image = self.read(&file)?;
+        if image.effects.contains_key(operation) || !Self::reserve(&mut image, input.admission)? {
+            return Ok(false);
+        }
+        image.effects.insert(
+            operation.clone(),
+            RetainedEffect {
+                intent: input.intent.clone(),
+                anchor: input.history.checkpoint.clone(),
+                provider_key: input
+                    .trust
+                    .provider_key
+                    .to_encoded_point(false)
+                    .as_bytes()
+                    .to_vec(),
+                resolved: false,
+            },
+        );
+        file.persist(&image)?;
+        observe_effect(&commit.effect)?;
+        Ok(true)
+    }
+
+    /// Settle a retained intent only from its independent provider evidence.
+    /// Settlement preserves the operation burn and current OAuth state.
+    pub fn reconcile_effect(&self, input: DurableEffectRecovery<'_>) -> Result<bool, String> {
+        let history = anchored_history(input.history, input.trust.authority)?;
+        let file = LockedCheckpoint::open(self.directory)?;
+        let mut image = self.read(&file)?;
+        let Some(effect) = image.effects.get_mut(&input.effect.operation) else {
+            return Ok(false);
+        };
+        let prior =
+            WitnessFrontier::from_checkpoint(&effect.anchor, &input.trust.authority.log_key)?;
+        history.check_frontier(&prior)?;
+        if effect.provider_key != input.trust.provider_key.to_encoded_point(false).as_bytes()
+            || history
+                .intent(&effect.intent)
+                .is_none_or(|entry| &entry.effect != input.effect)
+        {
+            return Ok(false);
+        }
+        let report = reconcile_recovery(
+            input.journal,
+            input.outcomes,
+            &history,
+            input.trust.authority,
+            Some(input.trust.provider_key),
+            Some(&effect.intent),
+        );
+        if report != Reconciliation::default() {
+            return Ok(false);
+        }
+        if !effect.resolved {
+            effect.resolved = true;
+            file.persist(&image)?;
+        }
+        Ok(true)
+    }
+
+    /// For a synchronous observer with no recoverable external outcome,
+    /// re-read the current frontier, persist any proof reservation and observe
     /// the effect under the same lock as revocation. The observer is synchronous
     /// and must never re-enter this store.
     pub fn execute_final(
@@ -128,17 +333,8 @@ impl<'a> DurableRefreshLedger<'a> {
     ) -> Result<bool, String> {
         let file = LockedCheckpoint::open(self.directory)?;
         let mut image = self.read(&file)?;
-        if input.checked != &image.checkpoint
-            || input.replica != &image.checkpoint
-            || !image.checkpoint.ledger.contains_active(input.current)
-        {
-            return Ok(false);
-        }
         let prior = image.reserved.len();
-        if !input
-            .current
-            .admit_with(input.base_allowed, |key| Ok(image.reserved.insert(key)))?
-        {
+        if !Self::reserve(&mut image, input)? {
             return Ok(false);
         }
         if image.reserved.len() != prior {

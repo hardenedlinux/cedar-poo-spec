@@ -1171,6 +1171,45 @@ atomicity with an external recipient. The application effect protocol
 still owns unknown outcomes and reconciliation.
 
 
+*** Crash boundaries, writer handoff, and detached outcomes
+
+=Gateway.OAuth.Revocation.Crash= distinguishes a synced staged image
+from a committed image. A stop before installation leaves the prior
+authoritative state. A stop after file and directory sync preserves
+the new revocation even if the writer lost the acknowledgment.
+The Rust fault controls interrupt the actual checkpoint write at
+both boundaries and reopen the directory. They model these outcomes
+under the filesystem contract. A physical power-loss guarantee and
+the unacknowledged rename-to-directory-sync window require evidence
+from the storage backend.
+
+An authority-approved writer handoff advances the persisted cut under
+the same lock as final use and revocation. The old incarnation cannot
+write, reconcile, or emit an effect after the handoff. A recovered
+worker needs the cut assigned by trusted configuration, and a precheck
+from the preceding cut must be replaced. The cut fences stale workers
+that follow this interface. Store custody and admission to the
+control plane remain trust assumptions.
+
+For a recoverable external effect, =execute_effect= binds the actual
+effect to the exact signed precommit in the independently pinned
+witness prefix. It atomically persists the intent, the pinned provider
+key, and any DPoP reservation before invoking the observer. The
+operation stays consumed after a lost reply, including after handoff
+or a new proof. A missing provider observation leaves the outcome
+unresolved, including when the effect may never have left the worker.
+
+Settlement reuses the scoped Gateway provider audit. It requires the
+retained exact intent, a current independently authenticated witness
+prefix extending the retained anchor, the pinned provider root, and
+matching provider journal and signed outcome evidence. Missing,
+conflicting, and substituted evidence cannot settle an intent.
+Settlement updates only the outcome status. It preserves the operation
+burn, proof reservations and current revocations, and does not send
+another effect. The Rust observer is a simulation; the external
+recipient's own journal and stable operation identity remain required.
+
+
 References include [[https://www.rfc-editor.org/rfc/rfc9700.html#section-2.3][OAuth Security BCP]],
 [[https://www.rfc-editor.org/rfc/rfc8707.html][Resource Indicators]],
 [[https://www.rfc-editor.org/rfc/rfc7662.html][Token Introspection]],

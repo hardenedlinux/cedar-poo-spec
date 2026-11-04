@@ -1,4 +1,4 @@
-import CedarPooSpec.Gateway.OAuthRevocationRecovery
+import CedarPooSpec.Gateway.OAuthRevocationCrash
 
 namespace Tests.Gateway.OAuthRefresh
 open CedarPooSpec.Gateway.OAuth
@@ -16,6 +16,39 @@ private def digest : RefreshDigest := ⟨"refresh-digest"⟩
 private def tokenSender : Confirmation → PAR.TokenSender
   | .dpop key => .dpop ⟨key⟩
   | .mtls certificate => .mtls certificate
+
+private def crashExercise (durable : Revocation.Recovery.Store)
+    (read : Revocation.ReplicaRead) : Bool := Id.run do
+  let openRevocation : Revocation.Crash.Image := { oauth := durable }
+  let intent : CedarPooSpec.Gateway.EffectProtocol.CommitRef := ⟨"effect", [1], [2]⟩
+  let history : Revocation.Crash.History :=
+    ⟨"log", [intent], true, some (CedarPooSpec.Gateway.Lifecycle.WitnessFrontier.observe "log" [intent])⟩
+  let begin : Revocation.Crash.BeginInput :=
+    ⟨openRevocation, 0, 0, read, intent.operation, intent, "provider", history⟩
+  let .ok started := Revocation.Crash.beginContract.invoke Revocation.Crash.prepareBegin begin | return false
+  let some handed := Revocation.Crash.handoff started.result 0 | return false
+  let some revoked := Revocation.Crash.revoke handed 1 (verified digest) | return false
+  let stale := Revocation.Crash.recoverImage .staged handed revoked
+  let live := Revocation.Crash.recoverImage .durable handed revoked
+  let source : CedarPooSpec.ZeroTrust.FactAuthority String String :=
+    ⟨fun field => ⟨"issuer", "subject", "fhir", "source", field, "value", 0, .observed, 0, 20⟩, fun _ => true, 14⟩
+  let trust : CedarPooSpec.Gateway.EffectProtocol.ProviderAuditTrust :=
+    ⟨"provider", "log", fun _ outcome => outcome.signature == [7], fun _ _ _ => true⟩
+  let action : CedarPooSpec.Gateway.EffectProtocol.AuditRecord := ⟨intent.operation, "result"⟩
+  let outcome : CedarPooSpec.Gateway.EffectProtocol.ProviderOutcome :=
+    ⟨{}, "cedar-poo/provider-outcome", "log", ⟨action, intent⟩, [7]⟩
+  let reconcile : Revocation.Crash.ReconcileInput := ⟨live, 1, intent.operation, trust, source, history, [action], [outcome]⟩
+  let .ok settled := Revocation.Crash.reconcileContract.invoke Revocation.Crash.prepareReconcile reconcile | return false
+  return decide (stale.oauth = handed.oauth) &&
+    decide ((Refresh.RevocationInput.key ⟨durable.checkpoint.ledger, verified digest⟩) ∈ live.oauth.checkpoint.ledger.revoked) &&
+    (Revocation.Crash.revoke handed 0 (verified digest)).isNone &&
+    (Revocation.Crash.begin { begin with image := handed }).isNone &&
+    (Revocation.Crash.begin { begin with image := handed, writer := 1, checkedWriter := 1 }).isNone &&
+    (Revocation.Crash.reconcile { reconcile with outcomes := [] }).isNone &&
+    (Revocation.Crash.reconcile { reconcile with outcomes := [{ outcome with signature := [8] }] }).isNone &&
+    (settled.result.resolved.any (fun entry => decide (entry = intent))) &&
+    decide (settled.result.oauth = live.oauth) &&
+    (Revocation.Crash.begin { begin with image := settled.result, writer := 1, checkedWriter := 1 }).isNone
 
 private def exercise (confirmation replacement : Confirmation) : Bool := Id.run do
   let parSender : PAR.ParSender := match confirmation with
@@ -96,7 +129,7 @@ private def exercise (confirmation replacement : Confirmation) : Bool := Id.run 
         let senderAcceptsReplay := match confirmation with
           | .dpop _ => replay.isNone
           | .mtls _ => replay.isSome
-        senderAcceptsReplay &&
+        crashExercise durable read.toReplicaRead && senderAcceptsReplay &&
           (Revocation.Recovery.finalize { input with durable := some persisted }).isNone &&
           (Revocation.Recovery.finalize
             ⟨before.authorityId, some persisted, renewed.toReplicaRead⟩).isNone)
@@ -130,3 +163,10 @@ end Tests.Gateway.OAuthRefresh
 #print axioms CedarPooSpec.Gateway.OAuth.Revocation.Recovery.durable_revocation_blocks_final
 #print axioms CedarPooSpec.Gateway.OAuth.Revocation.Recovery.durable_reservation_blocks_final
 #print axioms CedarPooSpec.Gateway.OAuth.Revocation.Recovery.persisted_revoke_refuses_final
+
+#print axioms CedarPooSpec.Gateway.OAuth.Revocation.Crash.durable_revoke_retains_marker
+#print axioms CedarPooSpec.Gateway.OAuth.Revocation.Crash.old_writer_fenced_after_handoff
+#print axioms CedarPooSpec.Gateway.OAuth.Revocation.Crash.begin_records_burn
+#print axioms CedarPooSpec.Gateway.OAuth.Revocation.Crash.reconciliation_preserves_burn_and_revocations
+#print axioms CedarPooSpec.Gateway.OAuth.Revocation.Crash.unclean_evidence_cannot_settle
+#print axioms CedarPooSpec.Gateway.OAuth.Revocation.Crash.settlement_cannot_reopen_operation
