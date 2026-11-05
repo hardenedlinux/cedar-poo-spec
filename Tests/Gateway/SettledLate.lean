@@ -1,4 +1,4 @@
-import CedarPooSpec.Gateway.OAuthReceiptBatch
+import Tests.Gateway.SettledLatePlan
 
 namespace Tests.Gateway.SettledLate
 open CedarPooSpec.Gateway.OAuth
@@ -8,9 +8,11 @@ repeated lost confirmations. Every recovered step uses the public Contract. -/
 def alternating (image : ReceiptRecovery.Image) (delayed first : ReceiptRecovery.Input)
     (retry : Revocation.Crash.BeginInput) : Bool := Id.run do
   let operation := delayed.request.operation
+  let observe := SettledLatePlan.observe image
+  let mut observed := #[observe image delayed retry "ready" "both"]
   let mut tracked : { state : ReceiptRecovery.Image // ReceiptRecovery.Trace image state } :=
     ⟨image, .start image⟩
-  for _ in [:2] do
+  for round in [:2] do
     let before := tracked
     let item := { delayed with image := before.1, writer := before.1.oauth.writer }
     let .ok eligible := ReceiptRecovery.contract.invoke ReceiptRecovery.prepare
@@ -21,11 +23,15 @@ def alternating (image : ReceiptRecovery.Image) (delayed first : ReceiptRecovery
       | return false
     let _notInstalled := ReceiptBatch.recovery_staged_is_before staged rfl
     if staged.result != before.1 then return false
+    let role := if round = 0 then "a" else "b"
+    let peer := if round = 0 then "b" else "a"
+    observed := observed.push (observe staged.result delayed retry "staged-crash" role)
     let step := ReceiptRecovery.Trace.trans before.2 (ReceiptBatch.recovery_trace staged)
     match advanced : Revocation.Crash.handoff staged.result.oauth staged.result.oauth.writer with
     | none => return false
     | some active =>
       let next : ReceiptRecovery.Image := { staged.result with oauth := active }
+      observed := observed.push (observe next delayed retry "handoff" "authority")
       let oldWriter := ReceiptBatch.State.step { image := next } item
       let oldReplica := { item with
         image := next, writer := active.writer
@@ -34,6 +40,7 @@ def alternating (image : ReceiptRecovery.Image) (delayed first : ReceiptRecovery
       if oldWriter.stopped != some operation || oldWriter.image != next ||
           replicaStop.stopped != some operation || replicaStop.image != next then return false
       if (ReceiptRecovery.lookup next.rows operation).isSome then return false
+      observed := observed.push (observe next delayed retry "fenced" peer)
       tracked := ⟨next, .authorization step (.handoff (.start staged.result.oauth) advanced)⟩
   let item := { delayed with image := tracked.1, writer := tracked.1.oauth.writer }
   let input : ReceiptBatch.RecoveryInput := ⟨tracked.1, item, .durable⟩
@@ -42,20 +49,26 @@ def alternating (image : ReceiptRecovery.Image) (delayed first : ReceiptRecovery
   let historyPrefix := ReceiptRecovery.Trace.trans tracked.2 (ReceiptBatch.recovery_trace installed)
   let row := ReceiptRecovery.Request.stored delayed.request
   if bound : ReceiptRecovery.lookup installed.result.rows operation = some row then
+    observed := observed.push (observe installed.result delayed retry "durable-crash" "a")
+    observed := observed.push (observe installed.result delayed retry "confirmed" "b")
     let mut resumed : { state : ReceiptRecovery.Image //
         ReceiptRecovery.Trace installed.result state } := ⟨installed.result, .start installed.result⟩
-    for _ in [:4] do
+    for round in [:4] do
       let before := resumed
       match advanced : Revocation.Crash.handoff before.1.oauth before.1.oauth.writer with
       | none => return false
       | some active =>
         let next : ReceiptRecovery.Image := { before.1 with oauth := active }
+        observed := observed.push (observe next delayed retry "handoff" "authority")
         let handoff : ReceiptRecovery.Trace installed.result next :=
           .authorization before.2 (.handoff (.start before.1.oauth) advanced)
         let original := { delayed with image := next, writer := active.writer }
         let duplicate : ReceiptBatch.RecoveryInput := ⟨next, original, .durable⟩
         let .ok confirmed := ReceiptBatch.recoveryContract.invoke ReceiptBatch.prepareRecovery duplicate
           | return false
+        let role := if round % 2 = 0 then "a" else "b"
+        let peerRole := if round % 2 = 0 then "b" else "a"
+        observed := observed.push (observe confirmed.result delayed retry "confirmation-lost" role)
         let prior := { first with image := confirmed.result, writer := active.writer }
         let conflicting := { original with request := { original.request with outcomeSource :=
           { original.request.outcomeSource with signature := [99] } } }
@@ -63,6 +76,7 @@ def alternating (image : ReceiptRecovery.Image) (delayed first : ReceiptRecovery
           ⟨confirmed.result, [prior, conflicting, original, original]⟩ | return false
         if confirmed.result != next || peer.result.image != next ||
             peer.result.pending != [operation] then return false
+        observed := observed.push (observe peer.result.image delayed retry "confirmed" peerRole)
         have folded : ReceiptRecovery.Trace confirmed.result peer.result.image := by
           have same := peer.logic
           change ReceiptBatch.Input.run _ = peer.result at same
@@ -72,6 +86,8 @@ def alternating (image : ReceiptRecovery.Image) (delayed first : ReceiptRecovery
         resumed := ⟨peer.result.image, ReceiptRecovery.Trace.trans handoff
           (ReceiptRecovery.Trace.trans (ReceiptBatch.recovery_trace confirmed) folded)⟩
     let _immutable := ReceiptRecovery.trace_preserves_original resumed.2 bound
+    let _identity := ReceiptRecovery.trace_preserves_receipt_identity resumed.2 bound
+    let _sources := ReceiptRecovery.trace_preserves_receipt_sources resumed.2 bound
     let complete := ReceiptRecovery.Trace.trans historyPrefix resumed.2
     let finalRetry := { retry with
       image := resumed.1.oauth, operation := operation
@@ -79,7 +95,9 @@ def alternating (image : ReceiptRecovery.Image) (delayed first : ReceiptRecovery
       writer := resumed.1.oauth.writer, checkedWriter := resumed.1.oauth.writer }
     if burned : (image.oauth.retained.any fun entry => entry.intent.operation == finalRetry.operation) = true then
       let _noResend := ReceiptRecovery.trace_cannot_resend complete finalRetry burned
-      return decide (ReceiptRecovery.lookup resumed.1.rows operation = some row) &&
+      observed := observed.push (observe resumed.1 delayed retry "recovered" "a")
+      return decide (observed.toList = SettledLatePlan.steps) &&
+        decide (ReceiptRecovery.lookup resumed.1.rows operation = some row) &&
         (Revocation.Crash.begin finalRetry).isNone
     else return false
   else return false
@@ -161,3 +179,6 @@ end Tests.Gateway.SettledLate
 #print axioms CedarPooSpec.Gateway.OAuth.ReceiptBatch.recovery_keeps_authorization
 #print axioms CedarPooSpec.Gateway.OAuth.ReceiptBatch.recovery_refused_is_before
 #print axioms CedarPooSpec.Gateway.OAuth.ReceiptBatch.recovery_fenced_is_before
+
+#print axioms CedarPooSpec.Gateway.OAuth.ReceiptRecovery.trace_preserves_receipt_identity
+#print axioms CedarPooSpec.Gateway.OAuth.ReceiptRecovery.trace_preserves_receipt_sources

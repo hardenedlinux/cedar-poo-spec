@@ -1,3 +1,4 @@
+use super::settled_late_trace::Observer;
 use super::{OwnedWorker, RestartFixture, run_worker, takeover, wait_for_marker};
 use crate::gateway::checkpoint_store::CheckpointStage;
 use crate::gateway::oauth_refresh_durable::{DurableEffectRecovery, DurableRefreshLedger};
@@ -13,6 +14,8 @@ pub(super) fn exercise(
     first: &Signed,
     delayed: &Signed,
 ) -> ReceiverCut {
+    let mut observer = Observer::new(root, fixture, delayed);
+    observer.observe(fixture, "ready", "both");
     let before_writer = fixture.writer.generation();
     let oauth_path = root.join("oauth");
     let checkpoint = oauth_path.join("checkpoint.json");
@@ -55,6 +58,7 @@ pub(super) fn exercise(
         let peer = OwnedWorker::spawn(&fixture_path, &peer_phase);
         crashing.crash();
         wait_for_marker(&root.join(format!("{peer_phase}-paused")));
+        observer.observe(fixture, "staged-crash", role);
         assert_eq!(std::fs::read(&checkpoint).unwrap(), stable_unmapped);
         let current =
             DurableRefreshLedger::new(&oauth_path, "settlement-race").for_writer(fixture.writer);
@@ -67,9 +71,11 @@ pub(super) fn exercise(
                 .is_none()
         );
         takeover(root, fixture);
+        observer.observe(fixture, "handoff", "authority");
         let after_handoff = std::fs::read(&checkpoint).unwrap();
         std::fs::write(root.join(format!("{peer_phase}-continue")), []).unwrap();
         peer.finish(&peer_phase);
+        observer.observe(fixture, "fenced", peer_role);
         assert_eq!(std::fs::read(&checkpoint).unwrap(), after_handoff);
         let current =
             DurableRefreshLedger::new(&oauth_path, "settlement-race").for_writer(fixture.writer);
@@ -90,7 +96,9 @@ pub(super) fn exercise(
     wait_for_marker(&root.join("settled-late-committed"));
     let peer = OwnedWorker::spawn(&fixture_path, "settled-late-peer-b");
     winner.crash();
+    observer.observe(fixture, "durable-crash", "a");
     peer.finish("settled-late-peer-b");
+    observer.observe(fixture, "confirmed", "b");
     let current =
         DurableRefreshLedger::new(&oauth_path, "settlement-race").for_writer(fixture.writer);
     let bound = current
@@ -108,6 +116,7 @@ pub(super) fn exercise(
             .contains(&operation)
     );
     let mut cut = takeover(root, fixture);
+    observer.observe(fixture, "handoff", "authority");
     for (round, role, peer_role) in [(0, "a", "b"), (1, "b", "a"), (2, "a", "b"), (3, "b", "a")] {
         std::fs::write(&fixture_path, serde_json::to_vec(fixture).unwrap()).unwrap();
         let stable = std::fs::read(&checkpoint).unwrap();
@@ -117,7 +126,9 @@ pub(super) fn exercise(
         let peer_phase = format!("settled-late-confirm-{peer_role}");
         let peer = OwnedWorker::spawn(&fixture_path, &peer_phase);
         lost.crash();
+        observer.observe(fixture, "confirmation-lost", role);
         peer.finish(&peer_phase);
+        observer.observe(fixture, "confirmed", peer_role);
         assert_eq!(std::fs::read(&checkpoint).unwrap(), stable);
         let current =
             DurableRefreshLedger::new(&oauth_path, "settlement-race").for_writer(fixture.writer);
@@ -152,10 +163,13 @@ pub(super) fn exercise(
         );
         if round < 3 {
             cut = takeover(root, fixture);
+            observer.observe(fixture, "handoff", "authority");
         }
     }
     std::fs::write(&fixture_path, serde_json::to_vec(fixture).unwrap()).unwrap();
     run_worker(&fixture_path, "settled-late-confirm-a");
+    observer.observe(fixture, "recovered", "a");
+    observer.finish();
     let later_handoffs = fixture.writer.generation() - before_writer;
     assert_eq!(later_handoffs, 6);
     eprintln!(
@@ -163,7 +177,7 @@ pub(super) fn exercise(
         serde_json::json!({
             "previous_handoffs": 7, "later_handoffs": later_handoffs, "workers": 2,
             "staged_crashes": 2, "durable_crashes": 1, "lost_confirmations": 4,
-            "fenced_suffixes": 2, "missing_preserved": true,
+            "fenced_suffixes": 2, "missing_preserved": true, "aligned_steps": 22,
             "out_of_order": true, "duplicates_idempotent": true, "conflicts_refused": true,
             "original_digest_retained": true, "durable_ack_lost": true,
             "confirmation_lost": true, "pending_discovery_cleared": true,

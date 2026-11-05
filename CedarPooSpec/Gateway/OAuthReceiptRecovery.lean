@@ -250,4 +250,23 @@ theorem trace_cannot_resend (history : Trace initial after)
     sameBurn.trans burned
   exact Revocation.Crash.burned_operation_cannot_begin _ afterBurn
 
+/-- Read back the operation's authenticated identity without discarding its authority roots. -/
+def Image.receiptIdentity (image : Image) (operation : String) : Option ReceiptIdentity.Identity :=
+  (lookup image.rows operation).map (·.identity)
+
+/-- Source equality remains separate from digest equality, including under digest collisions. -/
+def Image.receiptSources (image : Image) (operation : String) :
+    Option (ReceiptIdentity.SignedSource × ReceiptIdentity.SignedSource) :=
+  (lookup image.rows operation).map (fun row => (row.intentSource, row.outcomeSource))
+
+theorem trace_preserves_receipt_identity (history : Trace initial after)
+    (bound : lookup initial.rows operation = some row) :
+    after.receiptIdentity operation = some row.identity := by
+  simp [Image.receiptIdentity, trace_preserves_original history bound]
+
+theorem trace_preserves_receipt_sources (history : Trace initial after)
+    (bound : lookup initial.rows operation = some row) :
+    after.receiptSources operation = some (row.intentSource, row.outcomeSource) := by
+  simp [Image.receiptSources, trace_preserves_original history bound]
+
 end CedarPooSpec.Gateway.OAuth.ReceiptRecovery

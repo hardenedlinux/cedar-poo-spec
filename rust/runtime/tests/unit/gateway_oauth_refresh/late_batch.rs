@@ -25,6 +25,8 @@ use std::time::{Duration, Instant};
 mod settled_batch;
 #[path = "settled_late.rs"]
 mod settled_late;
+#[path = "settled_late_trace.rs"]
+mod settled_late_trace;
 #[path = "settled_mapping.rs"]
 mod settled_mapping;
 #[path = "recovery_trace.rs"]

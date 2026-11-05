@@ -1681,8 +1681,40 @@ discovery stops reporting the successfully migrated item. A receipt supplies
 recovery evidence only: it neither renews authorization nor permits the revoked
 operation to execute again.
 
+The native Lean exporter also writes =gateway-settled-late-plan.json= after
+the typed OAuth replay validates the complete fixture. This separate, versioned
+fixture preserves the original 90-step plan and its protocol. The extended batch
+compares 22 observations in exact order: ready, two staged crashes with handoffs
+and fenced peers, durable installation, and four lost confirmations followed by
+independent confirmations and final recovery. Missing, extra or reordered steps
+and differing fields fail the same native gate.
+
+Each Lean observation is computed from the recovered image and the shared
+=receiptIdentity= and =receiptSources= readback. Before installation, receipt
+identity fields and original idempotency are false; after installation they bind
+the original operation, receiver, provider, witness, version and exact signed
+sources. The trace theorems preserve both the identity and raw source projections.
+The native observer independently verifies the provider signature, retained
+intent and independent receiver evidence, then compares these portable predicates.
+It emits actual source SHA-256 values and the stored native identity in each
+=SETTLED-LATE-STEP-OK= record. Abstract Lean digest names are not compared with
+native digest strings. Exact signed-source checks remain required even when
+model digest values collide.
+
+The agreement concerns this finite projection and its frame conditions.
+Logical target and missing-receipt roles identify different native operations.
+Lean checks the missing mapping and retained-intent frame; Rust additionally
+compares the complete missing-evidence observation, every retained signed intent,
+the prior mapped operation and the current receiver generation. Each observation
+probes conflict refusal, old-writer and old-replica fencing, and revoked final use.
+Observers cannot write checkpoints. Once bound, source substitution, operation
+substitution and a foreign authority are also rejected at every observation.
+Signature verification and persistence-boundary observations remain trusted
+inputs to the formal model; this is not a proof of the native cryptographic
+implementation or of all possible scheduler interleavings.
+
 =SETTLED-LATE-OK= reports the observed handoff count, two staged crashes, one
-durable crash, four lost confirmations and the checked recovery invariants.
+durable crash, four lost confirmations, 22 aligned steps and the checked recovery invariants.
 The boundary observation is a trusted persistence input to the Lean model.
 Rust injects faults at the matching checkpoint hooks on a trusted local
 filesystem. These are deterministic process-fault simulations, not proofs of
