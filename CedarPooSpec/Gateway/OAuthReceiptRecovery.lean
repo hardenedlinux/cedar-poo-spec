@@ -79,7 +79,9 @@ structure Input where
 
 def checkedImage (input : Input) : Option Revocation.Crash.Image := do
   if input.writer ≠ input.image.oauth.writer ∨
-      input.request.operation ≠ input.recovery.audit.operation then none else do
+      input.request.operation ≠ input.recovery.audit.operation ∨
+      input.authority.providerKey ≠ input.recovery.audit.trust.providerKey ∨
+      input.authority.witnessKey ≠ input.recovery.audit.trust.logKey then none else do
   let _ ← resolve input.authority input.request
   if (lookup input.image.rows input.request.operation).isNone &&
       Revocation.Crash.effectStatus input.image.oauth input.request.operation != .unresolved then none else do
@@ -107,6 +109,14 @@ def prepare (input : Input) : Except String (Image × Unit) :=
 
 theorem stale_writer_refused (stale : input.writer ≠ input.image.oauth.writer) :
     persist input = none := by simp [persist, checkedImage, stale]
+
+theorem mismatched_audit_root_refused
+    (wrong : input.authority.providerKey ≠ input.recovery.audit.trust.providerKey ∨
+      input.authority.witnessKey ≠ input.recovery.audit.trust.logKey) :
+    persist input = none := by
+  rcases wrong with provider | witness
+  · simp [persist, checkedImage, provider]
+  · simp [persist, checkedImage, witness]
 
 theorem replacement_refused
     (bound : lookup input.image.rows input.request.identity.operation = some prior)

@@ -70,10 +70,17 @@ private def seedReceiptMapping (input : Receiver.LegacyBatchInput)
       if entry.intent.operation = operation then { entry with receiver := none, legacy := true } else entry) }
   let initial : ReceiptRecovery.Input :=
     ⟨⟨before, []⟩, before.writer, authority, request, original⟩
-  let .ok receipt := ReceiptRecovery.contract.invoke ReceiptRecovery.prepare initial | none
-  let staged := Revocation.Crash.recoverImage .staged initial.image receipt.result
-  let durable := Revocation.Crash.recoverImage .durable initial.image receipt.result
-  if staged.rows.isEmpty && durable.oauth = input.image then some durable else none
+  let foreignAuthority := { authority with providerKey := authority.providerKey ++ "-foreign" }
+  let foreignRequest := { request with identity :=
+    { request.identity with providerKey := foreignAuthority.providerKey } }
+  let foreign := { initial with authority := foreignAuthority, request := foreignRequest }
+  let foreignWitness := { authority with witnessKey := authority.witnessKey ++ "-foreign" }
+  let wrongWitness := { initial with authority := foreignWitness }
+  if (ReceiptRecovery.persist foreign).isSome || (ReceiptRecovery.persist wrongWitness).isSome then none else do
+    let .ok receipt := ReceiptRecovery.contract.invoke ReceiptRecovery.prepare initial | none
+    let staged := Revocation.Crash.recoverImage .staged initial.image receipt.result
+    let durable := Revocation.Crash.recoverImage .durable initial.image receipt.result
+    if staged.rows.isEmpty && durable.oauth = input.image then some durable else none
 
 private def identityMappingChecks (input : Receiver.LegacyBatchInput)
     (original missing : Receiver.ManagedReconciliation) (image : Revocation.Crash.Image)
@@ -892,3 +899,4 @@ end Tests.Gateway.OAuthRefresh
 #print axioms CedarPooSpec.Gateway.OAuth.ReceiptRecovery.durable_mapping_recovers_without_ack
 #print axioms CedarPooSpec.Gateway.OAuth.ReceiptRecovery.stale_writer_refused
 #print axioms CedarPooSpec.Gateway.OAuth.ReceiptRecovery.replacement_refused
+#print axioms CedarPooSpec.Gateway.OAuth.ReceiptRecovery.mismatched_audit_root_refused

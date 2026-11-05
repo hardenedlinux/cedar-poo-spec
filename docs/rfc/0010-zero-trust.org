@@ -1546,7 +1546,10 @@ authority, provider and witness keys, operation and source digests together
 with the exact signed outcome. The existing retained intent supplies the
 other signed source, avoiding a second persisted intent copy. Native
 construction reuses the authenticated shared audit and the locked independent
-receiver check. It introduces no second signature-verification pipeline.
+receiver check. The mapping Contract explicitly equates its provider and
+witness identities with those audit roots. A relabelled authority cannot
+persist a mapping under another audit root. Native construction introduces
+no second signature-verification pipeline.
 
 The mapping is written under the existing writer and receiver locks before
 the checkpoint acknowledgment. The same checkpoint persist operation owns
