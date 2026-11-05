@@ -628,7 +628,11 @@ fn durable_lost_effect_reply_requires_independent_settlement_and_fences_old_writ
                 },
             )
         };
-    assert!(!switched.reconcile_effect(unknown_reconciliation()).unwrap());
+    assert!(
+        !winner
+            .reconcile_oauth(&switched, unknown_reconciliation())
+            .unwrap()
+    );
     assert!(
         retry_uncertain(&winner, &switched, &current_checkpoint)
             .unwrap()
@@ -779,7 +783,11 @@ fn durable_lost_effect_reply_requires_independent_settlement_and_fences_old_writ
     assert!(promoted.evidence(&fresh_id).unwrap().is_none());
 
     assert!(switched.effect_status(&uncertain_id).is_err());
-    assert!(!worker.reconcile_effect(unknown_reconciliation()).unwrap());
+    assert!(
+        !promoted
+            .reconcile_oauth(&worker, unknown_reconciliation())
+            .unwrap()
+    );
     assert!(
         retry_uncertain(&promoted, &worker, &revoked)
             .unwrap()
@@ -838,11 +846,14 @@ fn durable_lost_effect_reply_requires_independent_settlement_and_fences_old_writ
         },
     };
     assert!(
-        worker
-            .reconcile_effect(DurableEffectRecovery {
-                history: &history,
-                ..late_evidence(&recovered.journal, &recovered_outcomes)
-            })
+        promoted
+            .reconcile_oauth(
+                &worker,
+                DurableEffectRecovery {
+                    history: &history,
+                    ..late_evidence(&recovered.journal, &recovered_outcomes)
+                }
+            )
             .is_err()
     );
 
@@ -860,21 +871,28 @@ fn durable_lost_effect_reply_requires_independent_settlement_and_fences_old_writ
         late_evidence(&recovered.journal, &[]),
         late_evidence(&recovered.journal, &conflicting_outcomes),
         late_evidence(&recovered.journal, &both),
+        late_evidence(&conflicting_journal, &conflicting_outcomes),
     ] {
-        assert!(!worker.reconcile_effect(rejected).unwrap());
+        assert!(!promoted.reconcile_oauth(&worker, rejected).unwrap());
         assert_eq!(
             worker.effect_status(&operation).unwrap(),
             EffectStatus::Unresolved
         );
     }
     assert!(
-        switched
-            .reconcile_effect(late_evidence(&recovered.journal, &recovered_outcomes))
+        promoted
+            .reconcile_oauth(
+                &switched,
+                late_evidence(&recovered.journal, &recovered_outcomes)
+            )
             .is_err()
     );
     assert!(
-        worker
-            .reconcile_effect(late_evidence(&recovered.journal, &recovered_outcomes))
+        promoted
+            .reconcile_oauth(
+                &worker,
+                late_evidence(&recovered.journal, &recovered_outcomes)
+            )
             .unwrap()
     );
     let settlement_writer = worker.rotate_writer().unwrap();
@@ -882,8 +900,11 @@ fn durable_lost_effect_reply_requires_independent_settlement_and_fences_old_writ
         DurableRefreshLedger::new(&oauth_directory, "receiver-oauth").for_writer(settlement_writer);
     let current_revoked = restarted.checkpoint().unwrap();
     assert!(
-        worker
-            .reconcile_effect(late_evidence(&recovered.journal, &recovered_outcomes))
+        promoted
+            .reconcile_oauth(
+                &worker,
+                late_evidence(&recovered.journal, &recovered_outcomes)
+            )
             .is_err()
     );
     // The conflicting pair would pass an audit in isolation, but cannot
@@ -902,13 +923,19 @@ fn durable_lost_effect_reply_requires_independent_settlement_and_fences_old_writ
         crate::gateway::Reconciliation::default()
     );
     assert!(
-        !restarted
-            .reconcile_effect(late_evidence(&conflicting_journal, &conflicting_outcomes))
+        !promoted
+            .reconcile_oauth(
+                &restarted,
+                late_evidence(&conflicting_journal, &conflicting_outcomes)
+            )
             .unwrap()
     );
     assert!(
-        restarted
-            .reconcile_effect(late_evidence(&recovered.journal, &recovered_outcomes))
+        promoted
+            .reconcile_oauth(
+                &restarted,
+                late_evidence(&recovered.journal, &recovered_outcomes)
+            )
             .unwrap()
     );
     let redirected =
@@ -931,6 +958,7 @@ fn durable_lost_effect_reply_requires_independent_settlement_and_fences_old_writ
             .unwrap();
     let retained = legacy["effects"][&operation.0].as_object_mut().unwrap();
     assert!(retained.remove("settled_outcome").is_some());
+    assert!(retained.remove("recovery_origin").is_some());
     std::fs::write(
         legacy_dir.join("checkpoint.json"),
         serde_json::to_vec(&legacy).unwrap(),

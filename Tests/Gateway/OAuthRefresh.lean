@@ -24,7 +24,7 @@ private def crashExercise (durable : Revocation.Recovery.Store)
   let history : Revocation.Crash.History :=
     ⟨"log", [intent], true, some (CedarPooSpec.Gateway.Lifecycle.WitnessFrontier.observe "log" [intent])⟩
   let begin : Revocation.Crash.BeginInput :=
-    ⟨openRevocation, 0, 0, read, intent.operation, intent, "provider", history⟩
+    ⟨openRevocation, 0, 0, read, intent.operation, intent, "provider", history, none⟩
   let .ok started := Revocation.Crash.beginContract.invoke Revocation.Crash.prepareBegin begin | return false
   let some handed := Revocation.Crash.handoff started.result 0 | return false
   let some revoked := Revocation.Crash.revoke handed 1 (verified digest) | return false
@@ -44,8 +44,10 @@ private def crashExercise (durable : Revocation.Recovery.Store)
   let request : Receiver.Input := ⟨receiver, delivery, dispatch, "channel-one", intent, true⟩
   let .ok delivered := Receiver.contract.invoke Receiver.prepare request | return false
   let authority := openRevocation.oauth.checkpoint.authorityId
-  let primary : Receiver.Checkpoint := ⟨"primary", receiver, none, some authority⟩
-  let managed : Receiver.ManagedInput := ⟨some primary, "primary", request, begin⟩
+  let primary : Receiver.Checkpoint := ⟨"primary", receiver, none, some authority, "receiver-pin"⟩
+  let managedBegin := { begin with receiver := some primary.binding }
+  let .ok managedStart := Revocation.Crash.beginContract.invoke Revocation.Crash.prepareBegin managedBegin | return false
+  let managed : Receiver.ManagedInput := ⟨some primary, "primary", request, managedBegin⟩
   let .ok committed := Receiver.managedContract.invoke Receiver.prepareManaged managed | return false
   let reservedOnly := Receiver.recoverReservation started primary
   let firstTakeover : Receiver.PromotionInput :=
@@ -66,7 +68,7 @@ private def crashExercise (durable : Revocation.Recovery.Store)
     ⟨"log", [changedIntent], true,
       some (CedarPooSpec.Gateway.Lifecycle.WitnessFrontier.observe "log" [changedIntent])⟩
   let retryAuthorization : Revocation.Crash.BeginInput :=
-    ⟨finalWriter, 2, 2, read, intent.operation, changedIntent, "provider", reviewed⟩
+    ⟨finalWriter, 2, 2, read, intent.operation, changedIntent, "provider", reviewed, none⟩
   let newCut := { dispatch with cut := second.result.image.cut }
   let changedOutcome := { outcome with receipt := ⟨action, changedIntent⟩ }
   let retryDelivery : Receiver.Input :=
@@ -119,6 +121,17 @@ private def crashExercise (durable : Revocation.Recovery.Store)
   let some postRevoked := Revocation.Crash.revoke postStandby 3 (verified digest) | return false
   let some postActive := Revocation.Crash.handoff postRevoked 3 | return false
   let confirmed : Revocation.Crash.ReconcileInput := { late with image := postActive, writer := 4 }
+  let some managedStandby := Revocation.Crash.handoff committed.result.oauth 0 | return false
+  let some managedRevoked := Revocation.Crash.revoke managedStandby 1 (verified digest) | return false
+  let some managedActive := Revocation.Crash.handoff managedRevoked 1 | return false
+  let managedAudit := { late with image := managedActive }
+  let anchored : Receiver.ManagedReconciliation :=
+    ⟨some successor.result, "successor", successor.result.image, managedAudit⟩
+  let conflictAudit := { managedAudit with actions := [differentAction], outcomes := [conflicting] }
+  let .ok anchoredSettlement := Receiver.managedReconciliationContract.invoke
+    Receiver.prepareManagedReconciliation anchored | return false
+  let foreignPin := { successor.result with receiverAuthority := "foreign-pin" }
+  let anchoredRetry := { managedAudit with image := anchoredSettlement.result }
   let revokedUse := { begin with image := live, writer := 1, checkedWriter := 1 }
   let afterTakeover : Receiver.ManagedInput :=
     ⟨some successor.result, "successor", retry, revokedUse⟩
@@ -134,6 +147,12 @@ private def crashExercise (durable : Revocation.Recovery.Store)
     decide (lateSettlement.result.settledOutcome intent.operation = some outcome) &&
     decide (Revocation.Crash.reconcile { late with image := lateSettlement.result } = some lateSettlement.result) &&
     (Revocation.Crash.reconcile conflictingEvidence).isNone &&
+    (Revocation.Crash.reconcile managedAudit).isNone &&
+    (Receiver.reconcileManaged { anchored with audit := conflictAudit }).isNone &&
+    (Receiver.reconcileManaged { anchored with placement := "standby" }).isNone &&
+    (Receiver.reconcileManaged { anchored with independent := some foreignPin }).isNone &&
+    decide (anchoredSettlement.result.settledOutcome intent.operation = some outcome) &&
+    decide (Receiver.reconcileManaged { anchored with audit := anchoredRetry } = some anchoredSettlement.result) &&
     (Revocation.Crash.reconcile { conflictingEvidence with image := durableWithoutAck }).isNone &&
     decide (Revocation.Crash.reconcile confirmed = some postActive) &&
     (Revocation.Crash.reconcile { conflictingEvidence with image := postActive, writer := 4 }).isNone &&
@@ -144,7 +163,7 @@ private def crashExercise (durable : Revocation.Recovery.Store)
     (Receiver.receiveManaged unknownRetry).isNone &&
     decide (Revocation.Crash.effectStatus settled.result intent.operation = .reconciled) &&
     decide (committed.result.receiver.image = delivered.result) &&
-    decide (committed.result.oauth = started.result) &&
+    decide (committed.result.oauth = managedStart.result) &&
     decide (successor.result.oauthAuthority = some authority) &&
     (Receiver.receiveManaged afterTakeover).isNone &&
     (Receiver.promote { promotion with independent := none }).isNone &&
@@ -328,3 +347,6 @@ end Tests.Gateway.OAuthRefresh
 
 #print axioms CedarPooSpec.Gateway.OAuth.Revocation.Crash.serialized_conflict_cannot_win
 #print axioms CedarPooSpec.Gateway.OAuth.Revocation.Crash.committed_settlement_survives_recovery
+
+#print axioms CedarPooSpec.Gateway.OAuth.Receiver.conflict_first_cannot_settle
+#print axioms CedarPooSpec.Gateway.OAuth.Receiver.managed_reconciliation_pins_committed_outcome

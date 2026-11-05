@@ -1340,6 +1340,22 @@ the original log, and the pinned provider key. Missing evidence,
 mismatched observations and competing outcomes in the evidence
 bundle leave the operation unresolved.
 
+Managed delivery records the receiver scope and independent
+checkpoint identity in the OAuth reservation before sending.
+During reconciliation, the OAuth writer reads the committed
+outcome from that checkpoint's active, exact receiver image.
+The audited incoming envelope must match those committed bytes.
+An earlier conflicting envelope can pass signature and journal
+checks in isolation, but it cannot settle the managed operation.
+A copied checkpoint under a different authority and a former
+active replica also cannot supply the observation.
+
+Explicitly detached delivery uses the detached audit entry point.
+Legacy unresolved reservations lack a recorded recovery origin
+and remain reserved until a trusted migration can establish one.
+A legacy settlement that already has an exact outcome identity
+can confirm only that previously recorded outcome.
+
 The first clean audit durably binds the canonical identity of the
 signed outcome. A later audit of that same outcome is idempotent.
 A different signed outcome cannot replace it, even if presented

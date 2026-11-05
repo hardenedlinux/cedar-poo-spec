@@ -182,8 +182,78 @@ fn concurrent_settlement_survives_lost_acknowledgment_and_handoffs() {
         );
     }
     assert!(
-        oauth
-            .reconcile_effect_at(evidence(&original.journal, &signed), |stage| {
+        !active
+            .reconcile_oauth(&oauth, evidence(&conflicting, &signed_conflict))
+            .unwrap()
+    );
+    assert!(
+        !oauth
+            .reconcile_effect(evidence(&original.journal, &signed))
+            .unwrap()
+    );
+    assert_eq!(
+        oauth.effect_status(&operation).unwrap(),
+        EffectStatus::Unresolved
+    );
+
+    let legacy_path = directory.join("legacy-oauth");
+    std::fs::create_dir(&legacy_path).unwrap();
+    let mut legacy: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(oauth_path.join("checkpoint.json")).unwrap())
+            .unwrap();
+    assert!(
+        legacy["effects"][&operation.0]
+            .as_object_mut()
+            .unwrap()
+            .remove("recovery_origin")
+            .is_some()
+    );
+    std::fs::write(
+        legacy_path.join("checkpoint.json"),
+        serde_json::to_vec(&legacy).unwrap(),
+    )
+    .unwrap();
+    let legacy_oauth = DurableRefreshLedger::new(&legacy_path, "settlement-race");
+    assert!(
+        !legacy_oauth
+            .reconcile_effect(evidence(&original.journal, &signed))
+            .unwrap()
+    );
+    assert_eq!(
+        legacy_oauth.effect_status(&operation).unwrap(),
+        EffectStatus::Unresolved
+    );
+
+    let copied_pin = directory.join("foreign-pin");
+    std::fs::create_dir(&copied_pin).unwrap();
+    std::fs::copy(
+        pin.join("checkpoint.json"),
+        copied_pin.join("checkpoint.json"),
+    )
+    .unwrap();
+    let foreign = DurableReceiver::managed(
+        &primary,
+        &copied_pin,
+        ReceiverTrust {
+            scope: "settlement-race",
+            sender: sender.verifying_key(),
+            witness: &log_key,
+            provider: &provider,
+        },
+    )
+    .unwrap();
+    assert_eq!(
+        foreign.evidence(&operation).unwrap().unwrap().outcome,
+        signed[0]
+    );
+    assert!(
+        !foreign
+            .reconcile_oauth(&oauth, evidence(&original.journal, &signed))
+            .unwrap()
+    );
+    assert!(
+        active
+            .reconcile_oauth_at(&oauth, evidence(&original.journal, &signed), |stage| {
                 assert!(stage == CheckpointStage::Staged);
                 Err("settlement stopped before commit".into())
             })
@@ -200,8 +270,9 @@ fn concurrent_settlement_survives_lost_acknowledgment_and_handoffs() {
         let (started, contender_started) = mpsc::channel();
         let original_input = evidence(&original.journal, &signed);
         let conflict_input = evidence(&conflicting, &signed_conflict);
+        let receiver = &active;
         let first = scope.spawn(move || {
-            open().reconcile_effect_at(original_input, |stage| match stage {
+            receiver.reconcile_oauth_at(&open(), original_input, |stage| match stage {
                 CheckpointStage::Staged => {
                     staged.send(()).unwrap();
                     proceed.recv().map_err(|error| error.to_string())
@@ -212,7 +283,7 @@ fn concurrent_settlement_survives_lost_acknowledgment_and_handoffs() {
         staged_observed.recv().unwrap();
         let second = scope.spawn(move || {
             started.send(()).unwrap();
-            open().reconcile_effect(conflict_input)
+            receiver.reconcile_oauth(&open(), conflict_input)
         });
         contender_started.recv().unwrap();
         release.send(()).unwrap();
@@ -264,20 +335,25 @@ fn concurrent_settlement_survives_lost_acknowledgment_and_handoffs() {
     let settled = receiver(&successor).evidence(&operation).unwrap().unwrap();
     assert_eq!(settled.outcome, signed[0]);
     assert!(
-        standby_writer
-            .reconcile_effect(evidence(&original.journal, &signed))
+        receiver(&standby)
+            .reconcile_oauth(&writer, evidence(&settled.journal, &signed))
             .is_err()
     );
     assert!(
-        writer
-            .reconcile_effect_at(evidence(&settled.journal, &signed), |_| {
+        receiver(&successor)
+            .reconcile_oauth(&standby_writer, evidence(&original.journal, &signed))
+            .is_err()
+    );
+    assert!(
+        receiver(&successor)
+            .reconcile_oauth_at(&writer, evidence(&settled.journal, &signed), |_| {
                 panic!("idempotent confirmation attempted to rewrite the settlement")
             })
             .unwrap()
     );
     assert!(
-        !writer
-            .reconcile_effect(evidence(&conflicting, &signed_conflict))
+        !receiver(&successor)
+            .reconcile_oauth(&writer, evidence(&conflicting, &signed_conflict))
             .unwrap()
     );
     assert_eq!(

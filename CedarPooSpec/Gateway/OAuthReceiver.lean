@@ -146,7 +146,11 @@ structure Checkpoint where
   image : Image
   handoff : Option Handoff := none
   oauthAuthority : Option String := none
+  receiverAuthority : String := ""
   deriving DecidableEq
+
+def Checkpoint.binding (checkpoint : Checkpoint) : Revocation.Crash.ReceiverBinding :=
+  ⟨checkpoint.receiverAuthority, checkpoint.image.cut.scope⟩
 
 def Checkpoint.permits (checkpoint : Checkpoint) (placement : String) (image : Image) : Prop :=
   checkpoint.active = placement ∧ checkpoint.image = image
@@ -162,7 +166,8 @@ def promote (input : PromotionInput) : Option Checkpoint := do
   if pin = input.expected ∧ input.placement ≠ "" ∧ input.placement ≠ pin.active ∧
       input.candidate = pin.image then
     let image ← advance input.candidate input.candidate.cut
-    return ⟨input.placement, image, some ⟨pin.active, pin.image, image.cut⟩, pin.oauthAuthority⟩
+    return ⟨input.placement, image, some ⟨pin.active, pin.image, image.cut⟩,
+      pin.oauthAuthority, pin.receiverAuthority⟩
   else none
 
 def promotionContract : Contract Unit PromotionInput Checkpoint where
@@ -327,7 +332,8 @@ def receiveManaged (input : ManagedInput) : Option ManagedResult := do
   let oauth ← Revocation.Crash.begin input.authorization
   if pin.active = input.placement ∧ pin.image = input.delivery.image ∧
       pin.oauthAuthority = some input.authorization.image.oauth.checkpoint.authorityId ∧
-      input.authorization.intent = input.delivery.witnessed then
+      input.authorization.intent = input.delivery.witnessed ∧
+      pin.receiverAuthority ≠ "" ∧ input.authorization.receiver = some pin.binding then
     let image ← receive input.delivery
     return ⟨oauth, { pin with image }⟩
   else none
@@ -425,5 +431,55 @@ theorem revoked_grant_cannot_receive (input : ManagedInput)
       some input.authorization.image.oauth, input.authorization.read⟩) rfl linked revoked
   cases anchor : input.authorization.history.independent <;>
     simp [Revocation.Crash.begin, anchor, refused]
+
+structure ManagedReconciliation where
+  independent : Option Checkpoint
+  placement : String
+  replica : Image
+  audit : Revocation.Crash.ReconcileInput
+
+/-- The current receiver checkpoint supplies the committed outcome. The
+incoming audit bundle cannot choose its own receiver or outcome. -/
+def reconcileManaged (input : ManagedReconciliation) : Option Revocation.Crash.Image := do
+  let pin ← input.independent
+  if pin.active = input.placement ∧ pin.image = input.replica ∧
+      pin.oauthAuthority = some input.audit.image.oauth.checkpoint.authorityId ∧
+      pin.receiverAuthority ≠ "" then
+    let (_, outcome) ← evidence pin.image ⟨input.audit.operation⟩
+    Revocation.Crash.reconcileFrom input.audit (some ⟨pin.binding, outcome⟩)
+  else none
+
+def managedReconciliationContract : Contract Unit ManagedReconciliation Revocation.Crash.Image where
+  input := ⟨"independent-receiver-checkpoint-and-provider-audit", fun _ => True, fun _ => inferInstance⟩
+  output := ⟨"settlement-bound-to-committed-receiver-outcome", fun _ => True, fun _ => inferInstance⟩
+  meaning := fun _ input result => reconcileManaged input = some result
+  decide := fun _ _ _ => inferInstance
+  rule := .atom ()
+
+def prepareManagedReconciliation (input : ManagedReconciliation) :
+    Except String (Revocation.Crash.Image × Unit) :=
+  match reconcileManaged input with
+  | some result => .ok (result, ())
+  | none => .error "managed receiver reconciliation refused"
+
+theorem managed_reconciliation_pins_committed_outcome
+    (receipt : Invocation managedReconciliationContract prepareManagedReconciliation input)
+    (present : input.independent = some pin)
+    (committed : evidence pin.image ⟨input.audit.operation⟩ = some (action, outcome)) :
+    receipt.result.settledOutcome outcome.receipt.commit.operation = some outcome := by
+  have accepted := receipt.logic
+  change reconcileManaged input = some receipt.result at accepted
+  simp only [reconcileManaged, present, bind, Option.bind] at accepted
+  split at accepted
+  · have applied : Revocation.Crash.reconcileFrom input.audit (some ⟨pin.binding, outcome⟩) =
+        some receipt.result := by simpa [committed] using accepted
+    exact Revocation.Crash.reconciliation_from_pins_committed_outcome applied
+  · contradiction
+
+theorem conflict_first_cannot_settle (present : input.independent = some pin)
+    (committed : evidence pin.image ⟨input.audit.operation⟩ = some (action, outcome))
+    (missing : outcome ∉ input.audit.outcomes) : reconcileManaged input = none := by
+  simp [reconcileManaged, present, committed,
+    Revocation.Crash.missing_committed_outcome_refuses_recovery input.audit ⟨pin.binding, outcome⟩ missing]
 
 end CedarPooSpec.Gateway.OAuth.Receiver

@@ -7,10 +7,20 @@ independent completion evidence. Recovery never authorizes a new send. -/
 namespace CedarPooSpec.Gateway.OAuth.Revocation.Crash
 open Gateway.EffectProtocol LeanPoo.Functional.DeclarativeMetadata
 
+structure ReceiverBinding where
+  checkpoint : String
+  scope : String
+  deriving DecidableEq
+
+structure ReceiverObservation where
+  binding : ReceiverBinding
+  outcome : ProviderOutcome
+
 structure Retained where
   intent : CommitRef
   anchor : Gateway.Lifecycle.WitnessFrontier
   providerKey : String
+  receiver : Option ReceiverBinding := none
   deriving DecidableEq
 
 structure Image where
@@ -151,6 +161,7 @@ structure BeginInput where
   intent : CommitRef
   providerKey : String
   history : History
+  receiver : Option ReceiverBinding := none
 
 def begin (input : BeginInput) : Option Image := do
   let anchor ← input.history.independent
@@ -161,7 +172,7 @@ def begin (input : BeginInput) : Option Image := do
       (input.history.entries.filter fun entry => entry.operation == input.operation).length = 1 ∧
       ¬ (input.image.retained.any fun entry => entry.intent.operation == input.operation) = true then
     let oauth ← Recovery.finalize ⟨input.image.oauth.checkpoint.authorityId, some input.image.oauth, input.read⟩
-    return { input.image with oauth, retained := ⟨input.intent, anchor, input.providerKey⟩ :: input.image.retained }
+    return { input.image with oauth, retained := ⟨input.intent, anchor, input.providerKey, input.receiver⟩ :: input.image.retained }
   else none
 
 def beginContract : Contract Unit BeginInput Image where
@@ -220,8 +231,12 @@ def ReconcileInput.retained (input : ReconcileInput) : Option Retained :=
   | [entry] => some entry
   | _ => none
 
-def ReconcileInput.outcome (input : ReconcileInput) (entry : Retained) : Option ProviderOutcome :=
-  input.outcomes.find? (fun outcome => decide (outcome.receipt.commit = entry.intent))
+def ReconcileInput.outcome (input : ReconcileInput) (entry : Retained)
+    (observation : Option ReceiverObservation := none) : Option ProviderOutcome :=
+  input.outcomes.find? fun outcome =>
+    decide (outcome.receipt.commit = entry.intent) &&
+      decide (entry.receiver = observation.map (·.binding)) &&
+      observation.all (fun source => decide (outcome = source.outcome))
 
 def Image.settledOutcome (image : Image) (operation : String) : Option ProviderOutcome :=
   image.resolved.find? (fun outcome => outcome.receipt.commit.operation == operation)
@@ -260,16 +275,49 @@ theorem pinned_outcome_is_idempotent {image : Image}
     image.settle outcome = some image := by
   simp [Image.settle, pinned]
 
-def reconcile (input : ReconcileInput) : Option Image := do
+def reconcileFrom (input : ReconcileInput) (observation : Option ReceiverObservation) : Option Image := do
   let entry ← input.retained
   if input.writer = input.image.writer ∧ input.trust.providerKey = entry.providerKey ∧
       input.trust.logKey = input.history.logKey ∧ input.history.current = true ∧
       entry.anchor.extends input.history.logKey input.history.entries = true ∧
       (reconcileProviderIntent input.trust input.source entry.intent input.actions input.outcomes
         input.history.valid input.history.entries).clean = true then
-    let outcome ← input.outcome entry
+    let outcome ← input.outcome entry observation
     input.image.settle outcome
   else none
+
+def reconcile (input : ReconcileInput) : Option Image := reconcileFrom input none
+
+theorem reconciliation_from_pins_committed_outcome
+    (applied : reconcileFrom input (some observation) = some after) :
+    after.settledOutcome observation.outcome.receipt.commit.operation = some observation.outcome := by
+  cases found : input.retained with
+  | none => simp [reconcileFrom, found] at applied
+  | some entry =>
+    simp only [reconcileFrom, found, bind, Option.bind] at applied
+    split at applied
+    · cases selected : input.outcome entry (some observation) with
+      | none => simp [selected] at applied
+      | some outcome =>
+        have settled : input.image.settle outcome = some after := by simpa [selected] using applied
+        unfold ReconcileInput.outcome at selected
+        have exactMatch := List.find?_some selected
+        simp [Bool.and_eq_true, and_assoc] at exactMatch
+        simpa [exactMatch.2.2] using settlement_pins_outcome settled
+    · contradiction
+
+theorem missing_committed_outcome_refuses_recovery (input : ReconcileInput)
+    (observation : ReceiverObservation) (missing : observation.outcome ∉ input.outcomes) :
+    reconcileFrom input (some observation) = none := by
+  cases found : input.retained with
+  | none => simp [reconcileFrom, found]
+  | some entry =>
+    have absent : input.outcome entry (some observation) = none := by
+      apply List.find?_eq_none.mpr
+      intro outcome member
+      have different : outcome ≠ observation.outcome := fun equal => missing (equal ▸ member)
+      simp [different]
+    simp [reconcileFrom, found, absent]
 
 def reconcileContract : Contract Unit ReconcileInput Image where
   input := ⟨"retained-intent-and-independent-provider-audit", fun _ => True, fun _ => inferInstance⟩
@@ -290,9 +338,9 @@ theorem reconciliation_preserves_burn_and_revocations
   have accepted := receipt.logic
   change reconcile input = some receipt.result at accepted
   cases found : input.retained with
-  | none => simp [reconcile, found] at accepted
+  | none => simp [reconcile, reconcileFrom, found] at accepted
   | some entry =>
-    simp only [reconcile, found, bind, Option.bind] at accepted
+    simp only [reconcile, reconcileFrom, found, bind, Option.bind] at accepted
     split at accepted
     · cases observed : input.outcome entry with
       | none => simp [observed] at accepted
@@ -306,7 +354,7 @@ theorem reconciliation_pins_outcome
     receipt.result.settledOutcome outcome.receipt.commit.operation = some outcome := by
   have accepted := receipt.logic
   change reconcile input = some receipt.result at accepted
-  simp only [reconcile, found, bind, Option.bind] at accepted
+  simp only [reconcile, reconcileFrom, found, bind, Option.bind] at accepted
   split at accepted
   · exact settlement_pins_outcome (by simpa [observed] using accepted)
   · contradiction
@@ -315,7 +363,7 @@ theorem conflicting_outcome_cannot_replace_settlement (found : input.retained = 
     (observed : input.outcome entry = some outcome)
     (pinned : input.image.settledOutcome outcome.receipt.commit.operation = some prior)
     (different : prior ≠ outcome) : reconcile input = none := by
-  simp [reconcile, found, observed, Image.settle, pinned, different]
+  simp [reconcile, reconcileFrom, found, observed, Image.settle, pinned, different]
 
 /-- The authority serializes contenders. The losing worker sees the
 winner's committed image even if the winner never received its acknowledgment. -/
@@ -355,7 +403,7 @@ theorem settlement_cannot_reopen_operation
 theorem unclean_evidence_cannot_settle (found : input.retained = some entry)
     (unclean : (reconcileProviderIntent input.trust input.source entry.intent input.actions input.outcomes
       input.history.valid input.history.entries).clean = false) : reconcile input = none := by
-  simp [reconcile, found, unclean]
+  simp [reconcile, reconcileFrom, found, unclean]
 
 theorem missing_outcome_cannot_settle (found : input.retained = some entry)
     (logged : entry.intent ∈ input.history.entries) (absent : input.outcomes = []) :

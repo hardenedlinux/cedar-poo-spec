@@ -46,6 +46,8 @@ struct RetainedEffect {
     resolved: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     settled_outcome: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    recovery_origin: Option<RecoveryOrigin>,
 }
 
 /// Authority-assigned writer incarnation. Trusted configuration binds it
@@ -88,7 +90,33 @@ pub struct DurableEffectRecovery<'a> {
     pub trust: ProviderAuditTrust<'a>,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(super) struct ReceiverBinding {
+    pub(super) checkpoint: PathBuf,
+    pub(super) scope: String,
+}
+
+#[derive(PartialEq, Eq, Serialize, Deserialize)]
+enum RecoveryOrigin {
+    Detached,
+    Receiver(ReceiverBinding),
+}
+
 impl RetainedEffect {
+    fn matches_origin(&self, origin: &RecoveryOrigin) -> bool {
+        match &self.recovery_origin {
+            Some(pinned) => pinned == origin,
+            // Older reservations have no recorded receiver authority. Only
+            // an already pinned outcome can be confirmed without that binding.
+            None => {
+                self.resolved
+                    && self.settled_outcome.is_some()
+                    && *origin == RecoveryOrigin::Detached
+            }
+        }
+    }
+
     fn matches_recovery(
         &self,
         input: &DurableEffectRecovery<'_>,
@@ -308,12 +336,13 @@ impl<'a> DurableRefreshLedger<'a> {
         input: DurableEffectUse<'_>,
         observe_effect: impl FnOnce(&EffectIdentity) -> Result<(), String>,
     ) -> Result<bool, String> {
-        self.execute_effect_at(input, || Ok(()), observe_effect)
+        self.execute_effect_at(input, RecoveryOrigin::Detached, || Ok(()), observe_effect)
     }
 
     fn execute_effect_at(
         &self,
         input: DurableEffectUse<'_>,
+        origin: RecoveryOrigin,
         after_reservation: impl FnOnce() -> Result<(), String>,
         observe_effect: impl FnOnce(&EffectIdentity) -> Result<(), String>,
     ) -> Result<bool, String> {
@@ -352,6 +381,7 @@ impl<'a> DurableRefreshLedger<'a> {
                     .to_vec(),
                 resolved: false,
                 settled_outcome: None,
+                recovery_origin: Some(origin),
             },
         );
         file.persist(&image)?;
@@ -385,6 +415,7 @@ impl<'a> DurableRefreshLedger<'a> {
         &self,
         input: DurableEffectUse<'_>,
         authority: &ReceiverAuthority,
+        binding: ReceiverBinding,
         after_reservation: impl FnOnce() -> Result<(), String>,
         receive: impl FnOnce(ReceiverAuthorization<'_>) -> Result<Option<Signed>, String>,
     ) -> Result<Option<Signed>, String> {
@@ -399,10 +430,15 @@ impl<'a> DurableRefreshLedger<'a> {
             writer: self.writer,
         };
         let mut outcome = None;
-        ledger.execute_effect_at(input, after_reservation, |_| {
-            outcome = receive(permission)?;
-            Ok(())
-        })?;
+        ledger.execute_effect_at(
+            input,
+            RecoveryOrigin::Receiver(binding),
+            after_reservation,
+            |_| {
+                outcome = receive(permission)?;
+                Ok(())
+            },
+        )?;
         Ok(outcome)
     }
 
@@ -418,15 +454,38 @@ impl<'a> DurableRefreshLedger<'a> {
         })
     }
 
-    /// Settle a retained intent only from its independent provider evidence.
-    /// Settlement preserves the operation burn and current OAuth state.
+    /// Settle an explicitly detached effect. Managed deliveries require the
+    /// independently acknowledged receiver image through its reconciliation port.
     pub fn reconcile_effect(&self, input: DurableEffectRecovery<'_>) -> Result<bool, String> {
-        self.reconcile_effect_at(input, |_| Ok(()))
+        self.reconcile_effect_at(input, &RecoveryOrigin::Detached, |_| Ok(true), |_| Ok(()))
     }
 
-    pub(super) fn reconcile_effect_at(
+    pub(super) fn reconcile_receiver_effect(
         &self,
         input: DurableEffectRecovery<'_>,
+        authority: &ReceiverAuthority,
+        binding: ReceiverBinding,
+        committed: impl FnOnce(&Signed) -> Result<bool, String>,
+        observe: impl FnMut(CheckpointStage) -> Result<(), String>,
+    ) -> Result<bool, String> {
+        let ledger = DurableRefreshLedger {
+            directory: &authority.directory,
+            authority: self.authority,
+            writer: self.writer,
+        };
+        ledger.reconcile_effect_at(
+            input,
+            &RecoveryOrigin::Receiver(binding),
+            committed,
+            observe,
+        )
+    }
+
+    fn reconcile_effect_at(
+        &self,
+        input: DurableEffectRecovery<'_>,
+        origin: &RecoveryOrigin,
+        committed: impl FnOnce(&Signed) -> Result<bool, String>,
         observe: impl FnMut(CheckpointStage) -> Result<(), String>,
     ) -> Result<bool, String> {
         let history = anchored_history(input.history, input.trust.authority)?;
@@ -435,7 +494,7 @@ impl<'a> DurableRefreshLedger<'a> {
         let Some(effect) = image.effects.get_mut(&input.effect.operation) else {
             return Ok(false);
         };
-        if !effect.matches_recovery(&input, &history)? {
+        if !effect.matches_origin(origin) || !effect.matches_recovery(&input, &history)? {
             return Ok(false);
         }
         let (_, outcome) = reconcile_recovery(
@@ -449,6 +508,9 @@ impl<'a> DurableRefreshLedger<'a> {
         let Some(outcome) = outcome else {
             return Ok(false);
         };
+        if !committed(outcome)? {
+            return Ok(false);
+        }
         let identity = outcome.source_sha256()?;
         if effect.resolved {
             return Ok(effect.settled_outcome.as_ref() == Some(&identity));

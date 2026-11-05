@@ -1,7 +1,8 @@
 //! Receiver-owned cut, operation reservation, and signed simulated effect.
 use super::checkpoint_store::{CheckpointStage, LockedCheckpoint};
 use super::oauth_refresh_durable::{
-    DurableEffectUse, DurableRefreshLedger, ReceiverAuthority, ReceiverAuthorization,
+    DurableEffectRecovery, DurableEffectUse, DurableRefreshLedger, ReceiverAuthority,
+    ReceiverAuthorization, ReceiverBinding,
 };
 use super::provider::ProviderRequest;
 use super::wire::sign;
@@ -313,7 +314,7 @@ impl<'a> DurableReceiver<'a> {
         }
     }
 
-    fn check_authority_directory(&self, directory: &Path) -> Result<(), String> {
+    fn receiver_binding(&self, directory: &Path) -> Result<ReceiverBinding, String> {
         let placement = self
             .placement
             .as_ref()
@@ -321,7 +322,10 @@ impl<'a> DurableReceiver<'a> {
         if directory == placement.replica || directory == placement.checkpoint {
             return Err("OAuth and receiver checkpoints must use separate directories".into());
         }
-        Ok(())
+        Ok(ReceiverBinding {
+            checkpoint: placement.checkpoint.clone(),
+            scope: self.trust.scope.into(),
+        })
     }
 
     fn bind_authority(&self, authority: &ReceiverAuthority) -> Result<(), String> {
@@ -443,7 +447,7 @@ impl<'a> DurableReceiver<'a> {
     /// pins must be bound explicitly before the first managed delivery.
     pub fn bind_oauth(&self, oauth: &DurableRefreshLedger<'_>) -> Result<(), String> {
         let authority = oauth.receiver_authority()?;
-        self.check_authority_directory(&authority.directory)?;
+        self.receiver_binding(&authority.directory)?;
         oauth.bind_receiver_authority(&authority, || self.bind_authority(&authority))
     }
 
@@ -469,10 +473,11 @@ impl<'a> DurableReceiver<'a> {
             return Ok(None);
         }
         let authority = oauth.receiver_authority()?;
-        self.check_authority_directory(&authority.directory)?;
+        let binding = self.receiver_binding(&authority.directory)?;
         oauth.authorize_receiver(
             input,
             &authority,
+            binding,
             || observe(ManagedDeliveryStage::OAuthReserved),
             |permission| {
                 self.receive_at(delivery, Some(permission), |stage| {
@@ -545,6 +550,44 @@ impl<'a> DurableReceiver<'a> {
             .map_err(|_| "receiver operation already reserved")?;
         self.persist(&files, &image, checkpoint, observe)?;
         Ok(Some(outcome))
+    }
+
+    /// Reconcile a managed effect against the independently acknowledged
+    /// receiver image and the OAuth reservation's pinned receiver authority.
+    pub fn reconcile_oauth(
+        &self,
+        oauth: &DurableRefreshLedger<'_>,
+        input: DurableEffectRecovery<'_>,
+    ) -> Result<bool, String> {
+        self.reconcile_oauth_at(oauth, input, |_| Ok(()))
+    }
+
+    pub(super) fn reconcile_oauth_at(
+        &self,
+        oauth: &DurableRefreshLedger<'_>,
+        input: DurableEffectRecovery<'_>,
+        observe: impl FnMut(CheckpointStage) -> Result<(), String>,
+    ) -> Result<bool, String> {
+        let authority = oauth.receiver_authority()?;
+        let binding = self.receiver_binding(&authority.directory)?;
+        let operation = OperationId(input.effect.operation.clone());
+        oauth.reconcile_receiver_effect(
+            input,
+            &authority,
+            binding,
+            |outcome| {
+                let files = self.lock()?;
+                let (image, checkpoint) = self.current(&files)?;
+                Ok(
+                    checkpoint.and_then(|pin| pin.oauth).as_ref() == Some(&authority)
+                        && image
+                            .operations
+                            .admitted(&operation)
+                            .is_some_and(|delivery| &delivery.outcome == outcome),
+                )
+            },
+            observe,
+        )
     }
 
     /// Recover the original signed receipt and action without executing again.
