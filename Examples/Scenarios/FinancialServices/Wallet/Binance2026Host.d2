@@ -1,0 +1,141 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: Apache-2.0
+
+vars: {d2-config: {data: {figure: |json
+{
+  "purpose": "architecture",
+  "component": {
+    "kind": "payment",
+    "variant": "host"
+  },
+  "language": "en",
+  "width": 1700,
+  "primary": "purpose",
+  "themes": [
+    "editorial",
+    "comfortable"
+  ],
+  "icons": [
+    "engineering",
+    "cedar"
+  ],
+  "basis": {
+    "captureRef": "development-source-observation",
+    "modelRefs": [],
+    "obligationRefs": [],
+    "evidenceRefs": []
+  },
+  "title": "Who guards the wallet guards?",
+  "kind": "proof-reading-map",
+  "questions": [
+    {
+      "ref": "purpose",
+      "text": "Which Host promises can become checks, and which still need real-world evidence?",
+      "focusRefs": [
+        "sysml"
+      ]
+    }
+  ],
+  "references": {
+    "source": "Examples/Scenarios/FinancialServices/Wallet/Binance2026Host.d2",
+    "sysml": "dev/sysml/attackers.sysml",
+    "credentialSource": "CedarPooSpec/Vertical/FinancialServices/PaymentHost.lean",
+    "factsSource": "CedarPooSpec/Vertical/FinancialServices/PaymentHost.lean",
+    "bytesSource": "CedarPooSpec/Vertical/FinancialServices/PaymentHost.lean",
+    "durableSource": "CedarPooSpec/Vertical/FinancialServices/PaymentHost.lean",
+    "currentSource": "CedarPooSpec/Vertical/FinancialServices/PaymentHost.lean",
+    "onceSource": "CedarPooSpec/Vertical/FinancialServices/PaymentHost.lean",
+    "unknownSource": "CedarPooSpec/Vertical/FinancialServices/PaymentHost.lean",
+    "runtimeSource": "CedarPooSpec/Vertical/FinancialServices/PaymentHost.lean"
+  },
+  "copy": {
+    "description": "A checked adapter narrows Host freedom. Trusted cryptography, canonical decoding, durable storage and physical key custody remain explicit.",
+    "status": "Source-bound Lean kernel laws and synthetic observations. No physical signer, chain, cryptographic verifier or crash-safe storage implementation is claimed."
+  },
+  "presentation": {
+    "notation": "assurance",
+    "columns": 1,
+    "groups": [
+      {
+        "title": "Authenticate the speaker and bind the payment",
+        "icon": "registrar",
+        "subjects": [
+          "credential",
+          "facts",
+          "bytes"
+        ],
+        "columns": 3
+      },
+      {
+        "title": "Commit, recheck and consume the handoff",
+        "icon": "registry",
+        "subjects": [
+          "durable",
+          "current",
+          "once"
+        ],
+        "columns": 3
+      },
+      {
+        "title": "The boundary that formal checks cannot erase",
+        "icon": "warning",
+        "subjects": [
+          "unknown",
+          "runtime"
+        ],
+        "columns": 2
+      }
+    ]
+  },
+  "sysml": {
+    "source": "dev/sysml/attackers.sysml",
+    "view": "WalletHostProofs::assurance",
+    "bindings": {
+      "credential": {
+        "name": "WalletHostProofs::credential",
+        "icon": "registrar"
+      },
+      "facts": {
+        "name": "WalletHostProofs::facts",
+        "icon": "evidence"
+      },
+      "bytes": {
+        "name": "WalletHostProofs::bytes",
+        "icon": "fingerprint"
+      },
+      "durable": {
+        "name": "WalletHostProofs::durable",
+        "icon": "registry"
+      },
+      "current": {
+        "name": "WalletHostProofs::current",
+        "icon": "current"
+      },
+      "once": {
+        "name": "WalletHostProofs::once",
+        "icon": "gate"
+      },
+      "unknown": {
+        "name": "WalletHostProofs::unknown",
+        "icon": "pending"
+      },
+      "runtime": {
+        "name": "WalletHostProofs::runtime",
+        "icon": "warning"
+      }
+    }
+  },
+  "proofs": {
+    "namespace": "WalletHostProofs"
+  }
+}
+|
+}}}
+credential: "A key must belong to this workload"
+facts: "Five current facts; no missing pieces"
+bytes: "These bytes mean this payment"
+durable: "Commit the exact journal first"
+current: "Old writer and policy cannot cross"
+once: "One pending slot; one handoff"
+unknown: "Lost response stays unresolved"
+runtime: "Physical truth remains a Host duty"

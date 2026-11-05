@@ -92,5 +92,6 @@ import CedarPooSpec.Transport.SourceCatalog
 import CedarPooSpec.Attackers
 import CedarPooSpec.Vertical.FinancialServices.PaymentSigning
 import CedarPooSpec.Vertical.FinancialServices.PaymentContainment
+import CedarPooSpec.Vertical.FinancialServices.PaymentHost
 
 import CedarPooSpec.Scenarios

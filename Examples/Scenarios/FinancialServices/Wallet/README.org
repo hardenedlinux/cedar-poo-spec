@@ -379,3 +379,19 @@ signing, and invented clearing without a matching verified observation. The
 original nine signing traces, depth-12 invariant and stale-authorization
 counterexample remain mandatory. There is no claimed Lean/Quint refinement or
 physical wallet reproduction.
+
+* Host assumptions: per-item audit and composed adapter
+
+[[file:HostTrustAudit.org][The Host trust audit]] maps each of the eight original premises to existing
+Lean POO owners, new executable constraints, refusal controls and required native
+evidence. [[file:../../../../CedarPooSpec/Vertical/FinancialServices/PaymentHost.lean][PaymentHost]] composes pinned registrar/fact/decoder interpretations with
+an exact prepare/commit/handoff journal. It rechecks at use, consumes the pending
+slot and retains unknown exposure; no physical signer or durable store is added.
+
+#+CAPTION: Checked Host adapter and the remaining physical trust boundary. Outcomes come from the same Scenario's Lean observations.
+#+ATTR_ORG: :width 1500
+[[file:Binance2026Host.png]]
+
+[[file:Binance2026Host.d2][D2 source]] and [[file:Binance2026Host.svg][SVG export]]. A lying receipt verifier, an old-state replay and a
+conflicting codec interpretation remain explicit counterexamples. They prevent
+treating pure checks as cryptography, antirollback storage or physical mediation.

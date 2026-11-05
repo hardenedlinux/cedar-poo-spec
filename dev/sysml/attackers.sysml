@@ -177,3 +177,44 @@ package PaymentDefenseFlow {
   render asInterconnectionDiagram;
  }
 }
+
+// Checked adapter and its independently installed runtime interpretation.
+package WalletHostProofs {
+ private import Views::*; private import ScalarValues::*;
+ part def KernelLaw; part def HostPremise;
+ part credential : KernelLaw;
+ attribute credentialSymbol : String = "CedarPooSpec.Vertical.FinancialServices.PaymentHost.emission_retains_registrar";
+ attribute credentialSource : String = "CedarPooSpec/Vertical/FinancialServices/PaymentHost.lean";
+ part facts : KernelLaw;
+ attribute factsSymbol : String = "CedarPooSpec.Vertical.FinancialServices.PaymentHost.emission_retains_facts";
+ attribute factsSource : String = "CedarPooSpec/Vertical/FinancialServices/PaymentHost.lean";
+ part bytes : KernelLaw;
+ attribute bytesSymbol : String = "CedarPooSpec.Vertical.FinancialServices.PaymentHost.emission_returns_exact_bytes";
+ attribute bytesSource : String = "CedarPooSpec/Vertical/FinancialServices/PaymentHost.lean";
+ part durable : KernelLaw;
+ attribute durableSymbol : String = "CedarPooSpec.Vertical.FinancialServices.PaymentHost.emission_requires_durable_plan";
+ attribute durableSource : String = "CedarPooSpec/Vertical/FinancialServices/PaymentHost.lean";
+ part current : KernelLaw;
+ attribute currentSymbol : String = "CedarPooSpec.Vertical.FinancialServices.PaymentHost.emission_requires_current_cut";
+ attribute currentSource : String = "CedarPooSpec/Vertical/FinancialServices/PaymentHost.lean";
+ part once : KernelLaw;
+ attribute onceSymbol : String = "CedarPooSpec.Vertical.FinancialServices.PaymentHost.no_second_emission";
+ attribute onceSource : String = "CedarPooSpec/Vertical/FinancialServices/PaymentHost.lean";
+ part unknown : KernelLaw;
+ attribute unknownSymbol : String = "CedarPooSpec.Vertical.FinancialServices.PaymentHost.unknown_cannot_prepare";
+ attribute unknownSource : String = "CedarPooSpec/Vertical/FinancialServices/PaymentHost.lean";
+ part runtime : HostPremise;
+ attribute runtimeSymbol : String = "CedarPooSpec.Vertical.FinancialServices.PaymentHost.Host";
+ attribute runtimeSource : String = "CedarPooSpec/Vertical/FinancialServices/PaymentHost.lean";
+ view assurance {
+  expose credential;
+  expose facts;
+  expose bytes;
+  expose durable;
+  expose current;
+  expose once;
+  expose unknown;
+  expose runtime;
+  render asInterconnectionDiagram;
+ }
+}

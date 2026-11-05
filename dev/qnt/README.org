@@ -59,3 +59,11 @@ remain enforced. All command timeouts and solver pins are unchanged.
 Finite matching/finality bits abstract trusted Host observations; Lean uses the
 actual typed wallet/network/nonce fields. This is complementary exploration,
 not a refinement proof or evidence of EVM/consensus behavior.
+
+=financial/WalletHost.qnt= independently explores the checked Host adapter:
+nine additional deterministic traces, depth-12 safety, and required depth-4
+no-durability / old-state-replay counterexamples. The runner checks actual ITF
+unsafe states (including a second handoff for rollback). Existing signing and
+containment gates remain mandatory: 27 traces, three depth-12 positive checks,
+five negative countermodels. Trusted bits abstract real verifiers/readers and
+storage; no Lean/Quint refinement or deployed Host qualification is claimed.

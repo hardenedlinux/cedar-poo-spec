@@ -42,7 +42,7 @@ test('the incident assurance model names real shared and financial Lean declarat
   const claims=await readProofMap(model,'FinancialAttackers');
   expect(claims.cards.some(card=>card.symbol==='CedarPooSpec.Attackers.ProfileObject.selection_retains_actual_parent')).toBe(true);
   expect(claims.cards.some(card=>card.role==='HostPremise')).toBe(true);
-  for(const namespace of ['FinancialAttackers','WalletSigningProofs','TenantScenarioProofs','PaymentDefenseFlow']){
+  for(const namespace of ['FinancialAttackers','WalletSigningProofs','TenantScenarioProofs','PaymentDefenseFlow','WalletHostProofs']){
   const selected=await readProofMap(model,namespace);
   const checked=Bun.spawnSync(['lake','env','lean','-M','2048','-T','10000000','--stdin'],{cwd:root.pathname,stdin:Buffer.from(leanProofCheck(selected))});
   expect(checked.exitCode).toBe(0);expect(new TextDecoder().decode(checked.stdout)).toContain('PROOF-FIGURES-LEAN-OK');
@@ -56,6 +56,7 @@ test('every project-declared scenario publishes adjacent source-bound SVG export
   'Examples/Scenarios/FinancialServices/Wallet/Base.d2',
   'Examples/Scenarios/FinancialServices/Wallet/Binance2026.d2',
   'Examples/Scenarios/FinancialServices/Wallet/Binance2026Assurance.d2',
+  'Examples/Scenarios/FinancialServices/Wallet/Binance2026Host.d2',
   'Examples/Scenarios/TenantDevicePolicyEvolution.d2'
  ]);
  for(const figure of declared.scenarioFigures){

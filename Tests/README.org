@@ -65,3 +65,9 @@ local suspension, and a permissive-verifier trust counterexample. Run
 boundary, archived nonce retention, exact clearing observations and sticky pause
 through recovery. It retains the former isolated-exposure counterexample and
 uses the same admitted LeanPoo attacker family for the executable chain.
+
+=Enterprise/Payment/WalletHost.lean= checks the composed Host adapter's credential,
+fact inventory/expiry, physical byte projection, exact durable plan, current cut
+and lost-response refusals. It also retains successful counterexamples under a
+lying acknowledgment verifier and replayed old immutable state, and a conflicting
+codec interpretation. These fixtures do not qualify native cryptography/storage.

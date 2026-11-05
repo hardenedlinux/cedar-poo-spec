@@ -1,4 +1,4 @@
-import Examples.Scenarios.FinancialServices.Wallet.Binance2026
+import Examples.Scenarios.FinancialServices.Wallet.Binance2026Host
 import Lean.Data.Json
 
 namespace CedarPooSpec.Binance2026Scenario
@@ -47,6 +47,8 @@ def exportVisual : Lean.Json :=
     ("provenance", scenario.provenanceJson),
     ("attack", Lean.toJson (replayStages.map replayJson)),
     ("containment", Lean.toJson (Containment.observations.map containmentJson)),
+    ("host", Lean.toJson (HostBoundary.observations.map fun observed => Lean.Json.mkObj [
+      ("id", Lean.toJson observed.id), ("admitted", Lean.toJson observed.admitted)])),
     ("defense", Lean.Json.mkObj [
       ("deployment_refused", Lean.toJson (CedarPooSpec.Vertical.FinancialServices.PaymentContainment.release
         Containment.clean deploymentRequest).isNone),

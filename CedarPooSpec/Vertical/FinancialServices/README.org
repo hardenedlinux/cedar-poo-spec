@@ -70,3 +70,10 @@ clearing does not resume withdrawals. Its finite-control-trace law keeps a
 paused wallet closed across recovery and clearing observations. Real signer
 mediation, atomic snapshot persistence and authentic chain/current readers remain
 Host duties; no emergency clearing signer or resumption service is implemented.
+
+=PaymentHost= strengthens the existing signing/containment profile using shared
+RegistrarAuthority, FactAuthority and Lean POO Contract. Exact journal/byte/cut
+bindings, current-use reassessment, consumed pending slots and retained unknown
+exposure narrow Host freedom. Cryptographic roots, canonical decoding, native
+atomic persistence and complete physical mediation remain explicit premises;
+see [[file:../../../Examples/Scenarios/FinancialServices/Wallet/HostTrustAudit.org][the per-item wallet Host audit]]. No signer backend or second Cedar evaluator is added.

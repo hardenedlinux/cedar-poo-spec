@@ -12,6 +12,7 @@ QUINT = ROOT / "dev/node_modules/.bin/quint"
 MODEL = "dev/qnt/financial/WalletSigning.qnt"
 CASE = ".lake/build/wallet-attackers-case.qnt"
 CONTAINMENT = "dev/qnt/financial/WalletContainment.qnt"
+HOST = "dev/qnt/financial/WalletHost.qnt"
 
 
 def main() -> None:
@@ -29,7 +30,8 @@ def main() -> None:
     if version != "0.33.0":
         raise SystemExit(f"Expected pinned Quint 0.33.0, got {version}")
     receipt.update(checkout=subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(), quint=version, apalache="0.62.1", seed=7, positive_depth=12, negative_depth=4)
-    inputs = [MODEL, CONTAINMENT, "CedarPooSpec/Vertical/FinancialServices/PaymentContainment.lean",
+    inputs = [MODEL, CONTAINMENT, HOST, "CedarPooSpec/Vertical/FinancialServices/PaymentHost.lean",
+              "Tests/Enterprise/Payment/WalletHost.lean", "Examples/Scenarios/FinancialServices/Wallet/Binance2026Host.lean", "CedarPooSpec/Vertical/FinancialServices/PaymentContainment.lean",
               "Tests/Enterprise/Payment/WalletContainment.lean", ".lake/build/binance-2026-metadata.json",
               "CedarPooSpec/Scenarios/Metadata.lean", "CedarPooSpec/Scenarios/Functional.lean", "dev/qnt/attackers/Capabilities.qnt", CASE,
               "CedarPooSpec/Attackers/Trace.lean", "CedarPooSpec/Attackers/ProfileObject.lean",
@@ -46,7 +48,7 @@ def main() -> None:
 
     def run(label: str, args: list[str], expected: int = 0) -> None:
         log = OUT / f"{label}.log"
-        command_args = [str(ROOT / arg) if arg in (MODEL, CASE, CONTAINMENT) else arg for arg in args]
+        command_args = [str(ROOT / arg) if arg in (MODEL, CASE, CONTAINMENT, HOST) else arg for arg in args]
         command = ["timeout", "--signal=TERM", "--kill-after=3s", "120s", str(QUINT), *command_args]
         with log.open("w") as stream:
             result = subprocess.run(command, cwd=OUT, stdout=stream, stderr=subprocess.STDOUT, check=False)
@@ -61,12 +63,13 @@ def main() -> None:
 
     run("typecheck", ["typecheck", MODEL])
     with tempfile.TemporaryDirectory(prefix="source-only-", dir=OUT) as isolated:
-        for source in (MODEL, CONTAINMENT, "dev/qnt/attackers/Capabilities.qnt"):
+        for source in (MODEL, CONTAINMENT, HOST, "dev/qnt/attackers/Capabilities.qnt"):
             target = Path(isolated) / source
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(ROOT / source, target)
         run("source-only-typecheck", ["typecheck", str(Path(isolated) / MODEL)])
         run("containment-source-only-typecheck", ["typecheck", str(Path(isolated) / CONTAINMENT)])
+        run("host-source-only-typecheck", ["typecheck", str(Path(isolated) / HOST)])
     run("case-typecheck", ["typecheck", CASE])
     run("traces", ["test", CASE, "--main=wallet_attackers_case", "--max-samples=1", "--seed=7", "--backend=typescript"])
     if "9 passing" not in (OUT / "traces.log").read_text():
@@ -109,6 +112,26 @@ def main() -> None:
         if not any(state.get(intended) is True and
                 (intended == "unsafe" or state.get("witness") is False) for state in states):
             raise SystemExit("Containment counterexample does not demonstrate the intended failure")
+    run("host-typecheck", ["typecheck", HOST])
+    run("host-traces", ["test", HOST, "--main=wallet_host", "--max-samples=1", "--seed=7", "--backend=typescript"])
+    if "9 passing" not in (OUT / "host-traces.log").read_text():
+        raise SystemExit("All nine Host-boundary traces must run")
+    receipt["host_trace_tests"] = 9
+    host = ["verify", HOST, "--main=wallet_host", "--backend=apalache", "--apalache-version=0.62.1", "--invariant=safety"]
+    run("host-depth-12", [*host, "--max-steps=12"])
+    for label, step in (("durability-negative-depth-4", "stepNoDurability"),
+                        ("rollback-negative-depth-4", "stepRollback")):
+        negative = OUT / (label + ".itf.json")
+        negative.unlink(missing_ok=True)
+        run(label, [*host, "--step=" + step, "--max-steps=4", "--out-itf=" + str(negative)], expected=1)
+        counterexample = json.loads(negative.read_text())
+        if counterexample.get("vars") != ["h"]:
+            raise SystemExit("Unexpected Host counterexample binding")
+        states = [state.get("h", {}) for state in counterexample.get("states", [])]
+        if not any(state.get("unsafe") is True and
+                (state.get("durable") is False if step == "stepNoDurability" else
+                 state.get("sent") == {"#bigint": "2"}) for state in states):
+            raise SystemExit("Host counterexample does not retain the intended native-boundary failure")
     if any(hashlib.sha256((ROOT / p).read_bytes()).hexdigest() != digest
            for p, digest in receipt["inputs"].items()):
         receipt["status"] = "failed"

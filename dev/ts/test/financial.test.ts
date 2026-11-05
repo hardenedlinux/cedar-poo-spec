@@ -7,12 +7,13 @@ import {dirname,join} from 'node:path';
 import {tmpdir} from 'node:os';
 import {captureDefenseArtwork} from '../components/defense-flow';
 import {captureIncidentStory} from '../components/incident';
+import {captureHostBoundary} from '../components/host-boundary';
 import {captureFinancialArtwork} from '../components/financial';
 import {verifyFigure,htmlArtifact,receiptArtifact} from '../artifacts';
 const root=new URL('../../../',import.meta.url);
 test('actual payment exports retain source-bound model labels and embed both original artwork assets',async()=>{
  const artwork=await captureFinancialArtwork(root.pathname);
- for(const name of ['Base','Binance2026','Binance2026Assurance']){
+ for(const name of ['Base','Binance2026','Binance2026Assurance','Binance2026Host']){
   const entry=`Examples/Scenarios/FinancialServices/Wallet/${name}.d2`,stem=entry.slice(0,-3);
   const receipt=await verifyFigure(root.pathname,entry);
   const story=name==='Binance2026'?await captureIncidentStory(root.pathname):undefined;
@@ -24,6 +25,12 @@ test('actual payment exports retain source-bound model labels and embed both ori
   expect(svg).toContain('data-heading-role');
   expect(svg).not.toContain('foreignObject');
   const claims=JSON.parse(await readFile(new URL(receiptArtifact(entry),root),'utf8')).proofClaims;
+  if(name==='Binance2026Host'){
+   const audit=await captureHostBoundary(root.pathname);
+   expect(audit.observations.map(value=>value.admitted)).toEqual([true,false,false,false,false,false,false]);
+   for(const value of audit.observations)expect(svg).toContain('data-host-observation="'+value.id+'"');
+   expect(claims.cards).toHaveLength(8);
+  }
   if(story&&defense){
    expect(story.attack.map(stage=>[stage.reached,stage.signatures,stage.refused])).toEqual([[true,0,0],[true,0,0],[true,0,0],[true,0,1]]);
    expect(story.attack.map(stage=>stage.signer_reachable)).toEqual([false,false,false,true]);

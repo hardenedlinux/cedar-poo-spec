@@ -15,6 +15,7 @@ import {observeCatalog,catalogSysML,catalogCaptions,CatalogViewSchema} from './c
 import {ProofViewSchema,readProofMap,type ProofMap} from './proofs';
 import {componentIllustrations} from './components/assurance';
 import {captureIncidentStory,composeIncident,type IncidentStory} from './components/incident';
+import {captureHostBoundary,composeHostBoundary,type HostBoundary} from './components/host-boundary';
 import {captureDefenseArtwork,composeDefenseFlow,type DefenseArtwork} from './components/defense-flow';
 import {captureFiles,repositoryPath,rendererDependency,sha} from './sources';
 import rendererPackage from '@deterministic-engineering/render/package.json' with {type:'json'};
@@ -26,16 +27,16 @@ import {projectEntry,readProjectLayout,selectProjectModels} from './project';
 import {captureFinancialArtwork,type FinancialArtwork} from './components/financial';
 import {PaymentComponentSchema,composePayment,type PaymentComponent} from './components/payment';
 const text=v.pipe(v.string(),v.minLength(1));
-const compose=(artwork?:FinancialArtwork,component?:PaymentComponent,proofs?:ProofMap,story?:IncidentStory,defense?:DefenseArtwork):FigureComposer=>context=>{
+const compose=(artwork?:FinancialArtwork,component?:PaymentComponent,proofs?:ProofMap,story?:IncidentStory,defense?:DefenseArtwork,hostBoundary?:HostBoundary):FigureComposer=>context=>{
  if(!context.model)throw new Error('Missing projected SDK model');
- const illustrated=proofs&&proofs.cards.every(card=>/^(FinancialAttackers|WalletSigningProofs|TenantScenarioProofs)::/.test(card.id))?componentIllustrations(context,proofs):undefined;
+ const illustrated=proofs&&proofs.cards.every(card=>/^(FinancialAttackers|WalletSigningProofs|TenantScenarioProofs|WalletHostProofs)::/.test(card.id))?componentIllustrations(context,proofs):undefined;
  const diagram=story&&defense&&artwork?composeDefenseFlow(context,defense,artwork,story):composeNotation(context,illustrated);
  const notes:ReturnType<typeof composeHeading>[]=[];
  const heading=(text:string,role:string,questionRef?:string)=>{const part=composeHeading(context,{role,text,questionRef});notes.push(part);return part.markup;};
  const header=heading(context.view.title,'title')+context.questions.map(question=>heading(question.text,'question',question.ref)).join('')+heading(context.copy('description'),'note');
  const footer=heading(context.copy('status'),'note');
  const identity=artwork&&component?composePayment(context,artwork,component):undefined;
- const narrative=story?composeIncident(context,story):undefined;
+ const narrative=story?composeIncident(context,story):hostBoundary?composeHostBoundary(context,hostBoundary):undefined;
  return{markup:(identity?.markup??'')+header+(narrative?.markup??'')+diagram.markup+footer,css:(narrative?.css??'')+(identity?.css??'')+'\n'+diagram.css+notes.map(note=>note.css).join('\n')+'[data-figure]{padding:var(--gutter)}[data-figure]>svg{margin-bottom:10px}'};
 };
 const root=fileURLToPath(new URL('../../',import.meta.url));
@@ -73,11 +74,13 @@ try{
  let lean:{path:string;sha256:string;formatVersion:number;entries:number;pools:NonNullable<typeof catalog>['pools']}|undefined;
  const extraSources:Record<string,string>={},binaries:Record<string,string>={};
  const component=v.parse(PaymentComponentSchema,metadata).component;
- if(component&&projection.view!==(component.variant==='base'?'WalletSigningProofs::assurance':component.variant==='assurance'?'FinancialAttackers::assurance':'PaymentDefenseFlow::defense'))throw new Error('Payment component differs from the selected scenario view');
+ if(component&&projection.view!==(component.variant==='base'?'WalletSigningProofs::assurance':component.variant==='assurance'?'FinancialAttackers::assurance':component.variant==='host'?'WalletHostProofs::assurance':'PaymentDefenseFlow::defense'))throw new Error('Payment component differs from the selected scenario view');
  const artwork=component?await captureFinancialArtwork(root):undefined;
  if(artwork){Object.assign(extraSources,artwork.sources);Object.assign(binaries,artwork.binaries);}
  const story=component?.variant==='incident'?await captureIncidentStory(root):undefined;
  if(story){Object.assign(extraSources,story.sources);Object.assign(binaries,story.binaries);}
+ const hostBoundary=component?.variant==='host'?await captureHostBoundary(root):undefined;
+ if(hostBoundary)Object.assign(extraSources,hostBoundary.sources);
  const defense=story?await captureDefenseArtwork(root):undefined;
  if(defense){Object.assign(extraSources,defense.sources);Object.assign(binaries,defense.binaries);}
  if(usesCatalog){
@@ -112,7 +115,7 @@ try{
  }));
  const presentation=bindNotation(author.presentation,linked.mapping,linked.model,linked.icons,proofClaims,metrics);
  const input:FigureInput={...author,theme:extendPresentationTheme(author.theme??defaultPresentationTheme,{typography:{labelSize:'13px'}}),sources,references:{...author.references,sdk:capturePath,...(lean?{catalog:lean.path}:{})},model:linked.model,modelSource:{ref:'sdk',modelHash:model.hash,view:projection.view},modelTrace:linked.trace,presentation,design:defineDesign({audience:'Cedar Library developers',medium:'repository documentation',message:author.view.title,questionRefs:author.questions.map(question=>question.ref),requiredSubjects:linked.model.subjects.map(node=>node.id),requiredRelations:linked.model.relations.map(edge=>edge.id),focalSubjects:[]})};
- const figure=composeFigure(input,compose(artwork,component,proofClaims,story,defense));
+ const figure=composeFigure(input,compose(artwork,component,proofClaims,story,defense,hostBoundary));
  const fontRights:Readonly<Record<string,string>>={Kalam:'2014 Indian Type Foundry (info@indiantypefoundry.com)',Inter:'2016 The Inter Project Authors (https://github.com/rsms/inter)'};
  const fonts=[...new Set(figure.fonts.map(font=>font.family))];
  for(const font of fonts)if(!Object.hasOwn(fontRights,font))throw new Error('Declare actual rights before publishing a new font: '+font);

@@ -1,9 +1,10 @@
 set working-directory := '../../../..'
 
 binance:
-    lake build Examples.Scenarios.FinancialServices.Wallet.Binance2026 Tests.Attackers.ProfileObject Tests.Scenarios.Metadata
+    lake build Examples.Scenarios.FinancialServices.Wallet.Binance2026Host Tests.Attackers.ProfileObject Tests.Scenarios.Metadata
     timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 Tests/Enterprise/Payment/WalletSigning.lean
     timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 Tests/Enterprise/Payment/WalletContainment.lean
+    timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 Tests/Enterprise/Payment/WalletHost.lean
 
 binance-threat-profile:
     lake build Examples.Scenarios.FinancialServices.Wallet.Binance2026Export
