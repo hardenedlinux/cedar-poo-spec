@@ -1351,10 +1351,22 @@ A copied checkpoint under a different authority and a former
 active replica also cannot supply the observation.
 
 Explicitly detached delivery uses the detached audit entry point.
-Legacy unresolved reservations lack a recorded recovery origin
-and remain reserved until a trusted migration can establish one.
-A legacy settlement that already has an exact outcome identity
-can confirm only that previously recorded outcome.
+An originless legacy reservation remains reserved until the host
+selects its original receiver authority from trusted deployment
+configuration. The migration checks the selected checkpoint and
+scope, the reciprocal OAuth authority binding, and the active
+receiver image. It authenticates the persisted dispatch against
+the original retained intent and independently audits the exact
+committed receipt. Missing or conflicting evidence leaves the
+legacy reservation intact. A different checkpoint authority cannot
+supply the migration, even if it holds a byte-identical copy.
+
+The receiver binding and settlement identity commit in one OAuth
+checkpoint write. A staged interruption leaves the record
+unresolved. After a durable write with acknowledgment loss, the
+current writer confirms through ordinary managed reconciliation.
+Neither migration nor confirmation changes the OAuth revocation
+frontier or releases the operation or proof reservation.
 
 The first clean audit durably binds the canonical identity of the
 signed outcome. A later audit of that same outcome is idempotent.

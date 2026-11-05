@@ -7,7 +7,7 @@ use crate::gateway::oauth_refresh_durable::{
     DurableEffectRecovery, DurableEffectUse, EffectStatus,
 };
 use crate::gateway::provider_durable::{
-    DurableReceiver, ReceiverDelivery, ReceiverDispatch, ReceiverTrust,
+    DurableReceiver, LegacyReceiverTrust, ReceiverDelivery, ReceiverDispatch, ReceiverTrust,
 };
 use crate::gateway::wire::{sign, simulation_key};
 use crate::gateway::witness::PrecommitInput;
@@ -22,7 +22,16 @@ use std::sync::mpsc;
 
 #[test]
 fn concurrent_settlement_survives_lost_acknowledgment_and_handoffs() {
-    let directory = durable_directory("settlement-race");
+    settlement_race("settlement-race", false);
+}
+
+#[test]
+fn legacy_unresolved_requires_trusted_receiver_and_stays_spent() {
+    settlement_race("legacy-settlement-race", true);
+}
+
+fn settlement_race(case: &str, legacy_migration: bool) {
+    let directory = durable_directory(case);
     let oauth_path = directory.join("oauth");
     let pin = directory.join("pin");
     let primary = directory.join("primary");
@@ -224,6 +233,17 @@ fn concurrent_settlement_survives_lost_acknowledgment_and_handoffs() {
         EffectStatus::Unresolved
     );
 
+    if legacy_migration {
+        // Reproduce the old on-disk schema in the same OAuth authority
+        // directory recorded in the receiver checkpoint.
+        std::fs::write(
+            oauth_path.join("checkpoint.json"),
+            serde_json::to_vec(&legacy).unwrap(),
+        )
+        .unwrap();
+        active.advance(&active.cut().unwrap()).unwrap();
+    }
+
     let copied_pin = directory.join("foreign-pin");
     std::fs::create_dir(&copied_pin).unwrap();
     std::fs::copy(
@@ -251,18 +271,82 @@ fn concurrent_settlement_survives_lost_acknowledgment_and_handoffs() {
             .reconcile_oauth(&oauth, evidence(&original.journal, &signed))
             .unwrap()
     );
+    let trusted = LegacyReceiverTrust::from_config(&pin, "settlement-race").unwrap();
+    let migration = legacy_migration.then_some(&trusted);
+    if legacy_migration {
+        assert!(
+            !active
+                .reconcile_oauth(&oauth, evidence(&original.journal, &signed))
+                .unwrap()
+        );
+        assert!(
+            !active
+                .migrate_legacy_oauth(&oauth, evidence(&original.journal, &[]), &trusted)
+                .unwrap()
+        );
+        assert!(
+            !active
+                .migrate_legacy_oauth(&oauth, evidence(&conflicting, &signed_conflict), &trusted)
+                .unwrap()
+        );
+        assert!(
+            !foreign
+                .migrate_legacy_oauth(&oauth, evidence(&original.journal, &signed), &trusted)
+                .unwrap()
+        );
+        let wrong_scope = LegacyReceiverTrust::from_config(&pin, "foreign-scope").unwrap();
+        assert!(
+            !active
+                .migrate_legacy_oauth(&oauth, evidence(&original.journal, &signed), &wrong_scope)
+                .unwrap()
+        );
+        assert!(
+            !active
+                .migrate_legacy_oauth(
+                    &legacy_oauth,
+                    evidence(&original.journal, &signed),
+                    &trusted
+                )
+                .unwrap()
+        );
+        assert_eq!(
+            oauth.effect_status(&operation).unwrap(),
+            EffectStatus::Unresolved
+        );
+    }
     assert!(
         active
-            .reconcile_oauth_at(&oauth, evidence(&original.journal, &signed), |stage| {
-                assert!(stage == CheckpointStage::Staged);
-                Err("settlement stopped before commit".into())
-            })
+            .reconcile_oauth_at(
+                &oauth,
+                evidence(&original.journal, &signed),
+                migration,
+                |stage| {
+                    assert!(stage == CheckpointStage::Staged);
+                    Err("settlement stopped before commit".into())
+                }
+            )
             .is_err()
     );
     assert_eq!(
         open().effect_status(&operation).unwrap(),
         EffectStatus::Unresolved
     );
+
+    if legacy_migration {
+        let staged: serde_json::Value =
+            serde_json::from_slice(&std::fs::read(oauth_path.join("checkpoint.json")).unwrap())
+                .unwrap();
+        assert!(
+            staged["effects"][&operation.0]
+                .get("recovery_origin")
+                .is_none()
+        );
+        assert!(
+            staged["effects"][&operation.0]
+                .get("settled_outcome")
+                .is_none()
+        );
+    }
 
     std::thread::scope(|scope| {
         let (staged, staged_observed) = mpsc::channel();
@@ -272,7 +356,7 @@ fn concurrent_settlement_survives_lost_acknowledgment_and_handoffs() {
         let conflict_input = evidence(&conflicting, &signed_conflict);
         let receiver = &active;
         let first = scope.spawn(move || {
-            receiver.reconcile_oauth_at(&open(), original_input, |stage| match stage {
+            receiver.reconcile_oauth_at(&open(), original_input, migration, |stage| match stage {
                 CheckpointStage::Staged => {
                     staged.send(()).unwrap();
                     proceed.recv().map_err(|error| error.to_string())
@@ -283,7 +367,11 @@ fn concurrent_settlement_survives_lost_acknowledgment_and_handoffs() {
         staged_observed.recv().unwrap();
         let second = scope.spawn(move || {
             started.send(()).unwrap();
-            receiver.reconcile_oauth(&open(), conflict_input)
+            if let Some(trusted) = migration {
+                receiver.migrate_legacy_oauth(&open(), conflict_input, trusted)
+            } else {
+                receiver.reconcile_oauth(&open(), conflict_input)
+            }
         });
         contender_started.recv().unwrap();
         release.send(()).unwrap();
@@ -297,6 +385,23 @@ fn concurrent_settlement_survives_lost_acknowledgment_and_handoffs() {
         open().effect_status(&operation).unwrap(),
         EffectStatus::Reconciled
     );
+
+    if legacy_migration {
+        let committed: serde_json::Value =
+            serde_json::from_slice(&std::fs::read(oauth_path.join("checkpoint.json")).unwrap())
+                .unwrap();
+        let retained = &committed["effects"][&operation.0];
+        assert!(retained.get("recovery_origin").is_some());
+        assert_eq!(
+            retained["settled_outcome"],
+            signed[0].source_sha256().unwrap()
+        );
+        assert!(
+            !active
+                .migrate_legacy_oauth(&oauth, evidence(&original.journal, &signed), &trusted)
+                .unwrap()
+        );
+    }
 
     let promote = |from, to| {
         std::fs::copy(
@@ -346,7 +451,7 @@ fn concurrent_settlement_survives_lost_acknowledgment_and_handoffs() {
     );
     assert!(
         receiver(&successor)
-            .reconcile_oauth_at(&writer, evidence(&settled.journal, &signed), |_| {
+            .reconcile_oauth_at(&writer, evidence(&settled.journal, &signed), None, |_| {
                 panic!("idempotent confirmation attempted to rewrite the settlement")
             })
             .unwrap()

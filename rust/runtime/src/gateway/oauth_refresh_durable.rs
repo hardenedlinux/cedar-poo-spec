@@ -103,17 +103,26 @@ enum RecoveryOrigin {
     Receiver(ReceiverBinding),
 }
 
+pub(super) enum RecoveryRequest {
+    Detached,
+    Receiver(ReceiverBinding),
+    LegacyMigration(ReceiverBinding),
+}
+
 impl RetainedEffect {
-    fn matches_origin(&self, origin: &RecoveryOrigin) -> bool {
-        match &self.recovery_origin {
-            Some(pinned) => pinned == origin,
-            // Older reservations have no recorded receiver authority. Only
-            // an already pinned outcome can be confirmed without that binding.
-            None => {
-                self.resolved
-                    && self.settled_outcome.is_some()
-                    && *origin == RecoveryOrigin::Detached
+    fn matches_origin(&self, request: &RecoveryRequest) -> bool {
+        match (&self.recovery_origin, request) {
+            (Some(RecoveryOrigin::Detached), RecoveryRequest::Detached) => true,
+            (Some(RecoveryOrigin::Receiver(pinned)), RecoveryRequest::Receiver(binding)) => {
+                pinned == binding
             }
+            // Older settlements with an exact identity can only confirm that
+            // outcome through the existing detached port.
+            (None, RecoveryRequest::Detached) => self.resolved && self.settled_outcome.is_some(),
+            (None, RecoveryRequest::LegacyMigration(_)) => {
+                !self.resolved && self.settled_outcome.is_none()
+            }
+            _ => false,
         }
     }
 
@@ -457,15 +466,20 @@ impl<'a> DurableRefreshLedger<'a> {
     /// Settle an explicitly detached effect. Managed deliveries require the
     /// independently acknowledged receiver image through its reconciliation port.
     pub fn reconcile_effect(&self, input: DurableEffectRecovery<'_>) -> Result<bool, String> {
-        self.reconcile_effect_at(input, &RecoveryOrigin::Detached, |_| Ok(true), |_| Ok(()))
+        self.reconcile_effect_at(
+            input,
+            RecoveryRequest::Detached,
+            |_, _| Ok(true),
+            |_| Ok(()),
+        )
     }
 
     pub(super) fn reconcile_receiver_effect(
         &self,
         input: DurableEffectRecovery<'_>,
         authority: &ReceiverAuthority,
-        binding: ReceiverBinding,
-        committed: impl FnOnce(&Signed) -> Result<bool, String>,
+        request: RecoveryRequest,
+        committed: impl FnOnce(&Signed, &Signed) -> Result<bool, String>,
         observe: impl FnMut(CheckpointStage) -> Result<(), String>,
     ) -> Result<bool, String> {
         let ledger = DurableRefreshLedger {
@@ -473,19 +487,14 @@ impl<'a> DurableRefreshLedger<'a> {
             authority: self.authority,
             writer: self.writer,
         };
-        ledger.reconcile_effect_at(
-            input,
-            &RecoveryOrigin::Receiver(binding),
-            committed,
-            observe,
-        )
+        ledger.reconcile_effect_at(input, request, committed, observe)
     }
 
     fn reconcile_effect_at(
         &self,
         input: DurableEffectRecovery<'_>,
-        origin: &RecoveryOrigin,
-        committed: impl FnOnce(&Signed) -> Result<bool, String>,
+        request: RecoveryRequest,
+        committed: impl FnOnce(&Signed, &Signed) -> Result<bool, String>,
         observe: impl FnMut(CheckpointStage) -> Result<(), String>,
     ) -> Result<bool, String> {
         let history = anchored_history(input.history, input.trust.authority)?;
@@ -494,7 +503,7 @@ impl<'a> DurableRefreshLedger<'a> {
         let Some(effect) = image.effects.get_mut(&input.effect.operation) else {
             return Ok(false);
         };
-        if !effect.matches_origin(origin) || !effect.matches_recovery(&input, &history)? {
+        if !effect.matches_origin(&request) || !effect.matches_recovery(&input, &history)? {
             return Ok(false);
         }
         let (_, outcome) = reconcile_recovery(
@@ -508,12 +517,15 @@ impl<'a> DurableRefreshLedger<'a> {
         let Some(outcome) = outcome else {
             return Ok(false);
         };
-        if !committed(outcome)? {
+        if !committed(&effect.intent, outcome)? {
             return Ok(false);
         }
         let identity = outcome.source_sha256()?;
         if effect.resolved {
             return Ok(effect.settled_outcome.as_ref() == Some(&identity));
+        }
+        if let RecoveryRequest::LegacyMigration(binding) = request {
+            effect.recovery_origin = Some(RecoveryOrigin::Receiver(binding));
         }
         effect.resolved = true;
         effect.settled_outcome = Some(identity);

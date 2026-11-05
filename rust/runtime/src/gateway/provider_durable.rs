@@ -2,7 +2,7 @@
 use super::checkpoint_store::{CheckpointStage, LockedCheckpoint};
 use super::oauth_refresh_durable::{
     DurableEffectRecovery, DurableEffectUse, DurableRefreshLedger, ReceiverAuthority,
-    ReceiverAuthorization, ReceiverBinding,
+    ReceiverAuthorization, ReceiverBinding, RecoveryRequest,
 };
 use super::provider::ProviderRequest;
 use super::wire::sign;
@@ -47,6 +47,25 @@ impl ReceiverDispatch {
             },
             sender,
         )
+    }
+}
+
+/// Receiver authority selected independently by the host for a legacy
+/// migration. Construct it from trusted deployment configuration.
+pub struct LegacyReceiverTrust(ReceiverBinding);
+
+impl LegacyReceiverTrust {
+    pub fn from_config(checkpoint: &Path, scope: &str) -> Result<Self, String> {
+        if scope.is_empty() {
+            return Err("missing legacy receiver scope".into());
+        }
+        let checkpoint = checkpoint
+            .canonicalize()
+            .map_err(|error| error.to_string())?;
+        Ok(Self(ReceiverBinding {
+            checkpoint,
+            scope: scope.into(),
+        }))
     }
 }
 
@@ -559,35 +578,74 @@ impl<'a> DurableReceiver<'a> {
         oauth: &DurableRefreshLedger<'_>,
         input: DurableEffectRecovery<'_>,
     ) -> Result<bool, String> {
-        self.reconcile_oauth_at(oauth, input, |_| Ok(()))
+        self.reconcile_oauth_at(oauth, input, None, |_| Ok(()))
+    }
+
+    /// Bind and settle an originless unresolved operation in one OAuth write.
+    /// The original receiver authority must come from trusted configuration.
+    pub fn migrate_legacy_oauth(
+        &self,
+        oauth: &DurableRefreshLedger<'_>,
+        input: DurableEffectRecovery<'_>,
+        trusted: &LegacyReceiverTrust,
+    ) -> Result<bool, String> {
+        self.reconcile_oauth_at(oauth, input, Some(trusted), |_| Ok(()))
     }
 
     pub(super) fn reconcile_oauth_at(
         &self,
         oauth: &DurableRefreshLedger<'_>,
         input: DurableEffectRecovery<'_>,
+        legacy: Option<&LegacyReceiverTrust>,
         observe: impl FnMut(CheckpointStage) -> Result<(), String>,
     ) -> Result<bool, String> {
         let authority = oauth.receiver_authority()?;
         let binding = self.receiver_binding(&authority.directory)?;
+        let request = match legacy {
+            Some(trusted) if trusted.0 == binding => RecoveryRequest::LegacyMigration(binding),
+            Some(_) => return Ok(false),
+            None => RecoveryRequest::Receiver(binding),
+        };
         let operation = OperationId(input.effect.operation.clone());
         oauth.reconcile_receiver_effect(
             input,
             &authority,
-            binding,
-            |outcome| {
-                let files = self.lock()?;
-                let (image, checkpoint) = self.current(&files)?;
-                Ok(
-                    checkpoint.and_then(|pin| pin.oauth).as_ref() == Some(&authority)
-                        && image
-                            .operations
-                            .admitted(&operation)
-                            .is_some_and(|delivery| &delivery.outcome == outcome),
-                )
+            request,
+            |intent, outcome| {
+                self.committed_receipt(&authority, &operation, intent, outcome, legacy.is_some())
             },
             observe,
         )
+    }
+
+    fn committed_receipt(
+        &self,
+        authority: &ReceiverAuthority,
+        operation: &OperationId,
+        intent: &Signed,
+        outcome: &Signed,
+        migration: bool,
+    ) -> Result<bool, String> {
+        let files = self.lock()?;
+        let (image, checkpoint) = self.current(&files)?;
+        if checkpoint.and_then(|pin| pin.oauth).as_ref() != Some(authority) {
+            return Ok(false);
+        }
+        let Some(delivery) = image.operations.admitted(operation) else {
+            return Ok(false);
+        };
+        if &delivery.outcome != outcome {
+            return Ok(false);
+        }
+        if !migration {
+            return Ok(true);
+        }
+        let dispatch: ReceiverDispatch = verify(&delivery.authorization, self.trust.sender)?;
+        Ok(dispatch.version == VERSION
+            && dispatch.domain == DISPATCH_DOMAIN
+            && &dispatch.intent == intent
+            && dispatch.cut.scope == image.cut.scope
+            && dispatch.cut.generation <= image.cut.generation)
     }
 
     /// Recover the original signed receipt and action without executing again.

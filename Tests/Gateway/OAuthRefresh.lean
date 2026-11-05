@@ -130,7 +130,21 @@ private def crashExercise (durable : Revocation.Recovery.Store)
   let conflictAudit := { managedAudit with actions := [differentAction], outcomes := [conflicting] }
   let .ok anchoredSettlement := Receiver.managedReconciliationContract.invoke
     Receiver.prepareManagedReconciliation anchored | return false
+  let legacyEntries := managedActive.retained.map
+    (fun entry => { entry with receiver := none, legacy := true })
+  let legacyImage := { managedActive with retained := legacyEntries }
+  let legacyAudit := { managedAudit with image := legacyImage }
+  let legacyRecovery := { anchored with audit := legacyAudit }
+  let migration : Receiver.LegacyMigration := ⟨legacyRecovery, successor.result.binding⟩
+  let .ok migrated := Receiver.legacyMigrationContract.invoke Receiver.prepareLegacyMigration migration | return false
+  let migratedAudit := { legacyAudit with image := migrated.result }
+  let migratedRecovery := { anchored with audit := migratedAudit }
+  let legacyConflictAudit := { legacyAudit with actions := [differentAction], outcomes := [conflicting] }
+  let legacyConflict := { legacyRecovery with audit := legacyConflictAudit }
+  let missingCommit := { legacyRecovery with independent := some second.result, replica := second.result.image }
+  let migratedRetry := { retryAuthorization with image := migrated.result, writer := 2, checkedWriter := 2 }
   let foreignPin := { successor.result with receiverAuthority := "foreign-pin" }
+  let foreignLegacy := { legacyRecovery with independent := some foreignPin }
   let anchoredRetry := { managedAudit with image := anchoredSettlement.result }
   let revokedUse := { begin with image := live, writer := 1, checkedWriter := 1 }
   let afterTakeover : Receiver.ManagedInput :=
@@ -147,6 +161,16 @@ private def crashExercise (durable : Revocation.Recovery.Store)
     decide (lateSettlement.result.settledOutcome intent.operation = some outcome) &&
     decide (Revocation.Crash.reconcile { late with image := lateSettlement.result } = some lateSettlement.result) &&
     (Revocation.Crash.reconcile conflictingEvidence).isNone &&
+    (Revocation.Crash.reconcile legacyAudit).isNone &&
+    (Receiver.reconcileManaged legacyRecovery).isNone &&
+    (Receiver.migrateLegacy { migration with recovery := legacyConflict }).isNone &&
+    (Receiver.migrateLegacy { migration with recovery := missingCommit }).isNone &&
+    (Receiver.migrateLegacy { migration with recovery := foreignLegacy }).isNone &&
+    decide (migrated.result.oauth = legacyImage.oauth) &&
+    decide (migrated.result.settledOutcome intent.operation = some outcome) &&
+    decide (Receiver.reconcileManaged migratedRecovery = some migrated.result) &&
+    (Receiver.migrateLegacy { migration with recovery := migratedRecovery }).isNone &&
+    (Revocation.Crash.begin migratedRetry).isNone &&
     (Revocation.Crash.reconcile managedAudit).isNone &&
     (Receiver.reconcileManaged { anchored with audit := conflictAudit }).isNone &&
     (Receiver.reconcileManaged { anchored with placement := "standby" }).isNone &&
@@ -350,3 +374,8 @@ end Tests.Gateway.OAuthRefresh
 
 #print axioms CedarPooSpec.Gateway.OAuth.Receiver.conflict_first_cannot_settle
 #print axioms CedarPooSpec.Gateway.OAuth.Receiver.managed_reconciliation_pins_committed_outcome
+
+#print axioms CedarPooSpec.Gateway.OAuth.Receiver.foreign_receiver_cannot_migrate
+#print axioms CedarPooSpec.Gateway.OAuth.Receiver.legacy_migration_preserves_authority_and_burn
+#print axioms CedarPooSpec.Gateway.OAuth.Revocation.Crash.migration_pins_committed_outcome
+#print axioms CedarPooSpec.Gateway.OAuth.Revocation.Crash.missing_committed_outcome_refuses_migration

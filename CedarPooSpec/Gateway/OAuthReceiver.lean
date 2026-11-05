@@ -440,14 +440,19 @@ structure ManagedReconciliation where
 
 /-- The current receiver checkpoint supplies the committed outcome. The
 incoming audit bundle cannot choose its own receiver or outcome. -/
-def reconcileManaged (input : ManagedReconciliation) : Option Revocation.Crash.Image := do
+def ManagedReconciliation.observation (input : ManagedReconciliation) :
+    Option Revocation.Crash.ReceiverObservation := do
   let pin ← input.independent
   if pin.active = input.placement ∧ pin.image = input.replica ∧
       pin.oauthAuthority = some input.audit.image.oauth.checkpoint.authorityId ∧
       pin.receiverAuthority ≠ "" then
     let (_, outcome) ← evidence pin.image ⟨input.audit.operation⟩
-    Revocation.Crash.reconcileFrom input.audit (some ⟨pin.binding, outcome⟩)
+    return ⟨pin.binding, outcome⟩
   else none
+
+def reconcileManaged (input : ManagedReconciliation) : Option Revocation.Crash.Image := do
+  let observation ← input.observation
+  Revocation.Crash.reconcileFrom input.audit (some observation)
 
 def managedReconciliationContract : Contract Unit ManagedReconciliation Revocation.Crash.Image where
   input := ⟨"independent-receiver-checkpoint-and-provider-audit", fun _ => True, fun _ => inferInstance⟩
@@ -462,6 +467,15 @@ def prepareManagedReconciliation (input : ManagedReconciliation) :
   | some result => .ok (result, ())
   | none => .error "managed receiver reconciliation refused"
 
+theorem observation_from_committed_outcome {input : ManagedReconciliation} (present : input.independent = some pin)
+    (committed : evidence pin.image ⟨input.audit.operation⟩ = some (action, outcome)) :
+    input.observation = none ∨ input.observation = some ⟨pin.binding, outcome⟩ := by
+  simp only [ManagedReconciliation.observation, present, bind, Option.bind]
+  split
+  · right
+    simp [committed]
+  · exact Or.inl rfl
+
 theorem managed_reconciliation_pins_committed_outcome
     (receipt : Invocation managedReconciliationContract prepareManagedReconciliation input)
     (present : input.independent = some pin)
@@ -469,17 +483,59 @@ theorem managed_reconciliation_pins_committed_outcome
     receipt.result.settledOutcome outcome.receipt.commit.operation = some outcome := by
   have accepted := receipt.logic
   change reconcileManaged input = some receipt.result at accepted
-  simp only [reconcileManaged, present, bind, Option.bind] at accepted
-  split at accepted
-  · have applied : Revocation.Crash.reconcileFrom input.audit (some ⟨pin.binding, outcome⟩) =
-        some receipt.result := by simpa [committed] using accepted
-    exact Revocation.Crash.reconciliation_from_pins_committed_outcome applied
-  · contradiction
+  rcases observation_from_committed_outcome present committed with absent | observed
+  · simp [reconcileManaged, absent] at accepted
+  · exact Revocation.Crash.reconciliation_from_pins_committed_outcome
+      (by simpa [reconcileManaged, observed] using accepted)
 
 theorem conflict_first_cannot_settle (present : input.independent = some pin)
     (committed : evidence pin.image ⟨input.audit.operation⟩ = some (action, outcome))
     (missing : outcome ∉ input.audit.outcomes) : reconcileManaged input = none := by
-  simp [reconcileManaged, present, committed,
-    Revocation.Crash.missing_committed_outcome_refuses_recovery input.audit ⟨pin.binding, outcome⟩ missing]
+  rcases observation_from_committed_outcome present committed with absent | observed
+  · simp [reconcileManaged, absent]
+  · simpa [reconcileManaged, observed] using
+      Revocation.Crash.missing_committed_outcome_refuses_recovery input.audit ⟨pin.binding, outcome⟩ missing
+
+structure LegacyMigration where
+  recovery : ManagedReconciliation
+  trusted : Revocation.Crash.ReceiverBinding
+
+def migrateLegacy (input : LegacyMigration) : Option Revocation.Crash.Image := do
+  let observation ← input.recovery.observation
+  if observation.binding = input.trusted then
+    Revocation.Crash.migrateFrom input.recovery.audit observation
+  else none
+
+def legacyMigrationContract : Contract Unit LegacyMigration Revocation.Crash.Image where
+  input := ⟨"trusted-legacy-receiver-and-independent-commit", fun _ => True, fun _ => inferInstance⟩
+  output := ⟨"atomic-legacy-binding-and-settlement", fun _ => True, fun _ => inferInstance⟩
+  meaning := fun _ input result => migrateLegacy input = some result
+  decide := fun _ _ _ => inferInstance
+  rule := .atom ()
+
+def prepareLegacyMigration (input : LegacyMigration) : Except String (Revocation.Crash.Image × Unit) :=
+  match migrateLegacy input with
+  | some result => .ok (result, ())
+  | none => .error "legacy receiver migration refused"
+
+theorem foreign_receiver_cannot_migrate (present : input.recovery.observation = some observation)
+    (foreign : observation.binding ≠ input.trusted) : migrateLegacy input = none := by
+  simp [migrateLegacy, present, foreign]
+
+theorem legacy_migration_preserves_authority_and_burn
+    (receipt : Invocation legacyMigrationContract prepareLegacyMigration input) (operation : String) :
+    receipt.result.oauth = input.recovery.audit.image.oauth ∧
+      receipt.result.writer = input.recovery.audit.image.writer ∧
+      (receipt.result.retained.any fun entry => entry.intent.operation == operation) =
+        (input.recovery.audit.image.retained.any fun entry => entry.intent.operation == operation) := by
+  have accepted := receipt.logic
+  change migrateLegacy input = some receipt.result at accepted
+  cases present : input.recovery.observation with
+  | none => simp [migrateLegacy, present] at accepted
+  | some observation =>
+    simp only [migrateLegacy, present, bind, Option.bind] at accepted
+    split at accepted
+    · exact Revocation.Crash.migration_preserves_authority_and_burn accepted operation
+    · contradiction
 
 end CedarPooSpec.Gateway.OAuth.Receiver
