@@ -118,7 +118,10 @@ def persist (input : Input) : Option Image := do
 def contract : Contract Unit Input Image where
   input := ⟨"current-writer-and-independent-receiver-receipt", fun _ => True, fun _ => inferInstance⟩
   output := ⟨"atomic-settlement-and-exact-receipt-mapping", fun _ => True, fun _ => inferInstance⟩
-  meaning := fun _ input result => persist input = some result
+  meaning := fun _ input result => persist input = some result ∧
+    result.oauth.oauth = input.image.oauth.oauth ∧
+    result.oauth.writer = input.image.oauth.writer ∧
+    result.oauth.retained.map (·.intent) = input.image.oauth.retained.map (·.intent)
   decide := fun _ _ _ => inferInstance
   rule := .atom ()
 
@@ -151,7 +154,7 @@ theorem replacement_refused
 
 theorem persistence_records (receipt : Invocation contract prepare input) :
     lookup receipt.result.rows input.request.identity.operation = some (Request.stored input.request) := by
-  have accepted := receipt.logic
+  have accepted := receipt.logic.1
   change persist input = some receipt.result at accepted
   cases checked : checkedImage input with
   | none => simp [persist, checked] at accepted
@@ -167,7 +170,7 @@ theorem persistence_records (receipt : Invocation contract prepare input) :
 theorem persistence_keeps_original (receipt : Invocation contract prepare input)
     (bound : lookup input.image.rows operation = some prior) :
     lookup receipt.result.rows operation = some prior := by
-  have accepted := receipt.logic
+  have accepted := receipt.logic.1
   change persist input = some receipt.result at accepted
   cases checked : checkedImage input with
   | none => simp [persist, checked] at accepted
@@ -179,6 +182,13 @@ theorem persistence_keeps_original (receipt : Invocation contract prepare input)
         simpa [persist, checked, stored] using accepted.symm
       rw [same]
       exact record_preserves bound stored
+
+theorem persistence_keeps_authorization (receipt : Invocation contract prepare input) :
+    receipt.result.oauth.oauth = input.image.oauth.oauth := receipt.logic.2.1
+
+theorem persistence_keeps_intents (receipt : Invocation contract prepare input) :
+    receipt.result.oauth.retained.map (·.intent) = input.image.oauth.retained.map (·.intent) :=
+  receipt.logic.2.2.2
 
 theorem staged_mapping_not_recovered (before after : Image) :
     (Revocation.Crash.recoverImage .staged before after).rows = before.rows := rfl
@@ -197,6 +207,26 @@ inductive Trace : Image → Image → Prop where
       (receipt : Invocation contract prepare input) (current : input.image = before)
       (boundary : Revocation.Crash.CommitBoundary) :
       Trace initial (Revocation.Crash.recoverImage boundary before receipt.result)
+
+theorem Trace.trans (first : Trace initial middle) (second : Trace middle after) :
+    Trace initial after := by
+  induction second with
+  | start => exact first
+  | authorization _ history ih => exact .authorization ih history
+  | commit _ receipt current boundary ih => exact .commit ih receipt current boundary
+
+theorem trace_preserves_intents (history : Trace initial after) :
+    after.oauth.retained.map (·.intent) = initial.oauth.retained.map (·.intent) := by
+  induction history with
+  | start => rfl
+  | authorization _ history ih =>
+    have retained := (Receiver.legacyRecoveryTrace_preserves_effect_state history).1
+    exact (congrArg (List.map (·.intent)) retained).trans ih
+  | commit _ receipt current boundary ih =>
+    cases boundary with
+    | staged => exact ih
+    | durable =>
+      exact (persistence_keeps_intents receipt).trans (by simpa [current] using ih)
 
 theorem trace_preserves_original (history : Trace initial after)
     (bound : lookup initial.rows operation = some prior) :

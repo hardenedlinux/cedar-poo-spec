@@ -1,6 +1,7 @@
 import CedarPooSpec.Gateway.OAuthReceiver
 import CedarPooSpec.Gateway.OAuthReceiptRecovery
 import Tests.Gateway.RecoveryPlan
+import Tests.Gateway.SettledBatch
 
 namespace Tests.Gateway.OAuthRefresh
 open CedarPooSpec.Gateway.OAuth
@@ -83,7 +84,8 @@ private def seedReceiptMapping (input : Receiver.LegacyBatchInput)
     if staged.rows.isEmpty && durable.oauth = input.image then some durable else none
 
 private def settledMappingExercise (input : Receiver.LegacyBatchInput)
-    (original missing : Receiver.ManagedReconciliation) (pin : Receiver.Checkpoint) : Bool := Id.run do
+    (original missing : Receiver.ManagedReconciliation) (pin : Receiver.Checkpoint)
+    (retry : Revocation.Crash.BeginInput) : Bool := Id.run do
   let some (authority, request) := identityContext input original pin | return false
   let operation := request.operation
   let legacy := { input.image with retained := input.image.retained.map (fun entry =>
@@ -124,7 +126,8 @@ private def settledMappingExercise (input : Receiver.LegacyBatchInput)
       tracked := ⟨confirmed.result, .commit prior.2 confirmed rfl .durable⟩
   let _survived := ReceiptRecovery.trace_preserves_original tracked.2
     (ReceiptRecovery.persistence_records first)
-  return staged.rows.isEmpty &&
+  return Tests.Gateway.SettledBatch.exercise initial missing (verified digest) retry &&
+    staged.rows.isEmpty &&
     decide (first.result.oauth.oauth = legacy.oauth) &&
     decide (first.result.oauth.writer = legacy.writer) &&
     decide (first.result.oauth.retained.map (·.intent) = legacy.retained.map (·.intent)) &&
@@ -232,7 +235,7 @@ private def repeatedRecoveryExercise (input : Receiver.LegacyBatchInput)
     (retry : Revocation.Crash.BeginInput) : Bool := Id.run do
   let some start := original.independent | return false
   let some (_, outcome) := Receiver.evidence start.image ⟨original.audit.operation⟩ | return false
-  if !settledMappingExercise input original missing start then return false
+  if !settledMappingExercise input original missing start retry then return false
   let some seed := seedReceiptMapping input original start | return false
   if aligned : seed.oauth = input.image then
     let mut tracked : { image : Revocation.Crash.Image // Receiver.LegacyRecoveryTrace input.image image } :=
@@ -961,3 +964,12 @@ end Tests.Gateway.OAuthRefresh
 #print axioms CedarPooSpec.Gateway.OAuth.Revocation.Crash.settled_migration_missing_receipt_refused
 #print axioms CedarPooSpec.Gateway.OAuth.Revocation.Crash.settled_migration_detached_refused
 #print axioms CedarPooSpec.Gateway.OAuth.ReceiptRecovery.retained_digest_required
+#print axioms CedarPooSpec.Gateway.OAuth.ReceiptBatch.batch_keeps_original
+#print axioms CedarPooSpec.Gateway.OAuth.ReceiptBatch.old_writer_stops
+#print axioms CedarPooSpec.Gateway.OAuth.ReceiptBatch.old_replica_stops
+#print axioms CedarPooSpec.Gateway.OAuth.ReceiptBatch.refused_keeps_image
+#print axioms CedarPooSpec.Gateway.OAuth.ReceiptBatch.fenced_suffix_keeps_prefix
+#print axioms CedarPooSpec.Gateway.OAuth.ReceiptBatch.append_resumes_same_fold
+#print axioms CedarPooSpec.Gateway.OAuth.ReceiptRecovery.persistence_keeps_authorization
+#print axioms CedarPooSpec.Gateway.OAuth.ReceiptRecovery.trace_preserves_intents
+#print axioms CedarPooSpec.Gateway.OAuth.ReceiptBatch.batch_cannot_resend

@@ -26,12 +26,12 @@ mod late_batch;
 
 #[test]
 fn concurrent_settlement_survives_lost_acknowledgment_and_handoffs() {
-    settlement_race("settlement-race", false, None, &[], false);
+    settlement_race("settlement-race", false, None, &[], None);
 }
 
 #[test]
 fn legacy_unresolved_requires_trusted_receiver_and_stays_spent() {
-    settlement_race("legacy-settlement-race", true, None, &[], false);
+    settlement_race("legacy-settlement-race", true, None, &[], None);
 }
 
 fn assert_locked(directory: &Path) {
@@ -47,7 +47,7 @@ fn settlement_race(
     legacy_migration: bool,
     first: Option<late_batch::FirstCommit>,
     rounds: &[late_batch::RecoveryRound],
-    settled_backfill: bool,
+    settled_backfill: Option<late_batch::SettledReplay>,
 ) {
     let handoff_first = first.is_some();
     let directory = durable_directory(case);

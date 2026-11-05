@@ -544,6 +544,21 @@ impl<'a> DurableRefreshLedger<'a> {
             .collect())
     }
 
+    /// Discover settled records still missing mappings from the current durable
+    /// image. Missing evidence remains discoverable; this read grants no send.
+    pub fn settled_unmapped_operations(&self) -> Result<Vec<OperationId>, String> {
+        let file = LockedCheckpoint::open(self.directory)?;
+        let image = self.read(&file)?;
+        Ok(image
+            .effects
+            .into_iter()
+            .filter_map(|(operation, effect)| {
+                (effect.resolved && effect.receipt_identity.is_none())
+                    .then_some(OperationId(operation))
+            })
+            .collect())
+    }
+
     /// Settle an explicitly detached effect. Managed deliveries require the
     /// independently acknowledged receiver image through its reconciliation port.
     pub fn reconcile_effect(&self, input: DurableEffectRecovery<'_>) -> Result<bool, String> {

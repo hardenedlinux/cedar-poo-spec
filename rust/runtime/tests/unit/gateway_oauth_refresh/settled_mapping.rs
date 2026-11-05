@@ -1,6 +1,6 @@
 use super::{
-    FirstCommit, RecoveryRound, RestartFixture, assert_locked, finish_worker, kill_worker,
-    run_worker, settlement_race, spawn_worker, takeover, trace, wait_for_marker,
+    FirstCommit, OwnedWorker, RecoveryRound, RestartFixture, assert_locked, run_worker,
+    settled_batch, settlement_race, takeover, trace, wait_for_marker,
 };
 use crate::gateway::checkpoint_store::CheckpointStage;
 use crate::gateway::oauth_refresh_durable::{DurableEffectRecovery, DurableRefreshLedger};
@@ -23,29 +23,8 @@ fn trusted_settled_mapping_survives_restart_and_takeover() {
         true,
         Some(FirstCommit::Migration),
         &[RecoveryRound::baseline()],
-        true,
+        Some(exercise),
     );
-}
-
-struct OwnedWorker(Option<std::process::Child>);
-impl OwnedWorker {
-    fn spawn(path: &Path, phase: &str) -> Self {
-        Self(Some(spawn_worker(path, phase)))
-    }
-    fn crash(mut self) {
-        kill_worker(self.0.take().unwrap());
-    }
-    fn finish(mut self, phase: &str) {
-        finish_worker(self.0.take().unwrap(), phase);
-    }
-}
-impl Drop for OwnedWorker {
-    fn drop(&mut self) {
-        if let Some(child) = &mut self.0 {
-            let _ = child.kill();
-            let _ = child.wait();
-        }
-    }
 }
 
 pub(super) fn exercise(root: &Path, fixture: &mut RestartFixture, outcome: &Signed) -> ReceiverCut {
@@ -272,6 +251,19 @@ pub(super) fn worker(root: &Path, fixture: &RestartFixture, phase: &str) {
             .stopped
             .is_some()
     );
+    if phase.starts_with("settled-batch-") {
+        let mut batch = vec![input()];
+        if phase.ends_with("-a") {
+            batch.push(evidence(&fixture.prefix, &empty, &[]));
+            batch.push(evidence(&fixture.effect, &conflict_journal, &conflict));
+        } else {
+            batch.push(evidence(&fixture.effect, &conflict_journal, &conflict));
+            batch.push(evidence(&fixture.prefix, &empty, &[]));
+        }
+        batch.push(input());
+        settled_batch::worker(root, fixture, phase, &receiver, &oauth, &configured, batch);
+        return;
+    }
     let batch = if phase == "settled-map-staged" || phase == "settled-map-durable" {
         vec![input()]
     } else {

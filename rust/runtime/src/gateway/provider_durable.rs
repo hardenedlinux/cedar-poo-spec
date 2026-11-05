@@ -609,23 +609,9 @@ impl<'a> DurableReceiver<'a> {
         oauth: &DurableRefreshLedger<'_>,
         inputs: impl IntoIterator<Item = DurableEffectRecovery<'e>>,
         trusted: &LegacyReceiverTrust,
-        mut observe: impl FnMut(&OperationId, CheckpointStage) -> Result<(), String>,
+        observe: impl FnMut(&OperationId, CheckpointStage) -> Result<(), String>,
     ) -> LegacyMigrationReport {
-        let mut report = LegacyMigrationReport::default();
-        for input in inputs {
-            let operation = OperationId(input.effect.operation.clone());
-            match self.reconcile_oauth_at(oauth, input, Some(trusted), |stage| {
-                observe(&operation, stage)
-            }) {
-                Ok(true) => report.confirmed.push(operation),
-                Ok(false) => report.pending.push(operation),
-                Err(error) => {
-                    report.stopped = Some(LegacyMigrationStop { operation, error });
-                    break;
-                }
-            }
-        }
-        report
+        self.migrate_oauth_batch_at(oauth, inputs, trusted, false, observe)
     }
 
     /// Explicitly backfill settled legacy records using the current independent
@@ -644,12 +630,23 @@ impl<'a> DurableReceiver<'a> {
         oauth: &DurableRefreshLedger<'_>,
         inputs: impl IntoIterator<Item = DurableEffectRecovery<'e>>,
         trusted: &LegacyReceiverTrust,
+        observe: impl FnMut(&OperationId, CheckpointStage) -> Result<(), String>,
+    ) -> LegacyMigrationReport {
+        self.migrate_oauth_batch_at(oauth, inputs, trusted, true, observe)
+    }
+
+    fn migrate_oauth_batch_at<'e>(
+        &self,
+        oauth: &DurableRefreshLedger<'_>,
+        inputs: impl IntoIterator<Item = DurableEffectRecovery<'e>>,
+        trusted: &LegacyReceiverTrust,
+        settled: bool,
         mut observe: impl FnMut(&OperationId, CheckpointStage) -> Result<(), String>,
     ) -> LegacyMigrationReport {
         let mut report = LegacyMigrationReport::default();
         for input in inputs {
             let operation = OperationId(input.effect.operation.clone());
-            match self.reconcile_oauth_mode_at(oauth, input, Some(trusted), true, |stage| {
+            match self.reconcile_oauth_mode_at(oauth, input, Some(trusted), settled, |stage| {
                 observe(&operation, stage)
             }) {
                 Ok(true) => report.confirmed.push(operation),

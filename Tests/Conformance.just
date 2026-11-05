@@ -38,6 +38,7 @@ check-gateway:
     timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 --run Tests/Gateway/RecoveryTraceMain.lean > .lake/build/gateway-recovery-plan.json
     timeout --signal=TERM --kill-after=3s 120s cargo test --locked -p cedar-poo-runtime --features gateway --lib gateway::oauth_refresh::tests::settlement::late_batch::trace:: -- --ignored --nocapture
     timeout --signal=TERM --kill-after=3s 120s cargo test --locked -p cedar-poo-runtime --features gateway --lib gateway::oauth_refresh::tests::settlement::late_batch::settled_mapping:: -- --ignored --nocapture
+    timeout --signal=TERM --kill-after=3s 120s cargo test --locked -p cedar-poo-runtime --features gateway --lib gateway::oauth_refresh::tests::settlement::late_batch::settled_batch:: -- --ignored --nocapture
 
 check-gateway-delta: check-gateway
     lake build Productions.Gateway.CurrentUseMain

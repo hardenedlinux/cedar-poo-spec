@@ -1602,6 +1602,39 @@ three-second drain; it does not partition or replace the original workload.
 Both gates run in the existing Zero Trust CI module, alongside the unchanged
 51-domain reviewed-effect and lifecycle acceptance suite.
 
+The =ReceiptBatch= Contract folds the same typed per-operation backfill
+Contract over the current image. Its report records the confirmed prefix,
+pending evidence and the first fenced suffix item. A report or worker-local
+offset is not durable progress. =settled_unmapped_operations= reads that
+progress from the current writer's checkpoint, including records still
+missing evidence. A successor replays the original or overlapping inputs
+against the recovered image and refreshed actor metadata.
+
+Every item rereads writer and receiver authority. The shared Rust batch driver
+releases per-item locks before obtaining the next iterator item, permitting
+handoff or revocation between items. Both old workers stop with their own
+confirmed prefixes intact. The new writer can confirm committed rows without
+rewriting them, retain missing-evidence rows, and reject conflicts regardless
+of their position in a resumed batch. No batch-wide rollback or fabricated
+completion is needed.
+
+The single-operation Contract also checks that backfill preserves authorization,
+writer identity and the exact retained intent list. The finite batch trace
+therefore preserves every operation burn. The batch no-resend theorem follows
+from that burn even without relying on revocation as an extra refusal. Fold
+composition, stopped-suffix preservation and immutable receipt bindings cover
+interrupted and reordered replay.
+
+The batch fault replay runs two restarted workers over overlapping inputs,
+loses the first durable acknowledgment, pauses both after the same committed
+prefix, then hands off, performs a real revocation transition and hands off
+again. Both retired suffixes are fenced. Fresh workers discover the remaining
+settled row from durable state, lose another read-only confirmation and resume
+through five additional handoffs. The missing-evidence row stays discoverable;
+the original mapping remains idempotent and conflicting receipts cannot replace
+it. This fixed scenario is additional to both existing recovery workloads and
+uses the same 120-second process limit and three-second drain.
+
 The first clean audit durably binds the canonical identity of the
 signed outcome. A later audit of that same outcome is idempotent.
 A different signed outcome cannot replace it, even if presented

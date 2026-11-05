@@ -21,11 +21,37 @@ use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::time::{Duration, Instant};
 
+#[path = "settled_batch.rs"]
+mod settled_batch;
 #[path = "settled_mapping.rs"]
 mod settled_mapping;
 #[path = "recovery_trace.rs"]
 mod trace;
 pub(super) use trace::{RecoveryRound, Worker};
+
+/// An additional migration scenario after the unchanged shared fixture.
+pub(super) type SettledReplay = fn(&Path, &mut RestartFixture, &Signed) -> ReceiverCut;
+
+struct OwnedWorker(Option<std::process::Child>);
+impl OwnedWorker {
+    fn spawn(path: &Path, phase: &str) -> Self {
+        Self(Some(spawn_worker(path, phase)))
+    }
+    fn crash(mut self) {
+        kill_worker(self.0.take().unwrap());
+    }
+    fn finish(mut self, phase: &str) {
+        finish_worker(self.0.take().unwrap(), phase);
+    }
+}
+impl Drop for OwnedWorker {
+    fn drop(&mut self) {
+        if let Some(child) = &mut self.0 {
+            let _ = child.kill();
+            let _ = child.wait();
+        }
+    }
+}
 
 const FIXTURE: &str = "CEDAR_OAUTH_LATE_BATCH_FIXTURE";
 const PHASE: &str = "CEDAR_OAUTH_LATE_BATCH_PHASE";
@@ -62,7 +88,7 @@ fn legacy_migration_takeover_first_fences_batch_suffix() {
         true,
         Some(FirstCommit::Takeover),
         &[RecoveryRound::baseline()],
-        false,
+        None,
     );
 }
 
@@ -73,7 +99,7 @@ fn legacy_migration_commit_first_survives_revoked_batch_takeover() {
         true,
         Some(FirstCommit::Migration),
         &[RecoveryRound::baseline()],
-        false,
+        None,
     );
 }
 
@@ -83,7 +109,7 @@ pub(super) fn replay_across_processes(
     outcome: &Signed,
     first: FirstCommit,
     rounds: &[RecoveryRound],
-    settled_backfill: bool,
+    settled_backfill: Option<SettledReplay>,
 ) -> (WriterCut, ReceiverCut, PathBuf) {
     let fixture_path = root.join("restart-fixture.json");
     let write_fixture = |fixture: &RestartFixture| {
@@ -198,8 +224,8 @@ pub(super) fn replay_across_processes(
             })
         );
     }
-    if settled_backfill {
-        cut = settled_mapping::exercise(root, &mut fixture, outcome);
+    if let Some(replay) = settled_backfill {
+        cut = replay(root, &mut fixture, outcome);
     }
     (fixture.writer, cut, fixture.active)
 }
@@ -368,10 +394,36 @@ fn wait_for_marker(path: &Path) {
     while !path.exists() {
         assert!(
             start.elapsed() < Duration::from_secs(10),
-            "waiting for {path:?}"
+            "waiting for {path:?}; worker failures: {}",
+            worker_failures(path)
         );
         std::thread::sleep(Duration::from_millis(10));
     }
+}
+
+fn worker_failures(marker: &Path) -> String {
+    let directory = marker.parent().unwrap();
+    let root = if directory
+        .file_name()
+        .is_some_and(|name| name.to_string_lossy().starts_with("recovery-round-"))
+    {
+        directory.parent().unwrap()
+    } else {
+        directory
+    };
+    std::fs::read_dir(root)
+        .into_iter()
+        .flatten()
+        .filter_map(Result::ok)
+        .filter(|entry| {
+            entry
+                .path()
+                .extension()
+                .is_some_and(|extension| extension == "worker-failure")
+        })
+        .filter_map(|entry| std::fs::read_to_string(entry.path()).ok())
+        .collect::<Vec<_>>()
+        .join("; ")
 }
 
 fn finish_worker(child: Child, phase: &str) {
@@ -391,10 +443,16 @@ fn restart_worker() {
         return;
     };
     let root = fixture_path.parent().unwrap();
+    let failure_path = root.join(format!("{}.worker-failure", std::env::var(PHASE).unwrap()));
+    let original_hook = std::panic::take_hook();
+    std::panic::set_hook(Box::new(move |failure| {
+        let _ = std::fs::write(&failure_path, failure.to_string());
+        original_hook(failure);
+    }));
     let fixture: RestartFixture =
         serde_json::from_slice(&std::fs::read(&fixture_path).unwrap()).unwrap();
     let requested = std::env::var(PHASE).unwrap();
-    if requested.starts_with("settled-map-") {
+    if requested.starts_with("settled-map-") || requested.starts_with("settled-batch-") {
         settled_mapping::worker(root, &fixture, &requested);
         return;
     }
