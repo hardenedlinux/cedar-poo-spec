@@ -110,6 +110,10 @@ pub(super) enum RecoveryRequest {
 }
 
 impl RetainedEffect {
+    fn is_legacy_unresolved(&self) -> bool {
+        self.recovery_origin.is_none() && !self.resolved && self.settled_outcome.is_none()
+    }
+
     fn matches_origin(&self, request: &RecoveryRequest) -> bool {
         match (&self.recovery_origin, request) {
             (Some(RecoveryOrigin::Detached), RecoveryRequest::Detached) => true,
@@ -122,9 +126,7 @@ impl RetainedEffect {
             // Older settlements with an exact identity can only confirm that
             // outcome through the existing detached port.
             (None, RecoveryRequest::Detached) => self.resolved && self.settled_outcome.is_some(),
-            (None, RecoveryRequest::LegacyMigration(_)) => {
-                !self.resolved && self.settled_outcome.is_none()
-            }
+            (None, RecoveryRequest::LegacyMigration(_)) => self.is_legacy_unresolved(),
             _ => false,
         }
     }
@@ -464,6 +466,22 @@ impl<'a> DurableRefreshLedger<'a> {
             Some(effect) if effect.resolved => EffectStatus::Reconciled,
             Some(_) => EffectStatus::Unresolved,
         })
+    }
+
+    /// List legacy unresolved operation IDs for evidence collection. This
+    /// read does not bind a receiver or authorize a new send.
+    pub fn legacy_unresolved_operations(&self) -> Result<Vec<OperationId>, String> {
+        let file = LockedCheckpoint::open(self.directory)?;
+        let image = self.read(&file)?;
+        Ok(image
+            .effects
+            .into_iter()
+            .filter_map(|(operation, effect)| {
+                effect
+                    .is_legacy_unresolved()
+                    .then_some(OperationId(operation))
+            })
+            .collect())
     }
 
     /// Settle an explicitly detached effect. Managed deliveries require the

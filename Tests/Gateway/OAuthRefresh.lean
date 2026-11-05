@@ -137,6 +137,16 @@ private def crashExercise (durable : Revocation.Recovery.Store)
   let legacyRecovery := { anchored with audit := legacyAudit }
   let migration : Receiver.LegacyMigration := ⟨legacyRecovery, successor.result.binding⟩
   let .ok migrated := Receiver.legacyMigrationContract.invoke Receiver.prepareLegacyMigration migration | return false
+  let missingEntry : Revocation.Crash.Retained :=
+    ⟨unrelated, CedarPooSpec.Gateway.Lifecycle.WitnessFrontier.observe "log" extendedEntries,
+      "provider", none, true⟩
+  let batchImage := { legacyImage with retained := missingEntry :: legacyImage.retained }
+  let missingAudit := { legacyAudit with operation := unrelated.operation, actions := [], outcomes := [] }
+  let missingItem := { legacyRecovery with audit := missingAudit }
+  let batchInput : Receiver.LegacyBatchInput :=
+    ⟨batchImage, successor.result.binding, [missingItem, legacyRecovery]⟩
+  let .ok batch := Receiver.legacyBatchContract.invoke Receiver.prepareLegacyBatch batchInput | return false
+  let rerunBatch := { batchInput with image := batch.result.image }
   let oldWriterAudit := { legacyAudit with writer := 1 }
   let oldWriterRecovery := { legacyRecovery with audit := oldWriterAudit }
   let oldReplicaRecovery := { legacyRecovery with placement := "standby" }
@@ -164,6 +174,11 @@ private def crashExercise (durable : Revocation.Recovery.Store)
     decide (lateSettlement.result.settledOutcome intent.operation = some outcome) &&
     decide (Revocation.Crash.reconcile { late with image := lateSettlement.result } = some lateSettlement.result) &&
     (Revocation.Crash.reconcile conflictingEvidence).isNone &&
+    decide (batch.result.confirmed = [intent.operation]) &&
+    decide (batch.result.pending = [unrelated.operation]) &&
+    batch.result.stopped.isNone &&
+    decide (Revocation.Crash.effectStatus batch.result.image unrelated.operation = .unresolved) &&
+    decide (rerunBatch.run.image = batch.result.image) &&
     (Revocation.Crash.reconcile legacyAudit).isNone &&
     (Receiver.reconcileManaged legacyRecovery).isNone &&
     (Receiver.migrateLegacy { migration with recovery := legacyConflict }).isNone &&
@@ -387,3 +402,7 @@ end Tests.Gateway.OAuthRefresh
 
 #print axioms CedarPooSpec.Gateway.OAuth.Receiver.retired_replica_cannot_migrate
 #print axioms CedarPooSpec.Gateway.OAuth.Receiver.retired_writer_cannot_migrate
+
+#print axioms CedarPooSpec.Gateway.OAuth.Receiver.legacyBatch_resume_prefix
+#print axioms CedarPooSpec.Gateway.OAuth.Receiver.legacyBatch_preserves_authority
+#print axioms CedarPooSpec.Gateway.OAuth.Receiver.legacyBatch_cannot_reopen_operation

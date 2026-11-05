@@ -551,4 +551,96 @@ theorem legacy_migration_preserves_authority_and_burn
     · exact Revocation.Crash.migration_preserves_authority_and_burn accepted operation
     · contradiction
 
+structure LegacyBatchState where
+  image : Revocation.Crash.Image
+  confirmed : List String := []
+  pending : List String := []
+  stopped : Option String := none
+  deriving DecidableEq
+
+structure LegacyBatchInput where
+  image : Revocation.Crash.Image
+  trusted : Revocation.Crash.ReceiverBinding
+  items : List ManagedReconciliation
+
+def LegacyBatchState.step (trusted : Revocation.Crash.ReceiverBinding)
+    (state : LegacyBatchState) (item : ManagedReconciliation) : LegacyBatchState :=
+  if state.stopped.isSome then state
+  else
+    let operation := item.audit.operation
+    if item.audit.writer ≠ state.image.writer then { state with stopped := some operation }
+    else
+      let current := { item with audit := { item.audit with image := state.image } }
+      match migrateLegacy ⟨current, trusted⟩ with
+      | none => { state with pending := operation :: state.pending }
+      | some image => { state with image, confirmed := operation :: state.confirmed }
+
+def LegacyBatchInput.run (input : LegacyBatchInput) : LegacyBatchState :=
+  let result := input.items.foldl (LegacyBatchState.step input.trusted) { image := input.image }
+  { result with confirmed := result.confirmed.reverse, pending := result.pending.reverse }
+
+def legacyBatchContract : Contract Unit LegacyBatchInput LegacyBatchState where
+  input := ⟨"trusted-legacy-batch-and-durable-starting-image", fun _ => True, fun _ => inferInstance⟩
+  output := ⟨"committed-prefix-and-pending-operations", fun _ => True, fun _ => inferInstance⟩
+  meaning := fun _ input result => input.run = result
+  decide := fun _ _ _ => inferInstance
+  rule := .atom ()
+
+def prepareLegacyBatch (input : LegacyBatchInput) : Except String (LegacyBatchState × Unit) :=
+  .ok (input.run, ())
+
+/-- After a stop, the durable image is the resume point. For a completed
+prefix the fold can continue from exactly the state the prefix produced. -/
+theorem legacyBatch_resume_prefix (trusted : Revocation.Crash.ReceiverBinding)
+    (state : LegacyBatchState) (priorItems remainingItems : List ManagedReconciliation) :
+    (priorItems ++ remainingItems).foldl (LegacyBatchState.step trusted) state =
+      remainingItems.foldl (LegacyBatchState.step trusted) (priorItems.foldl (LegacyBatchState.step trusted) state) :=
+  List.foldl_append
+
+theorem legacyBatch_step_preserves_authority (trusted : Revocation.Crash.ReceiverBinding)
+    (state : LegacyBatchState) (item : ManagedReconciliation) (operation : String) :
+    let next := state.step trusted item
+    next.image.oauth = state.image.oauth ∧ next.image.writer = state.image.writer ∧
+      (next.image.retained.any fun entry => entry.intent.operation == operation) =
+        (state.image.retained.any fun entry => entry.intent.operation == operation) := by
+  unfold LegacyBatchState.step
+  split
+  · exact ⟨rfl, rfl, rfl⟩
+  · split
+    · exact ⟨rfl, rfl, rfl⟩
+    · dsimp only
+      split
+      · exact ⟨rfl, rfl, rfl⟩
+      · rename_i image migrated
+        let receipt : Invocation legacyMigrationContract prepareLegacyMigration
+            ⟨{ item with audit := { item.audit with image := state.image } }, trusted⟩ :=
+          ⟨image, (), by simp [prepareLegacyMigration, migrated], trivial, trivial, migrated⟩
+        exact legacy_migration_preserves_authority_and_burn receipt operation
+
+theorem legacyBatch_preserves_authority
+    (trusted : Revocation.Crash.ReceiverBinding) (state : LegacyBatchState)
+    (items : List ManagedReconciliation) (operation : String) :
+    let next := items.foldl (LegacyBatchState.step trusted) state
+    next.image.oauth = state.image.oauth ∧ next.image.writer = state.image.writer ∧
+      (next.image.retained.any fun entry => entry.intent.operation == operation) =
+        (state.image.retained.any fun entry => entry.intent.operation == operation) := by
+  induction items generalizing state with
+  | nil => exact ⟨rfl, rfl, rfl⟩
+  | cons item tail ih =>
+    have prior := legacyBatch_step_preserves_authority trusted state item operation
+    have rest := ih (state.step trusted item)
+    exact ⟨rest.1.trans prior.1, rest.2.1.trans prior.2.1, rest.2.2.trans prior.2.2⟩
+
+theorem legacyBatch_cannot_reopen_operation
+    (receipt : Invocation legacyBatchContract prepareLegacyBatch input)
+    (retry : Revocation.Crash.BeginInput)
+    (burned : (input.image.retained.any fun entry => entry.intent.operation == retry.operation) = true) :
+    Revocation.Crash.begin { retry with image := receipt.result.image } = none := by
+  have accepted : input.run = receipt.result := receipt.logic
+  have preserved := legacyBatch_preserves_authority input.trusted
+    { image := input.image } input.items retry.operation
+  apply Revocation.Crash.burned_operation_cannot_begin
+  rw [← accepted]
+  exact preserved.2.2.trans burned
+
 end CedarPooSpec.Gateway.OAuth.Receiver

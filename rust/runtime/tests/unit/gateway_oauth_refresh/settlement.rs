@@ -7,7 +7,8 @@ use crate::gateway::oauth_refresh_durable::{
     DurableEffectRecovery, DurableEffectUse, EffectStatus,
 };
 use crate::gateway::provider_durable::{
-    DurableReceiver, LegacyReceiverTrust, ReceiverDelivery, ReceiverDispatch, ReceiverTrust,
+    DurableReceiver, LegacyReceiverTrust, ManagedDeliveryStage, ReceiverDelivery, ReceiverDispatch,
+    ReceiverTrust,
 };
 use crate::gateway::wire::{sign, simulation_key};
 use crate::gateway::witness::PrecommitInput;
@@ -60,7 +61,7 @@ fn settlement_race(case: &str, legacy_migration: bool, handoff_first: bool) {
         oauth.enroll(input).unwrap()
     });
     let current = actual(grant.clone(), 14, "settlement-first");
-    let retry = actual(grant, 14, "settlement-retry");
+    let retry = actual(grant.clone(), 14, "settlement-retry");
 
     let effect = EffectIdentity {
         operation: "settled-operation".into(),
@@ -103,6 +104,32 @@ fn settlement_race(case: &str, legacy_migration: bool, handoff_first: bool) {
             publications: &[],
         })
         .unwrap();
+    let batch_effects =
+        ["batch-commit", "batch-tail", "batch-without-evidence"].map(|operation| EffectIdentity {
+            operation: operation.into(),
+            ..effect.clone()
+        });
+    let batch_operations = batch_effects
+        .each_ref()
+        .map(|entry| OperationId(entry.operation.clone()));
+    let batch_intents: Vec<_> = if handoff_first {
+        batch_effects
+            .iter()
+            .map(|entry| {
+                witness
+                    .append(PrecommitInput {
+                        current_world: "world",
+                        effect: entry,
+                        review: &review,
+                        facts: std::slice::from_ref(&fact),
+                        publications: &[],
+                    })
+                    .unwrap()
+            })
+            .collect()
+    } else {
+        Vec::new()
+    };
     let history = witness.snapshot();
     let log_key = witness.verifying_key();
     let sender = simulation_key(4);
@@ -170,6 +197,50 @@ fn settlement_race(case: &str, legacy_migration: bool, handoff_first: bool) {
         .receive_oauth(&oauth, use_effect(&initial, &current), delivery)
         .unwrap()
         .unwrap();
+    for (index, (entry, intent)) in batch_effects.iter().zip(&batch_intents).enumerate() {
+        let current = actual(grant.clone(), 14, &entry.operation);
+        let input = DurableEffectUse {
+            admission: DurableFinalUse {
+                checked: &initial,
+                replica: &initial,
+                current: &current,
+                base_allowed: true,
+            },
+            effect: entry,
+            intent,
+            history: &history,
+            trust,
+        };
+        let dispatch =
+            ReceiverDispatch::sign(active.cut().unwrap(), "original", intent, &sender).unwrap();
+        let delivery = ReceiverDelivery {
+            authorization: &dispatch,
+            channel: "original",
+            effect: entry,
+            bindings: std::slice::from_ref(&fact),
+            facts: &facts,
+            publications: &[],
+        };
+        if index == 2 {
+            assert!(
+                active
+                    .crash_receive_oauth(
+                        &oauth,
+                        input,
+                        delivery,
+                        ManagedDeliveryStage::OAuthReserved,
+                    )
+                    .is_err()
+            );
+        } else {
+            assert!(
+                active
+                    .receive_oauth(&oauth, input, delivery)
+                    .unwrap()
+                    .is_some()
+            );
+        }
+    }
     let operation = OperationId(effect.operation.clone());
     let original = active.evidence(&operation).unwrap().unwrap();
     assert_eq!(original.outcome, signed);
@@ -230,6 +301,17 @@ fn settlement_race(case: &str, legacy_migration: bool, handoff_first: bool) {
             .remove("recovery_origin")
             .is_some()
     );
+    if handoff_first {
+        for operation in &batch_operations {
+            assert!(
+                legacy["effects"][&operation.0]
+                    .as_object_mut()
+                    .unwrap()
+                    .remove("recovery_origin")
+                    .is_some()
+            );
+        }
+    }
     std::fs::write(
         legacy_path.join("checkpoint.json"),
         serde_json::to_vec(&legacy).unwrap(),
@@ -628,6 +710,144 @@ fn settlement_race(case: &str, legacy_migration: bool, handoff_first: bool) {
             !receiver(&successor)
                 .migrate_legacy_oauth(&writer, evidence(&conflicting, &signed_conflict), &trusted)
                 .unwrap()
+        );
+    }
+    if handoff_first {
+        let current_receiver = receiver(&successor);
+        assert_eq!(
+            writer.legacy_unresolved_operations().unwrap(),
+            batch_operations
+        );
+        let committed = current_receiver
+            .evidence(&batch_operations[0])
+            .unwrap()
+            .unwrap();
+        let tail = current_receiver
+            .evidence(&batch_operations[1])
+            .unwrap()
+            .unwrap();
+        assert!(
+            current_receiver
+                .evidence(&batch_operations[2])
+                .unwrap()
+                .is_none()
+        );
+        let committed_outcome = [committed.outcome];
+        let tail_outcome = [tail.outcome];
+        let empty = ProviderJournal::default();
+        let batch = || {
+            [
+                evidence(&settled.journal, &signed),
+                DurableEffectRecovery {
+                    effect: &batch_effects[2],
+                    journal: &empty,
+                    outcomes: &[],
+                    ..evidence(&settled.journal, &signed)
+                },
+                DurableEffectRecovery {
+                    effect: &batch_effects[0],
+                    journal: &committed.journal,
+                    outcomes: &committed_outcome,
+                    ..evidence(&settled.journal, &signed)
+                },
+                DurableEffectRecovery {
+                    effect: &batch_effects[1],
+                    journal: &tail.journal,
+                    outcomes: &tail_outcome,
+                    ..evidence(&settled.journal, &signed)
+                },
+            ]
+        };
+        let fenced =
+            current_receiver.migrate_legacy_oauth_batch(&standby_writer, batch(), &trusted);
+        assert!(fenced.confirmed.is_empty());
+        assert_eq!(fenced.stopped.unwrap().operation, operation);
+        let partial = current_receiver.migrate_legacy_oauth_batch_at(
+            &writer,
+            batch(),
+            &trusted,
+            |item, stage| {
+                assert_eq!(item, &batch_operations[0]);
+                if stage == CheckpointStage::Durable {
+                    Err("batch acknowledgment lost".into())
+                } else {
+                    Ok(())
+                }
+            },
+        );
+        assert_eq!(partial.confirmed, [operation.clone()]);
+        assert_eq!(partial.pending, [batch_operations[2].clone()]);
+        let stopped = partial.stopped.unwrap();
+        assert_eq!(stopped.operation, batch_operations[0]);
+        assert_eq!(stopped.error, "batch acknowledgment lost");
+        assert_eq!(
+            writer.legacy_unresolved_operations().unwrap(),
+            &batch_operations[1..]
+        );
+        let resumed = current_receiver.migrate_legacy_oauth_batch_at(
+            &writer,
+            batch(),
+            &trusted,
+            |item, _| {
+                assert_eq!(item, &batch_operations[1]);
+                Ok(())
+            },
+        );
+        assert_eq!(
+            resumed.confirmed,
+            [
+                operation.clone(),
+                batch_operations[0].clone(),
+                batch_operations[1].clone()
+            ]
+        );
+        assert_eq!(resumed.pending, [batch_operations[2].clone()]);
+        assert!(resumed.stopped.is_none());
+        assert_eq!(
+            writer.legacy_unresolved_operations().unwrap(),
+            [batch_operations[2].clone()]
+        );
+        assert_eq!(
+            current_receiver.migrate_legacy_oauth_batch_at(&writer, batch(), &trusted, |_, _| {
+                panic!("repeating a completed batch wrote another checkpoint")
+            }),
+            resumed
+        );
+        let checkpoint = writer.checkpoint().unwrap();
+        let dispatch = ReceiverDispatch::sign(
+            successor_cut.clone(),
+            "batch-retry",
+            &batch_intents[0],
+            &sender,
+        )
+        .unwrap();
+        assert!(
+            current_receiver
+                .receive_oauth(
+                    &writer,
+                    DurableEffectUse {
+                        effect: &batch_effects[0],
+                        intent: &batch_intents[0],
+                        admission: DurableFinalUse {
+                            checked: &checkpoint,
+                            replica: &checkpoint,
+                            current: &retry,
+                            base_allowed: true,
+                        },
+                        history: &history,
+                        trust,
+                    },
+                    ReceiverDelivery {
+                        authorization: &dispatch,
+                        channel: "batch-retry",
+                        effect: &batch_effects[0],
+                        bindings: std::slice::from_ref(&fact),
+                        facts: &facts,
+                        publications: &[],
+                    },
+                )
+                .unwrap()
+                .is_none()
         );
     }
     let latest = writer.checkpoint().unwrap();

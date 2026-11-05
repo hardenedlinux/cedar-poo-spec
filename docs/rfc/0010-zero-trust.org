@@ -1374,6 +1374,24 @@ managed reconciliation. Confirmation makes no checkpoint write.
 Migration and confirmation preserve the OAuth revocation frontier
 and the operation and proof reservations.
 
+*** Resumable legacy batches
+
+The current OAuth writer can list originless unresolved operation
+IDs and collect evidence from the independently configured receiver.
+A batch uses that same receiver configuration for every item and
+reuses the single-operation migration. Missing or rejected evidence
+is reported as pending and leaves its reservation intact.
+
+Each accepted item commits independently. An I/O error or fencing
+failure stops the attempt and identifies the affected operation.
+The stopped item may already be durable if its acknowledgment was
+lost. After reopening the active writer and receiver, resubmit the
+original batch. The durable OAuth image supplies the resume point,
+including any committed item whose acknowledgment was lost.
+Previously accepted receipts confirm without another write.
+Remaining eligible operations can migrate, while pending operations
+stay reserved. A batch does not replay delivery or reset revocation.
+
 The first clean audit durably binds the canonical identity of the
 signed outcome. A later audit of that same outcome is idempotent.
 A different signed outcome cannot replace it, even if presented

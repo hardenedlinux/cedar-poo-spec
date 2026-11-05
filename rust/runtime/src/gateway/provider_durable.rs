@@ -69,6 +69,22 @@ impl LegacyReceiverTrust {
     }
 }
 
+/// The completed prefix of a migration attempt. Each confirmed item is
+/// durable. A stopped item may have committed before its acknowledgment failed.
+#[derive(Debug, Default, PartialEq, Eq)]
+pub struct LegacyMigrationReport {
+    pub confirmed: Vec<OperationId>,
+    pub pending: Vec<OperationId>,
+    pub stopped: Option<LegacyMigrationStop>,
+}
+
+/// First operational failure. Resume from the durable OAuth image.
+#[derive(Debug, PartialEq, Eq)]
+pub struct LegacyMigrationStop {
+    pub operation: OperationId,
+    pub error: String,
+}
+
 /// Independently configured receiver scope and signing roots.
 pub struct ReceiverTrust<'a> {
     pub scope: &'a str,
@@ -591,6 +607,42 @@ impl<'a> DurableReceiver<'a> {
         trusted: &LegacyReceiverTrust,
     ) -> Result<bool, String> {
         self.reconcile_oauth_at(oauth, input, Some(trusted), |_| Ok(()))
+    }
+
+    /// Attempt a batch under one trusted receiver configuration. Each item
+    /// uses the single-operation commit. Resubmit the original inputs after
+    /// interruption to confirm the committed prefix and continue safely.
+    pub fn migrate_legacy_oauth_batch<'e>(
+        &self,
+        oauth: &DurableRefreshLedger<'_>,
+        inputs: impl IntoIterator<Item = DurableEffectRecovery<'e>>,
+        trusted: &LegacyReceiverTrust,
+    ) -> LegacyMigrationReport {
+        self.migrate_legacy_oauth_batch_at(oauth, inputs, trusted, |_, _| Ok(()))
+    }
+
+    pub(super) fn migrate_legacy_oauth_batch_at<'e>(
+        &self,
+        oauth: &DurableRefreshLedger<'_>,
+        inputs: impl IntoIterator<Item = DurableEffectRecovery<'e>>,
+        trusted: &LegacyReceiverTrust,
+        mut observe: impl FnMut(&OperationId, CheckpointStage) -> Result<(), String>,
+    ) -> LegacyMigrationReport {
+        let mut report = LegacyMigrationReport::default();
+        for input in inputs {
+            let operation = OperationId(input.effect.operation.clone());
+            match self.reconcile_oauth_at(oauth, input, Some(trusted), |stage| {
+                observe(&operation, stage)
+            }) {
+                Ok(true) => report.confirmed.push(operation),
+                Ok(false) => report.pending.push(operation),
+                Err(error) => {
+                    report.stopped = Some(LegacyMigrationStop { operation, error });
+                    break;
+                }
+            }
+        }
+        report
     }
 
     pub(super) fn reconcile_oauth_at(
