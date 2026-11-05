@@ -22,15 +22,28 @@ use std::sync::mpsc;
 
 #[test]
 fn concurrent_settlement_survives_lost_acknowledgment_and_handoffs() {
-    settlement_race("settlement-race", false);
+    settlement_race("settlement-race", false, false);
 }
 
 #[test]
 fn legacy_unresolved_requires_trusted_receiver_and_stays_spent() {
-    settlement_race("legacy-settlement-race", true);
+    settlement_race("legacy-settlement-race", true, false);
 }
 
-fn settlement_race(case: &str, legacy_migration: bool) {
+#[test]
+fn legacy_migration_rejects_writer_and_replica_fenced_by_handoffs() {
+    settlement_race("legacy-handoff-first", true, true);
+}
+
+fn assert_locked(directory: &Path) {
+    let file = std::fs::File::open(directory.join("checkpoint.lock")).unwrap();
+    assert!(matches!(
+        file.try_lock(),
+        Err(std::fs::TryLockError::WouldBlock)
+    ));
+}
+
+fn settlement_race(case: &str, legacy_migration: bool, handoff_first: bool) {
     let directory = durable_directory(case);
     let oauth_path = directory.join("oauth");
     let pin = directory.join("pin");
@@ -348,7 +361,104 @@ fn settlement_race(case: &str, legacy_migration: bool) {
         );
     }
 
-    std::thread::scope(|scope| {
+    let (current_replica, next_replica, current_writer) = if handoff_first {
+        std::fs::copy(
+            primary.join("checkpoint.json"),
+            standby.join("checkpoint.json"),
+        )
+        .unwrap();
+        let expected = active.acknowledged_checkpoint().unwrap();
+        let standby_receiver = receiver(&standby);
+        let (migration_result, promoted, revoked_writer) = std::thread::scope(|scope| {
+            let (staged, staged_observed) = mpsc::channel();
+            let (release, proceed) = mpsc::channel();
+            let (handoff_started, handoff_ready) = mpsc::channel();
+            let (revoke_started, revoke_ready) = mpsc::channel();
+            let original_input = evidence(&original.journal, &signed);
+            let old_receiver = &active;
+            let migrating = scope.spawn(move || {
+                old_receiver.reconcile_oauth_at(&open(), original_input, migration, |stage| {
+                    assert!(stage == CheckpointStage::Staged);
+                    staged.send(()).unwrap();
+                    proceed.recv().map_err(|error| error.to_string())?;
+                    Err("migration interrupted before checkpoint install".into())
+                })
+            });
+            staged_observed.recv().unwrap();
+            assert_locked(&pin);
+            assert_locked(&oauth_path);
+            let promoting = scope.spawn(move || {
+                handoff_started.send(()).unwrap();
+                standby_receiver.promote(&expected)
+            });
+            let revoking = scope.spawn(move || {
+                revoke_started.send(()).unwrap();
+                let writer = open().rotate_writer()?;
+                let current = open().for_writer(writer);
+                assert!(current.revoke(verified(digest()))?);
+                Ok::<_, String>(writer)
+            });
+            handoff_ready.recv().unwrap();
+            revoke_ready.recv().unwrap();
+            release.send(()).unwrap();
+            (
+                migrating.join().unwrap(),
+                promoting.join().unwrap(),
+                revoking.join().unwrap(),
+            )
+        });
+        assert_eq!(
+            migration_result.unwrap_err(),
+            "migration interrupted before checkpoint install"
+        );
+        promoted.unwrap();
+        let writer = revoked_writer.unwrap();
+        let current = open().for_writer(writer);
+        assert_eq!(
+            current.effect_status(&operation).unwrap(),
+            EffectStatus::Unresolved
+        );
+        assert!(
+            receiver(&standby)
+                .migrate_legacy_oauth(&oauth, evidence(&original.journal, &signed), &trusted)
+                .is_err()
+        );
+        assert!(
+            active
+                .migrate_legacy_oauth(&current, evidence(&original.journal, &signed), &trusted)
+                .is_err()
+        );
+        assert_eq!(
+            current.effect_status(&operation).unwrap(),
+            EffectStatus::Unresolved
+        );
+        (&standby, &primary, Some(writer))
+    } else {
+        (&primary, &standby, None)
+    };
+    let current_oauth = || {
+        let ledger = open();
+        match current_writer {
+            Some(writer) => ledger.for_writer(writer),
+            None => ledger,
+        }
+    };
+    let active = receiver(current_replica);
+    let oauth = current_oauth();
+
+    let promote_during_commit = legacy_migration && !handoff_first;
+    let competing_handoff = promote_during_commit.then(|| {
+        std::fs::copy(
+            current_replica.join("checkpoint.json"),
+            next_replica.join("checkpoint.json"),
+        )
+        .unwrap();
+        (
+            receiver(next_replica),
+            active.acknowledged_checkpoint().unwrap(),
+        )
+    });
+    let committed_cut = std::thread::scope(|scope| {
         let (staged, staged_observed) = mpsc::channel();
         let (release, proceed) = mpsc::channel();
         let (started, contender_started) = mpsc::channel();
@@ -356,33 +466,65 @@ fn settlement_race(case: &str, legacy_migration: bool) {
         let conflict_input = evidence(&conflicting, &signed_conflict);
         let receiver = &active;
         let first = scope.spawn(move || {
-            receiver.reconcile_oauth_at(&open(), original_input, migration, |stage| match stage {
-                CheckpointStage::Staged => {
-                    staged.send(()).unwrap();
-                    proceed.recv().map_err(|error| error.to_string())
+            receiver.reconcile_oauth_at(&current_oauth(), original_input, migration, |stage| {
+                match stage {
+                    CheckpointStage::Staged => {
+                        staged.send(()).unwrap();
+                        proceed.recv().map_err(|error| error.to_string())
+                    }
+                    CheckpointStage::Durable => Err("settlement acknowledgment lost".into()),
                 }
-                CheckpointStage::Durable => Err("settlement acknowledgment lost".into()),
             })
         });
         staged_observed.recv().unwrap();
+        assert_locked(&pin);
+        assert_locked(&oauth_path);
         let second = scope.spawn(move || {
             started.send(()).unwrap();
             if let Some(trusted) = migration {
-                receiver.migrate_legacy_oauth(&open(), conflict_input, trusted)
+                receiver.migrate_legacy_oauth(&current_oauth(), conflict_input, trusted)
             } else {
-                receiver.reconcile_oauth(&open(), conflict_input)
+                receiver.reconcile_oauth(&current_oauth(), conflict_input)
             }
         });
         contender_started.recv().unwrap();
+        let competing = competing_handoff.map(|(standby, expected)| {
+            let (promotion_started, promotion_ready) = mpsc::channel();
+            let (revocation_started, revocation_ready) = mpsc::channel();
+            let promoting = scope.spawn(move || {
+                promotion_started.send(()).unwrap();
+                standby.promote(&expected)
+            });
+            let revoking = scope.spawn(move || {
+                revocation_started.send(()).unwrap();
+                current_oauth().revoke(verified(digest()))
+            });
+            promotion_ready.recv().unwrap();
+            revocation_ready.recv().unwrap();
+            (promoting, revoking)
+        });
         release.send(()).unwrap();
         assert_eq!(
             first.join().unwrap().unwrap_err(),
             "settlement acknowledgment lost"
         );
-        assert!(!second.join().unwrap().unwrap());
+        match second.join().unwrap() {
+            Ok(accepted) => assert!(!accepted),
+            Err(error) => {
+                assert!(promote_during_commit);
+                assert_eq!(
+                    error,
+                    "receiver replica differs from the independent checkpoint"
+                );
+            }
+        }
+        competing.map(|(promoting, revoking)| {
+            assert!(revoking.join().unwrap().unwrap());
+            promoting.join().unwrap().unwrap()
+        })
     });
     assert_eq!(
-        open().effect_status(&operation).unwrap(),
+        current_oauth().effect_status(&operation).unwrap(),
         EffectStatus::Reconciled
     );
 
@@ -397,9 +539,18 @@ fn settlement_race(case: &str, legacy_migration: bool) {
             signed[0].source_sha256().unwrap()
         );
         assert!(
-            !active
-                .migrate_legacy_oauth(&oauth, evidence(&original.journal, &signed), &trusted)
-                .unwrap()
+            receiver(if promote_during_commit {
+                next_replica
+            } else {
+                current_replica
+            })
+            .reconcile_oauth_at(
+                &oauth,
+                evidence(&original.journal, &signed),
+                migration,
+                |_| { panic!("legacy confirmation attempted a second checkpoint write") }
+            )
+            .unwrap()
         );
     }
 
@@ -412,12 +563,12 @@ fn settlement_race(case: &str, legacy_migration: bool) {
         let expected = receiver(from).acknowledged_checkpoint().unwrap();
         receiver(to).promote(&expected).unwrap()
     };
-    let standby_cut = promote(&primary, &standby);
+    let standby_cut = committed_cut.unwrap_or_else(|| promote(current_replica, next_replica));
     let standby_writer = open().for_writer(oauth.rotate_writer().unwrap());
     let changed_route = ReceiverDispatch::sign(standby_cut, "retry", &intent, &sender).unwrap();
     let standby_checkpoint = standby_writer.checkpoint().unwrap();
     assert!(
-        receiver(&standby)
+        receiver(next_replica)
             .receive_oauth(
                 &standby_writer,
                 use_effect(&standby_checkpoint, &retry),
@@ -433,14 +584,16 @@ fn settlement_race(case: &str, legacy_migration: bool) {
             .unwrap()
             .is_none()
     );
-    assert!(standby_writer.revoke(verified(digest())).unwrap());
+    if !handoff_first && !promote_during_commit {
+        assert!(standby_writer.revoke(verified(digest())).unwrap());
+    }
 
-    let successor_cut = promote(&standby, &successor);
+    let successor_cut = promote(next_replica, &successor);
     let writer = open().for_writer(standby_writer.rotate_writer().unwrap());
     let settled = receiver(&successor).evidence(&operation).unwrap().unwrap();
     assert_eq!(settled.outcome, signed[0]);
     assert!(
-        receiver(&standby)
+        receiver(next_replica)
             .reconcile_oauth(&writer, evidence(&settled.journal, &signed))
             .is_err()
     );
@@ -465,6 +618,18 @@ fn settlement_race(case: &str, legacy_migration: bool) {
         writer.effect_status(&operation).unwrap(),
         EffectStatus::Reconciled
     );
+    if legacy_migration {
+        assert!(
+            receiver(&successor)
+                .migrate_legacy_oauth(&writer, evidence(&settled.journal, &signed), &trusted)
+                .unwrap()
+        );
+        assert!(
+            !receiver(&successor)
+                .migrate_legacy_oauth(&writer, evidence(&conflicting, &signed_conflict), &trusted)
+                .unwrap()
+        );
+    }
     let latest = writer.checkpoint().unwrap();
     let new_dispatch =
         ReceiverDispatch::sign(successor_cut, "after-revocation", &intent, &sender).unwrap();

@@ -522,6 +522,19 @@ theorem foreign_receiver_cannot_migrate (present : input.recovery.observation = 
     (foreign : observation.binding ≠ input.trusted) : migrateLegacy input = none := by
   simp [migrateLegacy, present, foreign]
 
+theorem retired_replica_cannot_migrate (present : input.recovery.independent = some pin)
+    (retired : pin.active ≠ input.recovery.placement) : migrateLegacy input = none := by
+  simp [migrateLegacy, ManagedReconciliation.observation, present, retired]
+
+theorem retired_writer_cannot_migrate (input : LegacyMigration)
+    (stale : input.recovery.audit.writer ≠ input.recovery.audit.image.writer) :
+    migrateLegacy input = none := by
+  cases present : input.recovery.observation with
+  | none => simp [migrateLegacy, present]
+  | some observation =>
+    simp [migrateLegacy, present,
+      Revocation.Crash.migration_refuses_retired_writer input.recovery.audit observation stale]
+
 theorem legacy_migration_preserves_authority_and_burn
     (receipt : Invocation legacyMigrationContract prepareLegacyMigration input) (operation : String) :
     receipt.result.oauth = input.recovery.audit.image.oauth ∧

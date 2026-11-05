@@ -1362,11 +1362,17 @@ legacy reservation intact. A different checkpoint authority cannot
 supply the migration, even if it holds a byte-identical copy.
 
 The receiver binding and settlement identity commit in one OAuth
-checkpoint write. A staged interruption leaves the record
-unresolved. After a durable write with acknowledgment loss, the
-current writer confirms through ordinary managed reconciliation.
-Neither migration nor confirmation changes the OAuth revocation
-frontier or releases the operation or proof reservation.
+checkpoint write. Migration holds the OAuth lock and then the
+independent receiver lock through that write. A competing promotion
+or revocation is ordered before or after that commit. If a handoff
+wins first, the retired writer or replica cannot bind the operation.
+
+A staged interruption leaves the record unresolved. After a durable
+write with acknowledgment loss, the current writer can confirm the
+exact committed outcome through the same migration port or ordinary
+managed reconciliation. Confirmation makes no checkpoint write.
+Migration and confirmation preserve the OAuth revocation frontier
+and the operation and proof reservations.
 
 The first clean audit durably binds the canonical identity of the
 signed outcome. A later audit of that same outcome is idempotent.

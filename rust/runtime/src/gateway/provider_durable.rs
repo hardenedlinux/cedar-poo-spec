@@ -583,6 +583,7 @@ impl<'a> DurableReceiver<'a> {
 
     /// Bind and settle an originless unresolved operation in one OAuth write.
     /// The original receiver authority must come from trusted configuration.
+    /// A retry of the exact committed receipt is a read-only confirmation.
     pub fn migrate_legacy_oauth(
         &self,
         oauth: &DurableRefreshLedger<'_>,
@@ -625,27 +626,28 @@ impl<'a> DurableReceiver<'a> {
         intent: &Signed,
         outcome: &Signed,
         migration: bool,
-    ) -> Result<bool, String> {
+    ) -> Result<Option<LockedReceiver<'_>>, String> {
         let files = self.lock()?;
         let (image, checkpoint) = self.current(&files)?;
         if checkpoint.and_then(|pin| pin.oauth).as_ref() != Some(authority) {
-            return Ok(false);
+            return Ok(None);
         }
         let Some(delivery) = image.operations.admitted(operation) else {
-            return Ok(false);
+            return Ok(None);
         };
         if &delivery.outcome != outcome {
-            return Ok(false);
+            return Ok(None);
         }
         if !migration {
-            return Ok(true);
+            return Ok(Some(files));
         }
         let dispatch: ReceiverDispatch = verify(&delivery.authorization, self.trust.sender)?;
-        Ok(dispatch.version == VERSION
+        let matches = dispatch.version == VERSION
             && dispatch.domain == DISPATCH_DOMAIN
             && &dispatch.intent == intent
             && dispatch.cut.scope == image.cut.scope
-            && dispatch.cut.generation <= image.cut.generation)
+            && dispatch.cut.generation <= image.cut.generation;
+        Ok(matches.then_some(files))
     }
 
     /// Recover the original signed receipt and action without executing again.

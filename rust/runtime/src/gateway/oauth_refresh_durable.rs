@@ -116,6 +116,9 @@ impl RetainedEffect {
             (Some(RecoveryOrigin::Receiver(pinned)), RecoveryRequest::Receiver(binding)) => {
                 pinned == binding
             }
+            (Some(RecoveryOrigin::Receiver(pinned)), RecoveryRequest::LegacyMigration(binding)) => {
+                self.resolved && pinned == binding
+            }
             // Older settlements with an exact identity can only confirm that
             // outcome through the existing detached port.
             (None, RecoveryRequest::Detached) => self.resolved && self.settled_outcome.is_some(),
@@ -469,17 +472,17 @@ impl<'a> DurableRefreshLedger<'a> {
         self.reconcile_effect_at(
             input,
             RecoveryRequest::Detached,
-            |_, _| Ok(true),
+            |_, _| Ok(Some(())),
             |_| Ok(()),
         )
     }
 
-    pub(super) fn reconcile_receiver_effect(
+    pub(super) fn reconcile_receiver_effect<G>(
         &self,
         input: DurableEffectRecovery<'_>,
         authority: &ReceiverAuthority,
         request: RecoveryRequest,
-        committed: impl FnOnce(&Signed, &Signed) -> Result<bool, String>,
+        committed: impl FnOnce(&Signed, &Signed) -> Result<Option<G>, String>,
         observe: impl FnMut(CheckpointStage) -> Result<(), String>,
     ) -> Result<bool, String> {
         let ledger = DurableRefreshLedger {
@@ -490,11 +493,11 @@ impl<'a> DurableRefreshLedger<'a> {
         ledger.reconcile_effect_at(input, request, committed, observe)
     }
 
-    fn reconcile_effect_at(
+    fn reconcile_effect_at<G>(
         &self,
         input: DurableEffectRecovery<'_>,
         request: RecoveryRequest,
-        committed: impl FnOnce(&Signed, &Signed) -> Result<bool, String>,
+        committed: impl FnOnce(&Signed, &Signed) -> Result<Option<G>, String>,
         observe: impl FnMut(CheckpointStage) -> Result<(), String>,
     ) -> Result<bool, String> {
         let history = anchored_history(input.history, input.trust.authority)?;
@@ -517,9 +520,11 @@ impl<'a> DurableRefreshLedger<'a> {
         let Some(outcome) = outcome else {
             return Ok(false);
         };
-        if !committed(&effect.intent, outcome)? {
+        // Keep the independently verified receiver cut locked until the
+        // OAuth checkpoint commits or the attempt returns.
+        let Some(_receiver_guard) = committed(&effect.intent, outcome)? else {
             return Ok(false);
-        }
+        };
         let identity = outcome.source_sha256()?;
         if effect.resolved {
             return Ok(effect.settled_outcome.as_ref() == Some(&identity));

@@ -437,6 +437,8 @@ def migrateFrom (input : ReconcileInput) (observation : ReceiverObservation) : O
   let entry ← input.retained
   if entry.legacy = true ∧ entry.receiver = none ∧ input.image.settledOutcome input.operation = none then
     reconcileFrom (input.bindLegacy observation.binding) (some observation)
+  else if entry.receiver = some observation.binding ∧ (input.image.settledOutcome input.operation).isSome then
+    reconcileFrom input (some observation)
   else none
 
 theorem migration_preserves_authority_and_burn
@@ -453,7 +455,10 @@ theorem migration_preserves_authority_and_burn
       refine ⟨preserved.1, preserved.2.1, ?_⟩
       rw [preserved.2.2]
       simp [ReconcileInput.bindLegacy, List.any_map, Function.comp_def]
-    · contradiction
+    · split at applied
+      · have preserved := reconciliation_from_preserves_authority applied
+        exact ⟨preserved.1, preserved.2.1, by rw [preserved.2.2]⟩
+      · contradiction
 
 theorem migration_pins_committed_outcome
     (applied : migrateFrom input observation = some after) :
@@ -464,7 +469,9 @@ theorem migration_pins_committed_outcome
     simp only [migrateFrom, found, bind, Option.bind] at applied
     split at applied
     · exact reconciliation_from_pins_committed_outcome applied
-    · contradiction
+    · split at applied
+      · exact reconciliation_from_pins_committed_outcome applied
+      · contradiction
 
 theorem missing_committed_outcome_refuses_migration (input : ReconcileInput)
     (observation : ReceiverObservation) (missing : observation.outcome ∉ input.outcomes) :
@@ -475,6 +482,22 @@ theorem missing_committed_outcome_refuses_migration (input : ReconcileInput)
     have unchanged : (input.bindLegacy observation.binding).outcomes = input.outcomes := rfl
     simp [migrateFrom, found,
       missing_committed_outcome_refuses_recovery (input.bindLegacy observation.binding)
-        observation (unchanged.symm ▸ missing)]
+        observation (unchanged.symm ▸ missing),
+      missing_committed_outcome_refuses_recovery input observation missing]
+
+theorem reconciliation_refuses_retired_writer (input : ReconcileInput)
+    (observation : Option ReceiverObservation) (stale : input.writer ≠ input.image.writer) :
+    reconcileFrom input observation = none := by
+  cases found : input.retained <;> simp [reconcileFrom, found, stale]
+
+theorem migration_refuses_retired_writer (input : ReconcileInput)
+    (observation : ReceiverObservation) (stale : input.writer ≠ input.image.writer) :
+    migrateFrom input observation = none := by
+  cases found : input.retained with
+  | none => simp [migrateFrom, found]
+  | some entry =>
+    have bound := reconciliation_refuses_retired_writer
+      (input.bindLegacy observation.binding) (some observation) stale
+    simp [migrateFrom, found, bound, reconciliation_refuses_retired_writer input (some observation) stale]
 
 end CedarPooSpec.Gateway.OAuth.Revocation.Crash

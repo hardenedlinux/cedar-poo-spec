@@ -137,6 +137,9 @@ private def crashExercise (durable : Revocation.Recovery.Store)
   let legacyRecovery := { anchored with audit := legacyAudit }
   let migration : Receiver.LegacyMigration := ⟨legacyRecovery, successor.result.binding⟩
   let .ok migrated := Receiver.legacyMigrationContract.invoke Receiver.prepareLegacyMigration migration | return false
+  let oldWriterAudit := { legacyAudit with writer := 1 }
+  let oldWriterRecovery := { legacyRecovery with audit := oldWriterAudit }
+  let oldReplicaRecovery := { legacyRecovery with placement := "standby" }
   let migratedAudit := { legacyAudit with image := migrated.result }
   let migratedRecovery := { anchored with audit := migratedAudit }
   let legacyConflictAudit := { legacyAudit with actions := [differentAction], outcomes := [conflicting] }
@@ -169,7 +172,9 @@ private def crashExercise (durable : Revocation.Recovery.Store)
     decide (migrated.result.oauth = legacyImage.oauth) &&
     decide (migrated.result.settledOutcome intent.operation = some outcome) &&
     decide (Receiver.reconcileManaged migratedRecovery = some migrated.result) &&
-    (Receiver.migrateLegacy { migration with recovery := migratedRecovery }).isNone &&
+    decide (Receiver.migrateLegacy { migration with recovery := migratedRecovery } = some migrated.result) &&
+    (Receiver.migrateLegacy { migration with recovery := oldWriterRecovery }).isNone &&
+    (Receiver.migrateLegacy { migration with recovery := oldReplicaRecovery }).isNone &&
     (Revocation.Crash.begin migratedRetry).isNone &&
     (Revocation.Crash.reconcile managedAudit).isNone &&
     (Receiver.reconcileManaged { anchored with audit := conflictAudit }).isNone &&
@@ -379,3 +384,6 @@ end Tests.Gateway.OAuthRefresh
 #print axioms CedarPooSpec.Gateway.OAuth.Receiver.legacy_migration_preserves_authority_and_burn
 #print axioms CedarPooSpec.Gateway.OAuth.Revocation.Crash.migration_pins_committed_outcome
 #print axioms CedarPooSpec.Gateway.OAuth.Revocation.Crash.missing_committed_outcome_refuses_migration
+
+#print axioms CedarPooSpec.Gateway.OAuth.Receiver.retired_replica_cannot_migrate
+#print axioms CedarPooSpec.Gateway.OAuth.Receiver.retired_writer_cannot_migrate
