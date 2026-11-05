@@ -2,7 +2,10 @@
 // No claim of EVM, consensus, key custody, real concurrency or deployed durability.
 module wallet_signing {
   import attackers_capabilities.* from "../attackers/Capabilities"
-  import wallet_attackers_profile.* from "../../../.lake/build/wallet-attackers-profile"
+  const Initial: Set[str]
+  const Isolated: Set[str]
+  const Goals: Set[str]
+  const Rules: Set[{needs: Set[str], grants: str}]
 
   type State = {
     known: Set[str], actor: int, epoch: int, generation: int,

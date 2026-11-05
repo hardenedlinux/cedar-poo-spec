@@ -12,7 +12,7 @@ wallet-signing:
 wallet-threat-profile:
     lake build Examples.Enterprise.Payment.WalletAttackExport
     mkdir -p .lake/build
-    timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 --run Examples/Enterprise/Payment/WalletAttackExport.lean > .lake/build/wallet-attackers-profile.qnt
+    timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 --run Examples/Enterprise/Payment/WalletAttackExport.lean > .lake/build/wallet-attackers-case.qnt
 
 wallet-threat-model: wallet-threat-profile
     python3 dev/qnt/check.py

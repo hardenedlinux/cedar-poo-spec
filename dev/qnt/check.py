@@ -3,11 +3,14 @@ from pathlib import Path
 import hashlib
 import json
 import subprocess
+import tempfile
+import shutil
 
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / ".lake/build/wallet-threat"
 QUINT = ROOT / "dev/node_modules/.bin/quint"
 MODEL = "dev/qnt/financial/WalletSigning.qnt"
+CASE = ".lake/build/wallet-attackers-case.qnt"
 
 
 def main() -> None:
@@ -25,7 +28,7 @@ def main() -> None:
     if version != "0.33.0":
         raise SystemExit(f"Expected pinned Quint 0.33.0, got {version}")
     receipt.update(checkout=subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(), quint=version, apalache="0.62.1", seed=7, positive_depth=12, negative_depth=4)
-    inputs = [MODEL, "dev/qnt/attackers/Capabilities.qnt", ".lake/build/wallet-attackers-profile.qnt",
+    inputs = [MODEL, "dev/qnt/attackers/Capabilities.qnt", CASE,
               "CedarPooSpec/Attackers/Trace.lean", "CedarPooSpec/Attackers/ProfileObject.lean",
               "CedarPooSpec/Vertical/FinancialServices/PaymentSigning.lean",
               "CedarPooSpec/Vertical/FinancialServices/PaymentOperation.lean",
@@ -38,7 +41,7 @@ def main() -> None:
 
     def run(label: str, args: list[str], expected: int = 0) -> None:
         log = OUT / f"{label}.log"
-        command_args = [str(ROOT / arg) if arg == MODEL else arg for arg in args]
+        command_args = [str(ROOT / arg) if arg in (MODEL, CASE) else arg for arg in args]
         command = ["timeout", "--signal=TERM", "--kill-after=3s", "120s", str(QUINT), *command_args]
         with log.open("w") as stream:
             result = subprocess.run(command, cwd=OUT, stdout=stream, stderr=subprocess.STDOUT, check=False)
@@ -52,14 +55,28 @@ def main() -> None:
         print(f"{label}: expected exit {expected}", flush=True)
 
     run("typecheck", ["typecheck", MODEL])
-    run("traces", ["test", MODEL, "--main=wallet_signing", "--max-samples=1", "--seed=7", "--backend=typescript"])
-    common = ["verify", MODEL, "--main=wallet_signing", "--backend=apalache", "--apalache-version=0.62.1", "--invariant=safety"]
+    with tempfile.TemporaryDirectory(prefix="source-only-", dir=OUT) as isolated:
+        for source in (MODEL, "dev/qnt/attackers/Capabilities.qnt"):
+            target = Path(isolated) / source
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(ROOT / source, target)
+        run("source-only-typecheck", ["typecheck", str(Path(isolated) / MODEL)])
+    run("case-typecheck", ["typecheck", CASE])
+    run("traces", ["test", CASE, "--main=wallet_attackers_case", "--max-samples=1", "--seed=7", "--backend=typescript"])
+    if "9 passing" not in (OUT / "traces.log").read_text():
+        receipt["status"] = "failed"
+        save()
+        raise SystemExit("All nine required financial trace tests must run")
+    receipt["trace_tests"] = 9
+    common = ["verify", CASE, "--main=wallet_attackers_case", "--backend=apalache", "--apalache-version=0.62.1", "--invariant=safety"]
     run("hardened-depth-12", [*common, "--max-steps=12"])
     trace = OUT / "stale-authorization.itf.json"
     trace.unlink(missing_ok=True)
     run("stale-negative-depth-4", [*common, "--step=stepStale", "--max-steps=4", f"--out-itf={trace}"], expected=1)
     evidence = json.loads(trace.read_text())
-    if not any(state.get("s", {}).get("unsafe") is True for state in evidence.get("states", [])):
+    if evidence.get("vars") != ["wallet_attackers_case::wallet_signing::s"]:
+        raise SystemExit("Unexpected negative trace state-variable binding")
+    if not any(state.get("wallet_attackers_case::wallet_signing::s", {}).get("unsafe") is True for state in evidence.get("states", [])):
         receipt["status"] = "failed"
         save()
         raise SystemExit("Negative check did not retain the intended unsafe-signature counterexample")

@@ -20,11 +20,12 @@ def exportQuint : Except String String := do
     "{ needs: " ++ setOf (rule.requires.map (quoted ∘ name)) ++ ", grants: " ++ quoted (name rule.grants) ++ " }")
   pure (String.intercalate "\n" [
     "// Generated from checked LeanPoo slots; do not edit.",
-    "module wallet_attackers_profile {",
-    "  pure val Initial: Set[str] = " ++ initial,
-    "  pure val Isolated: Set[str] = " ++ isolated,
-    "  pure val Goals: Set[str] = " ++ goals,
-    "  pure val Rules: Set[{needs: Set[str], grants: str}] = " ++ rules,
+    "module wallet_attackers_case {",
+    "  pure val ProfileInitial: Set[str] = " ++ initial,
+    "  pure val ProfileIsolated: Set[str] = " ++ isolated,
+    "  pure val ProfileGoals: Set[str] = " ++ goals,
+    "  pure val ProfileRules: Set[{needs: Set[str], grants: str}] = " ++ rules,
+    "  import wallet_signing(Initial = ProfileInitial, Isolated = ProfileIsolated, Goals = ProfileGoals, Rules = ProfileRules).* from " ++ quoted "../../dev/qnt/financial/WalletSigning",
     "}", ""])
 
 

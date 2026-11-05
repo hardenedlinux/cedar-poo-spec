@@ -6,9 +6,11 @@
 
 Maintain hand-written Quint models under =dev/qnt/=. The shared
 [[file:attackers/Capabilities.qnt][capability projection]] has no industry-specific compromise graph.
-The [[file:financial/WalletSigning.qnt][financial model]] imports a generated graph from the actual checked
-LeanPoo attacker object. The producer is
-[[file:../../Examples/Enterprise/Payment/WalletAttackExport.lean][WalletAttackExport.lean]]. Generated input and verification receipts live
+The [[file:financial/WalletSigning.qnt][financial model]] declares typed constants and imports only maintained source.
+A generated model-checking entry instantiates those constants from the actual
+checked LeanPoo attacker object. The producer is
+[[file:../../Examples/Enterprise/Payment/WalletAttackExport.lean][WalletAttackExport.lean]]. Generated entries import the maintained model, never the reverse. Generated
+input and verification receipts live
 under ignored =.lake/build/=; they are not a second maintained model.
 
 The existing =dev/package.json= and =dev/bun.lock= pin Quint 0.33.0. Apalache is
@@ -24,7 +26,8 @@ just example enterprise payment wallet-threat-model
 
 * Separate evidence classes
 
-[[file:check.py][check.py]] typechecks the model, runs nine deterministic tests with seed 7,
+[[file:check.py][check.py]] typechecks maintained source in an isolated directory without any
+build products, typechecks the generated instance, runs all nine deterministic tests with seed 7,
 checks the hardened safety conjunction to depth 12, and requires an actual
 unsafe-signature ITF counterexample from the deliberately stale boundary to
 depth 4. Each command keeps a 120-second wall deadline and three-second kill

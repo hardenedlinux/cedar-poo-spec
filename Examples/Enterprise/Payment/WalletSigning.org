@@ -139,9 +139,10 @@ that the checker protects a bypass route.
 [[file:../../../dev/qnt/README.org][The Quint owner]] maintains hand-written models only under =dev/qnt/=.
 =Examples.Enterprise.Payment.WalletAttackExport= exports the actual checked POO
 initial capabilities, acquisition rules, independent boundaries and goals into
-=.lake/build/wallet-attackers-profile.qnt=. Both required parent selections must
-succeed. The finite model imports that generated input instead of maintaining
-a second copy of the compromise graph. Unknown goal inventory fails admission.
+=.lake/build/wallet-attackers-case.qnt=. Both required parent selections must
+succeed. This ignored build entry instantiates the maintained finite model
+through typed constants. Maintained Quint source does not import a build path,
+and no second compromise graph is maintained. Unknown goal inventory fails admission.
 
 The finite state machine explores initial attacker/legitimate identities,
 preparation, transaction substitution, policy freeze/restoration, generation
@@ -250,3 +251,14 @@ remote-CI acceptance.
 Financial-services CI now invokes both focused recipes. It has not been run
 remotely for this uncommitted patch. Full =just check=, native wallet signing,
 real chain execution and deployed Host qualification were not performed.
+
+* Source/build boundary correction
+
+The initial exporter made maintained Quint source import an ignored build file.
+The graph was not committed, but that import coupled source parsing to a prior
+build and its output layout. The financial model now typechecks from maintained
+source alone. Its typed constants are supplied by a generated Quint instance in
+=.lake/build/=; only that disposable entry imports the maintained model. No
+fallback graph, committed generated module, new package loader or reduced
+verification depth is introduced. The same nine traces, hardened depth 12 and
+required stale-boundary depth 4 counterexample remain mandatory.
