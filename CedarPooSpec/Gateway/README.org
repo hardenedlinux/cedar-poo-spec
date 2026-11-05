@@ -351,3 +351,31 @@ instantiate =ZeroTrust.Framework.atInvariant=; durable effect reservation and
 the shared receipt-recovery trace preserve the same lineage. See the
 [[file:../../docs/agent-authorization-research.org][research and concrete refinement review]] for theorem scope, duplicate-JSON
 countermodels and the native persisted-reader controls.
+
+* Explicit recovery inventory and writer fencing
+
+The authority image always contains an explicit writer cut and effect inventory.
+A missing field is refused, including on a newly opened worker; it is never an
+implicit empty inventory or writer zero. Explicit bootstrap still writes a valid
+empty inventory. Existing per-record migrations remain inside a complete image.
+
+=Revocation.Crash.retainedInventoryContract= checks unique operation keys and
+their exact retained-intent association. Its receipt supplies operation
+uniqueness. =ReceiptRecovery.History= interleaves fresh typed reservations with
+actual reconciliation, takeover, revocation and commit-boundary traces.
+=inventory_history_cannot_resend= preserves old holds while other work is added;
+=history_preserves_uniqueness= keeps operation identities unique throughout. The ordinary status Contract separately requires the
+current writer equality. Both DPoP and mTLS model Cases execute the inventory
+Contract before continuing their original recovery exercises.
+
+The native checkpoint reader rejects duplicate keys, including escaped aliases,
+empty keys, malformed intents and operation/intent mismatch. It checks a
+duplicate key before decoding another value. Native controls first persist an
+actual reservation, lose its completion reply, reopen workers on malformed
+images without repair, and restore the valid bytes before adding unrelated fresh work, three writer
+handoffs and revocation. The original signed-intent identity remains unchanged. A retained unknown operation remains unavailable for a new send.
+
+These are structural and modeled-retention guarantees. They do not authenticate
+an arbitrary well-formed replacement image or prove physical power-loss
+durability. Selecting an independent current head, protecting checkpoint
+integrity and verifying original signatures remain separate trust obligations.

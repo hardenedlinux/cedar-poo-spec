@@ -59,6 +59,12 @@ def prepareStatus (input : StatusInput) : Except String (EffectStatus × Unit) :
   if input.writer = input.image.writer then .ok (effectStatus input.image input.operation, ())
   else .error "OAuth writer fenced"
 
+/-- A status observation carries the current writer equality; decoding a record
+cannot manufacture this premise for an older worker. -/
+theorem status_receipt_uses_current_writer
+    (receipt : Invocation statusContract prepareStatus input) :
+    input.writer = input.image.writer := receipt.input
+
 inductive CommitBoundary where
   | staged
   | durable
@@ -170,6 +176,64 @@ theorem revocation_retains_oauth_lineage (applied : revoke before writer verifie
       exact Recovery.persisted_revocation_retains_lineage next
   · contradiction
 
+/-- A parsed inventory is structurally explicit and binds each operation key to
+one exact retained intent. This does not authenticate or select the current head. -/
+def restoreRetained (snapshot : Option (List (String × Retained))) : Option (List Retained) := do
+  let rows ← snapshot
+  if decide (rows.map Prod.fst).Nodup &&
+      rows.all (fun row => !row.1.isEmpty && decide (row.1 = row.2.intent.operation)) then
+    some (rows.map Prod.snd)
+  else none
+
+def retainedInventoryContract :
+    Contract Unit (Option (List (String × Retained))) (List Retained) where
+  input := ⟨"explicit-retained-operation-inventory", fun _ => True, fun _ => inferInstance⟩
+  output := ⟨"unique-operation-bound-retained-intents", fun _ => True, fun _ => inferInstance⟩
+  meaning := fun _ snapshot result => restoreRetained snapshot = some result
+  decide := fun _ _ _ => inferInstance
+  rule := .atom ()
+
+def prepareRetainedInventory (snapshot : Option (List (String × Retained))) :
+    Except String (List Retained × Unit) :=
+  match restoreRetained snapshot with
+  | some retained => .ok (retained, ())
+  | none => .error "Retained operation inventory refused"
+
+theorem restored_inventory_exact (accepted : restoreRetained snapshot = some retained) :
+    ∃ rows, snapshot = some rows ∧ (rows.map Prod.fst).Nodup ∧
+      (∀ row ∈ rows, row.1 = row.2.intent.operation) ∧ retained = rows.map Prod.snd := by
+  cases snapshot with
+  | none => simp [restoreRetained] at accepted
+  | some rows =>
+    dsimp [restoreRetained] at accepted
+    split at accepted
+    next checked =>
+      have ⟨unique, matched⟩ := Bool.and_eq_true_iff.mp checked
+      exact ⟨rows, rfl, of_decide_eq_true unique,
+        fun row member => of_decide_eq_true
+          (Bool.and_eq_true_iff.mp (List.all_eq_true.mp matched row member)).2,
+        (Option.some.inj accepted).symm⟩
+    next => simp at accepted
+
+theorem restored_inventory_unique (accepted : restoreRetained snapshot = some retained) :
+    (retained.map (·.intent.operation)).Nodup := by
+  obtain ⟨rows, _, unique, matched, rfl⟩ := restored_inventory_exact accepted
+  have same : (rows.map Prod.snd).map (·.intent.operation) = rows.map Prod.fst := by
+    simp only [List.map_map]
+    exact List.map_congr_left (fun row member => (matched row member).symm)
+  exact same.symm ▸ unique
+
+theorem missing_inventory_refused : restoreRetained none = none := rfl
+
+theorem repeated_inventory_key_refused (duplicate : ¬ (rows.map Prod.fst).Nodup) :
+    restoreRetained (some rows) = none := by simp [restoreRetained, duplicate]
+
+/-- A successful typed restore supplies uniqueness, not permission to execute. -/
+theorem inventory_receipt_unique
+    (receipt : Invocation retainedInventoryContract prepareRetainedInventory snapshot) :
+    (receipt.result.map (·.intent.operation)).Nodup :=
+  restored_inventory_unique receipt.logic
+
 structure History where
   logKey : String
   entries : List CommitRef
@@ -243,6 +307,49 @@ theorem begin_records_burn (receipt : Invocation beginContract prepareBegin inpu
         rw [← accepted]
         simp [operation]
     · contradiction
+
+
+/-- Fresh authorized work prepends one intent without deleting prior holds. -/
+theorem begin_retained_shape (receipt : Invocation beginContract prepareBegin input) :
+    ∃ entry, receipt.result.retained = entry :: input.image.retained ∧
+      entry.intent.operation = input.operation ∧
+      ¬ (input.image.retained.any fun prior =>
+        prior.intent.operation == input.operation) = true := by
+  have accepted := receipt.logic
+  change begin input = some receipt.result at accepted
+  cases anchored : input.history.independent with
+  | none => simp [begin, anchored] at accepted
+  | some anchor =>
+    simp only [begin, anchored, bind, Option.bind] at accepted
+    split at accepted
+    · rename_i valid
+      rcases valid with ⟨_, _, _, operation, _, _, _, _, fresh⟩
+      cases applied : Recovery.finalize
+          ⟨input.image.oauth.checkpoint.authorityId, some input.image.oauth, input.read⟩ with
+      | none => simp [applied] at accepted
+      | some oauth =>
+        simp [applied] at accepted
+        rw [← accepted]
+        exact ⟨_, rfl, operation.symm, fresh⟩
+    · contradiction
+
+theorem begin_preserves_prior_burn (receipt : Invocation beginContract prepareBegin input)
+    (burned : (input.image.retained.any fun entry => entry.intent.operation == operation) = true) :
+    (receipt.result.retained.any fun entry => entry.intent.operation == operation) = true := by
+  obtain ⟨_, retained, _, _⟩ := begin_retained_shape receipt
+  simp [retained, burned]
+
+theorem begin_preserves_operation_uniqueness (receipt : Invocation beginContract prepareBegin input)
+    (unique : (input.image.retained.map (·.intent.operation)).Nodup) :
+    (receipt.result.retained.map (·.intent.operation)).Nodup := by
+  obtain ⟨entry, retained, operation, fresh⟩ := begin_retained_shape receipt
+  rw [retained, List.map_cons, List.nodup_cons]
+  refine ⟨?_, unique⟩
+  intro member
+  obtain ⟨prior, known, same⟩ := List.mem_map.mp member
+  apply fresh
+  apply List.any_eq_true.mpr
+  exact ⟨prior, known, by simpa [operation] using same⟩
 
 /-- Actual effect reservation updates replay/intent state while keeping the
 independently recovered OAuth token/family checkpoint unchanged. -/
@@ -655,5 +762,26 @@ theorem migration_refuses_retired_writer (input : ReconcileInput)
     have bound := reconciliation_refuses_retired_writer
       (input.bindLegacy observation.binding) (some observation) stale
     simp [migrateFrom, found, bound, reconciliation_refuses_retired_writer input (some observation) stale]
+
+theorem restored_inventory_burns_operation
+    (accepted : restoreRetained (some rows) = some retained)
+    (member : (operation, entry) ∈ rows) :
+    (retained.any fun item => item.intent.operation == operation) = true := by
+  obtain ⟨actual, same, _, matched, contents⟩ := restored_inventory_exact accepted
+  have sameRows : actual = rows := Option.some.inj same.symm
+  subst actual
+  rw [contents]
+  apply List.any_eq_true.mpr
+  exact ⟨entry, List.mem_map.mpr ⟨(operation, entry), member, rfl⟩,
+    by simpa using (matched (operation, entry) member).symm⟩
+
+theorem restored_inventory_cannot_begin {image : Image} {retry : BeginInput}
+    (receipt : Invocation retainedInventoryContract prepareRetainedInventory (some rows))
+    (member : (retry.operation, entry) ∈ rows)
+    (retained : image.retained = receipt.result) :
+    begin { retry with image := image } = none := by
+  apply burned_operation_cannot_begin
+  rw [retained]
+  exact restored_inventory_burns_operation receipt.logic member
 
 end CedarPooSpec.Gateway.OAuth.Revocation.Crash

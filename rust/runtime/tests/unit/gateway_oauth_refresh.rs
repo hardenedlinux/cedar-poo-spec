@@ -855,3 +855,7 @@ fn durable_access_recovery_rejects_ambiguous_checkpoint_without_repair() {
         std::fs::remove_dir_all(directory).unwrap();
     }
 }
+
+#[cfg(unix)]
+#[path = "gateway_oauth_refresh/inventory.rs"]
+mod inventory;

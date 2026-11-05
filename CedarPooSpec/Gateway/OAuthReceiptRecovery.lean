@@ -315,4 +315,73 @@ theorem restored_row_requires_independent_sources (image : Image)
       ReceiptIdentity.realize authority request result.symbol = some result :=
   ReceiptIdentity.restored_exact accepted
 
+
+
+/-- Recovery may be interleaved with unrelated newly authorized reservations.
+No stage assumes that the complete intent list remains fixed. -/
+inductive History : Image → Image → Prop where
+  | start (image) : History image image
+  | reservation (prior : History initial before)
+      (receipt : Invocation Revocation.Crash.beginContract Revocation.Crash.prepareBegin input)
+      (current : input.image = before.oauth) :
+      History initial { before with oauth := receipt.result }
+  | recovery (prior : History initial before) (actual : Trace before after) :
+      History initial after
+
+theorem history_preserves_burn (history : History initial after)
+    (burned : (initial.oauth.retained.any fun entry => entry.intent.operation == operation) = true) :
+    (after.oauth.retained.any fun entry => entry.intent.operation == operation) = true := by
+  induction history with
+  | start => exact burned
+  | reservation _ receipt current ih =>
+    apply Revocation.Crash.begin_preserves_prior_burn receipt
+    simpa [current] using ih
+  | recovery _ actual ih =>
+    have same := congrArg
+      (fun entries => entries.any (fun intent => intent.operation == operation))
+      (trace_preserves_intents actual)
+    simp only [List.any_map, Function.comp_def] at same
+    exact same.trans ih
+
+theorem history_preserves_uniqueness (history : History initial after)
+    (unique : (initial.oauth.retained.map (·.intent.operation)).Nodup) :
+    (after.oauth.retained.map (·.intent.operation)).Nodup := by
+  induction history with
+  | start => exact unique
+  | reservation _ receipt current ih =>
+    apply Revocation.Crash.begin_preserves_operation_uniqueness receipt
+    simpa [current] using ih
+  | recovery _ actual ih =>
+    have same := congrArg
+      (fun entries => entries.map (fun intent => intent.operation))
+      (trace_preserves_intents actual)
+    simp only [List.map_map, Function.comp_def] at same
+    exact same.symm ▸ ih
+
+theorem inventory_history_cannot_resend {initial after : Image} (retry : Revocation.Crash.BeginInput)
+    (inventory : Invocation Revocation.Crash.retainedInventoryContract
+      Revocation.Crash.prepareRetainedInventory (some rows))
+    (restored : initial.oauth.retained = inventory.result)
+    (member : (retry.operation, entry) ∈ rows)
+    (history : History initial after) :
+    Revocation.Crash.begin { retry with image := after.oauth } = none := by
+  apply Revocation.Crash.burned_operation_cannot_begin
+  apply history_preserves_burn history
+  rw [restored]
+  exact Revocation.Crash.restored_inventory_burns_operation inventory.logic member
+
+/-- Structural restoration supplies the original burned operation; actual
+reconciliation/takeover/revocation traces keep it burned. Current-head and
+signed-source authentication remain independent premises of recovery. -/
+theorem inventory_trace_cannot_resend {initial after : Image} (retry : Revocation.Crash.BeginInput)
+    (inventory : Invocation Revocation.Crash.retainedInventoryContract
+      Revocation.Crash.prepareRetainedInventory (some rows))
+    (restored : initial.oauth.retained = inventory.result)
+    (member : (retry.operation, entry) ∈ rows)
+    (history : Trace initial after) :
+    Revocation.Crash.begin { retry with image := after.oauth } = none := by
+  apply trace_cannot_resend history retry
+  rw [restored]
+  exact Revocation.Crash.restored_inventory_burns_operation inventory.logic member
+
 end CedarPooSpec.Gateway.OAuth.ReceiptRecovery

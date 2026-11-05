@@ -27,7 +27,6 @@ use std::sync::Arc;
 pub struct DurableRevocationCheckpoint {
     version: u32,
     authority: String,
-    #[serde(default)]
     writer: WriterCut,
     ledger: State,
 }
@@ -37,7 +36,7 @@ pub struct DurableRevocationCheckpoint {
 struct Image {
     checkpoint: DurableRevocationCheckpoint,
     reserved: BTreeSet<ProofReservation>,
-    #[serde(default)]
+    #[serde(deserialize_with = "deserialize_effects")]
     effects: BTreeMap<String, RetainedEffect>,
 }
 
@@ -54,6 +53,51 @@ struct RetainedEffect {
     recovery_origin: Option<RecoveryOrigin>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     receipt_identity: Option<StoredReceiptIdentity>,
+}
+
+/// Missing inventory must not erase a prior reservation. Decode each key before
+/// its value so duplicate (including escaped) keys fail before replacement.
+/// This checks representation binding; trusted-head selection and signatures
+/// remain independent checks at their existing boundaries.
+fn deserialize_effects<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> Result<BTreeMap<String, RetainedEffect>, D::Error> {
+    use serde::de::{Error, MapAccess, Visitor};
+    use std::collections::btree_map::Entry;
+    struct Effects;
+    impl<'de> Visitor<'de> for Effects {
+        type Value = BTreeMap<String, RetainedEffect>;
+        fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            formatter.write_str("an explicit unique OAuth operation inventory")
+        }
+        fn visit_map<A: MapAccess<'de>>(self, mut map: A) -> Result<Self::Value, A::Error> {
+            let mut effects = BTreeMap::new();
+            while let Some(operation) = map.next_key::<String>()? {
+                if operation.is_empty() {
+                    return Err(A::Error::custom("empty OAuth operation identity"));
+                }
+                match effects.entry(operation) {
+                    Entry::Occupied(_) => {
+                        return Err(A::Error::custom("duplicate OAuth operation identity"));
+                    }
+                    Entry::Vacant(slot) => {
+                        let retained: RetainedEffect = map.next_value()?;
+                        let intent: super::witness::Commit =
+                            serde_json::from_slice(&retained.intent.payload)
+                                .map_err(A::Error::custom)?;
+                        if &intent.effect.operation != slot.key() {
+                            return Err(A::Error::custom(
+                                "OAuth operation/intent identity mismatch",
+                            ));
+                        }
+                        slot.insert(retained);
+                    }
+                }
+            }
+            Ok(effects)
+        }
+    }
+    deserializer.deserialize_map(Effects)
 }
 
 /// Authority-assigned writer incarnation. Trusted configuration binds it

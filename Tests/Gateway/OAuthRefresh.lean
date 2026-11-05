@@ -7,6 +7,37 @@ namespace Tests.Gateway.OAuthRefresh
 open CedarPooSpec.Gateway.OAuth
 open CedarPooSpec.Gateway.OAuth.Refresh
 
+private def inventoryIntent : CedarPooSpec.Gateway.EffectProtocol.CommitRef :=
+  ⟨"inventory-operation", [1], [2]⟩
+
+private def inventoryEntry : Revocation.Crash.Retained :=
+  { intent := inventoryIntent,
+    anchor := CedarPooSpec.Gateway.Lifecycle.WitnessFrontier.observe "log" [inventoryIntent],
+    providerKey := "provider" }
+
+private def restoreInventory (rows : Option (List (String × Revocation.Crash.Retained))) :
+    Option (List Revocation.Crash.Retained) := do
+  let .ok receipt := Revocation.Crash.retainedInventoryContract.invoke
+    Revocation.Crash.prepareRetainedInventory rows | none
+  pure receipt.result
+
+theorem exactInventoryAccepted :
+    restoreInventory (some [(inventoryIntent.operation, inventoryEntry)]) = some [inventoryEntry] := by decide
+
+theorem explicitEmptyInventoryAccepted : restoreInventory (some []) = some [] := by decide
+theorem missingInventoryRefused : restoreInventory none = none := by decide
+
+theorem duplicateOperationInventoryRefused :
+    restoreInventory (some [(inventoryIntent.operation, inventoryEntry),
+      (inventoryIntent.operation, inventoryEntry)]) = none := by decide
+
+theorem wrongOperationInventoryRefused :
+    restoreInventory (some [("different-operation", inventoryEntry)]) = none := by decide
+
+theorem emptyOperationInventoryRefused :
+    restoreInventory (some [("", { inventoryEntry with
+      intent := { inventoryIntent with operation := "" } })]) = none := by decide
+
 private def session : Code.Session :=
   ⟨"issuer", "client", "https://client.example/callback", "state", "browser",
     "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM"⟩
@@ -421,6 +452,11 @@ private def crashExercise (durable : Revocation.Recovery.Store)
   let begin : Revocation.Crash.BeginInput :=
     ⟨openRevocation, 0, 0, read, intent.operation, intent, "provider", history, none⟩
   let .ok started := Revocation.Crash.beginContract.invoke Revocation.Crash.prepareBegin begin | return false
+  let rows := started.result.retained.map (fun entry => (entry.intent.operation, entry))
+  let .ok restored := Revocation.Crash.retainedInventoryContract.invoke
+    Revocation.Crash.prepareRetainedInventory (some rows) | return false
+  if restored.result != started.result.retained then return false
+  have _uniqueOperations := Revocation.Crash.inventory_receipt_unique restored
   let some handed := Revocation.Crash.handoff started.result 0 | return false
   let some revoked := Revocation.Crash.revoke handed 1 (verified digest) | return false
   let stale := Revocation.Crash.recoverImage .staged handed revoked
@@ -982,7 +1018,6 @@ end Tests.Gateway.OAuthRefresh
 #print axioms CedarPooSpec.Gateway.OAuth.ReceiptBatch.accepted_step_binds
 #print axioms CedarPooSpec.Gateway.OAuth.ReceiptBatch.suffix_keeps_committed
 
-
 #print axioms CedarPooSpec.Gateway.OAuth.Refresh.step_retains_lineage
 #print axioms CedarPooSpec.Gateway.OAuth.Refresh.protected_lineage_preserves_run
 #print axioms CedarPooSpec.Gateway.OAuth.Refresh.historical_access_cannot_rebind
@@ -990,7 +1025,6 @@ end Tests.Gateway.OAuthRefresh
 #print axioms CedarPooSpec.Gateway.OAuth.Revocation.Recovery.persisted_revocation_retains_lineage
 #print axioms CedarPooSpec.Gateway.OAuth.Revocation.Crash.begin_retains_oauth_checkpoint
 #print axioms CedarPooSpec.Gateway.OAuth.Receiver.legacyRecoveryTrace_retains_oauth_lineage
-
 
 namespace Tests.Gateway.OAuthRefresh
 open CedarPooSpec.Gateway.OAuth.Refresh
@@ -1005,3 +1039,15 @@ end Tests.Gateway.OAuthRefresh
 #print axioms Tests.Gateway.OAuthRefresh.duplicate_digest_lookup_is_refused
 
 #print axioms CedarPooSpec.Gateway.OAuth.Refresh.protected_lineage_retains_base
+
+#print axioms CedarPooSpec.Gateway.OAuth.Revocation.Crash.restored_inventory_exact
+#print axioms CedarPooSpec.Gateway.OAuth.Revocation.Crash.inventory_receipt_unique
+#print axioms CedarPooSpec.Gateway.OAuth.Revocation.Crash.restored_inventory_cannot_begin
+#print axioms CedarPooSpec.Gateway.OAuth.ReceiptRecovery.inventory_trace_cannot_resend
+
+#print axioms CedarPooSpec.Gateway.OAuth.Revocation.Crash.status_receipt_uses_current_writer
+
+#print axioms CedarPooSpec.Gateway.OAuth.Revocation.Crash.begin_preserves_operation_uniqueness
+#print axioms CedarPooSpec.Gateway.OAuth.ReceiptRecovery.history_preserves_burn
+#print axioms CedarPooSpec.Gateway.OAuth.ReceiptRecovery.history_preserves_uniqueness
+#print axioms CedarPooSpec.Gateway.OAuth.ReceiptRecovery.inventory_history_cannot_resend

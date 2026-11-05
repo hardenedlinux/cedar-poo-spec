@@ -173,6 +173,50 @@ eventual receipt delivery, no external transaction atomicity and no discounted
 utility theorem. The 51-domain consumer gate remains unchanged; it does not
 claim a separate complete application invariant for each domain.
 
+* Unresolved effects, retry identity and recovery metadata
+
+Reviewed on 2026-11-06 against
+[[https://web.stanford.edu/~ouster/cgi-bin/papers/rifl.pdf][Lee et al., RIFL, SOSP 2015]],
+Sections 3 and 4.1--4.2. RIFL separates stable RPC identity, durable completion
+records, retry rendezvous and reclamation; completion metadata must be durable
+atomically with the effect. Its reclamation protocol relies on RPC-client
+acknowledgments and leases. SPEC does not adopt that protocol or inherit an
+exactly-once delivery theorem.
+
+The resulting SPEC obligation is narrower: renewing or revoking authorization
+does not prove that an unknown effect can be forgotten. A new worker must still
+find the original operation. Token expiry, a missing reply or a parser default
+cannot serve as completion evidence. This is a conservative safety inference,
+not a new OAuth requirement attributed to RFC 9700 or AAT.
+
+Native regressions reproduce two unsafe defaults: an omitted =effects= map was
+accepted as no prior operations, and an omitted writer cut reactivated writer
+zero after takeover. The reader now requires both fields. Its existing map also
+needs unique operation keys and exact key-to-retained-intent binding; duplicate
+literal/escaped keys and malformed or mismatched rows are refused. Valid encoding
+and the explicit bootstrap format are unchanged. Decoder checks do not certify
+that arbitrary replacement bytes are authentic or current.
+
+The new =retainedInventoryContract= uses the existing POO invocation API to bind
+the structural restore result.
+Lean proves unique restored operation identity and derives no-begin/no-resend
+from membership of the original inventory. =ReceiptRecovery.History= interleaves
+fresh typed reservations with the actual =ReceiptRecovery.Trace=, including its
+reconciliation, handoff, revocation and staged/durable branches. Prior holds and
+operation uniqueness survive every finite interleaving; the complete inventory
+need not remain fixed. The status invocation separately
+witnesses the current writer equality. These obligations apply at the shared
+boundary rather than introducing another per-domain recovery engine.
+
+Native controls use real persisted reservations with lost completion replies
+under both sender constraints. Reopened workers reject every malformed variant
+without rewriting it. Valid restoration, an unrelated new reservation, three handoffs and revocation
+retain the original unknown operation and exact signed-intent identity without
+calling that effect again. Existing independent
+receipt/migration schedules and the 51-domain consumer gate remain mandatory.
+No lease-based deletion, new backend, wire envelope or signature algorithm is
+introduced, and no arbitrary-content authentication theorem is claimed.
+
 * Integrated next research obligations
 
 | Layer | Existing owner to reuse | Concrete next obligation |
