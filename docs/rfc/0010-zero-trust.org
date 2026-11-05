@@ -1495,6 +1495,26 @@ same model executions that produce the Rust replay plan. The native
 conformance test runs both commit orders under the existing 120-second
 watchdog, with the existing process-drain allowance.
 
+Version 2 of the generated recovery plan contains an ordered state
+projection after each worker crash, lost confirmation, fencing result,
+completed takeover and final recovery. The first crashing worker alternates
+between A and B across rounds. Each projection includes both incarnation
+advances, the two selected operation statuses, intent bindings, stored and
+receiver receipt roles, revocation preservation and each refusal result.
+Rust rejects a missing, additional or reordered projection.
+
+The identity mapping uses the Lean roles =original=, =conflict= and
+=missing=. Rust binds these roles to the exact original signed outcome
+and intent source SHA-256 identities captured before the replay. At every
+step it reads the authoritative effect observation, verifies the independent
+receiver outcome, and checks both against those identities. It then
+performs read-only original confirmation, conflict refusal, missing-evidence
+retention, stale-writer refusal, stale-replica refusal and a fresh revoked
+final-use attempt. Full checkpoint bytes must remain unchanged by these
+observations. Native trace rows retain the actual source digests in build
+logs. The Lean interpreter computes the matching projections from its
+typed images and Contract operations before the plan is emitted.
+
 The first clean audit durably binds the canonical identity of the
 signed outcome. A later audit of that same outcome is idempotent.
 A different signed outcome cannot replace it, even if presented

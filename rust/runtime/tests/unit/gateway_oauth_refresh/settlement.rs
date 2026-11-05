@@ -948,6 +948,7 @@ fn settlement_race(
                 missing_intent: batch_intents[2].clone(),
                 grant: grant.clone(),
                 round: 0,
+                first_worker: late_batch::Worker::A,
             },
             late_outcome.as_ref().unwrap(),
             first.unwrap(),

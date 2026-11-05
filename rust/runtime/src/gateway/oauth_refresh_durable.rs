@@ -88,6 +88,15 @@ pub enum EffectStatus {
     Reconciled,
 }
 
+/// Read-only identities from the authoritative effect record.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct DurableEffectObservation {
+    pub status: EffectStatus,
+    pub intent_identity: String,
+    /// Absent for unresolved effects and older records without a stored outcome identity.
+    pub outcome_identity: Option<String>,
+}
+
 /// Detached provider evidence and the independently selected audit roots.
 pub struct DurableEffectRecovery<'a> {
     pub effect: &'a EffectIdentity,
@@ -117,6 +126,14 @@ pub(super) enum RecoveryRequest {
 }
 
 impl RetainedEffect {
+    fn status(&self) -> EffectStatus {
+        if self.resolved {
+            EffectStatus::Reconciled
+        } else {
+            EffectStatus::Unresolved
+        }
+    }
+
     fn is_legacy_unresolved(&self) -> bool {
         self.recovery_origin.is_none() && !self.resolved && self.settled_outcome.is_none()
     }
@@ -470,9 +487,28 @@ impl<'a> DurableRefreshLedger<'a> {
         let image = self.read(&file)?;
         Ok(match image.effects.get(&operation.0) {
             None => EffectStatus::Unreserved,
-            Some(effect) if effect.resolved => EffectStatus::Reconciled,
-            Some(_) => EffectStatus::Unresolved,
+            Some(effect) => effect.status(),
         })
+    }
+
+    /// Observe exact signed-source identities without binding or settling an effect.
+    pub fn effect_observation(
+        &self,
+        operation: &OperationId,
+    ) -> Result<Option<DurableEffectObservation>, String> {
+        let file = LockedCheckpoint::open(self.directory)?;
+        let image = self.read(&file)?;
+        image
+            .effects
+            .get(&operation.0)
+            .map(|effect| {
+                Ok(DurableEffectObservation {
+                    status: effect.status(),
+                    intent_identity: effect.intent.source_sha256()?,
+                    outcome_identity: effect.settled_outcome.clone(),
+                })
+            })
+            .transpose()
     }
 
     /// List legacy unresolved operation IDs for evidence collection. This

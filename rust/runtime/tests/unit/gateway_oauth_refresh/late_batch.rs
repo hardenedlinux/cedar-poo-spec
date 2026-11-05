@@ -23,7 +23,7 @@ use std::time::{Duration, Instant};
 
 #[path = "recovery_trace.rs"]
 mod trace;
-pub(super) use trace::RecoveryRound;
+pub(super) use trace::{RecoveryRound, Worker};
 
 const FIXTURE: &str = "CEDAR_OAUTH_LATE_BATCH_FIXTURE";
 const PHASE: &str = "CEDAR_OAUTH_LATE_BATCH_PHASE";
@@ -44,6 +44,7 @@ pub(super) struct RestartFixture {
     pub missing_intent: Signed,
     pub grant: Grant,
     pub round: usize,
+    pub first_worker: Worker,
 }
 
 #[derive(Clone, Copy)]
@@ -166,12 +167,16 @@ pub(super) fn replay_across_processes(
     assert!(!rounds.is_empty());
     for (index, round) in rounds.iter().enumerate() {
         fixture.round = index;
+        fixture.first_worker = round.first_worker;
         let signals = root.join(format!("recovery-round-{index}"));
         std::fs::create_dir(&signals).unwrap();
         write_fixture(&fixture);
         let before_writer = fixture.writer.generation();
         let before_receiver = cut.generation;
-        cut = replay_round(root, &fixture_path, &mut fixture, round);
+        let mut observer =
+            trace::RoundObserver::new(root, &fixture, round, before_receiver, outcome);
+        cut = replay_round(root, &fixture_path, &mut fixture, round, &mut observer);
+        observer.finish();
         assert_eq!(
             fixture.writer.generation() - before_writer,
             round.expected_advances
@@ -196,6 +201,7 @@ fn replay_round(
     fixture_path: &Path,
     fixture: &mut RestartFixture,
     round: &RecoveryRound,
+    observer: &mut trace::RoundObserver,
 ) -> ReceiverCut {
     let checkpoint = root.join("oauth/checkpoint.json");
     let signals = root.join(format!("recovery-round-{}", fixture.round));
@@ -204,36 +210,46 @@ fn replay_round(
     };
     let mut crashes = 0;
     let before_recovery = std::fs::read(&checkpoint).unwrap();
-    let first = spawn_worker(fixture_path, "resumed-a");
-    let second = spawn_worker(fixture_path, "resumed-b");
+    observer.observe(fixture, "ready", "both");
+    let first_phase = fixture.first_worker.phase("resumed");
+    let second_phase = fixture.first_worker.other().phase("resumed");
+    let first = spawn_worker(fixture_path, &first_phase);
+    let second = spawn_worker(fixture_path, &second_phase);
     wait_for_marker(&signals.join("recovery-paused-resumed-a"));
     wait_for_marker(&signals.join("recovery-paused-resumed-b"));
     assert_eq!(std::fs::read(&checkpoint).unwrap(), before_recovery);
     kill_worker(first);
     crashes += 1;
     assert_eq!(std::fs::read(&checkpoint).unwrap(), before_recovery);
-    takeovers(root, fixture, round.handoffs_after_first);
+    observer.observe(fixture, "worker-crash", fixture.first_worker.name());
+    takeovers(root, fixture, round.handoffs_after_first, observer);
     let after_recovery_takeover = std::fs::read(&checkpoint).unwrap();
     std::fs::write(signals.join("recovery-continue"), []).unwrap();
     wait_for_marker(&signals.join("recovery-second-fenced"));
     assert_eq!(std::fs::read(&checkpoint).unwrap(), after_recovery_takeover);
+    observer.observe(fixture, "fenced", fixture.first_worker.other().name());
     kill_worker(second);
     crashes += 1;
     assert_eq!(std::fs::read(&checkpoint).unwrap(), after_recovery_takeover);
+    observer.observe(fixture, "worker-crash", fixture.first_worker.other().name());
 
-    takeovers(root, fixture, round.handoffs_after_second);
+    takeovers(root, fixture, round.handoffs_after_second, observer);
     write_fixture(fixture);
     let before_confirmation = std::fs::read(&checkpoint).unwrap();
-    let confirmation = spawn_worker(fixture_path, "ack-lost-a");
-    let peer = spawn_worker(fixture_path, "ack-lost-b");
+    let confirmation_phase = fixture.first_worker.phase("ack-lost");
+    let peer_phase = fixture.first_worker.other().phase("ack-lost");
+    let confirmation = spawn_worker(fixture_path, &confirmation_phase);
+    let peer = spawn_worker(fixture_path, &peer_phase);
     wait_for_marker(&signals.join("confirmation-verified"));
-    finish_worker(peer, "ack-lost-b");
+    finish_worker(peer, &peer_phase);
     assert_eq!(std::fs::read(&checkpoint).unwrap(), before_confirmation);
+    observer.observe(fixture, "confirmed", "both");
     kill_worker(confirmation);
     crashes += 1;
     assert_eq!(std::fs::read(&checkpoint).unwrap(), before_confirmation);
+    observer.observe(fixture, "confirmation-lost", fixture.first_worker.name());
 
-    let cut = takeovers(root, fixture, round.handoffs_after_confirmation);
+    let cut = takeovers(root, fixture, round.handoffs_after_confirmation, observer);
     write_fixture(fixture);
     let after_confirmation_takeover = std::fs::read(&checkpoint).unwrap();
     let first = spawn_worker(fixture_path, "recovered-a");
@@ -244,15 +260,23 @@ fn replay_round(
         std::fs::read(&checkpoint).unwrap(),
         after_confirmation_takeover
     );
+    observer.observe(fixture, "recovered", "both");
     assert_eq!(crashes, round.expected_crashes);
     cut
 }
 
-fn takeovers(root: &Path, fixture: &mut RestartFixture, count: u64) -> ReceiverCut {
+fn takeovers(
+    root: &Path,
+    fixture: &mut RestartFixture,
+    count: u64,
+    observer: &mut trace::RoundObserver,
+) -> ReceiverCut {
     assert!(count > 0);
     let mut cut = takeover(root, fixture);
+    observer.observe(fixture, "handoff", "authority");
     for _ in 1..count {
         cut = takeover(root, fixture);
+        observer.observe(fixture, "handoff", "authority");
     }
     cut
 }
@@ -440,7 +464,11 @@ fn restart_worker() {
         let dispatch =
             ReceiverDispatch::sign(receiver.cut().unwrap(), "late-retry", intent, &sender).unwrap();
         let checked = oauth.checkpoint().unwrap();
-        let current = actual(fixture.grant.clone(), 14, &format!("{phase}-{proof}"));
+        let current = actual(
+            fixture.grant.clone(),
+            14,
+            &format!("round-{}-{phase}-{proof}", fixture.round),
+        );
         let facts = [sign(&fixture.fact, &issuer).unwrap()];
         assert!(
             receiver
@@ -738,9 +766,14 @@ fn restart_worker() {
         panic!("retry attempted a second migration write")
     });
     if phase.starts_with("resumed-") {
-        assert_eq!(phase, "resumed-b");
+        assert_eq!(phase, fixture.first_worker.other().phase("resumed"));
         assert_eq!(report.confirmed, std::slice::from_ref(&operation));
-        assert_eq!(report.pending, std::slice::from_ref(&missing_operation));
+        let expected_pending = if phase.ends_with("-b") {
+            vec![missing_operation.clone()]
+        } else {
+            Vec::new()
+        };
+        assert_eq!(report.pending, expected_pending);
         let stopped = report.stopped.unwrap();
         assert_eq!(stopped.operation, operation);
         assert_eq!(stopped.error, "OAuth writer fenced");
@@ -773,7 +806,7 @@ fn restart_worker() {
     );
     assert_eq!(snapshot(), committed);
     assert!(receiver.evidence(&missing_operation).unwrap().is_none());
-    if phase == "ack-lost-a" {
+    if phase == fixture.first_worker.phase("ack-lost") {
         std::fs::write(signals.join("confirmation-verified"), []).unwrap();
         wait_for_marker(&signals.join("confirmation-acknowledgment"));
         panic!("parent did not drop the repeated confirmation");
