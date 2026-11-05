@@ -1,0 +1,252 @@
+#+TITLE: Wallet Signing: Financial Payment Acceptance Case
+#+LANGUAGE: en
+#+OPTIONS: toc:2
+
+* Incident evidence and scope
+
+This case was added after a source audit on 2026-11-05, starting from SPEC
+=db49d7ac1b075deebf5afa3bea39545a79b1dffb=. Concurrent OAuth/receipt recovery
+work in that checkout is outside this change. This is a synthetic acceptance
+case under the existing financial payment area, not a forensic reconstruction
+of Binance's infrastructure or a new entry in the 51-entry replay catalogue.
+
+The [[https://www.binance.com/en/blog/community/3229153443759566763][Binance initial findings published 2026-11-03]] describe malicious
+developer downloads, fake recruitment, compromised endpoints, an internal AI
+tool used for lateral movement, a stolen container-deployment token, and
+unauthorized use of the wallet-signing service outside normal withdrawals.
+The Ethereum path also used EIP-7702 delegation. The report is preliminary,
+independent review remains pending, and the exact AI-tool exploit is not
+disclosed. This case does not assume prompt injection, a particular container
+platform, private-key extraction, or a particular MPC implementation failure.
+
+The [[https://eips.ethereum.org/EIPS/eip-7702][EIP-7702 specification]] establishes that code delegation persists and
+can be cleared through a later authorization. Local withdrawal suspension does
+not itself change that on-chain state. This model represents this containment
+gap separately from permission to issue new signatures.
+
+* Audit before implementation
+
+| Attack boundary | Existing contract and evidence | Gap addressed here / remaining limit |
+|-----------------+--------------------------------+-------------------------------------|
+| Engineer endpoint and internal AI tool are controlled | Generic Gateway fact inventory, issuer/source/subject/audience checks | Start with a valid adversarial deployment identity. Endpoint prevention and the AI exploit are not simulated. |
+| Deployment token reaches the signer | =Gateway.EffectProtocol= requires a mapped, enforcing, current effect | Add an exact authenticated workload/release binding and a distinct signing purpose. Real workload identity and route coverage remain Host duties. |
+| Business approval is reused for a different effect | =PaymentOperation= binds payment, audit policy, epoch, expiry and nonce; =PaymentLifecycle= retains exact settlement terms | Add a typed transaction projection at final signing, including chain nonce, fee, recipient, asset, calldata and transaction kind. Physical bytes-to-projection correspondence remains a Host duty. |
+| Preparation becomes stale before dispatch | =PaymentLedger.prepare= authenticates its supplied snapshot; =dispatch= consumes the reserved record | Add current payment reassessment at signing, without removing the reserved nonce. Replayed Allow must match the independently selected current assessor. |
+| Single AI stage or fabricated reviewer labels | =PaymentAuditPolicy= supports model/human stages, source ownership, distinct actors and proposer exclusion | Reuse those controls and authenticate every audit item through a separately supplied verifier. Human/source-domain independence is not implied by distinct strings. |
+| Approved payment is converted into code delegation | Generic =EffectIdentity= binds an opaque payload; policy Delta concerns Cedar worlds | This native-value profile refuses code delegation, clearing signatures and arbitrary calldata. No EVM, delegation-code semantics or on-chain privilege-expansion theorem is claimed. |
+| Local pause is mistaken for on-chain revocation | Gateway revocation prevents later modeled use | Retain outstanding code authority through local pause and clearing submission. Only an exact verified finalized clearing observation changes the modeled exposure. |
+| Lost reply creates a second signing attempt | Existing ledger reservation, submitted phase, status query and reconciliation | Return the actual submitted ledger, refuse another command, retain read-only lookup. Atomic persistence, stale-copy fencing and provider idempotency remain Host duties. |
+
+The old =PaymentLedger.dispatch= counterexample is retained: it can dispatch a
+reserved record after the payment clock has expired. That generic method is
+not a current-authorization API. Applications needing final signing assessment
+must compose the new financial signing boundary rather than relabel dispatch.
+
+* Model and composition
+
+[[file:../../../CedarPooSpec/Vertical/FinancialServices/PaymentSigning.lean][PaymentSigning]] belongs to the financial vertical and imports the existing
+payment ledger and shared Gateway effect contract. It introduces no Cedar
+evaluator, deployment service, credential manager or alternative payment
+ledger. =PaymentOperation.authorizedAtUse= factors the existing authorization,
+audit-policy and freshness checks; initial =admissible= additionally checks nonce
+freshness. Final use checks the reserved record without resetting that nonce.
+
+[[file:WalletSigning.lean][The payment example]] composes the existing =FinanceTool= and =PaymentGoverned=
+C4 roots, including their account, amount and originating-user/MFA controls.
+=PaymentFrozen= and =PaymentRestored= provide actual Cedar negative and positive
+controls. The existing three-stage audit policy supplies model, risk-human and
+compliance-human evidence with separate human actors. All entities and
+authenticated source interpretations are synthetic fixtures.
+
+=release= selects exactly one retained operation, authenticates the actual
+calling workload and each evidence item, compares the authorization with the
+current assessor's result, reassesses current payment rules, binds the exact
+typed transaction and Gateway envelope, checks the policy epoch, and invokes
+the existing reserved-to-submitted transition. The shared Gateway checks retain
+current source evidence, original consumption, revocation, enforcement and
+unknown-exposure refusal. The existing precommit/outcome protocol remains its
+owner; this pure signing command does not claim to perform its external IO.
+
+=Transaction.forPayment= supports a conservative native-value transfer only.
+Code delegation, revocation signing, token-contract calldata, batches and opaque
+hash signing are outside this profile and refuse. Supporting them requires a
+separate explicitly authorized profile with its own effect semantics. This
+restriction is a case-specific acceptance boundary, not an industry-wide ban.
+Amounts retain the existing decimal representation; no conversion into wei,
+chain address decoding, EIP-155 transaction encoding or EIP-7702 signing tuple
+encoding is implemented. JSON payloads are structured protocol projections,
+not chain signing preimages. Typed equality is checked independently of JSON
+encoding, so no JSON-injectivity theorem is assumed.
+
+The =Contract=/=Invocation= entrypoint exposes the same checked release; its
+generic kernel laws retain exact transaction and Gateway conditions and refuse
+deployment-purpose callers and revoked authorities. The scenario's executable
+Cedar checks use =native_decide=; printed generic theorem audits distinguish
+those finite evaluations from the reusable proofs.
+
+* Explicit attacker view and trace proofs
+
+[[file:../../../CedarPooSpec/Attackers/ProfileObject.lean][Attackers.ProfileObject]] owns the LeanPoo object family. Its initial-capability,
+acquisition-rule, isolated-boundary and goal slots derive a certified model from
+final self. Cooperative C4 extensions add industry contributions. Shared-base
+diamonds remain in one declaration source. =Session= reads use the existing
+functional ObjectProfile Contract; =selectSessions= checks preservation against
+each independently required parent's actual model. A root-only raw override
+cannot silently remove a parent's additional attacker powers or goals.
+The generic =certified_isolation= law obtains its premises from that selected
+model. Payment and health fixture branches exercise the same family in
+=Tests.Attackers.ProfileObject=; the health fixture is not a healthcare runtime.
+
+[[file:../../../CedarPooSpec/Attackers/Trace.lean][Attackers.Trace]] is the reusable functional execution owner of acquisition rules,
+capability knowledge, attempted calls, refused attempts and executable traces.
+It has no financial, Gateway, Examples or Tests dependency. Its generic
+=run_preserves_absence= theorem preserves an initially absent capability when
+no acquisition rule grants it. =run_preserves_outputs= preserves an output
+property when the actual application writer establishes it at every successful
+call. These generic laws are kernel proofs over arbitrary finite action lists. The
+closed example additionally uses native evaluation for actual C4 object
+construction/admission; its printed axiom audit retains those native dependencies.
+Do not attribute the generic laws' smaller axiom set to the closed fixture.
+
+[[file:WalletAttack.lean][The financial attacker specialization]] starts from control of Engineer B's
+endpoint. Rules permit internal AI access, compromise of Engineers A and C,
+acquisition of the deployment token, deployment from the compromised endpoint,
+and network access to signing. These are explicit assumptions abstracting the
+published chain, not vulnerability mechanics. Network reachability permits
+attempts with the genuine stolen deployment identity, but cannot manufacture
+the authenticated signing identity. A supplied caller name is not possession
+of that caller's credential.
+
+The =signing_root_unreachable= and =workflow_root_unreachable= theorems obtain
+the separation premise from the certified inherited model: those roots are
+absent initially and no selected acquisition rule grants them. =attacker_outputs_are_checked= discharges
+the generic writer premise using the actual financial =release= function and
+its exact-output proof. Its result concerns every successful modeled output,
+not merely rejection of one fixed attack transaction. Successful legitimate
+calls remain possible and replay from their returned state is refused.
+
+The acquisition graph must be audited against each deployment. Missing trust
+edges cannot be inferred from source labels. It does not model arbitrary Host
+fact changes, consensus or malicious modification of the trusted signing
+implementation. Current-state mutation/refusal controls are tested separately.
+The suite intentionally replaces the checked writer with an unmediated writer:
+the same compromise chain then produces an unsafe output. This retained
+counterexample explains the complete-mediation premise instead of assuming
+that the checker protects a bypass route.
+
+* Quint threat exploration under dev/qnt
+
+[[file:../../../dev/qnt/README.org][The Quint owner]] maintains hand-written models only under =dev/qnt/=.
+=Examples.Enterprise.Payment.WalletAttackExport= exports the actual checked POO
+initial capabilities, acquisition rules, independent boundaries and goals into
+=.lake/build/wallet-attackers-profile.qnt=. Both required parent selections must
+succeed. The finite model imports that generated input instead of maintaining
+a second copy of the compromise graph. Unknown goal inventory fails admission.
+
+The finite state machine explores initial attacker/legitimate identities,
+preparation, transaction substitution, policy freeze/restoration, generation
+renewal, expiry, sticky revocation, signature issuance, lost-outcome recovery,
+local suspension, clearing submission and authenticated clearing confirmation.
+Epoch and generation range from 0 to 2, one payment has at most two signature
+observations, transaction choices are approved/substituted/delegation, and
+identity choices are deployment/signing. Chain truth and verified clearing are
+assumed inputs; this is not an EVM or consensus model.
+
+Nine deterministic tests retain successful legitimate use and concrete weak
+boundary counterexamples. The hardened =safety= conjunction is checked with
+Quint 0.33.0 and Apalache 0.62.1 to depth 12. A successful bounded check is not
+unbounded verification or a liveness theorem. The ordinary =quint run= command
+is randomized simulation; it must not be reported as exhaustive checking.
+See the [[https://quint.sh/docs/model-checkers][official model-checker documentation]] for that distinction.
+
+The graph/data export establishes one source for threat configuration. The
+Quint state machine and Lean transition functions remain separate descriptions;
+no bisimulation, automated refinement or implementation correspondence theorem
+is claimed. Matching vocabulary and negative cases are a review discipline.
+
+* Acceptance and negative controls
+
+[[file:../../../Tests/Enterprise/Payment/WalletSigning.lean][The acceptance suite]] includes positive preparation and signing, actual
+Cedar freeze/restoration decisions, twelve named transaction substitutions,
+valid stolen deployment authority, forged role/release, unauthenticated caller
+and audit evidence, missing stage, same reviewer, fabricated source claims,
+payment/audit/source expiry, stale epoch/generation/nonce, unknown outcome,
+revocation, observing mode, missing consumption, wrong operation and payload,
+duplicate ledger records and replay from the returned submitted ledger.
+
+A stronger substitution control supplies a self-consistent generic Gateway
+effect for the attacker's recipient. Generic protocol admission succeeds;
+the financial signing adapter refuses because it differs from the retained
+business payment. This demonstrates the additional vertical binding rather
+than depending only on a broken signature or malformed envelope.
+
+The delegation trace preserves the attacker code after local pause, caller
+revocation and clearing submission. It refuses missing submission, unfinalized
+or unauthenticated evidence, wrong wallet/chain, stale or unexpected nonce, and
+a replacement code rather than a cleared account. A positive exact observation
+clears the modeled exposure. These transitions do not issue clearing signatures
+or prove consensus finality.
+
+#+begin_src sh
+just example enterprise payment wallet-signing
+just example enterprise payment wallet-threat-model
+just check-payment-audit
+just check-lean-layers
+#+end_src
+
+The focused recipe keeps the existing 120-second producer deadline, 2048 MiB
+Lean heap and 10000000 heartbeat limit. The Tests library also discovers the
+suite through its existing glob; financial-services CI runs the focused Lean and Quint recipes.
+This case does not add independent Rust wallet replay, sign with a real key,
+deploy a contract, execute malware, or exercise a real MPC/HSM signing path.
+Existing Rust Cedar conformance and Gateway protocol checks retain their own
+scope; their success must not be reported as native wallet acceptance.
+
+* Host trust assumptions and retained counterexamples
+
+| Host premise | Why the model cannot establish it |
+|--------------+-----------------------------------|
+| Actual active policy and authoritative facts | The current assessor, audit verifier and Gateway readers must be independently selected and bound to the installed policy/root, schema, generation and actual entity world. Request labels cannot choose them. |
+| Genuine business intent and independent control domains | Signed facts can still be false. Reviewer names, distinct actors and multiple keys do not prove independence if one compromised authority controls them all. |
+| Authenticated workload and release identity | A process must not self-assert its caller identity. Valid deployment credentials cannot mint signer credentials or replace the trusted reader, verifier or installed policy. |
+| Exact physical signing input | The Host must decode and bind the actual signing bytes to =Transaction=, reject unsupported/noncanonical encodings and aliases, and prevent a later buffer substitution. The modeled record is not proof about a separately supplied hash. |
+| Complete mediation and key custody | Every signing interface, management API, raw-hash path and chain-specific signer must enforce the profile. Network isolation, MPC/HSM custody and malicious replacement of the signer are outside these proofs. |
+| Linearization and persistence | All relevant writers, current-use checks, consumption, nonce reservations, mandatory precommit and signature release must follow one enforced ordering. Crash-safe nonrollback storage, stale-copy fencing and distributed races are not proved by a pure returned ledger. |
+| Chain truth and existing delegated authority | Finality, account/network identity, authorization nonce, reorg handling and the truth of the clearing observation require trusted chain readers. Local stop controls cannot constrain code already executing independently on-chain. |
+| Outcome completeness and recovery | A signature may remain executable or be submitted after a lost response. Unknown exposure, pending signatures and outstanding delegation must be retained; read-only recovery cannot mint another signing grant. Availability and eventual settlement are not proved. |
+
+The suite retains an explicit trust counterexample: invented reviewer identities
+are refused by the configured verifier but admitted when that trusted verifier
+is replaced with one that accepts everything. This is an intentional positive
+result under a false premise, not a repaired physical-security guarantee.
+
+The acceptance claim is conditional: after endpoint/AI/deployment compromise,
+the modeled signing boundary refuses effects outside the independently retained
+payment and current authority, provided those Host premises hold. It does not
+prove that a deployed exchange would have prevented the historical incident.
+
+* Local qualification receipt (2026-11-05)
+
+The final plural =Attackers/= sources were qualified in checkout
+=37364c5cb5c18d946284002b86f4d32f483dac61= plus this uncommitted change. The
+initial audit baseline above predates concurrent receipt-recovery commits;
+those changes were preserved. Exact threat-model input hashes, versions,
+arguments and logs are retained in
+[[file:../../../.lake/build/wallet-threat/receipt.json][the local Quint receipt]]. These are worktree observations, not release or
+remote-CI acceptance.
+
+| Check | Observed result and scope |
+|-------+---------------------------|
+| =just example enterprise payment wallet-signing= | Passed within the original producer limits; financial refusal controls and generic/closed-instance axiom audits. |
+| =just check-quick= | Passed; library and complete Tests library, 643 Lake jobs. |
+| =just check-payment-audit= | Passed; existing payment reservation, audit and lifecycle regressions. |
+| =just check-lean-layers= | Passed; 382 local module import closures. |
+| =just check-docs= | Passed; existing Org parser gate. |
+| Frozen Bun install and existing dev TypeScript check | Passed with Quint declared in the existing dev lockfile. |
+| Quint deterministic tests | Nine passed with seed 7, including deliberately broken boundary traces. |
+| Hardened Apalache check | No safety violation found through depth 12. This is bounded evidence. |
+| Deliberately stale boundary | Required unsafe-signature counterexample found through depth 4; ITF evidence retained separately. |
+
+Financial-services CI now invokes both focused recipes. It has not been run
+remotely for this uncommitted patch. Full =just check=, native wallet signing,
+real chain execution and deployed Host qualification were not performed.

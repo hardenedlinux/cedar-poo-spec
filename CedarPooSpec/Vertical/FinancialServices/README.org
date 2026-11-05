@@ -49,3 +49,14 @@ do not import that platform adapter. =Data/Lakehouse/= holds the general
 location boundary. A downstream AWS financial-services profile selects all
 three layers. Scenario records, source quotations, policy artifacts, and
 complete workflows remain in =Examples/=.
+
+* Payment signing boundary
+
+[[file:PaymentSigning.lean][PaymentSigning]] composes =PaymentLedger= and the shared Gateway effect
+contract at final signing. It retains exact native-value transaction terms,
+current payment/audit authorization, authenticated workload purpose and release,
+and the reserved-to-submitted transition. =PaymentOperation.authorizedAtUse=
+reassesses a reserved payment without resetting its nonce. The
+[[file:../../../Examples/Enterprise/Payment/WalletSigning.org][wallet-signing acceptance audit]] maps the motivating attack chain, negative
+controls and Host assumptions. Chain codecs, signing keys, IO mediation and
+authenticated finalized delegation-clearing observations remain adapter duties.

@@ -88,3 +88,6 @@ import CedarPooSpec.Data.LineageProfile
 import CedarPooSpec.Functional.ObjectProfile
 
 import CedarPooSpec.Transport.SourceCatalog
+
+import CedarPooSpec.Attackers
+import CedarPooSpec.Vertical.FinancialServices.PaymentSigning

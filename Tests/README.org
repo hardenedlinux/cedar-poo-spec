@@ -50,3 +50,13 @@ Run the relevant =just check-*= target to regenerate and check its input;
 impact]] checks both directions of an incident policy revision and a concrete
 approval withdrawal. =just check-health-authorization-impact= also replays all
 three before/after pairs with the official Rust Cedar authorizer.
+
+* Financial wallet signing
+
+[[file:Enterprise/Payment/WalletSigning.lean][WalletSigning.lean]] checks the financial final-signing contract after
+endpoint/AI/deployment compromise, using the existing C4 payment policy roots.
+It preserves the old ledger's stale-dispatch counterexample, twelve transaction
+substitutions, current-use/refusal/replay controls, outstanding delegation after
+local suspension, and a permissive-verifier trust counterexample. Run
+=just example enterprise payment wallet-signing=; the
+[[file:../Examples/Enterprise/Payment/WalletSigning.org][adjacent audit]] records the exact model and Host boundaries.
