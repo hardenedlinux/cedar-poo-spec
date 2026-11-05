@@ -26,17 +26,12 @@ mod late_batch;
 
 #[test]
 fn concurrent_settlement_survives_lost_acknowledgment_and_handoffs() {
-    settlement_race("settlement-race", false, false);
+    settlement_race("settlement-race", false, None);
 }
 
 #[test]
 fn legacy_unresolved_requires_trusted_receiver_and_stays_spent() {
-    settlement_race("legacy-settlement-race", true, false);
-}
-
-#[test]
-fn legacy_migration_rejects_writer_and_replica_fenced_by_handoffs() {
-    settlement_race("legacy-handoff-first", true, true);
+    settlement_race("legacy-settlement-race", true, None);
 }
 
 fn assert_locked(directory: &Path) {
@@ -47,7 +42,8 @@ fn assert_locked(directory: &Path) {
     ));
 }
 
-fn settlement_race(case: &str, legacy_migration: bool, handoff_first: bool) {
+fn settlement_race(case: &str, legacy_migration: bool, first: Option<late_batch::FirstCommit>) {
+    let handoff_first = first.is_some();
     let directory = durable_directory(case);
     let oauth_path = directory.join("oauth");
     let pin = directory.join("pin");
@@ -942,10 +938,13 @@ fn settlement_race(case: &str, legacy_migration: bool, handoff_first: bool) {
                 fact: fact.clone(),
                 history: history.clone(),
                 effect: batch_effects[3].clone(),
+                prefix: batch_effects[0].clone(),
                 missing: batch_effects[2].clone(),
+                missing_intent: batch_intents[2].clone(),
                 grant: grant.clone(),
             },
             late_outcome.as_ref().unwrap(),
+            first.unwrap(),
         );
         let writer = open().for_writer(writer_cut);
         assert_eq!(

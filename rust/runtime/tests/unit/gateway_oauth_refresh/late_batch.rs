@@ -19,7 +19,6 @@ use cedar_poo_core::operation_identity::OperationId;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
-use std::sync::mpsc;
 use std::time::{Duration, Instant};
 
 const FIXTURE: &str = "CEDAR_OAUTH_LATE_BATCH_FIXTURE";
@@ -36,14 +35,33 @@ pub(super) struct RestartFixture {
     pub fact: FactBinding,
     pub history: LogSnapshot,
     pub effect: EffectIdentity,
+    pub prefix: EffectIdentity,
     pub missing: EffectIdentity,
+    pub missing_intent: Signed,
     pub grant: Grant,
+}
+
+#[derive(Clone, Copy)]
+pub(super) enum FirstCommit {
+    Takeover,
+    Migration,
+}
+
+#[test]
+fn legacy_migration_takeover_first_fences_batch_suffix() {
+    super::settlement_race("legacy-handoff-first", true, Some(FirstCommit::Takeover));
+}
+
+#[test]
+fn legacy_migration_commit_first_survives_revoked_batch_takeover() {
+    super::settlement_race("legacy-commit-first", true, Some(FirstCommit::Migration));
 }
 
 pub(super) fn replay_across_processes(
     root: &Path,
     mut fixture: RestartFixture,
     outcome: &Signed,
+    first: FirstCommit,
 ) -> (WriterCut, ReceiverCut) {
     let fixture_path = root.join("restart-fixture.json");
     let write_fixture = |fixture: &RestartFixture| {
@@ -63,22 +81,63 @@ pub(super) fn replay_across_processes(
     finish_worker(overlap, "staged-overlap");
     assert_eq!(std::fs::read(&checkpoint).unwrap(), before);
     assert_ne!(std::fs::read(&staged).unwrap(), before);
-    takeover(root, &mut fixture, None);
+    takeover(root, &mut fixture);
     write_fixture(&fixture);
     run_worker(&fixture_path, "fenced");
     std::fs::remove_file(&packet).unwrap();
     run_worker(&fixture_path, "pending");
 
     publish();
-    takeover(root, &mut fixture, Some(&fixture_path));
-    assert!(!staged.exists());
-    let cut = takeover(root, &mut fixture, None);
+    let (worker, phase, expected) = match first {
+        FirstCommit::Takeover => (
+            spawn_worker(&fixture_path, "takeover-first"),
+            "takeover-first",
+            EffectStatus::Unresolved,
+        ),
+        FirstCommit::Migration => {
+            let (crashing, overlap) = start_crash_race(&fixture_path, "durable", "durable-overlap");
+            kill_worker(crashing);
+            assert!(!staged.exists());
+            (overlap, "durable-overlap", EffectStatus::Reconciled)
+        }
+    };
+    wait_for_marker(&root.join("between-items"));
+    let oauth_path = root.join("oauth");
+    let oauth = DurableRefreshLedger::new(&oauth_path, "settlement-race");
+    let operation = OperationId(fixture.effect.operation.clone());
+    assert_eq!(
+        oauth
+            .for_writer(fixture.writer)
+            .effect_status(&operation)
+            .unwrap(),
+        expected
+    );
+    takeover(root, &mut fixture);
+    assert!(
+        oauth
+            .for_writer(fixture.writer)
+            .revoke(verified(digest()))
+            .unwrap()
+    );
+    let cut = takeover(root, &mut fixture);
+    std::fs::write(root.join("resume-items"), []).unwrap();
+    finish_worker(worker, phase);
+    let current = oauth.for_writer(fixture.writer);
+    assert_eq!(current.effect_status(&operation).unwrap(), expected);
     write_fixture(&fixture);
+
+    if matches!(first, FirstCommit::Takeover) {
+        run_worker(&fixture_path, "fenced");
+        std::fs::remove_file(&packet).unwrap();
+        run_worker(&fixture_path, "pending");
+        publish();
+        run_worker(&fixture_path, "rebind");
+    }
     run_worker(&fixture_path, "resumed");
     (fixture.writer, cut)
 }
 
-fn takeover(root: &Path, fixture: &mut RestartFixture, concurrent: Option<&Path>) -> ReceiverCut {
+fn takeover(root: &Path, fixture: &mut RestartFixture) -> ReceiverCut {
     let pin = root.join("pin");
     let sender = simulation_key(4);
     let provider = simulation_key(8);
@@ -102,86 +161,19 @@ fn takeover(root: &Path, fixture: &mut RestartFixture, concurrent: Option<&Path>
     let oauth_path = root.join("oauth");
     let old_writer =
         DurableRefreshLedger::new(&oauth_path, "settlement-race").for_writer(fixture.writer);
-    let (writer, cut) = if let Some(path) = concurrent {
-        let (crashing, overlap) = start_crash_race(path, "durable", "durable-overlap");
-        let result = compete_at_commit(
-            crashing,
-            &oauth_path,
-            &pin,
-            &old_writer,
-            &standby,
-            &fixture.previous,
-        );
-        finish_worker(overlap, "durable-overlap");
-        result
-    } else {
-        (
-            old_writer.rotate_writer().unwrap(),
-            standby.promote(&fixture.previous).unwrap(),
-        )
-    };
+    assert_eq!(
+        standby.cut().unwrap_err(),
+        "receiver replica has not been promoted"
+    );
+    let cut = standby.promote(&fixture.previous).unwrap();
     fixture.retired_writer = Some(fixture.writer);
-    fixture.writer = writer;
+    fixture.writer = old_writer.rotate_writer().unwrap();
     assert_eq!(
         old_writer.revoke(verified(digest())).unwrap_err(),
         "OAuth writer fenced"
     );
     std::mem::swap(&mut fixture.active, &mut fixture.retired);
     cut
-}
-
-fn compete_at_commit(
-    crashing: Child,
-    oauth_path: &Path,
-    pin: &Path,
-    writer: &DurableRefreshLedger<'_>,
-    standby: &DurableReceiver<'_>,
-    expected: &ReceiverCheckpoint,
-) -> (WriterCut, ReceiverCut) {
-    std::thread::scope(|scope| {
-        let (start, contenders) = mpsc::channel();
-        let (rotated, successor) = mpsc::channel();
-        let promotion = scope.spawn({
-            let start = start.clone();
-            move || {
-                assert_locked(pin);
-                start.send(()).unwrap();
-                standby.promote(expected).unwrap()
-            }
-        });
-        let rotation = scope.spawn({
-            let start = start.clone();
-            move || {
-                assert_locked(oauth_path);
-                start.send(()).unwrap();
-                let cut = writer.rotate_writer().unwrap();
-                rotated.send(cut).unwrap();
-                cut
-            }
-        });
-        let revocation = scope.spawn(move || {
-            assert_locked(oauth_path);
-            start.send(()).unwrap();
-            match writer.revoke(verified(digest())) {
-                Ok(committed) => {
-                    assert!(committed);
-                    successor.recv().unwrap();
-                }
-                Err(error) => {
-                    assert_eq!(error, "OAuth writer fenced");
-                    let current = writer.for_writer(successor.recv().unwrap());
-                    assert!(current.revoke(verified(digest())).unwrap());
-                }
-            }
-        });
-        for _ in 0..3 {
-            contenders.recv_timeout(Duration::from_secs(10)).unwrap();
-        }
-        kill_worker(crashing);
-        let result = (rotation.join().unwrap(), promotion.join().unwrap());
-        revocation.join().unwrap();
-        result
-    })
 }
 
 fn start_crash_race(fixture: &Path, phase: &str, overlap_phase: &str) -> (Child, Child) {
@@ -319,6 +311,41 @@ fn restart_worker() {
     let decoded: ProviderOutcome = verify(&outcome, provider.verifying_key()).unwrap();
     let original = receiver.evidence(&operation).unwrap().unwrap();
     assert_eq!(outcome, original.outcome);
+    let assert_no_resend = |effect: &EffectIdentity, intent: &Signed, proof: &str| {
+        let dispatch =
+            ReceiverDispatch::sign(receiver.cut().unwrap(), "late-retry", intent, &sender).unwrap();
+        let checked = oauth.checkpoint().unwrap();
+        let current = actual(fixture.grant.clone(), 14, proof);
+        let facts = [sign(&fixture.fact, &issuer).unwrap()];
+        assert!(
+            receiver
+                .receive_oauth(
+                    &oauth,
+                    DurableEffectUse {
+                        admission: DurableFinalUse {
+                            checked: &checked,
+                            replica: &checked,
+                            current: &current,
+                            base_allowed: true,
+                        },
+                        effect,
+                        intent,
+                        history: &fixture.history,
+                        trust,
+                    },
+                    ReceiverDelivery {
+                        authorization: &dispatch,
+                        channel: "late-retry",
+                        effect,
+                        bindings: std::slice::from_ref(&fixture.fact),
+                        facts: &facts,
+                        publications: &[],
+                    },
+                )
+                .unwrap()
+                .is_none()
+        );
+    };
     let signed = [outcome];
     let retired = DurableReceiver::managed(&fixture.retired, &pin, receiver_trust()).unwrap();
     assert!(retired.promote(&fixture.previous).is_err());
@@ -329,11 +356,7 @@ fn restart_worker() {
     assert_eq!(stopped.operation, operation);
     assert_eq!(
         stopped.error,
-        if phase.starts_with("durable") {
-            "receiver replica has not been promoted"
-        } else {
-            "receiver replica differs from the independent checkpoint"
-        }
+        "receiver replica differs from the independent checkpoint"
     );
 
     if matches!(phase.as_str(), "fenced" | "resumed") {
@@ -350,6 +373,12 @@ fn restart_worker() {
         assert_eq!(stopped.error, "OAuth writer fenced");
         assert_eq!(snapshot(), before);
         if phase == "fenced" {
+            assert_no_resend(
+                &fixture.effect,
+                &decoded.outcome.commit,
+                "late-fenced-retry",
+            );
+            assert_eq!(snapshot(), before);
             return;
         }
     }
@@ -433,8 +462,6 @@ fn restart_worker() {
         assert_locked(&oauth_path);
         assert_locked(&pin);
         std::fs::write(contending, []).unwrap();
-    } else {
-        assert_eq!(phase, "resumed");
     }
     if phase == "staged-overlap" {
         let withheld = evidence(&empty, &[]);
@@ -456,28 +483,71 @@ fn restart_worker() {
         assert_eq!(snapshot(), before);
         return;
     }
-    if phase == "durable-overlap" {
-        let report =
-            receiver.migrate_legacy_oauth_batch_at(&oauth, [original()], &trusted, |_, _| {
-                panic!("racing confirmation attempted a second write")
-            });
-        assert!(report.pending.is_empty());
-        if let Some(stopped) = report.stopped {
-            assert!(report.confirmed.is_empty());
-            assert_eq!(stopped.operation, operation);
-            assert!(
-                matches!(
-                    stopped.error.as_str(),
-                    "OAuth writer fenced"
-                        | "receiver replica differs from the independent checkpoint"
-                ),
-                "{stopped:?}"
-            );
+    if matches!(phase.as_str(), "takeover-first" | "durable-overlap") {
+        let prefix_operation = OperationId(fixture.prefix.operation.clone());
+        let prefix = if phase == "takeover-first" {
+            Some(receiver.evidence(&prefix_operation).unwrap().unwrap())
         } else {
-            assert_eq!(report.confirmed, [operation]);
-        }
+            None
+        };
+        let (first, second, confirmed, stopped) = match &prefix {
+            Some(prefix) => (
+                DurableEffectRecovery {
+                    effect: &fixture.prefix,
+                    ..evidence(&prefix.journal, std::slice::from_ref(&prefix.outcome))
+                },
+                original(),
+                prefix_operation,
+                operation,
+            ),
+            None => (original(), missing, operation, missing_operation),
+        };
+        let batch = [first, second]
+            .into_iter()
+            .enumerate()
+            .map(|(index, item)| {
+                if index == 1 {
+                    std::fs::write(root.join("between-items"), []).unwrap();
+                    wait_for_marker(&root.join("resume-items"));
+                }
+                item
+            });
+        let report = receiver.migrate_legacy_oauth_batch_at(&oauth, batch, &trusted, |_, _| {
+            panic!("interrupted batch attempted a migration write");
+        });
+        assert_eq!(report.confirmed, [confirmed]);
+        assert!(report.pending.is_empty());
+        let failure = report.stopped.unwrap();
+        assert_eq!(failure.operation, stopped);
+        assert_eq!(failure.error, "OAuth writer fenced");
         return;
     }
+    if phase == "rebind" {
+        let mut durable = false;
+        let report = receiver.migrate_legacy_oauth_batch_at(
+            &oauth,
+            [conflict, original(), missing],
+            &trusted,
+            |item, stage| {
+                assert_eq!(item, &operation);
+                if stage == CheckpointStage::Durable {
+                    assert!(!durable);
+                    durable = true;
+                }
+                Ok(())
+            },
+        );
+        assert!(durable);
+        assert_eq!(report.confirmed, std::slice::from_ref(&operation));
+        assert_eq!(report.pending, [operation.clone(), missing_operation]);
+        assert!(report.stopped.is_none());
+        assert_eq!(
+            oauth.effect_status(&operation).unwrap(),
+            EffectStatus::Reconciled
+        );
+        return;
+    }
+    assert_eq!(phase, "resumed");
     let committed = snapshot();
     let report = receiver.migrate_legacy_oauth_batch_at(
         &oauth,
@@ -501,38 +571,16 @@ fn restart_worker() {
         EffectStatus::Unresolved
     );
 
-    let intent = &decoded.outcome.commit;
-    let dispatch =
-        ReceiverDispatch::sign(receiver.cut().unwrap(), "late-retry", intent, &sender).unwrap();
-    let checked = oauth.checkpoint().unwrap();
-    let current = actual(fixture.grant, 14, "late-receipt-retry");
-    let facts = [sign(&fixture.fact, &issuer).unwrap()];
-    assert!(
-        receiver
-            .receive_oauth(
-                &oauth,
-                DurableEffectUse {
-                    admission: DurableFinalUse {
-                        checked: &checked,
-                        replica: &checked,
-                        current: &current,
-                        base_allowed: true,
-                    },
-                    effect: &fixture.effect,
-                    intent,
-                    history: &fixture.history,
-                    trust,
-                },
-                ReceiverDelivery {
-                    authorization: &dispatch,
-                    channel: "late-retry",
-                    effect: &fixture.effect,
-                    bindings: std::slice::from_ref(&fixture.fact),
-                    facts: &facts,
-                    publications: &[],
-                },
-            )
-            .unwrap()
-            .is_none()
+    assert_no_resend(
+        &fixture.effect,
+        &decoded.outcome.commit,
+        "late-reconciled-retry",
     );
+    assert_no_resend(
+        &fixture.missing,
+        &fixture.missing_intent,
+        "late-unresolved-retry",
+    );
+    assert_eq!(snapshot(), committed);
+    assert!(receiver.evidence(&missing_operation).unwrap().is_none());
 }

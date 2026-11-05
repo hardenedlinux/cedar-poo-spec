@@ -1425,14 +1425,19 @@ envelope, a staged item remains reserved. After revocation, the
 committed item confirms with its original envelope, and a delivery
 retry on a new channel is refused.
 
-The durable replay also queues receiver promotion, writer rotation,
-and revocation while the migration holds its checkpoint locks.
-Revocation either commits under the old writer before rotation or
-is fenced and retried under the successor. The staged replay
-exercises both stale-writer and stale-replica refusals while the
-operation is still eligible with the original envelope. After a
-further handoff, the durable replay confirms the same receipt
-without a new write and retains reservations with missing evidence.
+Two Rust replay fixtures fix the commit order with a barrier between
+batch items. When takeover wins, the old worker has confirmed an
+earlier item, but it stops before binding the late receipt. The new
+worker preserves the unresolved reservation until the original
+envelope is supplied. When migration wins, the original receipt
+is already durable and a restarted worker confirms it before
+pausing at the next item. In both schedules, the harness promotes
+the receiver and rotates the writer, revokes the grant, then
+promotes and rotates again before releasing the paused batch.
+The retired writer cannot process the suffix. The latest writer
+confirms only the original receipt without rewriting the image,
+retains reservations with missing evidence, and refuses a retry
+of the same delivery on a different channel.
 
 The first clean audit durably binds the canonical identity of the
 signed outcome. A later audit of that same outcome is idempotent.

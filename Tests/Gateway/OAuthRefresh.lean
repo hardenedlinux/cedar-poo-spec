@@ -206,6 +206,19 @@ private def crashExercise (durable : Revocation.Recovery.Store)
     audit := { lateAudit with writer := 6 } }
   let lateOther := { lateOriginal with audit := { lateConflict.audit with writer := 6 } }
   let lateMissing := { lateOriginal with audit := { missingAudit with writer := 6 } }
+  let some takeoverRevoked := Revocation.Crash.revoke afterStaged 4 (verified digest) | return false
+  let some takeoverSuccessor := Revocation.Crash.handoff takeoverRevoked 4 | return false
+  let some takeoverFinal := Revocation.Crash.handoff takeoverSuccessor 5 | return false
+  let takeoverInput : Receiver.LegacyBatchInput :=
+    ⟨takeoverFinal, successor.result.binding, [lateOther, lateMissing]⟩
+  let .ok takeoverPending := Receiver.legacyBatchContract.invoke Receiver.prepareLegacyBatch takeoverInput | return false
+  let .ok takeoverRecovered := Receiver.legacyBatchContract.invoke Receiver.prepareLegacyBatch
+    { takeoverInput with items := [lateOriginal, lateOriginal] } | return false
+  let committedPrefix : Receiver.LegacyBatchState :=
+    { commitAgain.result with image := finalLateWriter }
+  let staleSuffix := { lateMissing with audit := { missingAudit with writer := 4 } }
+  let stoppedSuffix := [staleSuffix, lateOriginal].foldl
+    (Receiver.LegacyBatchState.step successor.result.binding) committedPrefix
   let lateRetry : Receiver.LegacyBatchInput :=
     ⟨finalLateWriter, successor.result.binding, [lateOriginal, lateOther, lateMissing, lateOriginal]⟩
   let .ok lateRetried := Receiver.legacyBatchContract.invoke Receiver.prepareLegacyBatch lateRetry | return false
@@ -257,6 +270,13 @@ private def crashExercise (durable : Revocation.Recovery.Store)
     (retiredReplicaRun.stopped == some intent.operation) &&
     decide (retiredReplicaRun.image = afterStaged) &&
     decide (revokedThenHandedOff = lateRevoked) &&
+    decide (takeoverPending.result.image = takeoverFinal) &&
+    decide (takeoverPending.result.pending = [intent.operation, unrelated.operation]) &&
+    decide (Revocation.Crash.effectStatus takeoverPending.result.image intent.operation = .unresolved) &&
+    decide (takeoverRecovered.result.confirmed = [intent.operation, intent.operation]) &&
+    decide (takeoverRecovered.result.image.settledOutcome intent.operation = some outcome) &&
+    decide (takeoverRecovered.result.image.oauth = takeoverFinal.oauth) &&
+    decide (stoppedSuffix = { committedPrefix with stopped := some unrelated.operation }) &&
     decide (lateRetried.result.image = finalLateWriter) &&
     decide (lateRetried.result.image.settledOutcome intent.operation = some outcome) &&
     decide (lateRetried.result.confirmed = [intent.operation, intent.operation]) &&
@@ -515,3 +535,4 @@ end Tests.Gateway.OAuthRefresh
 #print axioms CedarPooSpec.Gateway.OAuth.Revocation.Crash.revoke_and_handoff_agree
 #print axioms CedarPooSpec.Gateway.OAuth.Receiver.legacyBatch_stops_at_retired_writer
 #print axioms CedarPooSpec.Gateway.OAuth.Revocation.Crash.committed_migration_cannot_reopen_after_failover
+#print axioms CedarPooSpec.Gateway.OAuth.Receiver.legacyBatch_fenced_suffix_keeps_prefix

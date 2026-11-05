@@ -663,6 +663,19 @@ theorem legacyBatch_stopped_keeps_state (trusted : Revocation.Crash.ReceiverBind
   | nil => rfl
   | cons item tail ih => simpa [List.foldl_cons, LegacyBatchState.step, stopped] using ih
 
+/-- If ownership changes between items, the first fenced item stops the
+suffix and preserves both the durable image and the acknowledged prefix. -/
+theorem legacyBatch_fenced_suffix_keeps_prefix (trusted : Revocation.Crash.ReceiverBinding)
+    (accepted : LegacyBatchState) (item : ManagedReconciliation) (tail : List ManagedReconciliation)
+    (running : accepted.stopped = none)
+    (fenced : item.audit.writer ≠ accepted.image.writer ∨ item.currentReplica = false) :
+    (item :: tail).foldl (LegacyBatchState.step trusted) accepted =
+      { accepted with stopped := some item.audit.operation } := by
+  have stopped : accepted.step trusted item = { accepted with stopped := some item.audit.operation } := by
+    simp [LegacyBatchState.step, running, fenced]
+  rw [List.foldl_cons, stopped]
+  exact legacyBatch_stopped_keeps_state trusted _ tail (by simp)
+
 theorem legacyBatch_step_preserves_authority (trusted : Revocation.Crash.ReceiverBinding)
     (state : LegacyBatchState) (item : ManagedReconciliation) (operation : String) :
     let next := state.step trusted item
