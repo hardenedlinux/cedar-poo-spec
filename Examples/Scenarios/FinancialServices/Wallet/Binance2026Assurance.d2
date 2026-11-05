@@ -1,0 +1,192 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: Apache-2.0
+
+vars: {d2-config: {data: {figure: |json
+{
+  "purpose": "architecture",
+  "component": {
+    "kind": "payment",
+    "variant": "assurance"
+  },
+  "language": "en",
+  "width": 1700,
+  "primary": "purpose",
+  "themes": [
+    "editorial",
+    "comfortable"
+  ],
+  "icons": [
+    "engineering",
+    "cedar"
+  ],
+  "basis": {
+    "captureRef": "development-source-observation",
+    "modelRefs": [],
+    "obligationRefs": [],
+    "evidenceRefs": []
+  },
+  "title": "Binance 2026: detailed assurance and component source map",
+  "kind": "proof-reading-map",
+  "questions": [
+    {
+      "ref": "purpose",
+      "text": "How did the attack progress, where can we stop it, and what still depends on the Host?",
+      "focusRefs": [
+        "sysml"
+      ]
+    }
+  ],
+  "references": {
+    "source": "Examples/Scenarios/FinancialServices/Wallet/Binance2026Assurance.d2",
+    "sysml": "dev/sysml/attackers.sysml",
+    "capabilityGraphSource": "CedarPooSpec/Attackers/ProfileObject.lean",
+    "parentRetentionSource": "CedarPooSpec/Attackers/ProfileObject.lean",
+    "capabilityIsolationSource": "CedarPooSpec/Attackers/ProfileObject.lean",
+    "traceSafetySource": "CedarPooSpec/Attackers/Trace.lean",
+    "exactPaymentSource": "CedarPooSpec/Vertical/FinancialServices/PaymentSigning.lean",
+    "currentGatewaySource": "CedarPooSpec/Vertical/FinancialServices/PaymentSigning.lean",
+    "revokedSource": "CedarPooSpec/Vertical/FinancialServices/PaymentSigning.lean",
+    "delegationExposureSource": "CedarPooSpec/Vertical/FinancialServices/PaymentSigning.lean",
+    "hostSource": "CedarPooSpec/Vertical/FinancialServices/PaymentSigning.lean",
+    "scenarioMetadataSource": "CedarPooSpec/Scenarios/Metadata.lean",
+    "scenarioLineageSource": "CedarPooSpec/Scenarios/Functional.lean",
+    "incidentSource": "Examples/Scenarios/FinancialServices/Wallet/Binance2026.lean",
+    "deploymentPurposeSource": "CedarPooSpec/Vertical/FinancialServices/PaymentSigning.lean",
+    "transferShapeSource": "CedarPooSpec/Vertical/FinancialServices/PaymentSigning.lean"
+  },
+  "copy": {
+    "description": "Reported chain: endpoint compromise \u2192 internal AI lateral movement \u2192 deployment token \u2192 unauthorized signer use. Exact AI exploit is undisclosed.",
+    "status": "Disclosure: Binance initial findings, 2026-11-03; event starts 2026-10-29 UTC. Preliminary source. This is modeled acceptance, not an infrastructure replay."
+  },
+  "presentation": {
+    "notation": "assurance",
+    "columns": 1,
+    "groups": [
+      {
+        "title": "Where this scenario comes from",
+        "icon": "evidence",
+        "subjects": [
+          "incident",
+          "scenarioMetadata",
+          "scenarioLineage"
+        ],
+        "columns": 3
+      },
+      {
+        "title": "How attacker capabilities compose",
+        "icon": "branch",
+        "subjects": [
+          "capabilityGraph",
+          "parentRetention",
+          "capabilityIsolation",
+          "traceSafety"
+        ],
+        "columns": 2
+      },
+      {
+        "title": "How the signing boundary refuses misuse",
+        "icon": "gate",
+        "subjects": [
+          "deploymentPurpose",
+          "exactPayment",
+          "currentGateway",
+          "transferShape"
+        ],
+        "columns": 2
+      },
+      {
+        "title": "Revocation, residual authority and Host duties",
+        "icon": "current",
+        "subjects": [
+          "revoked",
+          "delegationExposure",
+          "host"
+        ],
+        "columns": 3
+      }
+    ]
+  },
+  "sysml": {
+    "source": "dev/sysml/attackers.sysml",
+    "view": "FinancialAttackers::assurance",
+    "bindings": {
+      "capabilityGraph": {
+        "name": "FinancialAttackers::capabilityGraph",
+        "icon": "registrar"
+      },
+      "parentRetention": {
+        "name": "FinancialAttackers::parentRetention",
+        "icon": "branch"
+      },
+      "capabilityIsolation": {
+        "name": "FinancialAttackers::capabilityIsolation",
+        "icon": "rules"
+      },
+      "traceSafety": {
+        "name": "FinancialAttackers::traceSafety",
+        "icon": "gate"
+      },
+      "exactPayment": {
+        "name": "FinancialAttackers::exactPayment",
+        "icon": "rules"
+      },
+      "currentGateway": {
+        "name": "FinancialAttackers::currentGateway",
+        "icon": "gate"
+      },
+      "revoked": {
+        "name": "FinancialAttackers::revoked",
+        "icon": "warning"
+      },
+      "delegationExposure": {
+        "name": "FinancialAttackers::delegationExposure",
+        "icon": "pending"
+      },
+      "host": {
+        "name": "FinancialAttackers::host",
+        "icon": "current"
+      },
+      "scenarioMetadata": {
+        "name": "FinancialAttackers::scenarioMetadata",
+        "icon": "evidence"
+      },
+      "scenarioLineage": {
+        "name": "FinancialAttackers::scenarioLineage",
+        "icon": "branch"
+      },
+      "incident": {
+        "name": "FinancialAttackers::incident",
+        "icon": "evidence"
+      },
+      "deploymentPurpose": {
+        "name": "FinancialAttackers::deploymentPurpose",
+        "icon": "gate"
+      },
+      "transferShape": {
+        "name": "FinancialAttackers::transferShape",
+        "icon": "gate"
+      }
+    }
+  },
+  "proofs": {
+    "namespace": "FinancialAttackers"
+  }
+}
+|
+}}}
+capabilityGraph: "Reusable capability model\nTyped LeanPoo object"
+parentRetention: "Cooperative parent selection\nRetain actual parent sessions"
+capabilityIsolation: "Certified output isolation\nProtected goals absent"
+traceSafety: "Finite-trace kernel law\nNo rule derives isolated outputs"
+exactPayment: "Exact payment binding\nNo substituted transaction"
+currentGateway: "Current effect mediation\nRecheck before signing"
+revoked: "Revocation refusal\nNo new modeled release"
+delegationExposure: "Outstanding delegation persists\nLocal pause does not clear authority"
+host: "Host trust assumptions\nIdentity + bytes + chain finality"
+scenarioMetadata: "Mandatory typed metadata\nPublisher + event + disclosure dates"
+scenarioLineage: "Wallet scenario derivation\nRetain exact parent provenance"
+incident: "Binance 2026-10-29\nPreliminary report; AI exploit unknown"
+
+deploymentPurpose: "A deployment key is not a signing key\nA deployment-purpose caller is refused"
+
+transferShape: "A payment cannot become code authority\nOnly native transfer; no calldata or delegation"

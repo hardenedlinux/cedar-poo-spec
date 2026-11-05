@@ -8,11 +8,11 @@ import * as v from 'valibot';
 import {compileModel,readD2Figure} from '@deterministic-engineering/render';
 import type {OpenSysMLCapture} from '@deterministic-engineering/render/opensysml';
 import {ProjectionSchema,bindView} from '../projection';
-const root=new URL('../../',import.meta.url),file='dev/d2/security-frameworks.d2';
+const root=new URL('../../../',import.meta.url),file='dev/d2/security-frameworks.d2';
 test('actual SDK identities and relationships bind independently of D2 enumeration',async()=>{
  const raw=await readFile(new URL(file,root),'utf8'),compiled=await compileModel({[file]:raw},file),author=readD2Figure(compiled,{[file]:raw},resources);
  const bindings=v.parse(ProjectionSchema,JSON.parse(v.parse(v.object({figure:v.string()}),compiled.data).figure)).sysml.bindings;
- const capture:OpenSysMLCapture=JSON.parse(await readFile(new URL('../.generated/security-frameworks-sdk.json',import.meta.url),'utf8'));
+ const capture:OpenSysMLCapture=JSON.parse(await readFile(new URL('../../.generated/security-frameworks-sdk.json',import.meta.url),'utf8'));
  const actual=bindView(author,capture,bindings);expect(actual.model.subjects).toHaveLength(5);expect(actual.model.relations).toHaveLength(4);expect(actual.trace.nodes.every(node=>node.origin?.file==='dev/sysml/security-frameworks.sysml')).toBe(true);
  const reordered={...capture,rendering:{...capture.rendering,nodes:[...capture.rendering.nodes].reverse()}};expect(bindView(author,reordered,bindings).model.relations).toEqual(actual.model.relations);
  const missing={...capture,rendering:{...capture.rendering,nodes:capture.rendering.nodes.slice(1)}};expect(()=>bindView(author,missing,bindings)).toThrow();

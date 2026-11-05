@@ -2,33 +2,42 @@
   "entry": "dev/d2/gateway-publication-swimlanes.d2",
   "sources": {
     "CedarPooSpec/Gateway/PublicationReview.lean": "1ddfb0a04e008bf26f34e51f54d26b01421fbf62139727ab93de4195996ce204",
-    "dev/.generated/gateway-publication-swimlanes-sdk.json": "4ba847c749ab988433d87a243b55c70d00096eaca12059b3bcbd3be467b43956",
-    "dev/artifacts.ts": "ca1096947536fbdbd5da5cbf1ce5c6f57521bd4a7b135233285dfe8fcff9859d",
-    "dev/bun.lock": "2b7060a881aad9312d122f6d01146ef78c207b3c95254aa66b7b57a9eede5acd",
-    "dev/catalog.ts": "6d65a91afcddb11de668cc668aa3c6b9076435c02e73a90323c7bf28a991965e",
+    "dev/.generated/gateway-publication-swimlanes-sdk.json": "f43464e688c5d40f1d15248be32e055e644999158843e96a4553be854ed37ba3",
+    "dev/bun.lock": "e4f1f11bdbe2906a6aafc080e48a63838f7fb2fc278dc7670be5da988dac90f4",
     "dev/d2/gateway-publication-swimlanes.d2": "7bb0944e0271669e676892c067e413f9a8b21bbb3e60581d37d04f5b5d71a0e7",
-    "dev/icons.ts": "0053a84dd7875949ffd03f8a067037353f3519f9f0875914fcbda1fb39f79764",
-    "dev/inputs.ts": "5da4f7a946a9bd87cdca04a0a0406f5f4cddae906f6375a4636aa3fa22f77bf5",
-    "dev/Justfile": "364059989486f5babe149b9ab2a570e09fce7abf9f450dc03d47a0f564fa1a10",
-    "dev/notation.ts": "ac907119b44c174367e8668143d2f787849340f47a28beb71cb08074da0dd1ec",
-    "dev/package.json": "4eb137a6d73d5dfb1e43020c3041e9a42151d480b26d6e01b99ee0ebc2997d90",
-    "dev/projection.ts": "3fd049e50798aee9dce54af6cd6e6fccad45fec5ab24b994bb6a8a4b33d7252d",
-    "dev/proofs.ts": "8a9cb88dd75b807f176c1389bd3e8b4df7cf658c657ad85bbf0487d09cafedd9",
-    "dev/render.ts": "41b5ff6dfef93c5be3935198f190337c86454e358ab332eb9d908cf84b6b47e9",
-    "dev/sources.ts": "3cd11d095476ee65c9086172773813e6e37e88087c9d01ee962cec59369d7ed8",
+    "dev/Justfile": "eb8e99a205111d4eb552beea43f00b9cc6479baeea3ba925cbfc4388a8db9350",
+    "dev/package.json": "54f8bbf69d5d6f8a5a8489bc61ceeb1052c8d2e0dec70492c7416cb6181178d4",
     "dev/sysml/gateway-activities.sysml": "87c73ad3b6516117919c19fd78be453fcbf836e89bcfd21e678315523153cb07",
+    "dev/ts/artifacts.ts": "ca1096947536fbdbd5da5cbf1ce5c6f57521bd4a7b135233285dfe8fcff9859d",
+    "dev/ts/catalog.ts": "6d65a91afcddb11de668cc668aa3c6b9076435c02e73a90323c7bf28a991965e",
+    "dev/ts/components/artwork.ts": "1c2ff070e8d6643860e35d5be8760be65827e5deb3ce8bb6f76f0ae395809360",
+    "dev/ts/components/assurance.ts": "1a6cc3a683ba50ec65461d7a0cdd5b56007bf275f5c3c7a9bc7d0ebbfeb1426f",
+    "dev/ts/components/defense-flow.ts": "5466a7944dfba904577106996ec43920987b5840f70ddbe932ddae485754c8a8",
+    "dev/ts/components/financial.ts": "b8c3ba2ebc478d7a9a47cdff759c3f0663a2c396c32975b151a5acb7efa07eb8",
+    "dev/ts/components/incident.ts": "93bcb9011ac70f3ab9920ac787df30c1540f32983678d89fd4bfacfb7207f32e",
+    "dev/ts/components/payment.ts": "5067f7398974870e933406c28aba9770a8bc3a883628255ddbca3ef5a19bb15c",
+    "dev/ts/icons.ts": "0053a84dd7875949ffd03f8a067037353f3519f9f0875914fcbda1fb39f79764",
+    "dev/ts/inputs.ts": "93fa0a59ed000c05f8563d9afbbde576ea9bb03457e8a5b5563a3be2eab37f93",
+    "dev/ts/notation.ts": "a7b715802173bd734dae7b22b82883da34da8f03d351d1a0e3531eba1b3f753d",
+    "dev/ts/project.ts": "6ac04f71738f2627ca33cc73efc3bd58b43a1b8967c58c52dc2c26be52303549",
+    "dev/ts/projection.ts": "3fd049e50798aee9dce54af6cd6e6fccad45fec5ab24b994bb6a8a4b33d7252d",
+    "dev/ts/proofs.ts": "8a9cb88dd75b807f176c1389bd3e8b4df7cf658c657ad85bbf0487d09cafedd9",
+    "dev/ts/render.ts": "10902dd11aadea28c340a839c06d9ef3751d531f7b749aaaae87aba2bb32c862",
+    "dev/ts/sources.ts": "3cd11d095476ee65c9086172773813e6e37e88087c9d01ee962cec59369d7ed8",
+    "dev/tsconfig.json": "e57e46b169017d5260b98cb1afd8eba93758109a6a11d57c6f36b658b8513386",
+    "Project.sysml": "8b4309d72e27fccd2129d891f29ea5b83db4de92037393a650057225c513b5c5",
     "rust/runtime/tests/unit/publication_review.rs": "586bec582ee90ee22ecf54646ad417316ac4fbbbc03b9fb8e9e47d42d6920d5a"
   },
   "binaries": {},
   "sdk": {
-    "modelHash": "d402aa7d4522ae8184d3eb93bb28d7ca7543b5ff2f415eeb7150f0f9e064231d",
+    "modelHash": "4355cbe3eb6f010bccdd7debb1c73f692f8212a3bf93a8895208b7577bfac9f3",
     "view": "GatewayPublicationLanes::overview",
     "trace": {
-      "modelHash": "d402aa7d4522ae8184d3eb93bb28d7ca7543b5ff2f415eeb7150f0f9e064231d",
+      "modelHash": "4355cbe3eb6f010bccdd7debb1c73f692f8212a3bf93a8895208b7577bfac9f3",
       "requestedView": "GatewayPublicationLanes::overview",
       "resolvedView": "GatewayPublicationLanes::overview",
-      "renderingSHA256": "4ba847c749ab988433d87a243b55c70d00096eaca12059b3bcbd3be467b43956",
-      "capturedRenderingJSON": "{\"modelHash\":\"d402aa7d4522ae8184d3eb93bb28d7ca7543b5ff2f415eeb7150f0f9e064231d\",\"requestedView\":\"GatewayPublicationLanes::overview\",\"rendering\":{\"view\":\"GatewayPublicationLanes::overview\",\"kind\":\"interconnection\",\"stated\":\"render asInterconnectionDiagram\",\"nodes\":[{\"id\":\"n0\",\"kind\":\"part\",\"name\":\"GatewayPublicationLanes::stepCapture\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":46,\"startCol\":2,\"endLine\":46,\"endCol\":32}},{\"id\":\"n1\",\"kind\":\"part\",\"name\":\"GatewayPublicationLanes::stepCall\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":47,\"startCol\":2,\"endLine\":47,\"endCol\":29}},{\"id\":\"n2\",\"kind\":\"part\",\"name\":\"GatewayPublicationLanes::stepOwner\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":48,\"startCol\":2,\"endLine\":48,\"endCol\":30}},{\"id\":\"n3\",\"kind\":\"part\",\"name\":\"GatewayPublicationLanes::stepCheck\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":49,\"startCol\":2,\"endLine\":49,\"endCol\":30}},{\"id\":\"n4\",\"kind\":\"part\",\"name\":\"GatewayPublicationLanes::stepAdmit\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":50,\"startCol\":2,\"endLine\":50,\"endCol\":30}},{\"id\":\"n5\",\"kind\":\"part\",\"name\":\"GatewayPublicationLanes::stepInstall\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":51,\"startCol\":2,\"endLine\":51,\"endCol\":32}},{\"id\":\"n6\",\"kind\":\"part\",\"name\":\"GatewayPublicationLanes::stepObserve\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":52,\"startCol\":2,\"endLine\":52,\"endCol\":32}},{\"id\":\"n7\",\"kind\":\"part\",\"name\":\"GatewayPublicationLanes::stepReturn\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":53,\"startCol\":2,\"endLine\":53,\"endCol\":31}}],\"edges\":[{\"from\":\"n2\",\"to\":\"n3\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":56,\"startCol\":2,\"endLine\":56,\"endCol\":55}},{\"from\":\"n0\",\"to\":\"n1\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":54,\"startCol\":2,\"endLine\":54,\"endCol\":51}},{\"from\":\"n1\",\"to\":\"n2\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":55,\"startCol\":2,\"endLine\":55,\"endCol\":49}},{\"from\":\"n3\",\"to\":\"n4\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":57,\"startCol\":2,\"endLine\":57,\"endCol\":50}},{\"from\":\"n4\",\"to\":\"n5\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":58,\"startCol\":2,\"endLine\":58,\"endCol\":52}},{\"from\":\"n5\",\"to\":\"n6\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":59,\"startCol\":2,\"endLine\":59,\"endCol\":54}},{\"from\":\"n6\",\"to\":\"n7\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":60,\"startCol\":2,\"endLine\":60,\"endCol\":53}}],\"columns\":[],\"rows\":[],\"notes\":[],\"notices\":[],\"shown\":[\"port-symbols\",\"compartments\",\"keywords\"]}}",
+      "renderingSHA256": "f43464e688c5d40f1d15248be32e055e644999158843e96a4553be854ed37ba3",
+      "capturedRenderingJSON": "{\"modelHash\":\"4355cbe3eb6f010bccdd7debb1c73f692f8212a3bf93a8895208b7577bfac9f3\",\"requestedView\":\"GatewayPublicationLanes::overview\",\"rendering\":{\"view\":\"GatewayPublicationLanes::overview\",\"kind\":\"interconnection\",\"stated\":\"render asInterconnectionDiagram\",\"nodes\":[{\"id\":\"n0\",\"kind\":\"part\",\"name\":\"GatewayPublicationLanes::stepCapture\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":46,\"startCol\":2,\"endLine\":46,\"endCol\":32}},{\"id\":\"n1\",\"kind\":\"part\",\"name\":\"GatewayPublicationLanes::stepCall\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":47,\"startCol\":2,\"endLine\":47,\"endCol\":29}},{\"id\":\"n2\",\"kind\":\"part\",\"name\":\"GatewayPublicationLanes::stepOwner\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":48,\"startCol\":2,\"endLine\":48,\"endCol\":30}},{\"id\":\"n3\",\"kind\":\"part\",\"name\":\"GatewayPublicationLanes::stepCheck\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":49,\"startCol\":2,\"endLine\":49,\"endCol\":30}},{\"id\":\"n4\",\"kind\":\"part\",\"name\":\"GatewayPublicationLanes::stepAdmit\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":50,\"startCol\":2,\"endLine\":50,\"endCol\":30}},{\"id\":\"n5\",\"kind\":\"part\",\"name\":\"GatewayPublicationLanes::stepInstall\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":51,\"startCol\":2,\"endLine\":51,\"endCol\":32}},{\"id\":\"n6\",\"kind\":\"part\",\"name\":\"GatewayPublicationLanes::stepObserve\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":52,\"startCol\":2,\"endLine\":52,\"endCol\":32}},{\"id\":\"n7\",\"kind\":\"part\",\"name\":\"GatewayPublicationLanes::stepReturn\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":53,\"startCol\":2,\"endLine\":53,\"endCol\":31}}],\"edges\":[{\"from\":\"n2\",\"to\":\"n3\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":56,\"startCol\":2,\"endLine\":56,\"endCol\":55}},{\"from\":\"n0\",\"to\":\"n1\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":54,\"startCol\":2,\"endLine\":54,\"endCol\":51}},{\"from\":\"n1\",\"to\":\"n2\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":55,\"startCol\":2,\"endLine\":55,\"endCol\":49}},{\"from\":\"n3\",\"to\":\"n4\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":57,\"startCol\":2,\"endLine\":57,\"endCol\":50}},{\"from\":\"n4\",\"to\":\"n5\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":58,\"startCol\":2,\"endLine\":58,\"endCol\":52}},{\"from\":\"n5\",\"to\":\"n6\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":59,\"startCol\":2,\"endLine\":59,\"endCol\":54}},{\"from\":\"n6\",\"to\":\"n7\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":60,\"startCol\":2,\"endLine\":60,\"endCol\":53}}],\"columns\":[],\"rows\":[],\"notes\":[],\"notices\":[],\"shown\":[\"port-symbols\",\"compartments\",\"keywords\"]}}",
       "nodes": [
         {
           "id": "n0",
@@ -512,12 +521,12 @@
       "samples": 25,
       "requiredMinimum": 12
     },
-    "inputSHA256": "c0826e9089b9735a82e8d87e1c0dd4d9ec445987f1b899c330ea66dd4adf829d",
+    "inputSHA256": "d71cb5a61ec85cb5c87e4ed7ac7f57a677ec218baa2cc826827359b36bf7b640",
     "scenes": [],
     "svgSHA256": [
-      "ce37bfc2730dc20dec859f314aff43140afdec2310b2c7e328bd7c15805971dc"
+      "494fe0a3949218896b606d05007e77f55b4cb565283aac564cff8a6a56b81b85"
     ],
-    "composedHTMLSHA256": "5b9a463da4e648cbe606a01ffc6ff5f315cd4459c88c29518b6723b6a964ffd9",
+    "composedHTMLSHA256": "9f9ac80b1a890b0bd6617ce5683b7f6f4c04147eaf66734278db43656909d86e",
     "dependencies": {
       "@fontsource/inter": "5.3.0",
       "@fontsource/kalam": "5.3.0",
@@ -530,12 +539,12 @@
       "web-worker": "1.5.0"
     },
     "regionSHA256": {},
-    "htmlSHA256": "182ff7ada1d7efa0f5cf48ee284b5bb5e3ccc4dfa59b61e4cce673113d7bddb5",
+    "htmlSHA256": "c5b13870b1b27463cc83c1be9d4b2e258ac77616eea1798ccd87db96a82e618d",
     "drawing": "precise",
     "routing": "xyflow@0.0.83",
     "assetSHA256": {
-      "@fontsource/inter/files/inter-latin-700-normal.woff2": "6f56409fd3d64bb85f7d070bce20749db2d66b6d63cec586cc22d1c761be2491",
-      "@fontsource/inter/files/inter-latin-400-normal.woff2": "8909904ab6c872eb994093482a88a28eca2cd95912d7b6fecd72103b0dc07edc"
+      "@fontsource/inter/files/inter-latin-400-normal.woff2": "8909904ab6c872eb994093482a88a28eca2cd95912d7b6fecd72103b0dc07edc",
+      "@fontsource/inter/files/inter-latin-700-normal.woff2": "6f56409fd3d64bb85f7d070bce20749db2d66b6d63cec586cc22d1c761be2491"
     },
     "pngSHA256": "87f2d244c6abf2f67488aae4fa9ac3fbda050e9f7521b782835dfdb84880831d",
     "browser": "156.0.8078.4",

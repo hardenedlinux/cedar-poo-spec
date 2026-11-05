@@ -1,0 +1,850 @@
+{
+  "entry": "Examples/Scenarios/FinancialServices/Wallet/Binance2026Assurance.d2",
+  "sources": {
+    "CedarPooSpec/Attackers/ProfileObject.lean": "a3467bcbdde46c94b262c397e63324d9b6b48cad21ee013a9d8dfe39629103e5",
+    "CedarPooSpec/Attackers/Trace.lean": "0f45ce9e0d06cf7fe1bb4c47d6ada4a243b444f7e4dfaefe1c4ec91dbfef1bd0",
+    "CedarPooSpec/Scenarios/Functional.lean": "5a626e99a823727bdabaef14d9744e9cc7e165c5987662fa90c908018661782d",
+    "CedarPooSpec/Scenarios/Metadata.lean": "811d61d46cc6f4ea13e001308c3044712c9cd70a43e0e5f7a72b870cb0c72590",
+    "CedarPooSpec/Vertical/FinancialServices/PaymentSigning.lean": "f5d41c2cb1458e521cb1839d038f71b902764be3ec8d30710128d1082c178f39",
+    "dev/.generated/Binance2026Assurance-sdk.json": "11c803000900421cd328e169565fe960c685e39704916a8b31ffb146c15252a8",
+    "dev/assets/financial/artwork.json": "851f02b29586392a26b2b670fc12649a041a7b3246a745a27fb1297065915b7f",
+    "dev/bun.lock": "e4f1f11bdbe2906a6aafc080e48a63838f7fb2fc278dc7670be5da988dac90f4",
+    "dev/Justfile": "eb8e99a205111d4eb552beea43f00b9cc6479baeea3ba925cbfc4388a8db9350",
+    "dev/package.json": "54f8bbf69d5d6f8a5a8489bc61ceeb1052c8d2e0dec70492c7416cb6181178d4",
+    "dev/sysml/attackers.sysml": "dfd9e3ffa28da068badb597e930dfa0200ae26f53d2fb1870e1941e2f9951b9e",
+    "dev/ts/artifacts.ts": "ca1096947536fbdbd5da5cbf1ce5c6f57521bd4a7b135233285dfe8fcff9859d",
+    "dev/ts/catalog.ts": "6d65a91afcddb11de668cc668aa3c6b9076435c02e73a90323c7bf28a991965e",
+    "dev/ts/components/artwork.ts": "1c2ff070e8d6643860e35d5be8760be65827e5deb3ce8bb6f76f0ae395809360",
+    "dev/ts/components/assurance.ts": "1a6cc3a683ba50ec65461d7a0cdd5b56007bf275f5c3c7a9bc7d0ebbfeb1426f",
+    "dev/ts/components/defense-flow.ts": "5466a7944dfba904577106996ec43920987b5840f70ddbe932ddae485754c8a8",
+    "dev/ts/components/financial.ts": "b8c3ba2ebc478d7a9a47cdff759c3f0663a2c396c32975b151a5acb7efa07eb8",
+    "dev/ts/components/incident.ts": "93bcb9011ac70f3ab9920ac787df30c1540f32983678d89fd4bfacfb7207f32e",
+    "dev/ts/components/payment.ts": "5067f7398974870e933406c28aba9770a8bc3a883628255ddbca3ef5a19bb15c",
+    "dev/ts/icons.ts": "0053a84dd7875949ffd03f8a067037353f3519f9f0875914fcbda1fb39f79764",
+    "dev/ts/inputs.ts": "93fa0a59ed000c05f8563d9afbbde576ea9bb03457e8a5b5563a3be2eab37f93",
+    "dev/ts/notation.ts": "a7b715802173bd734dae7b22b82883da34da8f03d351d1a0e3531eba1b3f753d",
+    "dev/ts/project.ts": "6ac04f71738f2627ca33cc73efc3bd58b43a1b8967c58c52dc2c26be52303549",
+    "dev/ts/projection.ts": "3fd049e50798aee9dce54af6cd6e6fccad45fec5ab24b994bb6a8a4b33d7252d",
+    "dev/ts/proofs.ts": "8a9cb88dd75b807f176c1389bd3e8b4df7cf658c657ad85bbf0487d09cafedd9",
+    "dev/ts/render.ts": "10902dd11aadea28c340a839c06d9ef3751d531f7b749aaaae87aba2bb32c862",
+    "dev/ts/sources.ts": "3cd11d095476ee65c9086172773813e6e37e88087c9d01ee962cec59369d7ed8",
+    "dev/tsconfig.json": "e57e46b169017d5260b98cb1afd8eba93758109a6a11d57c6f36b658b8513386",
+    "Examples/Scenarios/FinancialServices/Wallet/Binance2026.lean": "d18c3b439018bc3b656f0a569af4515032b6ae3f5b09cf87ce9bf5eafbc67f5b",
+    "Examples/Scenarios/FinancialServices/Wallet/Binance2026Assurance.d2": "7f358b54b8776e122f850ebd2e6f477421052f1a3de5487e9ccec4c86796f4ba",
+    "Project.sysml": "8b4309d72e27fccd2129d891f29ea5b83db4de92037393a650057225c513b5c5"
+  },
+  "binaries": {
+    "dev/assets/financial/financial.png": "fcbb31a8f6311e69cc63a4e9278fc90722425d21b4223be7ed897b47584dce34",
+    "dev/assets/financial/payment.png": "92176cbf551a88f79b0bb0ceabf7effb27e14b1307d83f2cb6deeb657c30222b"
+  },
+  "sdk": {
+    "modelHash": "ede107b4aef1739cd66d52d10c5edfa1ebf378ad9fd5b3b717d419d67d634939",
+    "view": "FinancialAttackers::assurance",
+    "trace": {
+      "modelHash": "ede107b4aef1739cd66d52d10c5edfa1ebf378ad9fd5b3b717d419d67d634939",
+      "requestedView": "FinancialAttackers::assurance",
+      "resolvedView": "FinancialAttackers::assurance",
+      "renderingSHA256": "11c803000900421cd328e169565fe960c685e39704916a8b31ffb146c15252a8",
+      "capturedRenderingJSON": "{\"modelHash\":\"ede107b4aef1739cd66d52d10c5edfa1ebf378ad9fd5b3b717d419d67d634939\",\"requestedView\":\"FinancialAttackers::assurance\",\"rendering\":{\"view\":\"FinancialAttackers::assurance\",\"kind\":\"interconnection\",\"stated\":\"render asInterconnectionDiagram\",\"nodes\":[{\"id\":\"n0\",\"kind\":\"part\",\"name\":\"FinancialAttackers::deploymentPurpose\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/attackers.sysml\",\"startLine\":43,\"startCol\":2,\"endLine\":43,\"endCol\":37}},{\"id\":\"n1\",\"kind\":\"part\",\"name\":\"FinancialAttackers::transferShape\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/attackers.sysml\",\"startLine\":46,\"startCol\":2,\"endLine\":46,\"endCol\":33}},{\"id\":\"n2\",\"kind\":\"part\",\"name\":\"FinancialAttackers::capabilityGraph\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/attackers.sysml\",\"startLine\":7,\"startCol\":2,\"endLine\":7,\"endCol\":36}},{\"id\":\"n3\",\"kind\":\"part\",\"name\":\"FinancialAttackers::parentRetention\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/attackers.sysml\",\"startLine\":10,\"startCol\":2,\"endLine\":10,\"endCol\":35}},{\"id\":\"n4\",\"kind\":\"part\",\"name\":\"FinancialAttackers::capabilityIsolation\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/attackers.sysml\",\"startLine\":13,\"startCol\":2,\"endLine\":13,\"endCol\":39}},{\"id\":\"n5\",\"kind\":\"part\",\"name\":\"FinancialAttackers::traceSafety\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/attackers.sysml\",\"startLine\":16,\"startCol\":2,\"endLine\":16,\"endCol\":31}},{\"id\":\"n6\",\"kind\":\"part\",\"name\":\"FinancialAttackers::exactPayment\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/attackers.sysml\",\"startLine\":19,\"startCol\":2,\"endLine\":19,\"endCol\":32}},{\"id\":\"n7\",\"kind\":\"part\",\"name\":\"FinancialAttackers::currentGateway\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/attackers.sysml\",\"startLine\":22,\"startCol\":2,\"endLine\":22,\"endCol\":34}},{\"id\":\"n8\",\"kind\":\"part\",\"name\":\"FinancialAttackers::revoked\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/attackers.sysml\",\"startLine\":25,\"startCol\":2,\"endLine\":25,\"endCol\":27}},{\"id\":\"n9\",\"kind\":\"part\",\"name\":\"FinancialAttackers::delegationExposure\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/attackers.sysml\",\"startLine\":28,\"startCol\":2,\"endLine\":28,\"endCol\":38}},{\"id\":\"n10\",\"kind\":\"part\",\"name\":\"FinancialAttackers::host\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/attackers.sysml\",\"startLine\":31,\"startCol\":2,\"endLine\":31,\"endCol\":26}},{\"id\":\"n11\",\"kind\":\"part\",\"name\":\"FinancialAttackers::scenarioMetadata\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/attackers.sysml\",\"startLine\":34,\"startCol\":2,\"endLine\":34,\"endCol\":37}},{\"id\":\"n12\",\"kind\":\"part\",\"name\":\"FinancialAttackers::scenarioLineage\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/attackers.sysml\",\"startLine\":37,\"startCol\":2,\"endLine\":37,\"endCol\":35}},{\"id\":\"n13\",\"kind\":\"part\",\"name\":\"FinancialAttackers::incident\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/attackers.sysml\",\"startLine\":40,\"startCol\":2,\"endLine\":40,\"endCol\":29}}],\"edges\":[],\"columns\":[],\"rows\":[],\"notes\":[],\"notices\":[],\"shown\":[\"port-symbols\",\"compartments\",\"keywords\"]}}",
+      "nodes": [
+        {
+          "id": "n0",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/attackers.sysml",
+            "startLine": 43,
+            "startCol": 2,
+            "endLine": 43,
+            "endCol": 37
+          }
+        },
+        {
+          "id": "n1",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/attackers.sysml",
+            "startLine": 46,
+            "startCol": 2,
+            "endLine": 46,
+            "endCol": 33
+          }
+        },
+        {
+          "id": "n2",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/attackers.sysml",
+            "startLine": 7,
+            "startCol": 2,
+            "endLine": 7,
+            "endCol": 36
+          }
+        },
+        {
+          "id": "n3",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/attackers.sysml",
+            "startLine": 10,
+            "startCol": 2,
+            "endLine": 10,
+            "endCol": 35
+          }
+        },
+        {
+          "id": "n4",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/attackers.sysml",
+            "startLine": 13,
+            "startCol": 2,
+            "endLine": 13,
+            "endCol": 39
+          }
+        },
+        {
+          "id": "n5",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/attackers.sysml",
+            "startLine": 16,
+            "startCol": 2,
+            "endLine": 16,
+            "endCol": 31
+          }
+        },
+        {
+          "id": "n6",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/attackers.sysml",
+            "startLine": 19,
+            "startCol": 2,
+            "endLine": 19,
+            "endCol": 32
+          }
+        },
+        {
+          "id": "n7",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/attackers.sysml",
+            "startLine": 22,
+            "startCol": 2,
+            "endLine": 22,
+            "endCol": 34
+          }
+        },
+        {
+          "id": "n8",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/attackers.sysml",
+            "startLine": 25,
+            "startCol": 2,
+            "endLine": 25,
+            "endCol": 27
+          }
+        },
+        {
+          "id": "n9",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/attackers.sysml",
+            "startLine": 28,
+            "startCol": 2,
+            "endLine": 28,
+            "endCol": 38
+          }
+        },
+        {
+          "id": "n10",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/attackers.sysml",
+            "startLine": 31,
+            "startCol": 2,
+            "endLine": 31,
+            "endCol": 26
+          }
+        },
+        {
+          "id": "n11",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/attackers.sysml",
+            "startLine": 34,
+            "startCol": 2,
+            "endLine": 34,
+            "endCol": 37
+          }
+        },
+        {
+          "id": "n12",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/attackers.sysml",
+            "startLine": 37,
+            "startCol": 2,
+            "endLine": 37,
+            "endCol": 35
+          }
+        },
+        {
+          "id": "n13",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/attackers.sysml",
+            "startLine": 40,
+            "startCol": 2,
+            "endLine": 40,
+            "endCol": 29
+          }
+        }
+      ],
+      "edges": []
+    },
+    "diagnostics": [],
+    "observations": []
+  },
+  "proofClaims": {
+    "modelHash": "ede107b4aef1739cd66d52d10c5edfa1ebf378ad9fd5b3b717d419d67d634939",
+    "cards": [
+      {
+        "id": "FinancialAttackers::capabilityGraph",
+        "role": "Definition",
+        "symbol": "CedarPooSpec.Attackers.ProfileObject.Model",
+        "source": "CedarPooSpec/Attackers/ProfileObject.lean"
+      },
+      {
+        "id": "FinancialAttackers::parentRetention",
+        "role": "KernelLaw",
+        "symbol": "CedarPooSpec.Attackers.ProfileObject.selection_retains_actual_parent",
+        "source": "CedarPooSpec/Attackers/ProfileObject.lean"
+      },
+      {
+        "id": "FinancialAttackers::capabilityIsolation",
+        "role": "KernelLaw",
+        "symbol": "CedarPooSpec.Attackers.ProfileObject.certified_isolation",
+        "source": "CedarPooSpec/Attackers/ProfileObject.lean"
+      },
+      {
+        "id": "FinancialAttackers::traceSafety",
+        "role": "KernelLaw",
+        "symbol": "CedarPooSpec.Attackers.run_preserves_outputs",
+        "source": "CedarPooSpec/Attackers/Trace.lean"
+      },
+      {
+        "id": "FinancialAttackers::exactPayment",
+        "role": "KernelLaw",
+        "symbol": "CedarPooSpec.Vertical.FinancialServices.PaymentSigning.release_binds_exact_transaction",
+        "source": "CedarPooSpec/Vertical/FinancialServices/PaymentSigning.lean"
+      },
+      {
+        "id": "FinancialAttackers::currentGateway",
+        "role": "KernelLaw",
+        "symbol": "CedarPooSpec.Vertical.FinancialServices.PaymentSigning.release_retains_gateway",
+        "source": "CedarPooSpec/Vertical/FinancialServices/PaymentSigning.lean"
+      },
+      {
+        "id": "FinancialAttackers::revoked",
+        "role": "KernelLaw",
+        "symbol": "CedarPooSpec.Vertical.FinancialServices.PaymentSigning.revoked_cannot_release",
+        "source": "CedarPooSpec/Vertical/FinancialServices/PaymentSigning.lean"
+      },
+      {
+        "id": "FinancialAttackers::delegationExposure",
+        "role": "KernelLaw",
+        "symbol": "CedarPooSpec.Vertical.FinancialServices.PaymentSigning.pause_preserves_outstanding_authority",
+        "source": "CedarPooSpec/Vertical/FinancialServices/PaymentSigning.lean"
+      },
+      {
+        "id": "FinancialAttackers::host",
+        "role": "HostPremise",
+        "symbol": "CedarPooSpec.Vertical.FinancialServices.PaymentSigning.Current",
+        "source": "CedarPooSpec/Vertical/FinancialServices/PaymentSigning.lean"
+      },
+      {
+        "id": "FinancialAttackers::scenarioMetadata",
+        "role": "Definition",
+        "symbol": "CedarPooSpec.Scenarios.Metadata",
+        "source": "CedarPooSpec/Scenarios/Metadata.lean"
+      },
+      {
+        "id": "FinancialAttackers::scenarioLineage",
+        "role": "KernelLaw",
+        "symbol": "CedarPooSpec.Scenarios.derivation_retains_parent",
+        "source": "CedarPooSpec/Scenarios/Functional.lean"
+      },
+      {
+        "id": "FinancialAttackers::incident",
+        "role": "Definition",
+        "symbol": "CedarPooSpec.Binance2026Scenario.metadata",
+        "source": "Examples/Scenarios/FinancialServices/Wallet/Binance2026.lean"
+      },
+      {
+        "id": "FinancialAttackers::deploymentPurpose",
+        "role": "KernelLaw",
+        "symbol": "CedarPooSpec.Vertical.FinancialServices.PaymentSigning.deployment_cannot_release",
+        "source": "CedarPooSpec/Vertical/FinancialServices/PaymentSigning.lean"
+      },
+      {
+        "id": "FinancialAttackers::transferShape",
+        "role": "KernelLaw",
+        "symbol": "CedarPooSpec.Vertical.FinancialServices.PaymentSigning.release_only_native_transfer",
+        "source": "CedarPooSpec/Vertical/FinancialServices/PaymentSigning.lean"
+      }
+    ],
+    "uses": []
+  },
+  "renderer": {
+    "specifier": "git+https://github.com/hardenedlinux/deterministic-engineering.git#1fe20380441a0cd85055695c2adcc55ce699a369",
+    "name": "@deterministic-engineering/render",
+    "version": "1.0.2"
+  },
+  "receipt": {
+    "attribution": {
+      "copyright": [
+        "2026 hardenedlinux Linux Team and Contributors",
+        "2016 The Inter Project Authors (https://github.com/rsms/inter)"
+      ],
+      "license": "Apache-2.0 AND OFL-1.1"
+    },
+    "observation": {
+      "canvas": {
+        "x": 0,
+        "y": 0,
+        "width": 1700,
+        "height": 2488
+      },
+      "subjects": [
+        {
+          "id": "n13",
+          "role": "default",
+          "x": 49,
+          "y": 396,
+          "width": 526,
+          "height": 269
+        },
+        {
+          "id": "n11",
+          "role": "default",
+          "x": 587,
+          "y": 396,
+          "width": 526,
+          "height": 269
+        },
+        {
+          "id": "n12",
+          "role": "default",
+          "x": 1125,
+          "y": 396,
+          "width": 526,
+          "height": 273
+        },
+        {
+          "id": "n2",
+          "role": "default",
+          "x": 49,
+          "y": 789,
+          "width": 795,
+          "height": 270
+        },
+        {
+          "id": "n3",
+          "role": "default",
+          "x": 856,
+          "y": 789,
+          "width": 795,
+          "height": 273
+        },
+        {
+          "id": "n4",
+          "role": "default",
+          "x": 49,
+          "y": 1074,
+          "width": 795,
+          "height": 269
+        },
+        {
+          "id": "n5",
+          "role": "default",
+          "x": 856,
+          "y": 1074,
+          "width": 795,
+          "height": 270
+        },
+        {
+          "id": "n0",
+          "role": "default",
+          "x": 49,
+          "y": 1464,
+          "width": 795,
+          "height": 270
+        },
+        {
+          "id": "n6",
+          "role": "default",
+          "x": 856,
+          "y": 1464,
+          "width": 795,
+          "height": 269
+        },
+        {
+          "id": "n7",
+          "role": "default",
+          "x": 49,
+          "y": 1746,
+          "width": 795,
+          "height": 270
+        },
+        {
+          "id": "n1",
+          "role": "default",
+          "x": 856,
+          "y": 1746,
+          "width": 795,
+          "height": 270
+        },
+        {
+          "id": "n8",
+          "role": "default",
+          "x": 49,
+          "y": 2136,
+          "width": 526,
+          "height": 269
+        },
+        {
+          "id": "n9",
+          "role": "default",
+          "x": 587,
+          "y": 2136,
+          "width": 526,
+          "height": 266
+        },
+        {
+          "id": "n10",
+          "role": "default",
+          "x": 1125,
+          "y": 2136,
+          "width": 526,
+          "height": 271
+        }
+      ],
+      "relations": [],
+      "headings": [
+        {
+          "role": "note",
+          "x": 316,
+          "y": 83,
+          "width": 300,
+          "height": 22
+        },
+        {
+          "role": "note",
+          "x": 316,
+          "y": 111,
+          "width": 300,
+          "height": 22
+        },
+        {
+          "role": "title",
+          "x": 32,
+          "y": 192,
+          "width": 1636,
+          "height": 37
+        },
+        {
+          "role": "question",
+          "x": 32,
+          "y": 239,
+          "width": 1636,
+          "height": 34
+        },
+        {
+          "role": "note",
+          "x": 32,
+          "y": 283,
+          "width": 1636,
+          "height": 22
+        },
+        {
+          "role": "heading",
+          "x": 109,
+          "y": 347.5,
+          "width": 300,
+          "height": 23
+        },
+        {
+          "role": "classification",
+          "x": 60,
+          "y": 407,
+          "width": 504,
+          "height": 23
+        },
+        {
+          "role": "heading",
+          "x": 60,
+          "y": 430,
+          "width": 504,
+          "height": 42
+        },
+        {
+          "role": "note",
+          "x": 60,
+          "y": 632,
+          "width": 504,
+          "height": 22
+        },
+        {
+          "role": "classification",
+          "x": 598,
+          "y": 407,
+          "width": 504,
+          "height": 23
+        },
+        {
+          "role": "heading",
+          "x": 598,
+          "y": 430,
+          "width": 504,
+          "height": 42
+        },
+        {
+          "role": "note",
+          "x": 598,
+          "y": 632,
+          "width": 504,
+          "height": 22
+        },
+        {
+          "role": "classification",
+          "x": 1136,
+          "y": 407,
+          "width": 504,
+          "height": 23
+        },
+        {
+          "role": "heading",
+          "x": 1136,
+          "y": 430,
+          "width": 504,
+          "height": 46
+        },
+        {
+          "role": "note",
+          "x": 1136,
+          "y": 636,
+          "width": 504,
+          "height": 22
+        },
+        {
+          "role": "heading",
+          "x": 109,
+          "y": 740.5,
+          "width": 300,
+          "height": 23
+        },
+        {
+          "role": "classification",
+          "x": 60,
+          "y": 800,
+          "width": 773,
+          "height": 23
+        },
+        {
+          "role": "heading",
+          "x": 60,
+          "y": 823,
+          "width": 773,
+          "height": 43
+        },
+        {
+          "role": "note",
+          "x": 60,
+          "y": 1026,
+          "width": 773,
+          "height": 22
+        },
+        {
+          "role": "classification",
+          "x": 867,
+          "y": 800,
+          "width": 773,
+          "height": 23
+        },
+        {
+          "role": "heading",
+          "x": 867,
+          "y": 823,
+          "width": 773,
+          "height": 46
+        },
+        {
+          "role": "note",
+          "x": 867,
+          "y": 1029,
+          "width": 773,
+          "height": 22
+        },
+        {
+          "role": "classification",
+          "x": 60,
+          "y": 1085,
+          "width": 773,
+          "height": 23
+        },
+        {
+          "role": "heading",
+          "x": 60,
+          "y": 1108,
+          "width": 773,
+          "height": 42
+        },
+        {
+          "role": "note",
+          "x": 60,
+          "y": 1310,
+          "width": 773,
+          "height": 22
+        },
+        {
+          "role": "classification",
+          "x": 867,
+          "y": 1085,
+          "width": 773,
+          "height": 23
+        },
+        {
+          "role": "heading",
+          "x": 867,
+          "y": 1108,
+          "width": 773,
+          "height": 43
+        },
+        {
+          "role": "note",
+          "x": 867,
+          "y": 1311,
+          "width": 773,
+          "height": 22
+        },
+        {
+          "role": "heading",
+          "x": 109,
+          "y": 1415,
+          "width": 300,
+          "height": 24
+        },
+        {
+          "role": "classification",
+          "x": 60,
+          "y": 1475,
+          "width": 773,
+          "height": 23
+        },
+        {
+          "role": "heading",
+          "x": 60,
+          "y": 1498,
+          "width": 773,
+          "height": 43
+        },
+        {
+          "role": "note",
+          "x": 60,
+          "y": 1701,
+          "width": 773,
+          "height": 22
+        },
+        {
+          "role": "classification",
+          "x": 867,
+          "y": 1475,
+          "width": 773,
+          "height": 23
+        },
+        {
+          "role": "heading",
+          "x": 867,
+          "y": 1498,
+          "width": 773,
+          "height": 42
+        },
+        {
+          "role": "note",
+          "x": 867,
+          "y": 1700,
+          "width": 773,
+          "height": 22
+        },
+        {
+          "role": "classification",
+          "x": 60,
+          "y": 1757,
+          "width": 773,
+          "height": 23
+        },
+        {
+          "role": "heading",
+          "x": 60,
+          "y": 1780,
+          "width": 773,
+          "height": 43
+        },
+        {
+          "role": "note",
+          "x": 60,
+          "y": 1983,
+          "width": 773,
+          "height": 22
+        },
+        {
+          "role": "classification",
+          "x": 867,
+          "y": 1757,
+          "width": 773,
+          "height": 23
+        },
+        {
+          "role": "heading",
+          "x": 867,
+          "y": 1780,
+          "width": 773,
+          "height": 43
+        },
+        {
+          "role": "note",
+          "x": 867,
+          "y": 1983,
+          "width": 773,
+          "height": 22
+        },
+        {
+          "role": "heading",
+          "x": 109,
+          "y": 2076,
+          "width": 300,
+          "height": 23
+        },
+        {
+          "role": "heading",
+          "x": 109,
+          "y": 2099,
+          "width": 300,
+          "height": 23
+        },
+        {
+          "role": "classification",
+          "x": 60,
+          "y": 2147,
+          "width": 504,
+          "height": 23
+        },
+        {
+          "role": "heading",
+          "x": 60,
+          "y": 2170,
+          "width": 504,
+          "height": 42
+        },
+        {
+          "role": "note",
+          "x": 60,
+          "y": 2372,
+          "width": 504,
+          "height": 22
+        },
+        {
+          "role": "classification",
+          "x": 598,
+          "y": 2147,
+          "width": 504,
+          "height": 23
+        },
+        {
+          "role": "heading",
+          "x": 598,
+          "y": 2170,
+          "width": 504,
+          "height": 39
+        },
+        {
+          "role": "note",
+          "x": 598,
+          "y": 2369,
+          "width": 504,
+          "height": 22
+        },
+        {
+          "role": "classification",
+          "x": 1136,
+          "y": 2147,
+          "width": 504,
+          "height": 23
+        },
+        {
+          "role": "heading",
+          "x": 1136,
+          "y": 2170,
+          "width": 504,
+          "height": 44
+        },
+        {
+          "role": "note",
+          "x": 1136,
+          "y": 2374,
+          "width": 504,
+          "height": 22
+        },
+        {
+          "role": "note",
+          "x": 32,
+          "y": 2424,
+          "width": 1636,
+          "height": 22
+        }
+      ]
+    },
+    "canvas": {
+      "background": "rgb(250, 250, 247)",
+      "transparent": false
+    },
+    "readability": {
+      "minimumTextSize": 13,
+      "samples": 105,
+      "requiredMinimum": 12
+    },
+    "inputSHA256": "c836f8d047214034b87af5d97d325a7e691dd8996ae6046bf17ef2408d634b44",
+    "scenes": [],
+    "svgSHA256": [
+      "aac02203f04326079edb33c549baa97d580d6db48716015c604a84b0488c7815"
+    ],
+    "composedHTMLSHA256": "f01ae4b3e2883d0ed35b44625497cc3e7e96b72f68187b975c98a714e5c9b1a9",
+    "dependencies": {
+      "@fontsource/inter": "5.3.0",
+      "@fontsource/kalam": "5.3.0",
+      "@terrastruct/d2": "0.1.33",
+      "@xyflow/system": "0.0.83",
+      "elkjs": "0.12.1",
+      "parse5": "8.0.1",
+      "roughjs": "4.6.6",
+      "valibot": "1.2.0",
+      "web-worker": "1.5.0"
+    },
+    "regionSHA256": {},
+    "htmlSHA256": "9205a9102767f25abeb80731c0235e36ec47c4a41908b605f37bd99a2fff63eb",
+    "drawing": "precise",
+    "routing": "none",
+    "assetSHA256": {
+      "@fontsource/inter/files/inter-latin-700-normal.woff2": "6f56409fd3d64bb85f7d070bce20749db2d66b6d63cec586cc22d1c761be2491",
+      "@fontsource/inter/files/inter-latin-400-normal.woff2": "8909904ab6c872eb994093482a88a28eca2cd95912d7b6fecd72103b0dc07edc"
+    },
+    "pngSHA256": "701b7e17edf8e8c0f0cf6e449f0bccc31748b19c1cc9a8b19544ad3d50afb854",
+    "browser": "156.0.8078.4",
+    "width": 2550,
+    "height": 3732,
+    "scale": 1.5,
+    "bounds": {}
+  }
+}

@@ -30,13 +30,26 @@ def exportQuint : Except String String := do
     "  import wallet_signing(Initial = ProfileInitial, Isolated = ProfileIsolated, Goals = ProfileGoals, Rules = ProfileRules).* from " ++ quoted "../../dev/qnt/financial/WalletSigning",
     "}", ""])
 
+/-- Observed synthetic outcomes for the illustrated defense path, not production telemetry. -/
+def exportVisual : Lean.Json :=
+  let current := CedarPooSpec.WalletSigningExample.current
+  let request := CedarPooSpec.WalletSigningExample.request
+  Lean.Json.mkObj [
+    ("provenance", scenario.provenanceJson),
+    ("defense", Lean.Json.mkObj [
+      ("deployment_refused", Lean.toJson (CedarPooSpec.Vertical.FinancialServices.PaymentSigning.release
+        current deploymentRequest).isNone),
+      ("valid_transfer_released", Lean.toJson (CedarPooSpec.Vertical.FinancialServices.PaymentSigning.release
+        current request).isSome)])]
+
 
 end CedarPooSpec.Binance2026Scenario
 
 def main (args : List String) : IO Unit :=
   match args with
+  | ["visual"] => IO.println CedarPooSpec.Binance2026Scenario.exportVisual.compress
   | ["metadata"] => IO.println CedarPooSpec.Binance2026Scenario.scenario.provenanceJson.compress
   | [] => match CedarPooSpec.Binance2026Scenario.exportQuint with
     | .ok source => IO.print source
     | .error error => throw (IO.userError error)
-  | _ => throw (IO.userError "expected no arguments or metadata")
+  | _ => throw (IO.userError "expected no arguments, metadata or visual")

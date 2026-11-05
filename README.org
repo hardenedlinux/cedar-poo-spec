@@ -13,6 +13,11 @@ requests, then checks exported cases with the official Rust Cedar authorizer.
 The canonical repository is [[https://github.com/hardenedlinux/cedar-poo-spec][hardenedlinux/cedar-poo-spec]].
 =tao3k/cedar-poo-spec= is a mirror.
 
+The top-level [[file:Project.sysml][Project.sysml]] declares the development model entry and source owners.
+[[file:dev/README.org][Development views]] use the existing deterministic-engineering renderer;
+TypeScript, SysML and Quint are owned by =dev/ts/=, =dev/sysml/= and =dev/qnt/=.
+The [[file:Examples/Scenarios/README.org][scenario family]] includes typed provenance and the Binance incident case.
+
 * Architecture views
 
 Start with the system overview, then choose a question from the picture index.

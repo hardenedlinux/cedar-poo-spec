@@ -1,17 +1,20 @@
 # SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 # SPDX-License-Identifier: Apache-2.0
 
+producer-timeout := if os() == "macos" { "gtimeout" } else { "timeout" }
+
 build:
-    lake -d .. build caseManifestsNative
+    lake -d .. build caseManifestsNative Examples.Scenarios.FinancialServices.Wallet.Binance2026Export
 
 prepare:
     mkdir -p .generated
     ../.lake/build/bin/caseManifestsNative catalog > .generated/lean-catalog.json
+    {{producer-timeout}} --signal=TERM --kill-after=3s 120s lake -d .. env lean -M 2048 -T 10000000 --run ../Examples/Scenarios/FinancialServices/Wallet/Binance2026Export.lean visual > .generated/binance2026-metadata.json
 
 render: build prepare
     bun run render .generated/lean-catalog.json
 
 test:
-    lake -d .. build Tests.ZeroTrust.Functional Tests.ZeroTrust.ProfileObject Tests.ZeroTrust.UsageControl Tests.Gateway.ZeroTrust Tests.Gateway.PublicationReview
+    lake -d .. build Tests.ZeroTrust.Functional Tests.ZeroTrust.ProfileObject Tests.ZeroTrust.UsageControl Tests.Gateway.ZeroTrust Tests.Gateway.PublicationReview Examples.Scenarios.FinancialServices.Wallet.Binance2026 Examples.Scenarios.TenantDevicePolicyEvolution
     bun run typecheck
-    bun test ./test
+    bun test ./ts/test

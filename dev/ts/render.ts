@@ -12,25 +12,34 @@ import {captureOpenSysMLView} from '@deterministic-engineering/render/opensysml'
 import {exportFigure} from '@deterministic-engineering/render/export';
 import {ProjectionSchema,bindView} from './projection';
 import {observeCatalog,catalogSysML,catalogCaptions,CatalogViewSchema} from './catalog';
-import {ProofViewSchema,readProofMap} from './proofs';
+import {ProofViewSchema,readProofMap,type ProofMap} from './proofs';
+import {componentIllustrations} from './components/assurance';
+import {captureIncidentStory,composeIncident,type IncidentStory} from './components/incident';
+import {captureDefenseArtwork,composeDefenseFlow,type DefenseArtwork} from './components/defense-flow';
 import {captureFiles,repositoryPath,rendererDependency,sha} from './sources';
 import rendererPackage from '@deterministic-engineering/render/package.json' with {type:'json'};
 import {extendPresentationTheme,defaultPresentationTheme} from '@deterministic-engineering/render/presentation-theme';
 import {figureSource,hostSources} from './inputs';
 import {publishFigure} from './artifacts';
 import {bindNotation,composeNotation} from './notation';
+import {projectEntry,readProjectLayout,selectProjectModels} from './project';
+import {captureFinancialArtwork,type FinancialArtwork} from './components/financial';
+import {PaymentComponentSchema,composePayment,type PaymentComponent} from './components/payment';
 const text=v.pipe(v.string(),v.minLength(1));
-const compose:FigureComposer=context=>{
+const compose=(artwork?:FinancialArtwork,component?:PaymentComponent,proofs?:ProofMap,story?:IncidentStory,defense?:DefenseArtwork):FigureComposer=>context=>{
  if(!context.model)throw new Error('Missing projected SDK model');
- const diagram=composeNotation(context);
+ const illustrated=proofs&&proofs.cards.every(card=>/^(FinancialAttackers|WalletSigningProofs|TenantScenarioProofs)::/.test(card.id))?componentIllustrations(context,proofs):undefined;
+ const diagram=story&&defense&&artwork?composeDefenseFlow(context,defense,artwork,story):composeNotation(context,illustrated);
  const notes:ReturnType<typeof composeHeading>[]=[];
  const heading=(text:string,role:string,questionRef?:string)=>{const part=composeHeading(context,{role,text,questionRef});notes.push(part);return part.markup;};
  const header=heading(context.view.title,'title')+context.questions.map(question=>heading(question.text,'question',question.ref)).join('')+heading(context.copy('description'),'note');
  const footer=heading(context.copy('status'),'note');
- return{markup:header+diagram.markup+footer,css:diagram.css+notes.map(note=>note.css).join('\n')+'[data-figure]{padding:var(--gutter)}[data-figure]>svg{margin-bottom:10px}'};
+ const identity=artwork&&component?composePayment(context,artwork,component):undefined;
+ const narrative=story?composeIncident(context,story):undefined;
+ return{markup:(identity?.markup??'')+header+(narrative?.markup??'')+diagram.markup+footer,css:(narrative?.css??'')+(identity?.css??'')+'\n'+diagram.css+notes.map(note=>note.css).join('\n')+'[data-figure]{padding:var(--gutter)}[data-figure]>svg{margin-bottom:10px}'};
 };
-const root=fileURLToPath(new URL('../',import.meta.url));
-const inputPath=resolve(process.argv[2]??new URL('.generated/lean-catalog.json',import.meta.url).pathname);
+const root=fileURLToPath(new URL('../../',import.meta.url));
+const inputPath=resolve(process.argv[2]??new URL('../.generated/lean-catalog.json',import.meta.url).pathname);
 const generatedModel='dev/sysml/lean-catalog.sysml',producer='.lake/build/bin/caseManifestsNative';
 const available:Record<string,string>={};
 async function inventory(directory:string):Promise<void>{
@@ -41,22 +50,36 @@ async function inventory(directory:string):Promise<void>{
  }
 }
 await inventory('dev/d2');
-const entries=process.argv[3]?[process.argv[3]]:Object.keys(available).filter(path=>path.slice('dev/d2/'.length).indexOf('/')<0).sort();
-if(!entries.length)throw new Error('No D2 figure declarations');
-const commonPaths=[...await hostSources(root),'dev/Justfile','dev/package.json','dev/bun.lock'];
+const commonPaths=[...await hostSources(root),projectEntry,'dev/Justfile','dev/package.json','dev/bun.lock','dev/tsconfig.json'];
 const sharedSources=await captureFiles(root,commonPaths);
 const renderer={specifier:rendererDependency(JSON.parse(sharedSources['dev/package.json']!)),name:rendererPackage.name,version:rendererPackage.version};
 let browser:Browser|undefined;
 const connection=await connectWasm();
-try{browser=await chromium.launch();for(const file of entries){
+try{
+ const projectModel=(await connection.parseSources([[projectEntry,sharedSources[projectEntry]!]])).raiseForErrors();
+ const layout=await readProjectLayout(projectModel);await projectModel.close();
+ Object.assign(available,await captureFiles(root,layout.scenarioFigures));
+ const declared=[...Object.keys(available).filter(path=>path.startsWith('dev/d2/')&&path.slice('dev/d2/'.length).indexOf('/')<0),...layout.scenarioFigures].sort();
+ const entries=process.argv[3]?[process.argv[3]]:declared;
+ for(const entry of entries)if(!declared.includes(entry))throw new Error('Figure is not declared by the project: '+entry);
+ if(!entries.length)throw new Error('No D2 figure declarations');
+ browser=await chromium.launch();for(const file of entries){
  const name=basename(file,'.d2'),{compiled,author}=await figureSource(root,available,file);
  const metadata:unknown=JSON.parse(v.parse(v.object({figure:text}),compiled.data).figure);
  const projection=v.parse(ProjectionSchema,metadata).sysml;
- const modelPaths=[...new Set([projection.source,...Object.values(author.references).filter(path=>path.endsWith('.sysml'))])].sort();
+ const modelPaths=selectProjectModels(layout,[projection.source,...Object.values(author.references).filter(path=>path.endsWith('.sysml'))]);
  const usesCatalog=v.parse(CatalogViewSchema,metadata).catalog!==undefined||modelPaths.includes(generatedModel);
  let catalog:ReturnType<typeof observeCatalog>|undefined;
  let lean:{path:string;sha256:string;formatVersion:number;entries:number;pools:NonNullable<typeof catalog>['pools']}|undefined;
  const extraSources:Record<string,string>={},binaries:Record<string,string>={};
+ const component=v.parse(PaymentComponentSchema,metadata).component;
+ if(component&&projection.view!==(component.variant==='base'?'WalletSigningProofs::assurance':component.variant==='assurance'?'FinancialAttackers::assurance':'PaymentDefenseFlow::defense'))throw new Error('Payment component differs from the selected scenario view');
+ const artwork=component?await captureFinancialArtwork(root):undefined;
+ if(artwork){Object.assign(extraSources,artwork.sources);Object.assign(binaries,artwork.binaries);}
+ const story=component?.variant==='incident'?await captureIncidentStory(root):undefined;
+ if(story){Object.assign(extraSources,story.sources);Object.assign(binaries,story.binaries);}
+ const defense=story?await captureDefenseArtwork(root):undefined;
+ if(defense){Object.assign(extraSources,defense.sources);Object.assign(binaries,defense.binaries);}
  if(usesCatalog){
   const path=relative(root,inputPath),raw=await readFile(await repositoryPath(root,path),'utf8');
   catalog=observeCatalog(raw);extraSources[path]=raw;
@@ -65,7 +88,8 @@ try{browser=await chromium.launch();for(const file of entries){
   binaries[producer]=sha(await readFile(await repositoryPath(root,producer)));
   lean={path,sha256:catalog.sha256,formatVersion:catalog.formatVersion,entries:catalog.entries.length,pools:catalog.pools};
  }
- const modelSources=await captureFiles(root,modelPaths);
+ const capturedModels=await captureFiles(root,modelPaths.filter(path=>path!==projectEntry));
+ const modelSources=Object.fromEntries(modelPaths.map(path=>[path,path===projectEntry?sharedSources[projectEntry]!:capturedModels[path]!]));
  const model:Model=(await connection.parseSources(Object.entries(modelSources))).raiseForErrors();
  const capture=await captureOpenSysMLView(connection,model.hash,projection.view,{depth:1});
  const proofSelection=v.parse(ProofViewSchema,metadata).proofs;
@@ -88,7 +112,7 @@ try{browser=await chromium.launch();for(const file of entries){
  }));
  const presentation=bindNotation(author.presentation,linked.mapping,linked.model,linked.icons,proofClaims,metrics);
  const input:FigureInput={...author,theme:extendPresentationTheme(author.theme??defaultPresentationTheme,{typography:{labelSize:'13px'}}),sources,references:{...author.references,sdk:capturePath,...(lean?{catalog:lean.path}:{})},model:linked.model,modelSource:{ref:'sdk',modelHash:model.hash,view:projection.view},modelTrace:linked.trace,presentation,design:defineDesign({audience:'Cedar Library developers',medium:'repository documentation',message:author.view.title,questionRefs:author.questions.map(question=>question.ref),requiredSubjects:linked.model.subjects.map(node=>node.id),requiredRelations:linked.model.relations.map(edge=>edge.id),focalSubjects:[]})};
- const figure=composeFigure(input,compose);
+ const figure=composeFigure(input,compose(artwork,component,proofClaims,story,defense));
  const fontRights:Readonly<Record<string,string>>={Kalam:'2014 Indian Type Foundry (info@indiantypefoundry.com)',Inter:'2016 The Inter Project Authors (https://github.com/rsms/inter)'};
  const fonts=[...new Set(figure.fonts.map(font=>font.family))];
  for(const font of fonts)if(!Object.hasOwn(fontRights,font))throw new Error('Declare actual rights before publishing a new font: '+font);

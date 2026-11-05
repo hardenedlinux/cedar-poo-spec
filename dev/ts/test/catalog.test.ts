@@ -18,7 +18,7 @@ test('display observations retain source references and never promote expected d
  const data=observeCatalog(JSON.stringify({...input(),entries:{domain:[{business:'uninterpreted'}]}}));expect(data.entries[0]!.category).toBe('data');
 });
 test('actual Lean catalog becomes a parsed SDK model and category values round-trip',async()=>{
- const raw=await readFile(new URL('../.generated/lean-catalog.json',import.meta.url),'utf8'),summary=observeCatalog(raw),source=catalogSysML(summary),connection=await connectWasm();
+ const raw=await readFile(new URL('../../.generated/lean-catalog.json',import.meta.url),'utf8'),summary=observeCatalog(raw),source=catalogSysML(summary),connection=await connectWasm();
  try{
   const model=(await connection.parseSources([['dev/sysml/lean-catalog.sysml',source]])).raiseForErrors();
   const count=await model.eval('LeanCatalog::entryCount');expect(count.kind).toBe('int');if(count.kind==='int')expect(count.value).toBe(BigInt(summary.entries.length));

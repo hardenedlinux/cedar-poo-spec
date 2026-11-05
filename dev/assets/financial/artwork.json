@@ -1,0 +1,21 @@
+{
+  "formatVersion": 1,
+  "generator": "OpenAI built-in image_gen (imagegen skill)",
+  "generatedOn": "2026-11-05",
+  "purpose": "Decorative original imagery; no certification, attack evidence or third-party brand claim.",
+  "transparentBackground": true,
+  "assets": [
+    {
+      "id": "financial",
+      "path": "dev/assets/financial/financial.png",
+      "sha256": "fcbb31a8f6311e69cc63a4e9278fc90722425d21b4223be7ed897b47584dce34",
+      "prompt": "Use case: logo-brand. Asset type: original editorial illustration and emblem for an open-source formal-verification financial-services scenario component. Create one distinctive finance emblem: a sculptural bank-vault form built from three nested architectural arches, a small cedar leaf integrated into its center, and two restrained ledger planes suggesting governed financial flow. Refined contemporary editorial 3D illustration with soft ceramic surfaces, deep teal and muted antique gold accents, clear silhouette, generous transparent negative space. Centered composition, no text, no letters, no numbers, no watermark, no existing company or cryptocurrency logos, no Binance branding. The illustration is decorative identity artwork, not a security certification badge. Actual transparent background with preserved alpha. Output a single polished image."
+    },
+    {
+      "id": "payment",
+      "path": "dev/assets/financial/payment.png",
+      "sha256": "92176cbf551a88f79b0bb0ceabf7effb27e14b1307d83f2cb6deeb657c30222b",
+      "prompt": "Use case: logo-brand. Asset type: original payment emblem and small editorial illustration for the Payment component of an open-source formal-verification project. Primary request: a refined sculptural payment wallet, two interlocking transaction rails and a small cedar leaf seal integrated into the clasp. Make the wallet and rails clearly recognizable even at small display size. Contemporary editorial 3D ceramic illustration, restrained deep teal, warm ivory and muted antique gold, soft tactile materials, crisp simple silhouette, generous transparent negative space, centered composition. It should form a consistent family with financial architectural vault illustrations while being clearly a wallet/payment image. No text, no letters, no numbers, no watermark, no existing company, cryptocurrency or Binance logos. Decorative identity artwork, no claims of security certification. Actual transparent background; preserve alpha. One image only."
+    }
+  ]
+}

@@ -1,0 +1,411 @@
+{
+  "entry": "Examples/Scenarios/FinancialServices/Wallet/Base.d2",
+  "sources": {
+    "CedarPooSpec/Vertical/FinancialServices/PaymentSigning.lean": "f5d41c2cb1458e521cb1839d038f71b902764be3ec8d30710128d1082c178f39",
+    "dev/.generated/Base-sdk.json": "3f7ff6985d3ab1fa3263694818d95f23033a3653f85ddc11c1549275f84d7726",
+    "dev/assets/financial/artwork.json": "851f02b29586392a26b2b670fc12649a041a7b3246a745a27fb1297065915b7f",
+    "dev/bun.lock": "e4f1f11bdbe2906a6aafc080e48a63838f7fb2fc278dc7670be5da988dac90f4",
+    "dev/Justfile": "eb8e99a205111d4eb552beea43f00b9cc6479baeea3ba925cbfc4388a8db9350",
+    "dev/package.json": "54f8bbf69d5d6f8a5a8489bc61ceeb1052c8d2e0dec70492c7416cb6181178d4",
+    "dev/sysml/attackers.sysml": "dfd9e3ffa28da068badb597e930dfa0200ae26f53d2fb1870e1941e2f9951b9e",
+    "dev/ts/artifacts.ts": "ca1096947536fbdbd5da5cbf1ce5c6f57521bd4a7b135233285dfe8fcff9859d",
+    "dev/ts/catalog.ts": "6d65a91afcddb11de668cc668aa3c6b9076435c02e73a90323c7bf28a991965e",
+    "dev/ts/components/artwork.ts": "1c2ff070e8d6643860e35d5be8760be65827e5deb3ce8bb6f76f0ae395809360",
+    "dev/ts/components/assurance.ts": "1a6cc3a683ba50ec65461d7a0cdd5b56007bf275f5c3c7a9bc7d0ebbfeb1426f",
+    "dev/ts/components/defense-flow.ts": "5466a7944dfba904577106996ec43920987b5840f70ddbe932ddae485754c8a8",
+    "dev/ts/components/financial.ts": "b8c3ba2ebc478d7a9a47cdff759c3f0663a2c396c32975b151a5acb7efa07eb8",
+    "dev/ts/components/incident.ts": "93bcb9011ac70f3ab9920ac787df30c1540f32983678d89fd4bfacfb7207f32e",
+    "dev/ts/components/payment.ts": "5067f7398974870e933406c28aba9770a8bc3a883628255ddbca3ef5a19bb15c",
+    "dev/ts/icons.ts": "0053a84dd7875949ffd03f8a067037353f3519f9f0875914fcbda1fb39f79764",
+    "dev/ts/inputs.ts": "93fa0a59ed000c05f8563d9afbbde576ea9bb03457e8a5b5563a3be2eab37f93",
+    "dev/ts/notation.ts": "a7b715802173bd734dae7b22b82883da34da8f03d351d1a0e3531eba1b3f753d",
+    "dev/ts/project.ts": "6ac04f71738f2627ca33cc73efc3bd58b43a1b8967c58c52dc2c26be52303549",
+    "dev/ts/projection.ts": "3fd049e50798aee9dce54af6cd6e6fccad45fec5ab24b994bb6a8a4b33d7252d",
+    "dev/ts/proofs.ts": "8a9cb88dd75b807f176c1389bd3e8b4df7cf658c657ad85bbf0487d09cafedd9",
+    "dev/ts/render.ts": "10902dd11aadea28c340a839c06d9ef3751d531f7b749aaaae87aba2bb32c862",
+    "dev/ts/sources.ts": "3cd11d095476ee65c9086172773813e6e37e88087c9d01ee962cec59369d7ed8",
+    "dev/tsconfig.json": "e57e46b169017d5260b98cb1afd8eba93758109a6a11d57c6f36b658b8513386",
+    "Examples/Scenarios/FinancialServices/Wallet/Base.d2": "35e7b6de233e375e58d149e596b9cf1153724d57f371119799c3990ce36a3359",
+    "Examples/Scenarios/FinancialServices/Wallet/Base.lean": "26cc9c43425d80f474361e307897b2812d997856fb002665e608934efb23d56e",
+    "Project.sysml": "8b4309d72e27fccd2129d891f29ea5b83db4de92037393a650057225c513b5c5"
+  },
+  "binaries": {
+    "dev/assets/financial/financial.png": "fcbb31a8f6311e69cc63a4e9278fc90722425d21b4223be7ed897b47584dce34",
+    "dev/assets/financial/payment.png": "92176cbf551a88f79b0bb0ceabf7effb27e14b1307d83f2cb6deeb657c30222b"
+  },
+  "sdk": {
+    "modelHash": "ede107b4aef1739cd66d52d10c5edfa1ebf378ad9fd5b3b717d419d67d634939",
+    "view": "WalletSigningProofs::assurance",
+    "trace": {
+      "modelHash": "ede107b4aef1739cd66d52d10c5edfa1ebf378ad9fd5b3b717d419d67d634939",
+      "requestedView": "WalletSigningProofs::assurance",
+      "resolvedView": "WalletSigningProofs::assurance",
+      "renderingSHA256": "3f7ff6985d3ab1fa3263694818d95f23033a3653f85ddc11c1549275f84d7726",
+      "capturedRenderingJSON": "{\"modelHash\":\"ede107b4aef1739cd66d52d10c5edfa1ebf378ad9fd5b3b717d419d67d634939\",\"requestedView\":\"WalletSigningProofs::assurance\",\"rendering\":{\"view\":\"WalletSigningProofs::assurance\",\"kind\":\"interconnection\",\"stated\":\"render asInterconnectionDiagram\",\"nodes\":[{\"id\":\"n0\",\"kind\":\"part\",\"name\":\"WalletSigningProofs::scenario\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/attackers.sysml\",\"startLine\":62,\"startCol\":2,\"endLine\":62,\"endCol\":29}},{\"id\":\"n1\",\"kind\":\"part\",\"name\":\"WalletSigningProofs::exactPayment\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/attackers.sysml\",\"startLine\":65,\"startCol\":2,\"endLine\":65,\"endCol\":32}},{\"id\":\"n2\",\"kind\":\"part\",\"name\":\"WalletSigningProofs::currentGateway\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/attackers.sysml\",\"startLine\":68,\"startCol\":2,\"endLine\":68,\"endCol\":34}},{\"id\":\"n3\",\"kind\":\"part\",\"name\":\"WalletSigningProofs::revoked\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/attackers.sysml\",\"startLine\":71,\"startCol\":2,\"endLine\":71,\"endCol\":27}},{\"id\":\"n4\",\"kind\":\"part\",\"name\":\"WalletSigningProofs::host\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/attackers.sysml\",\"startLine\":74,\"startCol\":2,\"endLine\":74,\"endCol\":26}}],\"edges\":[],\"columns\":[],\"rows\":[],\"notes\":[],\"notices\":[],\"shown\":[\"port-symbols\",\"compartments\",\"keywords\"]}}",
+      "nodes": [
+        {
+          "id": "n0",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/attackers.sysml",
+            "startLine": 62,
+            "startCol": 2,
+            "endLine": 62,
+            "endCol": 29
+          }
+        },
+        {
+          "id": "n1",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/attackers.sysml",
+            "startLine": 65,
+            "startCol": 2,
+            "endLine": 65,
+            "endCol": 32
+          }
+        },
+        {
+          "id": "n2",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/attackers.sysml",
+            "startLine": 68,
+            "startCol": 2,
+            "endLine": 68,
+            "endCol": 34
+          }
+        },
+        {
+          "id": "n3",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/attackers.sysml",
+            "startLine": 71,
+            "startCol": 2,
+            "endLine": 71,
+            "endCol": 27
+          }
+        },
+        {
+          "id": "n4",
+          "parent": "",
+          "origin": {
+            "file": "dev/sysml/attackers.sysml",
+            "startLine": 74,
+            "startCol": 2,
+            "endLine": 74,
+            "endCol": 26
+          }
+        }
+      ],
+      "edges": []
+    },
+    "diagnostics": [],
+    "observations": []
+  },
+  "proofClaims": {
+    "modelHash": "ede107b4aef1739cd66d52d10c5edfa1ebf378ad9fd5b3b717d419d67d634939",
+    "cards": [
+      {
+        "id": "WalletSigningProofs::scenario",
+        "role": "Definition",
+        "symbol": "CedarPooSpec.WalletSigningExample.scenario",
+        "source": "Examples/Scenarios/FinancialServices/Wallet/Base.lean"
+      },
+      {
+        "id": "WalletSigningProofs::exactPayment",
+        "role": "KernelLaw",
+        "symbol": "CedarPooSpec.Vertical.FinancialServices.PaymentSigning.release_binds_exact_transaction",
+        "source": "CedarPooSpec/Vertical/FinancialServices/PaymentSigning.lean"
+      },
+      {
+        "id": "WalletSigningProofs::currentGateway",
+        "role": "KernelLaw",
+        "symbol": "CedarPooSpec.Vertical.FinancialServices.PaymentSigning.release_retains_gateway",
+        "source": "CedarPooSpec/Vertical/FinancialServices/PaymentSigning.lean"
+      },
+      {
+        "id": "WalletSigningProofs::revoked",
+        "role": "KernelLaw",
+        "symbol": "CedarPooSpec.Vertical.FinancialServices.PaymentSigning.revoked_cannot_release",
+        "source": "CedarPooSpec/Vertical/FinancialServices/PaymentSigning.lean"
+      },
+      {
+        "id": "WalletSigningProofs::host",
+        "role": "HostPremise",
+        "symbol": "CedarPooSpec.Vertical.FinancialServices.PaymentSigning.Current",
+        "source": "CedarPooSpec/Vertical/FinancialServices/PaymentSigning.lean"
+      }
+    ],
+    "uses": []
+  },
+  "renderer": {
+    "specifier": "git+https://github.com/hardenedlinux/deterministic-engineering.git#1fe20380441a0cd85055695c2adcc55ce699a369",
+    "name": "@deterministic-engineering/render",
+    "version": "1.0.2"
+  },
+  "receipt": {
+    "attribution": {
+      "copyright": [
+        "2026 hardenedlinux Linux Team and Contributors",
+        "2016 The Inter Project Authors (https://github.com/rsms/inter)"
+      ],
+      "license": "Apache-2.0 AND OFL-1.1"
+    },
+    "observation": {
+      "canvas": {
+        "x": 0,
+        "y": 0,
+        "width": 1700,
+        "height": 1138
+      },
+      "subjects": [
+        {
+          "id": "n0",
+          "role": "default",
+          "x": 49,
+          "y": 396,
+          "width": 526,
+          "height": 270
+        },
+        {
+          "id": "n1",
+          "role": "default",
+          "x": 587,
+          "y": 396,
+          "width": 526,
+          "height": 269
+        },
+        {
+          "id": "n2",
+          "role": "default",
+          "x": 1125,
+          "y": 396,
+          "width": 526,
+          "height": 270
+        },
+        {
+          "id": "n3",
+          "role": "default",
+          "x": 49,
+          "y": 786,
+          "width": 795,
+          "height": 269
+        },
+        {
+          "id": "n4",
+          "role": "default",
+          "x": 856,
+          "y": 786,
+          "width": 795,
+          "height": 271
+        }
+      ],
+      "relations": [],
+      "headings": [
+        {
+          "role": "note",
+          "x": 316,
+          "y": 83,
+          "width": 300,
+          "height": 22
+        },
+        {
+          "role": "note",
+          "x": 316,
+          "y": 111,
+          "width": 300,
+          "height": 22
+        },
+        {
+          "role": "title",
+          "x": 32,
+          "y": 192,
+          "width": 1636,
+          "height": 37
+        },
+        {
+          "role": "question",
+          "x": 32,
+          "y": 239,
+          "width": 1636,
+          "height": 34
+        },
+        {
+          "role": "note",
+          "x": 32,
+          "y": 283,
+          "width": 1636,
+          "height": 22
+        },
+        {
+          "role": "heading",
+          "x": 109,
+          "y": 347.5,
+          "width": 300,
+          "height": 23
+        },
+        {
+          "role": "classification",
+          "x": 60,
+          "y": 407,
+          "width": 504,
+          "height": 23
+        },
+        {
+          "role": "heading",
+          "x": 60,
+          "y": 430,
+          "width": 504,
+          "height": 43
+        },
+        {
+          "role": "note",
+          "x": 60,
+          "y": 633,
+          "width": 504,
+          "height": 22
+        },
+        {
+          "role": "classification",
+          "x": 598,
+          "y": 407,
+          "width": 504,
+          "height": 23
+        },
+        {
+          "role": "heading",
+          "x": 598,
+          "y": 430,
+          "width": 504,
+          "height": 42
+        },
+        {
+          "role": "note",
+          "x": 598,
+          "y": 632,
+          "width": 504,
+          "height": 22
+        },
+        {
+          "role": "classification",
+          "x": 1136,
+          "y": 407,
+          "width": 504,
+          "height": 23
+        },
+        {
+          "role": "heading",
+          "x": 1136,
+          "y": 430,
+          "width": 504,
+          "height": 43
+        },
+        {
+          "role": "note",
+          "x": 1136,
+          "y": 633,
+          "width": 504,
+          "height": 22
+        },
+        {
+          "role": "heading",
+          "x": 109,
+          "y": 737.5,
+          "width": 300,
+          "height": 23
+        },
+        {
+          "role": "classification",
+          "x": 60,
+          "y": 797,
+          "width": 773,
+          "height": 23
+        },
+        {
+          "role": "heading",
+          "x": 60,
+          "y": 820,
+          "width": 773,
+          "height": 42
+        },
+        {
+          "role": "note",
+          "x": 60,
+          "y": 1022,
+          "width": 773,
+          "height": 22
+        },
+        {
+          "role": "classification",
+          "x": 867,
+          "y": 797,
+          "width": 773,
+          "height": 23
+        },
+        {
+          "role": "heading",
+          "x": 867,
+          "y": 820,
+          "width": 773,
+          "height": 44
+        },
+        {
+          "role": "note",
+          "x": 867,
+          "y": 1024,
+          "width": 773,
+          "height": 22
+        },
+        {
+          "role": "note",
+          "x": 32,
+          "y": 1074,
+          "width": 1636,
+          "height": 22
+        }
+      ]
+    },
+    "canvas": {
+      "background": "rgb(250, 250, 247)",
+      "transparent": false
+    },
+    "readability": {
+      "minimumTextSize": 13,
+      "samples": 44,
+      "requiredMinimum": 12
+    },
+    "inputSHA256": "07044e26710f970e9454f69875cbfbb317ce4df3621002d21e8a431e8dfe1138",
+    "scenes": [],
+    "svgSHA256": [
+      "2c028e9ba97a5df1e19fc09cb226d96b175e537f4f5ec73a0bd9fffb69ed0e2f"
+    ],
+    "composedHTMLSHA256": "7f8d6a8757d4ff8f41f5ef312f6dedcc051d00699187f59fd7fc5e2d64e30133",
+    "dependencies": {
+      "@fontsource/inter": "5.3.0",
+      "@fontsource/kalam": "5.3.0",
+      "@terrastruct/d2": "0.1.33",
+      "@xyflow/system": "0.0.83",
+      "elkjs": "0.12.1",
+      "parse5": "8.0.1",
+      "roughjs": "4.6.6",
+      "valibot": "1.2.0",
+      "web-worker": "1.5.0"
+    },
+    "regionSHA256": {},
+    "htmlSHA256": "f8fec82446c99f56d7455d89a1362aabb2946c3ca806b59d6468425e7b79e227",
+    "drawing": "precise",
+    "routing": "none",
+    "assetSHA256": {
+      "@fontsource/inter/files/inter-latin-700-normal.woff2": "6f56409fd3d64bb85f7d070bce20749db2d66b6d63cec586cc22d1c761be2491",
+      "@fontsource/inter/files/inter-latin-400-normal.woff2": "8909904ab6c872eb994093482a88a28eca2cd95912d7b6fecd72103b0dc07edc"
+    },
+    "pngSHA256": "a9ff3d0d768956d7a650a0e0c775d7d01d54effe6a8b56be9effbbd6d16731bf",
+    "browser": "156.0.8078.4",
+    "width": 2550,
+    "height": 1707,
+    "scale": 1.5,
+    "bounds": {}
+  }
+}

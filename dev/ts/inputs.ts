@@ -25,7 +25,7 @@ export async function figureSource(root:string,inventory:Readonly<Record<string,
 }
 
 /** Bun, not a TS import parser or directory glob, observes the host's local module graph. */
-export async function hostSources(root:string,entry='dev/render.ts'):Promise<string[]>{
+export async function hostSources(root:string,entry='dev/ts/render.ts'):Promise<string[]>{
  const built=await Bun.build({entrypoints:[resolve(root,entry)],root,packages:'external',target:'bun',metafile:true});
  if(!built.success||!built.metafile)throw new Error('Cannot observe host module inputs: '+built.logs.join('\n'));
  const canonical=await realpath(root);

@@ -6,7 +6,7 @@ import {readFile,readdir} from 'node:fs/promises';
 import {compileModel,readD2Figure} from '@deterministic-engineering/render';
 import * as v from 'valibot';
 import {ProjectionSchema} from '../projection';
-const root=new URL('../../',import.meta.url);
+const root=new URL('../../../',import.meta.url);
 async function declaration(name:string){
  const file=`dev/d2/${name}.d2`,raw=await readFile(new URL(file,root),'utf8');
  const compiled=await compileModel({[file]:raw},file);

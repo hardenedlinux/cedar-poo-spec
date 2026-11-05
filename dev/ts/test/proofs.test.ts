@@ -6,14 +6,14 @@ import {readFile,readdir} from 'node:fs/promises';
 import {connectWasm} from '@openmbee/opensysml';
 import {verifyFigure} from '../artifacts';
 import {readProofMap,leanProofCheck,type ProofMap} from '../proofs';
-const root=new URL('../../',import.meta.url),source='dev/sysml/zero-trust-proofs.sysml';
+const root=new URL('../../../',import.meta.url),source='dev/sysml/zero-trust-proofs.sysml';
 // One SDK-owned worker per suite; each source variant still parses and is checked.
 // Do not cache ProofMaps or rejection results across source mutations.
 let connection:ReturnType<typeof connectWasm>|undefined;
 afterAll(async()=>{if(connection)await(await connection).close();});
 async function observe(raw:string){
  const started=performance.now(),host=await(connection??=connectWasm()),connected=performance.now();
- const model=(await host.parseSources([[source,raw]])).raiseForErrors(),parsed=performance.now();
+ const model=(await host.parseSources([['Project.sysml',await readFile(new URL('Project.sysml',root),'utf8')],[source,raw]])).raiseForErrors(),parsed=performance.now();
  try{return await readProofMap(model,'ZeroTrustProofs');}
  finally{await model.close();console.log('SDK-PROOF-STAGES',JSON.stringify({sourceSHA256:Bun.SHA256.hash(raw,'hex'),connect_ms:connected-started,parse_ms:parsed-connected,observe_ms:performance.now()-parsed}));}
 }
@@ -25,8 +25,8 @@ const raw=()=>readFile(new URL(source,root),'utf8');
 test('SDK declarations, roles and proof-use references bind emitted receipts',async()=>{
  const started=performance.now(),map=await observe(await raw());expect(map.cards.length).toBeGreaterThan(0);
  for(const card of map.cards)expect((await readFile(new URL(card.source,root),'utf8')).length).toBeGreaterThan(0);
- for(const file of (await readdir(new URL('../d2/',import.meta.url))).filter(file=>file.endsWith('.json'))){
-  const receipt:{sdk:{view:string};proofClaims?:ProofMap}=JSON.parse(await readFile(new URL('../d2/'+file,import.meta.url),'utf8'));
+ for(const file of (await readdir(new URL('../../d2/',import.meta.url))).filter(file=>file.endsWith('.json'))){
+  const receipt:{sdk:{view:string};proofClaims?:ProofMap}=JSON.parse(await readFile(new URL('../../d2/'+file,import.meta.url),'utf8'));
   if(receipt.sdk.view.startsWith('ZeroTrustProofs::'))expect(receipt.proofClaims).toEqual(map);
  }
  console.log('SDK-PROOF-OBSERVATION-MS',Math.round(performance.now()-started));

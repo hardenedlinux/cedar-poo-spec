@@ -4,32 +4,41 @@
     "CedarPooSpec/Gateway/Admission.lean": "c66b15eb8daaa6cdd7fdc2b4aaf9f0eedb6a1dece5dcc41244b7a4e2512c6122",
     "CedarPooSpec/Gateway/ProfileAdmission.lean": "6d6682a4f2adac8bd548c1735c6a12db60a8ad0293b77f9864015b72529a31a5",
     "CedarPooSpec/Gateway/ProfileObject.lean": "c0d3ff0d2ad34a35d8c6918ac974d03f95d54fb77947eeac74cb115a8073ff61",
-    "dev/.generated/gateway-profile-workflow-sdk.json": "b75ebeb680a0dea9368594346613db65282f22e0f81de88489ffa38db547a1a4",
-    "dev/artifacts.ts": "ca1096947536fbdbd5da5cbf1ce5c6f57521bd4a7b135233285dfe8fcff9859d",
-    "dev/bun.lock": "2b7060a881aad9312d122f6d01146ef78c207b3c95254aa66b7b57a9eede5acd",
-    "dev/catalog.ts": "6d65a91afcddb11de668cc668aa3c6b9076435c02e73a90323c7bf28a991965e",
+    "dev/.generated/gateway-profile-workflow-sdk.json": "ab741f71c689021acd39787c038e318282c7cd4f8ab0459b3172fd2944d136d6",
+    "dev/bun.lock": "e4f1f11bdbe2906a6aafc080e48a63838f7fb2fc278dc7670be5da988dac90f4",
     "dev/d2/gateway-profile-workflow.d2": "f1ef21981435e443bcd345097ba1ee7f792eda4c39b72146c657487b6f86f215",
-    "dev/icons.ts": "0053a84dd7875949ffd03f8a067037353f3519f9f0875914fcbda1fb39f79764",
-    "dev/inputs.ts": "5da4f7a946a9bd87cdca04a0a0406f5f4cddae906f6375a4636aa3fa22f77bf5",
-    "dev/Justfile": "364059989486f5babe149b9ab2a570e09fce7abf9f450dc03d47a0f564fa1a10",
-    "dev/notation.ts": "ac907119b44c174367e8668143d2f787849340f47a28beb71cb08074da0dd1ec",
-    "dev/package.json": "4eb137a6d73d5dfb1e43020c3041e9a42151d480b26d6e01b99ee0ebc2997d90",
-    "dev/projection.ts": "3fd049e50798aee9dce54af6cd6e6fccad45fec5ab24b994bb6a8a4b33d7252d",
-    "dev/proofs.ts": "8a9cb88dd75b807f176c1389bd3e8b4df7cf658c657ad85bbf0487d09cafedd9",
-    "dev/render.ts": "41b5ff6dfef93c5be3935198f190337c86454e358ab332eb9d908cf84b6b47e9",
-    "dev/sources.ts": "3cd11d095476ee65c9086172773813e6e37e88087c9d01ee962cec59369d7ed8",
-    "dev/sysml/gateway-activities.sysml": "87c73ad3b6516117919c19fd78be453fcbf836e89bcfd21e678315523153cb07"
+    "dev/Justfile": "eb8e99a205111d4eb552beea43f00b9cc6479baeea3ba925cbfc4388a8db9350",
+    "dev/package.json": "54f8bbf69d5d6f8a5a8489bc61ceeb1052c8d2e0dec70492c7416cb6181178d4",
+    "dev/sysml/gateway-activities.sysml": "87c73ad3b6516117919c19fd78be453fcbf836e89bcfd21e678315523153cb07",
+    "dev/ts/artifacts.ts": "ca1096947536fbdbd5da5cbf1ce5c6f57521bd4a7b135233285dfe8fcff9859d",
+    "dev/ts/catalog.ts": "6d65a91afcddb11de668cc668aa3c6b9076435c02e73a90323c7bf28a991965e",
+    "dev/ts/components/artwork.ts": "1c2ff070e8d6643860e35d5be8760be65827e5deb3ce8bb6f76f0ae395809360",
+    "dev/ts/components/assurance.ts": "1a6cc3a683ba50ec65461d7a0cdd5b56007bf275f5c3c7a9bc7d0ebbfeb1426f",
+    "dev/ts/components/defense-flow.ts": "5466a7944dfba904577106996ec43920987b5840f70ddbe932ddae485754c8a8",
+    "dev/ts/components/financial.ts": "b8c3ba2ebc478d7a9a47cdff759c3f0663a2c396c32975b151a5acb7efa07eb8",
+    "dev/ts/components/incident.ts": "93bcb9011ac70f3ab9920ac787df30c1540f32983678d89fd4bfacfb7207f32e",
+    "dev/ts/components/payment.ts": "5067f7398974870e933406c28aba9770a8bc3a883628255ddbca3ef5a19bb15c",
+    "dev/ts/icons.ts": "0053a84dd7875949ffd03f8a067037353f3519f9f0875914fcbda1fb39f79764",
+    "dev/ts/inputs.ts": "93fa0a59ed000c05f8563d9afbbde576ea9bb03457e8a5b5563a3be2eab37f93",
+    "dev/ts/notation.ts": "a7b715802173bd734dae7b22b82883da34da8f03d351d1a0e3531eba1b3f753d",
+    "dev/ts/project.ts": "6ac04f71738f2627ca33cc73efc3bd58b43a1b8967c58c52dc2c26be52303549",
+    "dev/ts/projection.ts": "3fd049e50798aee9dce54af6cd6e6fccad45fec5ab24b994bb6a8a4b33d7252d",
+    "dev/ts/proofs.ts": "8a9cb88dd75b807f176c1389bd3e8b4df7cf658c657ad85bbf0487d09cafedd9",
+    "dev/ts/render.ts": "10902dd11aadea28c340a839c06d9ef3751d531f7b749aaaae87aba2bb32c862",
+    "dev/ts/sources.ts": "3cd11d095476ee65c9086172773813e6e37e88087c9d01ee962cec59369d7ed8",
+    "dev/tsconfig.json": "e57e46b169017d5260b98cb1afd8eba93758109a6a11d57c6f36b658b8513386",
+    "Project.sysml": "8b4309d72e27fccd2129d891f29ea5b83db4de92037393a650057225c513b5c5"
   },
   "binaries": {},
   "sdk": {
-    "modelHash": "d402aa7d4522ae8184d3eb93bb28d7ca7543b5ff2f415eeb7150f0f9e064231d",
+    "modelHash": "4355cbe3eb6f010bccdd7debb1c73f692f8212a3bf93a8895208b7577bfac9f3",
     "view": "GatewayProfileFlow::overview",
     "trace": {
-      "modelHash": "d402aa7d4522ae8184d3eb93bb28d7ca7543b5ff2f415eeb7150f0f9e064231d",
+      "modelHash": "4355cbe3eb6f010bccdd7debb1c73f692f8212a3bf93a8895208b7577bfac9f3",
       "requestedView": "GatewayProfileFlow::overview",
       "resolvedView": "GatewayProfileFlow::overview",
-      "renderingSHA256": "b75ebeb680a0dea9368594346613db65282f22e0f81de88489ffa38db547a1a4",
-      "capturedRenderingJSON": "{\"modelHash\":\"d402aa7d4522ae8184d3eb93bb28d7ca7543b5ff2f415eeb7150f0f9e064231d\",\"requestedView\":\"GatewayProfileFlow::overview\",\"rendering\":{\"view\":\"GatewayProfileFlow::overview\",\"kind\":\"interconnection\",\"stated\":\"render asInterconnectionDiagram\",\"nodes\":[{\"id\":\"n0\",\"kind\":\"part\",\"name\":\"GatewayProfileFlow::stepSession\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":7,\"startCol\":2,\"endLine\":7,\"endCol\":32}},{\"id\":\"n1\",\"kind\":\"part\",\"name\":\"GatewayProfileFlow::stepCapture\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":10,\"startCol\":2,\"endLine\":10,\"endCol\":32}},{\"id\":\"n2\",\"kind\":\"part\",\"name\":\"GatewayProfileFlow::stepAuthorize\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":13,\"startCol\":2,\"endLine\":13,\"endCol\":34}},{\"id\":\"n3\",\"kind\":\"part\",\"name\":\"GatewayProfileFlow::stepBind\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":16,\"startCol\":2,\"endLine\":16,\"endCol\":29}},{\"id\":\"n4\",\"kind\":\"part\",\"name\":\"GatewayProfileFlow::stepAccepted\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":19,\"startCol\":2,\"endLine\":19,\"endCol\":33}},{\"id\":\"n5\",\"kind\":\"part\",\"name\":\"GatewayProfileFlow::stepRefused\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":22,\"startCol\":2,\"endLine\":22,\"endCol\":32}}],\"edges\":[{\"from\":\"n0\",\"to\":\"n1\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":25,\"startCol\":2,\"endLine\":25,\"endCol\":54}},{\"from\":\"n0\",\"to\":\"n5\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":26,\"startCol\":2,\"endLine\":26,\"endCol\":54}},{\"from\":\"n1\",\"to\":\"n2\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":27,\"startCol\":2,\"endLine\":27,\"endCol\":56}},{\"from\":\"n1\",\"to\":\"n5\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":28,\"startCol\":2,\"endLine\":28,\"endCol\":54}},{\"from\":\"n2\",\"to\":\"n3\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":29,\"startCol\":2,\"endLine\":29,\"endCol\":53}},{\"from\":\"n2\",\"to\":\"n5\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":30,\"startCol\":2,\"endLine\":30,\"endCol\":56}},{\"from\":\"n3\",\"to\":\"n4\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":31,\"startCol\":2,\"endLine\":31,\"endCol\":52}},{\"from\":\"n3\",\"to\":\"n5\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":32,\"startCol\":2,\"endLine\":32,\"endCol\":51}}],\"columns\":[],\"rows\":[],\"notes\":[],\"notices\":[],\"shown\":[\"port-symbols\",\"compartments\",\"keywords\"]}}",
+      "renderingSHA256": "ab741f71c689021acd39787c038e318282c7cd4f8ab0459b3172fd2944d136d6",
+      "capturedRenderingJSON": "{\"modelHash\":\"4355cbe3eb6f010bccdd7debb1c73f692f8212a3bf93a8895208b7577bfac9f3\",\"requestedView\":\"GatewayProfileFlow::overview\",\"rendering\":{\"view\":\"GatewayProfileFlow::overview\",\"kind\":\"interconnection\",\"stated\":\"render asInterconnectionDiagram\",\"nodes\":[{\"id\":\"n0\",\"kind\":\"part\",\"name\":\"GatewayProfileFlow::stepSession\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":7,\"startCol\":2,\"endLine\":7,\"endCol\":32}},{\"id\":\"n1\",\"kind\":\"part\",\"name\":\"GatewayProfileFlow::stepCapture\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":10,\"startCol\":2,\"endLine\":10,\"endCol\":32}},{\"id\":\"n2\",\"kind\":\"part\",\"name\":\"GatewayProfileFlow::stepAuthorize\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":13,\"startCol\":2,\"endLine\":13,\"endCol\":34}},{\"id\":\"n3\",\"kind\":\"part\",\"name\":\"GatewayProfileFlow::stepBind\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":16,\"startCol\":2,\"endLine\":16,\"endCol\":29}},{\"id\":\"n4\",\"kind\":\"part\",\"name\":\"GatewayProfileFlow::stepAccepted\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":19,\"startCol\":2,\"endLine\":19,\"endCol\":33}},{\"id\":\"n5\",\"kind\":\"part\",\"name\":\"GatewayProfileFlow::stepRefused\",\"nameSynthesized\":false,\"type\":\"\",\"detail\":\"\",\"text\":\"\",\"standIn\":false,\"compartment\":\"\",\"parent\":\"\",\"ports\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":22,\"startCol\":2,\"endLine\":22,\"endCol\":32}}],\"edges\":[{\"from\":\"n0\",\"to\":\"n1\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":25,\"startCol\":2,\"endLine\":25,\"endCol\":54}},{\"from\":\"n0\",\"to\":\"n5\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":26,\"startCol\":2,\"endLine\":26,\"endCol\":54}},{\"from\":\"n1\",\"to\":\"n2\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":27,\"startCol\":2,\"endLine\":27,\"endCol\":56}},{\"from\":\"n1\",\"to\":\"n5\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":28,\"startCol\":2,\"endLine\":28,\"endCol\":54}},{\"from\":\"n2\",\"to\":\"n3\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":29,\"startCol\":2,\"endLine\":29,\"endCol\":53}},{\"from\":\"n2\",\"to\":\"n5\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":30,\"startCol\":2,\"endLine\":30,\"endCol\":56}},{\"from\":\"n3\",\"to\":\"n4\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":31,\"startCol\":2,\"endLine\":31,\"endCol\":52}},{\"from\":\"n3\",\"to\":\"n5\",\"fromPort\":\"\",\"toPort\":\"\",\"label\":\"\",\"name\":\"\",\"kind\":\"connection\",\"route\":[],\"origin\":{\"file\":\"dev/sysml/gateway-activities.sysml\",\"startLine\":32,\"startCol\":2,\"endLine\":32,\"endCol\":51}}],\"columns\":[],\"rows\":[],\"notes\":[],\"notices\":[],\"shown\":[\"port-symbols\",\"compartments\",\"keywords\"]}}",
       "nodes": [
         {
           "id": "n0",
@@ -233,7 +242,7 @@
     "observations": []
   },
   "proofClaims": {
-    "modelHash": "d402aa7d4522ae8184d3eb93bb28d7ca7543b5ff2f415eeb7150f0f9e064231d",
+    "modelHash": "4355cbe3eb6f010bccdd7debb1c73f692f8212a3bf93a8895208b7577bfac9f3",
     "cards": [
       {
         "id": "GatewayProfileFlow::stepSession",
@@ -394,21 +403,21 @@
       "samples": 25,
       "requiredMinimum": 12
     },
-    "inputSHA256": "d5e7af4f850d41d9879bbe68c6c1fdfdaa63c850a89c3f9b5ecde15491ad7f6c",
+    "inputSHA256": "84c73b5869da532aabe591cd1d576f181833af49082308abd08cb442361ca759",
     "scenes": [
       {
         "inputSHA256": "54b8fb86bd88b598f340a99bf649687b574c1e7257b09caf067fa3a7760e85c1",
         "layoutSHA256": "65753ad6db6214224a0f3fe8f1087ae0093abd7d64c15874592447740d7b7fd2",
         "nodes": 6,
         "edges": 8,
-        "milliseconds": 117.47583399999985
+        "milliseconds": 249.49941599999875
       }
     ],
     "svgSHA256": [
-      "05112907a191d208aa05d6bf07430268e6e2e154f54b1f5ea1681ca56fe4aebd",
-      "743b6f1f5e16090f681b47611fe1d31fecfb4bfb992265b08c5600ed4b2a4b1d"
+      "8644c4f61889e53f33184a94f48c1383b7d089f2da4151ac3112fa97c4a63cb5",
+      "579500c59c3ae92320a453e8fcdb9974ef4abadb98a055cea81075f86cc66d10"
     ],
-    "composedHTMLSHA256": "3e2331a7c00b0c17fe9ec875db7049d83eb910ff5fd65bb94e2b44333eb37101",
+    "composedHTMLSHA256": "389df0d77435640ec0551bc240abafc457d47d8b2a8cec27b51e8aea040b7c96",
     "dependencies": {
       "@fontsource/inter": "5.3.0",
       "@fontsource/kalam": "5.3.0",
@@ -421,12 +430,12 @@
       "web-worker": "1.5.0"
     },
     "regionSHA256": {},
-    "htmlSHA256": "b734f60ad9a004872ad06bd04173b4eb20cc2d209f6979c315aa4b5d55789c40",
+    "htmlSHA256": "72144d2573ded7bb41435ca927e949243579b7540471cd0f2a3c01efad06ff03",
     "drawing": "precise",
     "routing": "elkjs@0.12.1",
     "assetSHA256": {
-      "@fontsource/inter/files/inter-latin-400-normal.woff2": "8909904ab6c872eb994093482a88a28eca2cd95912d7b6fecd72103b0dc07edc",
-      "@fontsource/inter/files/inter-latin-700-normal.woff2": "6f56409fd3d64bb85f7d070bce20749db2d66b6d63cec586cc22d1c761be2491"
+      "@fontsource/inter/files/inter-latin-700-normal.woff2": "6f56409fd3d64bb85f7d070bce20749db2d66b6d63cec586cc22d1c761be2491",
+      "@fontsource/inter/files/inter-latin-400-normal.woff2": "8909904ab6c872eb994093482a88a28eca2cd95912d7b6fecd72103b0dc07edc"
     },
     "pngSHA256": "56332b47cad679ebe52ad7a5f556671f6e49c996e9c6ba6f28f39b6c590ca235",
     "browser": "156.0.8078.4",

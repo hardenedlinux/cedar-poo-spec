@@ -293,3 +293,23 @@ deterministic-engineering renderer. Their adjacent JSON receipts bind actual
 source bytes and proof declarations. The reported attack chain in the incident
 caption is contextual; theorem cards refer to modeled defenses and explicitly
 retain Host premises. Unknown AI exploit mechanics remain unknown.
+
+Read [[file:Binance2026.svg][the incident picture]] from the four illustrated reported pivots to the
+modeled signing gates, then the delegation containment timeline. The lower
+component explanations link each defense to exact declarations and retain Host
+boundaries. Artwork is explanatory; AI exploit mechanics remain undisclosed.
+
+* Reader flow and detailed assurance
+
+[[file:Binance2026.svg][The reader-facing figure]] uses illustrated attack stages and a stateful defense
+flow. Distinct keys, independent reviewers, matching transfer slips, a clock
+gate and a payment-only wallet explain the controls without theorem-card text.
+A highlighted coral route ends at =NO SIGNATURE=; the signing branch remains
+=NOT REACHED=. These states are selected from actual exported Lean fixture
+outcomes, with a valid-transfer positive control, not from production telemetry.
+All connections are SDK-owned explanatory dependencies, not proof-term uses.
+
+[[file:Binance2026Assurance.svg][The separate assurance figure]] ([[file:Binance2026Assurance.d2][D2 source]]) retains the detailed
+component miniatures, exact Lean declarations and Host-premise roles for review.
+=Base.d2/svg= remains the reusable parent and the incident and appendix are
+listed explicitly by the top-level =Project.sysml=.

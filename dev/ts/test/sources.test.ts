@@ -40,7 +40,7 @@ test('renderer dependency follows package.json; Bun owns specifier resolution',(
 
 // Installation belongs to the CI/developer entry, never a nested test runner.
 test('downstream imports the declared Git package without vendor or Release input',async()=>{
- const manifest=JSON.parse(await readFile(new URL('../package.json',import.meta.url),'utf8'));
+ const manifest=JSON.parse(await readFile(new URL('../../package.json',import.meta.url),'utf8'));
  const source=new URL(rendererDependency(manifest));
  expect(source.protocol).toBe('git+https:');
  expect(source.hash.slice(1)).toMatch(/^[0-9a-f]{40}$/);
@@ -50,5 +50,5 @@ test('downstream imports the declared Git package without vendor or Release inpu
  expect(installed.version.length).toBeGreaterThan(0);
  const location=await realpath(new URL(packagePath));
  expect(location).toContain('/node_modules/');expect(location).not.toContain('/vendor/');
- await expect(lstat(new URL('../vendor',import.meta.url))).rejects.toMatchObject({code:'ENOENT'});
+ await expect(lstat(new URL('../../vendor',import.meta.url))).rejects.toMatchObject({code:'ENOENT'});
 });

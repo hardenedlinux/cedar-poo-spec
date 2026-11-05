@@ -4,10 +4,30 @@
 #+title: Source-bound engineering views
 #+language: en
 
+* Project entry and language ownership
+
+The top-level [[file:../Project.sysml][Project.sysml]] follows the source-bound project-entry organization of
+[[https://github.com/hardenedlinux/deterministic-engineering][deterministic-engineering]], using the existing pinned renderer revision.
+It declares development owners and the SysML source inventory. All TypeScript
+implementation and tests live under =dev/ts/=; SysML lives under =dev/sysml/=
+and Quint under =dev/qnt/=. =package.json=, its lockfile and =tsconfig.json=
+remain the existing development entry, dependency and compiler declarations.
+
+The OpenSysML SDK parses Project.sysml and evaluates its declared roots and
+source list. Each view must select declared SysML sources. The same captured
+Project bytes join that view's actual parse and publication hash, so missing,
+changed, undeclared or escaping sources refuse. No SysML text parser, new model
+runtime, project/package loader or duplicate dependency configuration is added.
+The existing renderer still owns questions, vector export and the 12px gate.
+
+=dev/sysml/attackers.sysml= maps the actual shared/financial Lean declarations
+and Host boundary. SDK and native Lean checks validate its assurance claims;
+these declarations do not establish a physical incident reconstruction.
+
 * One development path
 
 Native Lean =caseManifestsNative catalog= publishes the existing SourceCatalog JSON.
-=dev/catalog.ts= observes only entry headers, source-reference closure and counts;
+=dev/ts/catalog.ts= observes only entry headers, source-reference closure and counts;
 it never parses Cedar policies or turns an expected allow/deny into a decision.
 Opaque policy, schema and entity values remain =unknown= because their semantics
 belong to the existing Lean/Rust owners, not to this display adapter.
@@ -447,3 +467,24 @@ source bindings in =CedarPooSpec/Gateway/PublicationReview.lean=:
 | Current registrar | =fenced= |
 | Current use | =current= |
 | Bound commit | =committed= |
+
+Scenario-local D2 declarations are explicitly listed in =Project.sysml= under
+=scenarioFigures=. The same render command publishes their SVG, PNG and JSON
+receipts beside the Lean scenarios in =Examples/Scenarios/=; =dev/sysml/= remains
+the owner of maintained SysML source. Undeclared figures and paths escaping the
+scenario directory are refused.
+
+The reusable Financial identity frame is in =dev/ts/components/financial.ts=;
+=payment.ts= specializes it for wallet signing and reported incident views.
+Original AI-generated artwork, generation prompts and hashes live under
+=dev/assets/financial/=. Artwork is embedded in SVG as explicit raster images;
+all proof cards, model relations and semantic labels retain native vector form.
+The same source/publication checks also bind image bytes through binary hashes.
+
+The Binance figure starts with four illustrated reported stages, explains the
+current signing gates and delegation containment timeline, then gives each
+component a distinct source-bound structural miniature. Incident provenance is
+exported from Lean during =prepare= under the existing 120s wall-time, 3s kill
+grace and Lean memory/heartbeat limits. macOS uses GNU =gtimeout= from coreutils;
+the views workflow installs it explicitly. Generation is never part of CI: only
+the checked-in original image bytes and their prompt/hash manifests are read.

@@ -1,0 +1,88 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: Apache-2.0
+
+vars: {d2-config: {data: {figure: |json
+{
+  "purpose": "architecture",
+  "language": "en",
+  "width": 1700,
+  "primary": "purpose",
+  "themes": [
+    "editorial",
+    "comfortable"
+  ],
+  "icons": [
+    "engineering",
+    "cedar"
+  ],
+  "basis": {
+    "captureRef": "development-source-observation",
+    "modelRefs": [],
+    "obligationRefs": [],
+    "evidenceRefs": []
+  },
+  "title": "Tenant and device: scenario provenance",
+  "kind": "proof-reading-map",
+  "questions": [
+    {
+      "ref": "purpose",
+      "text": "Which declarations support this scenario, and where does the Host remain trusted?",
+      "focusRefs": [
+        "sysml"
+      ]
+    }
+  ],
+  "references": {
+    "source": "Examples/Scenarios/TenantDevicePolicyEvolution.d2",
+    "sysml": "dev/sysml/attackers.sysml",
+    "scenarioSource": "Examples/Scenarios/TenantDevicePolicyEvolution.lean",
+    "lineageSource": "CedarPooSpec/Scenarios/Functional.lean",
+    "provenanceSource": "CedarPooSpec/Scenarios/Metadata.lean"
+  },
+  "copy": {
+    "description": "Synthetic policy-evolution fixture with mandatory metadata; no incident dates or disclosure are invented.",
+    "status": "This view records scenario definitions and the generic derivation law. It does not claim deployment or endpoint enforcement."
+  },
+  "presentation": {
+    "notation": "assurance",
+    "columns": 1,
+    "groups": [
+      {
+        "title": "Scenario and reusable contract",
+        "icon": "registrar",
+        "subjects": [
+          "scenario",
+          "lineage",
+          "provenance"
+        ],
+        "columns": 3
+      }
+    ]
+  },
+  "sysml": {
+    "source": "dev/sysml/attackers.sysml",
+    "view": "TenantScenarioProofs::assurance",
+    "bindings": {
+      "scenario": {
+        "name": "TenantScenarioProofs::scenario",
+        "icon": "registrar"
+      },
+      "lineage": {
+        "name": "TenantScenarioProofs::lineage",
+        "icon": "branch"
+      },
+      "provenance": {
+        "name": "TenantScenarioProofs::provenance",
+        "icon": "evidence"
+      }
+    }
+  },
+  "proofs": {
+    "namespace": "TenantScenarioProofs"
+  }
+}
+|
+}}}
+scenario: "Synthetic tenant/device scenario\nShared mandatory metadata"
+lineage: "Reusable derivation contract\nRetain exact parent metadata"
+provenance: "Source + dates + limitations\nTyped scenario provenance"

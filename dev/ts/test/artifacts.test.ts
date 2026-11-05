@@ -6,9 +6,9 @@ import {readFile,readdir} from 'node:fs/promises';
 import {sha,rendererDependency} from '../sources';
 import {verifyFigure,htmlArtifact} from '../artifacts';
 import {figureSource} from '../inputs';
-const root=new URL('../../',import.meta.url);
+const root=new URL('../../../',import.meta.url);
 interface Receipt {binaries:Record<string,string>;sources:Record<string,string>;receipt:{drawing:string;pngSHA256:string;htmlSHA256:string;svgSHA256:string[];readability:{minimumTextSize:number}};sdk:{modelHash:string;view:string;trace:{modelHash:string}};lean?:{path:string;sha256:string};renderer:{specifier:string;name:string;version:string};entry:string;}
-for(const name of (await readdir(new URL('../d2/',import.meta.url))).filter(name=>name.endsWith('.d2')).map(name=>name.slice(0,-3)).sort())test(name+' output binds actual input bytes, SDK model and source-selected vector artifacts',async()=>{
+for(const name of (await readdir(new URL('../../d2/',import.meta.url))).filter(name=>name.endsWith('.d2')).map(name=>name.slice(0,-3)).sort())test(name+' output binds actual input bytes, SDK model and source-selected vector artifacts',async()=>{
  const base='dev/d2/'+name,receipt:Receipt=JSON.parse(await readFile(new URL(base+'.json',root),'utf8'));
  await verifyFigure(root.pathname,base+'.d2');
  expect(await Bun.file(new URL(base+'.html',root)).exists()).toBe(false);
@@ -58,7 +58,7 @@ test('restored real exports require their cache and exact captured sources',asyn
   for(const path of [stem+'.json',stem+'.png',stem+'.svg',...receipt.receipt.svgSHA256.slice(1).map((_,index)=>stem+'.scene-'+(index+1)+'.svg')])await copy(path);
   await expect(verifyFigure(temporary,entry)).rejects.toThrow(); // HTML not restored yet.
   await copy(htmlArtifact(entry));await verifyFigure(temporary,entry);
-  const mutations=[entry,...Object.keys(receipt.sources).filter(path=>path.endsWith('.sysml')),'dev/render.ts','dev/package.json','dev/bun.lock'];
+  const mutations=[entry,'Project.sysml',...Object.keys(receipt.sources).filter(path=>path.endsWith('.sysml')),'dev/ts/render.ts','dev/package.json','dev/bun.lock'];
   expect(mutations.some(path=>path.endsWith('.sysml'))).toBe(true);
   for(const path of mutations){
    expect(Object.hasOwn(receipt.sources,path)).toBe(true);

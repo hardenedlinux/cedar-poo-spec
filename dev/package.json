@@ -4,7 +4,7 @@
   "type": "module",
   "license": "Apache-2.0",
   "scripts": {
-    "render": "bun render.ts",
+    "render": "bun ts/render.ts",
     "typecheck": "tsc --noEmit",
     "test": "just test"
   },

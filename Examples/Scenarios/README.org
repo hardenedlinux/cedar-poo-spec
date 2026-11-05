@@ -124,3 +124,7 @@ adjacent SVG, PNG and JSON receipts. Run =just -f dev/Justfile render= from the
 repository root, then =just -f dev/Justfile test=. Receipts bind exact D2, SysML,
 Lean and renderer inputs; the existing 12px readability gate also applies here.
 These are source-bound assurance maps, not evidence of a live incident replay.
+
+The Binance incident also provides a separate =Binance2026Assurance.d2/svg=
+appendix. The primary incident picture favors the reported story and a refusal
+flow; detailed declaration cards remain available in that optional figure.

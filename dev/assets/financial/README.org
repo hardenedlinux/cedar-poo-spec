@@ -1,0 +1,46 @@
+#+TITLE: Financial / Payment Artwork
+#+LANGUAGE: en
+
+Original transparent PNG artwork generated with the built-in =image_gen= tool
+using the =imagegen= skill on 2026-11-05. Exact generation prompts and SHA-256
+values are retained in [[file:artwork.json][artwork.json]]. Originals were copied without pixel edits.
+
+=financial.png= is the reusable financial-services emblem; =payment.png= is
+its payment specialization. The shared TS components live in
+=dev/ts/components/financial.ts= and =payment.ts=. They embed these original
+raster assets explicitly inside the exported SVG; model topology and all
+semantic labels stay native vector content. No regeneration or network fetch
+occurs during rendering or CI. Assets are presentation only and do not assert
+publisher endorsement, security certification or proof of incident details.
+
+Missing images or a hash mismatch refuse rendering. Export receipts capture
+the manifest and the actual binary hashes so changing an image invalidates
+publication alongside the existing Lean/SysML/D2 source checks.
+
+* Reported incident storyboard
+
+The four original narrative illustrations in =binance/= show different actions:
+recruitment/download, lateral movement and a token, deployment to a signer,
+and unauthorized signing with residual delegation. Their exact prompts and
+hashes are in [[file:binance/storyboard.json][the storyboard manifest]]. They are conceptual illustrations of
+the preliminary report, not screenshots of undisclosed exploit mechanics.
+
+=dev/ts/components/incident.ts= composes these scenes with plain-language
+actions, defense gates, and the pause/submission/finalized-clear distinction.
+It reads publisher and date metadata from the actual Lean scenario export.
+=assurance.ts= gives each component its own small structural explanation,
+bound to the SDK-selected Lean symbol; miniatures are explanatory, not new
+proof-term edges or a substitute for the exact law.
+
+* Defense teaching illustrations
+
+The five checked-in originals under =defense/= explain purpose separation,
+independent approval, exact transfer binding, current-use rechecking and the
+native-transfer-only boundary. [[file:defense/artwork.json][Their manifest]] retains the exact built-in
+generation prompts and binary hashes. =dev/ts/components/artwork.ts= captures
+all artwork families through the same validation function.
+
+=defense-flow.ts= uses the existing SDK projection and ELK/XYFlow export path.
+Ports, state colors, refused edges and inactive branches show the selected
+synthetic request. The fixture observation comes from the actual Lean exporter;
+it is separate from the preliminary publisher's account and Host guarantees.
