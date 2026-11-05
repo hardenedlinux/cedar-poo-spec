@@ -21,6 +21,9 @@ use cedar_poo_core::operation_identity::OperationId;
 use std::path::Path;
 use std::sync::mpsc;
 
+#[path = "late_batch.rs"]
+mod late_batch;
+
 #[test]
 fn concurrent_settlement_survives_lost_acknowledgment_and_handoffs() {
     settlement_race("settlement-race", false, false);
@@ -104,11 +107,16 @@ fn settlement_race(case: &str, legacy_migration: bool, handoff_first: bool) {
             publications: &[],
         })
         .unwrap();
-    let batch_effects =
-        ["batch-commit", "batch-tail", "batch-without-evidence"].map(|operation| EffectIdentity {
-            operation: operation.into(),
-            ..effect.clone()
-        });
+    let batch_effects = [
+        "batch-commit",
+        "batch-tail",
+        "batch-without-evidence",
+        "batch-without-receipt",
+    ]
+    .map(|operation| EffectIdentity {
+        operation: operation.into(),
+        ..effect.clone()
+    });
     let batch_operations = batch_effects
         .each_ref()
         .map(|entry| OperationId(entry.operation.clone()));
@@ -197,6 +205,7 @@ fn settlement_race(case: &str, legacy_migration: bool, handoff_first: bool) {
         .receive_oauth(&oauth, use_effect(&initial, &current), delivery)
         .unwrap()
         .unwrap();
+    let mut late_outcome = None;
     for (index, (entry, intent)) in batch_effects.iter().zip(&batch_intents).enumerate() {
         let current = actual(grant.clone(), 14, &entry.operation);
         let input = DurableEffectUse {
@@ -233,12 +242,13 @@ fn settlement_race(case: &str, legacy_migration: bool, handoff_first: bool) {
                     .is_err()
             );
         } else {
-            assert!(
-                active
-                    .receive_oauth(&oauth, input, delivery)
-                    .unwrap()
-                    .is_some()
-            );
+            let outcome = active
+                .receive_oauth(&oauth, input, delivery)
+                .unwrap()
+                .unwrap();
+            if index == 3 {
+                late_outcome = Some(outcome);
+            }
         }
     }
     let operation = OperationId(effect.operation.clone());
@@ -732,27 +742,19 @@ fn settlement_race(case: &str, legacy_migration: bool, handoff_first: bool) {
         let committed_outcome = [committed.outcome];
         let tail_outcome = [tail.outcome];
         let empty = ProviderJournal::default();
+        let item = |index, journal, outcomes| DurableEffectRecovery {
+            effect: &batch_effects[index],
+            journal,
+            outcomes,
+            ..evidence(&settled.journal, &signed)
+        };
         let batch = || {
             [
                 evidence(&settled.journal, &signed),
-                DurableEffectRecovery {
-                    effect: &batch_effects[2],
-                    journal: &empty,
-                    outcomes: &[],
-                    ..evidence(&settled.journal, &signed)
-                },
-                DurableEffectRecovery {
-                    effect: &batch_effects[0],
-                    journal: &committed.journal,
-                    outcomes: &committed_outcome,
-                    ..evidence(&settled.journal, &signed)
-                },
-                DurableEffectRecovery {
-                    effect: &batch_effects[1],
-                    journal: &tail.journal,
-                    outcomes: &tail_outcome,
-                    ..evidence(&settled.journal, &signed)
-                },
+                item(2, &empty, &[]),
+                item(0, &committed.journal, &committed_outcome),
+                item(1, &tail.journal, &tail_outcome),
+                item(3, &empty, &[]),
             ]
         };
         let fenced =
@@ -798,7 +800,7 @@ fn settlement_race(case: &str, legacy_migration: bool, handoff_first: bool) {
             assert_locked(&pin);
             let second =
                 scope.spawn(move || {
-                    let [_, missing, repeated, suffix] = batch();
+                    let [_, missing, repeated, suffix, _] = batch();
                     started.send(()).unwrap();
                     let items = [repeated, missing, suffix].into_iter().enumerate().map(
                         |(index, input)| {
@@ -874,11 +876,11 @@ fn settlement_race(case: &str, legacy_migration: bool, handoff_first: bool) {
                 batch_operations[1].clone()
             ]
         );
-        assert_eq!(resumed.pending, std::slice::from_ref(&batch_operations[2]));
+        assert_eq!(resumed.pending, &batch_operations[2..]);
         assert!(resumed.stopped.is_none());
         assert_eq!(
             writer.legacy_unresolved_operations().unwrap(),
-            std::slice::from_ref(&batch_operations[2])
+            &batch_operations[2..]
         );
         std::thread::scope(|scope| {
             let repeat = || {
@@ -928,6 +930,26 @@ fn settlement_race(case: &str, legacy_migration: bool, handoff_first: bool) {
                 )
                 .unwrap()
                 .is_none()
+        );
+        let writer_cut = writer.rotate_writer().unwrap();
+        late_batch::replay_across_processes(
+            &directory,
+            &late_batch::RestartFixture {
+                active: primary.clone(),
+                retired: successor.clone(),
+                writer: writer_cut,
+                previous: expected,
+                fact: fact.clone(),
+                history: history.clone(),
+                effect: batch_effects[3].clone(),
+                grant: grant.clone(),
+            },
+            late_outcome.as_ref().unwrap(),
+        );
+        let writer = open().for_writer(writer_cut);
+        assert_eq!(
+            writer.legacy_unresolved_operations().unwrap(),
+            std::slice::from_ref(&batch_operations[2])
         );
         (writer, successor_cut, &primary)
     } else {

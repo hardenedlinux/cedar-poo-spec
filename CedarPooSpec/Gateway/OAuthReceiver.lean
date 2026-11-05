@@ -608,6 +608,24 @@ theorem legacyBatch_stops_at_retired_replica (trusted : Revocation.Crash.Receive
     state.step trusted item = { state with stopped := some item.audit.operation } := by
   simp [LegacyBatchState.step, ManagedReconciliation.currentReplica, running, present, retired]
 
+theorem legacyBatch_stops_at_stale_receiver_image (trusted : Revocation.Crash.ReceiverBinding)
+    (state : LegacyBatchState) (item : ManagedReconciliation)
+    (running : state.stopped = none) (present : item.independent = some pin)
+    (stale : pin.image ≠ item.replica) :
+    state.step trusted item = { state with stopped := some item.audit.operation } := by
+  simp [LegacyBatchState.step, ManagedReconciliation.currentReplica, running, present, stale]
+
+theorem legacyBatch_pending_keeps_image (trusted : Revocation.Crash.ReceiverBinding)
+    (state : LegacyBatchState) (item : ManagedReconciliation)
+    (running : state.stopped = none) (writer : item.audit.writer = state.image.writer)
+    (current : item.currentReplica = true)
+    (refused : migrateLegacy ⟨{ item with audit := { item.audit with image := state.image } }, trusted⟩ =
+      none) :
+    state.step trusted item = { state with pending := item.audit.operation :: state.pending } := by
+  have eligible : ¬ (item.audit.writer ≠ state.image.writer ∨ item.currentReplica = false) := by
+    simp [writer, current]
+  simp [LegacyBatchState.step, running, eligible, refused]
+
 theorem legacyBatch_stopped_keeps_state (trusted : Revocation.Crash.ReceiverBinding)
     (state : LegacyBatchState) (items : List ManagedReconciliation)
     (stopped : state.stopped.isSome = true) :

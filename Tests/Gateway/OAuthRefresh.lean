@@ -146,6 +146,25 @@ private def crashExercise (durable : Revocation.Recovery.Store)
   let batchInput : Receiver.LegacyBatchInput :=
     ⟨batchImage, successor.result.binding, [missingItem, legacyRecovery]⟩
   let .ok batch := Receiver.legacyBatchContract.invoke Receiver.prepareLegacyBatch batchInput | return false
+  let withheldAudit := { legacyAudit with actions := [], outcomes := [] }
+  let withheldItem := { legacyRecovery with audit := withheldAudit }
+  let withholding : Receiver.LegacyBatchInput := { batchInput with items := [withheldItem, missingItem] }
+  let .ok pending := Receiver.legacyBatchContract.invoke Receiver.prepareLegacyBatch withholding | return false
+  let reopenedImage := Revocation.Crash.recoverImage .durable batchImage pending.result.image
+  let some restartedWriter := Revocation.Crash.handoff reopenedImage 2 | return false
+  let restartPromotion : Receiver.PromotionInput :=
+    ⟨some successor.result, successor.result, successor.result.image, "restart"⟩
+  let .ok restart := Receiver.promotionContract.invoke Receiver.preparePromotion restartPromotion | return false
+  let lateAudit := { legacyAudit with writer := 3 }
+  let lateItem : Receiver.ManagedReconciliation :=
+    ⟨some restart.result, "restart", restart.result.image, lateAudit⟩
+  let restartedMissing := { lateItem with audit := { missingAudit with writer := 3 } }
+  let resumedLate : Receiver.LegacyBatchInput :=
+    ⟨restartedWriter, successor.result.binding, [lateItem, restartedMissing]⟩
+  let .ok lateBatch := Receiver.legacyBatchContract.invoke Receiver.prepareLegacyBatch resumedLate | return false
+  let lateRetry := { resumedLate with image := lateBatch.result.image }
+  let staleLate := { lateItem with replica := successor.result.image }
+  let staleLateBatch : Receiver.LegacyBatchInput := { resumedLate with items := [staleLate] }
   let fencedMissing := { missingItem with placement := "standby" }
   let staleReplicaBatch : Receiver.LegacyBatchInput := { batchInput with items := [fencedMissing, legacyRecovery] }
   let staleRun : Receiver.LegacyBatchState := staleReplicaBatch.run
@@ -177,6 +196,14 @@ private def crashExercise (durable : Revocation.Recovery.Store)
     decide (lateSettlement.result.settledOutcome intent.operation = some outcome) &&
     decide (Revocation.Crash.reconcile { late with image := lateSettlement.result } = some lateSettlement.result) &&
     (Revocation.Crash.reconcile conflictingEvidence).isNone &&
+    decide (pending.result.image = batchImage) &&
+    decide (pending.result.pending = [intent.operation, unrelated.operation]) &&
+    decide (lateBatch.result.confirmed = [intent.operation]) &&
+    decide (lateBatch.result.pending = [unrelated.operation]) &&
+    decide (lateBatch.result.image.settledOutcome intent.operation = some outcome) &&
+    decide (lateBatch.result.image.oauth = restartedWriter.oauth) &&
+    decide (lateRetry.run.image = lateBatch.result.image) &&
+    (staleLateBatch.run.stopped == some intent.operation) &&
     (staleRun.stopped == some unrelated.operation) &&
     staleRun.pending.isEmpty && staleRun.confirmed.isEmpty &&
     decide (staleRun.image = batchImage) &&
@@ -415,3 +442,6 @@ end Tests.Gateway.OAuthRefresh
 
 #print axioms CedarPooSpec.Gateway.OAuth.Receiver.legacyBatch_stops_at_retired_replica
 #print axioms CedarPooSpec.Gateway.OAuth.Receiver.legacyBatch_stopped_keeps_state
+
+#print axioms CedarPooSpec.Gateway.OAuth.Receiver.legacyBatch_stops_at_stale_receiver_image
+#print axioms CedarPooSpec.Gateway.OAuth.Receiver.legacyBatch_pending_keeps_image

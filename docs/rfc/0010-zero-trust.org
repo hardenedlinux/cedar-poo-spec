@@ -1399,6 +1399,14 @@ Previously accepted receipts confirm without another write.
 Remaining eligible operations can migrate, while pending operations
 stay reserved. A batch does not replay delivery or reset revocation.
 
+A pending item can appear in a later batch with its original
+signed receipt. A restarted worker reads the durable OAuth
+reservation and the current receiver checkpoint before accepting
+the late envelope. The envelope must match the committed receipt
+carried through receiver handoffs. A missing envelope leaves the
+record pending even when the receiver already has the receipt.
+An operation without a committed receiver outcome remains pending.
+
 The first clean audit durably binds the canonical identity of the
 signed outcome. A later audit of that same outcome is idempotent.
 A different signed outcome cannot replace it, even if presented
