@@ -19,6 +19,7 @@ use cedar_poo_core::operation_identity::OperationId;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
+use std::sync::mpsc;
 use std::time::{Duration, Instant};
 
 const FIXTURE: &str = "CEDAR_OAUTH_LATE_BATCH_FIXTURE";
@@ -30,6 +31,7 @@ pub(super) struct RestartFixture {
     pub active: PathBuf,
     pub retired: PathBuf,
     pub writer: WriterCut,
+    pub retired_writer: Option<WriterCut>,
     pub previous: ReceiverCheckpoint,
     pub fact: FactBinding,
     pub history: LogSnapshot,
@@ -56,30 +58,27 @@ pub(super) fn replay_across_processes(
     let checkpoint = root.join("oauth/checkpoint.json");
     let staged = root.join("oauth/checkpoint.staged");
     let before = std::fs::read(&checkpoint).unwrap();
-    crash_race(&fixture_path, "staged", "staged-overlap");
+    let (crashing, overlap) = start_crash_race(&fixture_path, "staged", "staged-overlap");
+    kill_worker(crashing);
+    finish_worker(overlap, "staged-overlap");
     assert_eq!(std::fs::read(&checkpoint).unwrap(), before);
     assert_ne!(std::fs::read(&staged).unwrap(), before);
-    takeover(root, &mut fixture);
+    takeover(root, &mut fixture, None);
     write_fixture(&fixture);
+    run_worker(&fixture_path, "fenced");
     std::fs::remove_file(&packet).unwrap();
     run_worker(&fixture_path, "pending");
 
     publish();
-    let before = std::fs::read(&checkpoint).unwrap();
-    crash_race(&fixture_path, "durable", "durable-overlap");
-    assert_ne!(std::fs::read(&checkpoint).unwrap(), before);
+    takeover(root, &mut fixture, Some(&fixture_path));
     assert!(!staged.exists());
-    let cut = takeover(root, &mut fixture);
-    let oauth_path = root.join("oauth");
-    let oauth =
-        DurableRefreshLedger::new(&oauth_path, "settlement-race").for_writer(fixture.writer);
-    assert!(oauth.revoke(verified(digest())).unwrap());
+    let cut = takeover(root, &mut fixture, None);
     write_fixture(&fixture);
     run_worker(&fixture_path, "resumed");
     (fixture.writer, cut)
 }
 
-fn takeover(root: &Path, fixture: &mut RestartFixture) -> ReceiverCut {
+fn takeover(root: &Path, fixture: &mut RestartFixture, concurrent: Option<&Path>) -> ReceiverCut {
     let pin = root.join("pin");
     let sender = simulation_key(4);
     let provider = simulation_key(8);
@@ -99,14 +98,30 @@ fn takeover(root: &Path, fixture: &mut RestartFixture) -> ReceiverCut {
         fixture.retired.join("checkpoint.json"),
     )
     .unwrap();
-    let cut = DurableReceiver::managed(&fixture.retired, &pin, trust())
-        .unwrap()
-        .promote(&fixture.previous)
-        .unwrap();
+    let standby = DurableReceiver::managed(&fixture.retired, &pin, trust()).unwrap();
     let oauth_path = root.join("oauth");
-    let open = || DurableRefreshLedger::new(&oauth_path, "settlement-race");
-    let old_writer = open().for_writer(fixture.writer);
-    fixture.writer = old_writer.rotate_writer().unwrap();
+    let old_writer =
+        DurableRefreshLedger::new(&oauth_path, "settlement-race").for_writer(fixture.writer);
+    let (writer, cut) = if let Some(path) = concurrent {
+        let (crashing, overlap) = start_crash_race(path, "durable", "durable-overlap");
+        let result = compete_at_commit(
+            crashing,
+            &oauth_path,
+            &pin,
+            &old_writer,
+            &standby,
+            &fixture.previous,
+        );
+        finish_worker(overlap, "durable-overlap");
+        result
+    } else {
+        (
+            old_writer.rotate_writer().unwrap(),
+            standby.promote(&fixture.previous).unwrap(),
+        )
+    };
+    fixture.retired_writer = Some(fixture.writer);
+    fixture.writer = writer;
     assert_eq!(
         old_writer.revoke(verified(digest())).unwrap_err(),
         "OAuth writer fenced"
@@ -115,12 +130,70 @@ fn takeover(root: &Path, fixture: &mut RestartFixture) -> ReceiverCut {
     cut
 }
 
-fn crash_race(fixture: &Path, phase: &str, overlap_phase: &str) {
+fn compete_at_commit(
+    crashing: Child,
+    oauth_path: &Path,
+    pin: &Path,
+    writer: &DurableRefreshLedger<'_>,
+    standby: &DurableReceiver<'_>,
+    expected: &ReceiverCheckpoint,
+) -> (WriterCut, ReceiverCut) {
+    std::thread::scope(|scope| {
+        let (start, contenders) = mpsc::channel();
+        let (rotated, successor) = mpsc::channel();
+        let promotion = scope.spawn({
+            let start = start.clone();
+            move || {
+                assert_locked(pin);
+                start.send(()).unwrap();
+                standby.promote(expected).unwrap()
+            }
+        });
+        let rotation = scope.spawn({
+            let start = start.clone();
+            move || {
+                assert_locked(oauth_path);
+                start.send(()).unwrap();
+                let cut = writer.rotate_writer().unwrap();
+                rotated.send(cut).unwrap();
+                cut
+            }
+        });
+        let revocation = scope.spawn(move || {
+            assert_locked(oauth_path);
+            start.send(()).unwrap();
+            match writer.revoke(verified(digest())) {
+                Ok(committed) => {
+                    assert!(committed);
+                    successor.recv().unwrap();
+                }
+                Err(error) => {
+                    assert_eq!(error, "OAuth writer fenced");
+                    let current = writer.for_writer(successor.recv().unwrap());
+                    assert!(current.revoke(verified(digest())).unwrap());
+                }
+            }
+        });
+        for _ in 0..3 {
+            contenders.recv_timeout(Duration::from_secs(10)).unwrap();
+        }
+        kill_worker(crashing);
+        let result = (rotation.join().unwrap(), promotion.join().unwrap());
+        revocation.join().unwrap();
+        result
+    })
+}
+
+fn start_crash_race(fixture: &Path, phase: &str, overlap_phase: &str) -> (Child, Child) {
     let markers = fixture.parent().unwrap().join(phase);
     std::fs::create_dir(&markers).unwrap();
-    let mut crashing = spawn_worker(fixture, phase);
+    let crashing = spawn_worker(fixture, phase);
     let overlap = spawn_worker(fixture, overlap_phase);
     wait_for_marker(&markers.join("contending"));
+    (crashing, overlap)
+}
+
+fn kill_worker(mut crashing: Child) {
     crashing.kill().unwrap();
     let status = crashing.wait().unwrap();
     assert!(!status.success());
@@ -129,7 +202,6 @@ fn crash_race(fixture: &Path, phase: &str, overlap_phase: &str) {
         use std::os::unix::process::ExitStatusExt;
         assert_eq!(status.signal(), Some(9));
     }
-    finish_worker(overlap, overlap_phase);
 }
 
 fn run_worker(fixture: &Path, phase: &str) {
@@ -257,8 +329,30 @@ fn restart_worker() {
     assert_eq!(stopped.operation, operation);
     assert_eq!(
         stopped.error,
-        "receiver replica differs from the independent checkpoint"
+        if phase.starts_with("durable") {
+            "receiver replica has not been promoted"
+        } else {
+            "receiver replica differs from the independent checkpoint"
+        }
     );
+
+    if matches!(phase.as_str(), "fenced" | "resumed") {
+        let old_writer = oauth.for_writer(fixture.retired_writer.unwrap());
+        let stopped = receiver
+            .migrate_legacy_oauth_batch(
+                &old_writer,
+                [evidence(&original.journal, &signed)],
+                &trusted,
+            )
+            .stopped
+            .unwrap();
+        assert_eq!(stopped.operation, operation);
+        assert_eq!(stopped.error, "OAuth writer fenced");
+        assert_eq!(snapshot(), before);
+        if phase == "fenced" {
+            return;
+        }
+    }
 
     if phase == "staged" {
         let foreign_pin = root.join("restart-foreign-pin");
@@ -362,6 +456,28 @@ fn restart_worker() {
         assert_eq!(snapshot(), before);
         return;
     }
+    if phase == "durable-overlap" {
+        let report =
+            receiver.migrate_legacy_oauth_batch_at(&oauth, [original()], &trusted, |_, _| {
+                panic!("racing confirmation attempted a second write")
+            });
+        assert!(report.pending.is_empty());
+        if let Some(stopped) = report.stopped {
+            assert!(report.confirmed.is_empty());
+            assert_eq!(stopped.operation, operation);
+            assert!(
+                matches!(
+                    stopped.error.as_str(),
+                    "OAuth writer fenced"
+                        | "receiver replica differs from the independent checkpoint"
+                ),
+                "{stopped:?}"
+            );
+        } else {
+            assert_eq!(report.confirmed, [operation]);
+        }
+        return;
+    }
     let committed = snapshot();
     let report = receiver.migrate_legacy_oauth_batch_at(
         &oauth,
@@ -384,9 +500,6 @@ fn restart_worker() {
         oauth.effect_status(&missing_operation).unwrap(),
         EffectStatus::Unresolved
     );
-    if phase == "durable-overlap" {
-        return;
-    }
 
     let intent = &decoded.outcome.commit;
     let dispatch =

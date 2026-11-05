@@ -79,6 +79,13 @@ def revoke (image : Image) (writer : Nat)
     (image.oauth.revoke verified).map (fun next => { image with oauth := next })
   else none
 
+/-- Once contenders use the current writer, either serialization of
+revocation and handoff preserves the same durable result. -/
+theorem revoke_and_handoff_agree (image : Image) (verified : PAR.VerifiedClient Refresh.RefreshDigest) :
+    (revoke image image.writer verified).bind (fun next => handoff next image.writer) =
+      (handoff image image.writer).bind (fun next => revoke next (image.writer + 1) verified) := by
+  cases applied : image.oauth.revoke verified <;> simp [revoke, handoff, applied]
+
 theorem staged_revoke_preserves_prior (before after : Image) :
     (recoverImage .staged before after).oauth = before.oauth := rfl
 
@@ -494,6 +501,18 @@ theorem committed_migration_survives_takeover
   simpa only [Image.settledOutcome, (revocation_preserves_effect_state revoked).2,
     (handoff_preserves_effect_state takeover).2, recoverImage] using
       migration_pins_committed_outcome applied
+
+theorem committed_migration_cannot_reopen_after_failover (retry : BeginInput)
+    (applied : migrateFrom input observation = some committed)
+    (first : handoff committed writer = some successor)
+    (revoked : revoke successor successorWriter verified = some revokedImage)
+    (second : handoff revokedImage successorWriter = some after)
+    (burned : (input.image.retained.any fun entry => entry.intent.operation == retry.operation) = true) :
+    begin { retry with image := after } = none := by
+  apply burned_operation_cannot_begin
+  simpa only [(handoff_preserves_effect_state second).1, (revocation_preserves_effect_state revoked).1,
+    (handoff_preserves_effect_state first).1, (migration_preserves_authority_and_burn applied retry.operation).2.2]
+    using burned
 
 /-- Re-auditing the independently committed receipt after settlement cannot
 rewrite the durable image, even under a different current writer. -/

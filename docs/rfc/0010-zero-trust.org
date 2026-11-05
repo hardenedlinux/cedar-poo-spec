@@ -1425,6 +1425,15 @@ envelope, a staged item remains reserved. After revocation, the
 committed item confirms with its original envelope, and a delivery
 retry on a new channel is refused.
 
+The durable replay also queues receiver promotion, writer rotation,
+and revocation while the migration holds its checkpoint locks.
+Revocation either commits under the old writer before rotation or
+is fenced and retried under the successor. The staged replay
+exercises both stale-writer and stale-replica refusals while the
+operation is still eligible with the original envelope. After a
+further handoff, the durable replay confirms the same receipt
+without a new write and retains reservations with missing evidence.
+
 The first clean audit durably binds the canonical identity of the
 signed outcome. A later audit of that same outcome is idempotent.
 A different signed outcome cannot replace it, even if presented

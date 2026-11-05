@@ -612,6 +612,12 @@ theorem legacyBatch_resume_prefix (trusted : Revocation.Crash.ReceiverBinding)
       remainingItems.foldl (LegacyBatchState.step trusted) (priorItems.foldl (LegacyBatchState.step trusted) state) :=
   List.foldl_append
 
+theorem legacyBatch_stops_at_retired_writer (trusted : Revocation.Crash.ReceiverBinding)
+    (state : LegacyBatchState) (item : ManagedReconciliation)
+    (running : state.stopped = none) (retired : item.audit.writer ≠ state.image.writer) :
+    state.step trusted item = { state with stopped := some item.audit.operation } := by
+  simp [LegacyBatchState.step, running, retired]
+
 theorem legacyBatch_stops_at_retired_replica (trusted : Revocation.Crash.ReceiverBinding)
     (state : LegacyBatchState) (item : ManagedReconciliation)
     (running : state.stopped = none) (present : item.independent = some pin)
