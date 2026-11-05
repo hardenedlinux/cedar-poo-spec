@@ -47,18 +47,39 @@ pub(super) fn replay_across_processes(
     let write_fixture = |fixture: &RestartFixture| {
         std::fs::write(&fixture_path, serde_json::to_vec(fixture).unwrap()).unwrap();
     };
+    let packet = root.join("late-envelope.json");
+    let publish = || std::fs::write(&packet, serde_json::to_vec(outcome).unwrap()).unwrap();
     write_fixture(&fixture);
-    finish_worker(spawn_worker(&fixture_path, "pending"), "pending");
-    std::fs::write(
-        root.join("late-envelope.json"),
-        serde_json::to_vec(outcome).unwrap(),
-    )
-    .unwrap();
-    let first = spawn_worker(&fixture_path, "commit");
-    let second = spawn_worker(&fixture_path, "overlap");
-    finish_worker(first, "commit");
-    finish_worker(second, "overlap");
+    run_worker(&fixture_path, "pending");
+    publish();
 
+    let checkpoint = root.join("oauth/checkpoint.json");
+    let staged = root.join("oauth/checkpoint.staged");
+    let before = std::fs::read(&checkpoint).unwrap();
+    crash_race(&fixture_path, "staged", "staged-overlap");
+    assert_eq!(std::fs::read(&checkpoint).unwrap(), before);
+    assert_ne!(std::fs::read(&staged).unwrap(), before);
+    takeover(root, &mut fixture);
+    write_fixture(&fixture);
+    std::fs::remove_file(&packet).unwrap();
+    run_worker(&fixture_path, "pending");
+
+    publish();
+    let before = std::fs::read(&checkpoint).unwrap();
+    crash_race(&fixture_path, "durable", "durable-overlap");
+    assert_ne!(std::fs::read(&checkpoint).unwrap(), before);
+    assert!(!staged.exists());
+    let cut = takeover(root, &mut fixture);
+    let oauth_path = root.join("oauth");
+    let oauth =
+        DurableRefreshLedger::new(&oauth_path, "settlement-race").for_writer(fixture.writer);
+    assert!(oauth.revoke(verified(digest())).unwrap());
+    write_fixture(&fixture);
+    run_worker(&fixture_path, "resumed");
+    (fixture.writer, cut)
+}
+
+fn takeover(root: &Path, fixture: &mut RestartFixture) -> ReceiverCut {
     let pin = root.join("pin");
     let sender = simulation_key(4);
     let provider = simulation_key(8);
@@ -86,16 +107,33 @@ pub(super) fn replay_across_processes(
     let open = || DurableRefreshLedger::new(&oauth_path, "settlement-race");
     let old_writer = open().for_writer(fixture.writer);
     fixture.writer = old_writer.rotate_writer().unwrap();
-    let current = open().for_writer(fixture.writer);
-    assert!(current.revoke(verified(digest())).unwrap());
     assert_eq!(
         old_writer.revoke(verified(digest())).unwrap_err(),
         "OAuth writer fenced"
     );
     std::mem::swap(&mut fixture.active, &mut fixture.retired);
-    write_fixture(&fixture);
-    finish_worker(spawn_worker(&fixture_path, "resumed"), "resumed");
-    (fixture.writer, cut)
+    cut
+}
+
+fn crash_race(fixture: &Path, phase: &str, overlap_phase: &str) {
+    let markers = fixture.parent().unwrap().join(phase);
+    std::fs::create_dir(&markers).unwrap();
+    let mut crashing = spawn_worker(fixture, phase);
+    let overlap = spawn_worker(fixture, overlap_phase);
+    wait_for_marker(&markers.join("contending"));
+    crashing.kill().unwrap();
+    let status = crashing.wait().unwrap();
+    assert!(!status.success());
+    #[cfg(unix)]
+    {
+        use std::os::unix::process::ExitStatusExt;
+        assert_eq!(status.signal(), Some(9));
+    }
+    finish_worker(overlap, overlap_phase);
+}
+
+fn run_worker(fixture: &Path, phase: &str) {
+    finish_worker(spawn_worker(fixture, phase), phase);
 }
 
 fn spawn_worker(fixture: &Path, phase: &str) -> Child {
@@ -222,7 +260,7 @@ fn restart_worker() {
         "receiver replica differs from the independent checkpoint"
     );
 
-    if phase == "commit" {
+    if phase == "staged" {
         let foreign_pin = root.join("restart-foreign-pin");
         std::fs::create_dir(&foreign_pin).unwrap();
         std::fs::copy(
@@ -265,11 +303,18 @@ fn restart_worker() {
         ..evidence(&empty, &[])
     };
     let missing_operation = OperationId(fixture.missing.operation.clone());
-    let ready = root.join("late-overlap-ready");
-    let durable = root.join("late-original-durable");
-    let contending = root.join("late-overlap-contending");
+    let round = phase.strip_suffix("-overlap").unwrap_or(&phase);
+    let markers = root.join(round);
+    let ready = markers.join("ready");
+    let boundary = markers.join("boundary");
+    let contending = markers.join("contending");
 
-    if phase == "commit" {
+    if matches!(phase.as_str(), "staged" | "durable") {
+        let crash_at = if phase == "staged" {
+            CheckpointStage::Staged
+        } else {
+            CheckpointStage::Durable
+        };
         wait_for_marker(&ready);
         let report = receiver.migrate_legacy_oauth_batch_at(
             &oauth,
@@ -277,32 +322,45 @@ fn restart_worker() {
             &trusted,
             |item, stage| {
                 assert_eq!(item, &operation);
-                if stage == CheckpointStage::Durable {
-                    std::fs::write(&durable, []).unwrap();
-                    wait_for_marker(&contending);
-                    Err("late migration acknowledgment lost".into())
-                } else {
-                    Ok(())
+                if stage == crash_at {
+                    std::fs::write(&boundary, []).unwrap();
+                    std::thread::sleep(Duration::from_secs(10));
+                    panic!("parent did not kill worker at {phase} boundary");
                 }
+                Ok(())
             },
         );
-        assert!(report.confirmed.is_empty());
-        assert_eq!(report.pending, std::slice::from_ref(&operation));
-        let stopped = report.stopped.unwrap();
-        assert_eq!(stopped.operation, operation);
-        assert_eq!(stopped.error, "late migration acknowledgment lost");
-        assert_ne!(snapshot(), before);
-        return;
+        panic!("worker returned from {phase} batch: {report:?}");
     }
 
-    if phase == "overlap" {
+    if phase.ends_with("-overlap") {
         std::fs::write(ready, []).unwrap();
-        wait_for_marker(&durable);
+        wait_for_marker(&boundary);
         assert_locked(&oauth_path);
         assert_locked(&pin);
         std::fs::write(contending, []).unwrap();
     } else {
         assert_eq!(phase, "resumed");
+    }
+    if phase == "staged-overlap" {
+        let withheld = evidence(&empty, &[]);
+        let report = receiver.migrate_legacy_oauth_batch_at(
+            &oauth,
+            [conflict, withheld, missing],
+            &trusted,
+            |_, _| panic!("staged image or missing evidence authorized a migration"),
+        );
+        assert!(report.confirmed.is_empty() && report.stopped.is_none());
+        assert_eq!(
+            report.pending,
+            [operation.clone(), operation.clone(), missing_operation]
+        );
+        assert_eq!(
+            oauth.effect_status(&operation).unwrap(),
+            EffectStatus::Unresolved
+        );
+        assert_eq!(snapshot(), before);
+        return;
     }
     let committed = snapshot();
     let report = receiver.migrate_legacy_oauth_batch_at(
@@ -326,7 +384,7 @@ fn restart_worker() {
         oauth.effect_status(&missing_operation).unwrap(),
         EffectStatus::Unresolved
     );
-    if phase == "overlap" {
+    if phase == "durable-overlap" {
         return;
     }
 

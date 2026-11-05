@@ -951,7 +951,7 @@ fn settlement_race(case: &str, legacy_migration: bool, handoff_first: bool) {
             writer.legacy_unresolved_operations().unwrap(),
             std::slice::from_ref(&batch_operations[2])
         );
-        (writer, successor_cut, &successor)
+        (writer, successor_cut, &primary)
     } else {
         (writer, successor_cut, &successor)
     };

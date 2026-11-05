@@ -473,6 +473,28 @@ theorem migration_pins_committed_outcome
       · exact reconciliation_from_pins_committed_outcome applied
       · contradiction
 
+/-- A staged migration leaves the original operation reserved after
+takeover and revocation, even when the worker lost its evidence. -/
+theorem staged_migration_cannot_reopen_operation (before staged : Image) (retry : BeginInput)
+    (takeover : handoff (recoverImage .staged before staged) writer = some successor)
+    (revoked : revoke successor currentWriter verified = some after)
+    (burned : (before.retained.any fun entry => entry.intent.operation == retry.operation) = true) :
+    begin { retry with image := after } = none := by
+  apply burned_operation_cannot_begin
+  simpa only [(revocation_preserves_effect_state revoked).1,
+    (handoff_preserves_effect_state takeover).1, recoverImage] using burned
+
+/-- A durable migration retains its independently committed receipt when
+the writer crashes before acknowledgment and its successor revokes the grant. -/
+theorem committed_migration_survives_takeover
+    (applied : migrateFrom input observation = some committed)
+    (takeover : handoff (recoverImage .durable input.image committed) writer = some successor)
+    (revoked : revoke successor currentWriter verified = some after) :
+    after.settledOutcome observation.outcome.receipt.commit.operation = some observation.outcome := by
+  simpa only [Image.settledOutcome, (revocation_preserves_effect_state revoked).2,
+    (handoff_preserves_effect_state takeover).2, recoverImage] using
+      migration_pins_committed_outcome applied
+
 /-- Re-auditing the independently committed receipt after settlement cannot
 rewrite the durable image, even under a different current writer. -/
 theorem confirmed_migration_is_read_only

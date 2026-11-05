@@ -164,19 +164,36 @@ private def crashExercise (durable : Revocation.Recovery.Store)
   let resumedLate : Receiver.LegacyBatchInput :=
     ⟨restartedWriter, successor.result.binding, [lateConflict, lateItem]⟩
   let .ok lateBatch := Receiver.legacyBatchContract.invoke Receiver.prepareLegacyBatch resumedLate | return false
-  let lateDurable := Revocation.Crash.recoverImage .durable restartedWriter lateBatch.result.image
-  let some lateWriter := Revocation.Crash.handoff lateDurable 3 | return false
-  let some lateRevoked := Revocation.Crash.revoke lateWriter 4 (verified digest) | return false
+  let stagedLate := Revocation.Crash.recoverImage .staged restartedWriter lateBatch.result.image
+  let some afterStaged := Revocation.Crash.handoff stagedLate 3 | return false
+  let stagedLatePromotion : Receiver.PromotionInput :=
+    ⟨some restart.result, restart.result, restart.result.image, "after-staged"⟩
+  let .ok stagedSuccessor := Receiver.promotionContract.invoke Receiver.preparePromotion stagedLatePromotion | return false
+  let recoveredOriginal := { lateItem with
+    independent := some stagedSuccessor.result
+    placement := "after-staged"
+    replica := stagedSuccessor.result.image
+    audit := { lateAudit with writer := 4 } }
+  let recoveredWithheld := { recoveredOriginal with audit := { withheldAudit with writer := 4 } }
+  let recoveredConflict := { recoveredOriginal with audit := { lateConflict.audit with writer := 4 } }
+  let afterStagedInput : Receiver.LegacyBatchInput :=
+    ⟨afterStaged, successor.result.binding, [recoveredConflict, recoveredWithheld]⟩
+  let .ok afterStagedBatch := Receiver.legacyBatchContract.invoke Receiver.prepareLegacyBatch afterStagedInput | return false
+  let .ok commitAgain := Receiver.legacyBatchContract.invoke Receiver.prepareLegacyBatch
+    { afterStagedInput with items := [recoveredOriginal] } | return false
+  let lateDurable := Revocation.Crash.recoverImage .durable afterStaged commitAgain.result.image
+  let some lateWriter := Revocation.Crash.handoff lateDurable 4 | return false
+  let some lateRevoked := Revocation.Crash.revoke lateWriter 5 (verified digest) | return false
   let nextLatePromotion : Receiver.PromotionInput :=
-    ⟨some restart.result, restart.result, restart.result.image, "resumed"⟩
+    ⟨some stagedSuccessor.result, stagedSuccessor.result, stagedSuccessor.result.image, "resumed"⟩
   let .ok nextLate := Receiver.promotionContract.invoke Receiver.preparePromotion nextLatePromotion | return false
   let lateOriginal := { lateItem with
     independent := some nextLate.result
     placement := "resumed"
     replica := nextLate.result.image
-    audit := { lateAudit with writer := 4 } }
-  let lateOther := { lateOriginal with audit := { lateConflict.audit with writer := 4 } }
-  let lateMissing := { lateOriginal with audit := { missingAudit with writer := 4 } }
+    audit := { lateAudit with writer := 5 } }
+  let lateOther := { lateOriginal with audit := { lateConflict.audit with writer := 5 } }
+  let lateMissing := { lateOriginal with audit := { missingAudit with writer := 5 } }
   let lateRetry : Receiver.LegacyBatchInput :=
     ⟨lateRevoked, successor.result.binding, [lateOriginal, lateOther, lateMissing, lateOriginal]⟩
   let .ok lateRetried := Receiver.legacyBatchContract.invoke Receiver.prepareLegacyBatch lateRetry | return false
@@ -219,7 +236,12 @@ private def crashExercise (durable : Revocation.Recovery.Store)
     decide (lateBatch.result.pending = [intent.operation]) &&
     decide (lateBatch.result.image.settledOutcome intent.operation = some outcome) &&
     decide (lateBatch.result.image.oauth = restartedWriter.oauth) &&
+    decide (afterStagedBatch.result.image = afterStaged) &&
+    decide (afterStagedBatch.result.pending = [intent.operation, intent.operation]) &&
+    decide (Revocation.Crash.effectStatus afterStagedBatch.result.image intent.operation = .unresolved) &&
+    decide (commitAgain.result.confirmed = [intent.operation]) &&
     decide (lateRetried.result.image = lateRevoked) &&
+    decide (lateRetried.result.image.settledOutcome intent.operation = some outcome) &&
     decide (lateRetried.result.confirmed = [intent.operation, intent.operation]) &&
     decide (lateRetried.result.pending = [intent.operation, unrelated.operation]) &&
     decide (Revocation.Crash.effectStatus lateRetried.result.image unrelated.operation = .unresolved) &&
@@ -469,3 +491,5 @@ end Tests.Gateway.OAuthRefresh
 #print axioms CedarPooSpec.Gateway.OAuth.Revocation.Crash.confirmed_migration_is_read_only
 #print axioms CedarPooSpec.Gateway.OAuth.Receiver.missing_committed_outcome_cannot_migrate
 #print axioms CedarPooSpec.Gateway.OAuth.Receiver.legacyBatch_confirmed_keeps_image
+#print axioms CedarPooSpec.Gateway.OAuth.Revocation.Crash.staged_migration_cannot_reopen_operation
+#print axioms CedarPooSpec.Gateway.OAuth.Revocation.Crash.committed_migration_survives_takeover

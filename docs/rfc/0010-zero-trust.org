@@ -1414,8 +1414,16 @@ the reservation pending, and repeated copies of the committed receipt
 confirm the same binding without another write. If the first worker
 loses its acknowledgment after the checkpoint is durable, the next
 writer can confirm that receipt after receiver promotion and revocation.
-The replay checks this interleaving with separate Rust processes and
-checks that a delivery retry on a new channel is refused.
+The replay forcibly terminates a Rust worker after a restarted
+contender attempts both checkpoint locks and finds them held. Before
+rename, recovery
+uses the previous checkpoint even if a synced staging file remains.
+After rename and directory sync, recovery uses the new checkpoint
+even if the worker died before acknowledgment. Receiver promotion
+and writer rotation follow both crashes. Without the original
+envelope, a staged item remains reserved. After revocation, the
+committed item confirms with its original envelope, and a delivery
+retry on a new channel is refused.
 
 The first clean audit durably binds the canonical identity of the
 signed outcome. A later audit of that same outcome is idempotent.
