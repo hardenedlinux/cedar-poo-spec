@@ -83,25 +83,45 @@ struct Image {
     operations: OperationLedger<Delivered>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-struct ReceiverCheckpoint {
+struct Handoff {
+    predecessor: String,
+    cut: ReceiverCut,
+}
+
+/// Independently acknowledged placement and full receiver image identity.
+/// A promotion compares this captured value with the live checkpoint.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ReceiverCheckpoint {
     active: PathBuf,
     cut: ReceiverCut,
     digest: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    handoff: Option<Handoff>,
 }
 
 impl ReceiverCheckpoint {
-    fn for_image(active: &Path, image: &Image) -> Result<Self, String> {
+    fn image_digest(image: &Image) -> Result<String, String> {
+        crate::json_sha256(&("cedar-poo/receiver-failover/v1", image))
+    }
+
+    fn for_image(active: &Path, image: &Image, handoff: Option<Handoff>) -> Result<Self, String> {
         Ok(Self {
             active: active.into(),
             cut: image.cut.clone(),
-            digest: crate::json_sha256(&("cedar-poo/receiver-failover/v1", image))?,
+            digest: Self::image_digest(image)?,
+            handoff,
         })
     }
 
     fn matches(&self, image: &Image) -> Result<bool, String> {
-        Ok(self.cut == image.cut && self.digest == Self::for_image(&self.active, image)?.digest)
+        Ok(self.cut == image.cut && self.digest == Self::image_digest(image)?)
+    }
+
+    fn identity(&self) -> Result<String, String> {
+        crate::json_sha256(&("cedar-poo/receiver-checkpoint/v1", self))
     }
 }
 
@@ -211,7 +231,11 @@ impl<'a> DurableReceiver<'a> {
         }
         files.replica.initialize(&image)?;
         if let (Some(checkpoint), Some(placement)) = (&files.checkpoint, &self.placement) {
-            checkpoint.initialize(&ReceiverCheckpoint::for_image(&placement.replica, &image)?)?;
+            checkpoint.initialize(&ReceiverCheckpoint::for_image(
+                &placement.replica,
+                &image,
+                None,
+            )?)?;
         }
         Ok(())
     }
@@ -250,24 +274,28 @@ impl<'a> DurableReceiver<'a> {
         Ok((image, checkpoint))
     }
 
-    fn current(&self, files: &LockedReceiver<'_>) -> Result<Image, String> {
+    fn current(
+        &self,
+        files: &LockedReceiver<'_>,
+    ) -> Result<(Image, Option<ReceiverCheckpoint>), String> {
         let (image, checkpoint) = self.qualified(files)?;
-        if let (Some(checkpoint), Some(placement)) = (checkpoint, &self.placement)
+        if let (Some(checkpoint), Some(placement)) = (&checkpoint, &self.placement)
             && checkpoint.active != placement.replica
         {
             return Err("receiver replica has not been promoted".into());
         }
-        Ok(image)
+        Ok((image, checkpoint))
     }
 
     fn persist(
         &self,
         files: &LockedReceiver<'_>,
         image: &Image,
+        handoff: Option<Handoff>,
         observe: impl FnMut(CheckpointStage) -> Result<(), String>,
     ) -> Result<(), String> {
         if let (Some(checkpoint), Some(placement)) = (&files.checkpoint, &self.placement) {
-            let next = ReceiverCheckpoint::for_image(&placement.replica, image)?;
+            let next = ReceiverCheckpoint::for_image(&placement.replica, image, handoff)?;
             files.replica.persist(image)?;
             checkpoint.persist_at(&next, observe)
         } else {
@@ -275,14 +303,31 @@ impl<'a> DurableReceiver<'a> {
         }
     }
 
-    /// Activate only an exact copy of the independently acknowledged image.
-    /// The shared checkpoint switches placement and advances the cut together.
-    pub fn promote(&self) -> Result<ReceiverCut, String> {
-        self.promote_at(|_| Ok(()))
+    /// Read the independent authority without relying on the primary replica.
+    /// Promotion still requires a candidate with the exact acknowledged image.
+    pub fn acknowledged_checkpoint(&self) -> Result<ReceiverCheckpoint, String> {
+        let placement = self
+            .placement
+            .as_ref()
+            .ok_or("receiver has no independent checkpoint")?;
+        let file = LockedCheckpoint::open(&placement.checkpoint)?;
+        let checkpoint: ReceiverCheckpoint = file.read()?;
+        if self.trust.scope.is_empty() || checkpoint.cut.scope != self.trust.scope {
+            return Err("receiver checkpoint scope changed".into());
+        }
+        file.sync_directory()?;
+        Ok(checkpoint)
+    }
+
+    /// Compare and advance the expected checkpoint while holding the shared
+    /// lock. A candidate cannot silently rebase a stale promotion request.
+    pub fn promote(&self, expected: &ReceiverCheckpoint) -> Result<ReceiverCut, String> {
+        self.promote_at(expected, |_| Ok(()))
     }
 
     fn promote_at(
         &self,
+        expected: &ReceiverCheckpoint,
         observe: impl FnMut(CheckpointStage) -> Result<(), String>,
     ) -> Result<ReceiverCut, String> {
         let placement = self
@@ -292,6 +337,9 @@ impl<'a> DurableReceiver<'a> {
         let files = self.lock()?;
         let (mut image, checkpoint) = self.qualified(&files)?;
         let checkpoint = checkpoint.ok_or("missing independent receiver checkpoint")?;
+        if &checkpoint != expected {
+            return Err("receiver promotion checkpoint changed".into());
+        }
         if checkpoint.active == placement.replica {
             return Err("receiver replica is already active".into());
         }
@@ -300,13 +348,31 @@ impl<'a> DurableReceiver<'a> {
             .generation
             .checked_add(1)
             .ok_or("receiver cut exhausted")?;
-        self.persist(&files, &image, observe)?;
+        let handoff = Handoff {
+            predecessor: expected.identity()?,
+            cut: image.cut.clone(),
+        };
+        self.persist(&files, &image, Some(handoff), observe)?;
         Ok(image.cut)
+    }
+
+    /// Recover the active placement's committed handoff without advancing or
+    /// emitting again. Ordinary writes retain it until another promotion wins.
+    pub fn recover_promotion(
+        &self,
+        expected: &ReceiverCheckpoint,
+    ) -> Result<Option<ReceiverCut>, String> {
+        let (_, checkpoint) = self.current(&self.lock()?)?;
+        let predecessor = expected.identity()?;
+        Ok(checkpoint
+            .and_then(|pin| pin.handoff)
+            .filter(|handoff| handoff.predecessor == predecessor)
+            .map(|handoff| handoff.cut))
     }
 
     /// Read the current independent receiver cut, including after restart.
     pub fn cut(&self) -> Result<ReceiverCut, String> {
-        Ok(self.current(&self.lock()?)?.cut)
+        Ok(self.current(&self.lock()?)?.0.cut)
     }
 
     /// Advance only the expected cut under the same lock as delivery.
@@ -320,7 +386,7 @@ impl<'a> DurableReceiver<'a> {
         observe: impl FnMut(CheckpointStage) -> Result<(), String>,
     ) -> Result<ReceiverCut, String> {
         let files = self.lock()?;
-        let mut image = self.current(&files)?;
+        let (mut image, checkpoint) = self.current(&files)?;
         if &image.cut != expected {
             return Err("stale receiver cut".into());
         }
@@ -329,7 +395,12 @@ impl<'a> DurableReceiver<'a> {
             .generation
             .checked_add(1)
             .ok_or("receiver cut exhausted")?;
-        self.persist(&files, &image, observe)?;
+        self.persist(
+            &files,
+            &image,
+            checkpoint.and_then(|pin| pin.handoff),
+            observe,
+        )?;
         Ok(image.cut)
     }
 
@@ -344,7 +415,7 @@ impl<'a> DurableReceiver<'a> {
         observe: impl FnMut(CheckpointStage) -> Result<(), String>,
     ) -> Result<Option<Signed>, String> {
         let files = self.lock()?;
-        let mut image = self.current(&files)?;
+        let (mut image, checkpoint) = self.current(&files)?;
         let dispatch: ReceiverDispatch = verify(input.authorization, self.trust.sender)?;
         let id = OperationId(input.effect.operation.clone());
         if dispatch.version != VERSION
@@ -382,14 +453,19 @@ impl<'a> DurableReceiver<'a> {
                 },
             )
             .map_err(|_| "receiver operation already reserved")?;
-        self.persist(&files, &image, observe)?;
+        self.persist(
+            &files,
+            &image,
+            checkpoint.and_then(|pin| pin.handoff),
+            observe,
+        )?;
         Ok(Some(outcome))
     }
 
     /// Recover the original signed receipt and action without executing again.
     pub fn evidence(&self, operation: &OperationId) -> Result<Option<ReceiverEvidence>, String> {
         let files = self.lock()?;
-        let image = self.current(&files)?;
+        let (image, _) = self.current(&files)?;
         Ok(image
             .operations
             .admitted(operation)
@@ -400,8 +476,12 @@ impl<'a> DurableReceiver<'a> {
     }
 
     #[cfg(test)]
-    pub(super) fn crash_promote(&self, crash: CheckpointStage) -> Result<ReceiverCut, String> {
-        self.promote_at(|stage| crash_at(stage, crash))
+    pub(super) fn crash_promote(
+        &self,
+        expected: &ReceiverCheckpoint,
+        crash: CheckpointStage,
+    ) -> Result<ReceiverCut, String> {
+        self.promote_at(expected, |stage| crash_at(stage, crash))
     }
 
     #[cfg(test)]

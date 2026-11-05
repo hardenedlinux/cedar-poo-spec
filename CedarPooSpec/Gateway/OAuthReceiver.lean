@@ -133,11 +133,18 @@ theorem committed_receipt_recovered (receipt : Invocation contract prepare input
   rw [evidence, retained.1]
   simp [retained.2]
 
+structure Handoff where
+  previousActive : String
+  previousImage : Image
+  cut : Admission.ReceiverCut
+  deriving DecidableEq
+
 /-- The independent authority retains the complete acknowledged image and
 the only active placement. Native code uses a canonical digest for equality. -/
 structure Checkpoint where
   active : String
   image : Image
+  handoff : Option Handoff := none
   deriving DecidableEq
 
 def Checkpoint.permits (checkpoint : Checkpoint) (placement : String) (image : Image) : Prop :=
@@ -145,14 +152,16 @@ def Checkpoint.permits (checkpoint : Checkpoint) (placement : String) (image : I
 
 structure PromotionInput where
   independent : Option Checkpoint
+  expected : Checkpoint
   candidate : Image
   placement : String
 
 def promote (input : PromotionInput) : Option Checkpoint := do
   let pin ← input.independent
-  if input.placement ≠ "" ∧ input.placement ≠ pin.active ∧ input.candidate = pin.image then
+  if pin = input.expected ∧ input.placement ≠ "" ∧ input.placement ≠ pin.active ∧
+      input.candidate = pin.image then
     let image ← advance input.candidate input.candidate.cut
-    return ⟨input.placement, image⟩
+    return ⟨input.placement, image, some ⟨pin.active, pin.image, image.cut⟩⟩
   else none
 
 def promotionContract : Contract Unit PromotionInput Checkpoint where
@@ -178,7 +187,8 @@ theorem promotion_retains_acknowledged_delivery
       receipt.result.image.cut.scope = pin.image.cut.scope ∧
       receipt.result.image.cut.generation = pin.image.cut.generation + 1 ∧
       receipt.result.image.operations = pin.image.operations ∧
-      receipt.result.image.delivered = pin.image.delivered := by
+      receipt.result.image.delivered = pin.image.delivered ∧ input.expected = pin ∧
+      receipt.result.handoff = some ⟨pin.active, pin.image, receipt.result.image.cut⟩ := by
   have accepted := receipt.logic
   change promote input = some receipt.result at accepted
   cases present : input.independent with
@@ -188,8 +198,8 @@ theorem promotion_retains_acknowledged_delivery
     split at accepted
     · rename_i checked
       simp [advance] at accepted
-      rw [← accepted, checked.2.2]
-      exact ⟨pin, rfl, rfl, rfl, checked.2.1, rfl, rfl, rfl, rfl⟩
+      rw [← accepted, checked.2.2.2]
+      exact ⟨pin, rfl, rfl, rfl, checked.2.2.1, rfl, rfl, rfl, rfl, checked.1.symm, rfl⟩
     · contradiction
 
 theorem promotion_fences_previous_placement
@@ -204,7 +214,7 @@ theorem promotion_keeps_signed_evidence
     (receipt : Invocation promotionContract preparePromotion input)
     (present : input.independent = some pin) (operation : Admission.OperationId) :
     evidence receipt.result.image operation = evidence pin.image operation := by
-  obtain ⟨actual, source, _, _, _, _, _, _, delivered⟩ := promotion_retains_acknowledged_delivery receipt
+  obtain ⟨actual, source, _, _, _, _, _, _, delivered, _, _⟩ := promotion_retains_acknowledged_delivery receipt
   have same : actual = pin := Option.some.inj (source.symm.trans present)
   simp only [evidence, delivered, same]
 
@@ -219,6 +229,62 @@ theorem promoted_receiver_refuses_same_operation
   apply reserved_operation_refused
   rw [current, operations, same]
   exact reserved
+
+theorem promotion_checkpoint_changed (present : input.independent = some pin)
+    (changed : pin ≠ input.expected) : promote input = none := by
+  simp [promote, present, changed]
+
+/-- With one serialized independent checkpoint, a second contender cannot
+consume the same predecessor, even if it has the winner's exact image. -/
+theorem promotion_cannot_consume_checkpoint_twice
+    (winner : Invocation promotionContract preparePromotion input)
+    (retry : PromotionInput) (current : retry.independent = some winner.result)
+    (expected : retry.expected = input.expected) : promote retry = none := by
+  obtain ⟨pin, _, _, _, _, _, advanced, _, _, predecessor, _⟩ :=
+    promotion_retains_acknowledged_delivery winner
+  apply promotion_checkpoint_changed current
+  rw [expected, predecessor]
+  intro same
+  rw [same] at advanced
+  omega
+
+structure PromotionRecovery where
+  independent : Option Checkpoint
+  expected : Checkpoint
+  placement : String
+  replica : Image
+
+def recoverPromotion (input : PromotionRecovery) : Option Admission.ReceiverCut := do
+  let pin ← input.independent
+  let handoff ← pin.handoff
+  if pin.active = input.placement ∧ pin.image = input.replica ∧
+      handoff.previousActive = input.expected.active ∧ handoff.previousImage = input.expected.image then
+    some handoff.cut
+  else none
+
+def promotionRecoveryContract : Contract Unit PromotionRecovery Admission.ReceiverCut where
+  input := ⟨"active-replica-and-observed-predecessor", fun _ => True, fun _ => inferInstance⟩
+  output := ⟨"recorded-handoff-cut", fun _ => True, fun _ => inferInstance⟩
+  meaning := fun _ input result => recoverPromotion input = some result
+  decide := fun _ _ _ => inferInstance
+  rule := .atom ()
+
+def preparePromotionRecovery (input : PromotionRecovery) : Except String (Admission.ReceiverCut × Unit) :=
+  match recoverPromotion input with
+  | some cut => .ok (cut, ())
+  | none => .error "receiver promotion recovery refused"
+
+theorem committed_promotion_ack_can_recover
+    (receipt : Invocation promotionContract preparePromotion input) :
+    recoverPromotion ⟨some receipt.result, input.expected, input.placement, receipt.result.image⟩ =
+      some receipt.result.image.cut := by
+  obtain ⟨pin, _, _, placement, _, _, _, _, _, predecessor, handoff⟩ :=
+    promotion_retains_acknowledged_delivery receipt
+  simp [recoverPromotion, handoff, placement, predecessor]
+
+theorem inactive_placement_cannot_recover_promotion (present : input.independent = some pin)
+    (inactive : pin.active ≠ input.placement) : recoverPromotion input = none := by
+  cases handoff : pin.handoff <;> simp [recoverPromotion, present, handoff, inactive]
 
 structure ManagedInput where
   independent : Option Checkpoint

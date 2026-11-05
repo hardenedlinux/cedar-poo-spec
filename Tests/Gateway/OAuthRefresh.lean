@@ -43,17 +43,23 @@ private def crashExercise (durable : Revocation.Recovery.Store)
   let delivery : Receiver.Delivery := ⟨dispatch, "channel-one", outcome⟩
   let request : Receiver.Input := ⟨receiver, delivery, dispatch, "channel-one", intent, true⟩
   let .ok delivered := Receiver.contract.invoke Receiver.prepare request | return false
-  let managed : Receiver.ManagedInput := ⟨some ⟨"primary", receiver⟩, "primary", request⟩
+  let managed : Receiver.ManagedInput := ⟨some ⟨"primary", receiver, none⟩, "primary", request⟩
   let .ok committed := Receiver.managedContract.invoke Receiver.prepareManaged managed | return false
   let some advanced := Receiver.advance delivered.result cut | return false
   let restored := Revocation.Crash.recoverImage .durable delivered.result advanced
   let staged := Revocation.Crash.recoverImage .staged receiver delivered.result
-  let pin : Receiver.Checkpoint := ⟨"primary", restored⟩
-  let promotion : Receiver.PromotionInput := ⟨some pin, restored, "standby"⟩
+  let pin : Receiver.Checkpoint := ⟨"primary", restored, none⟩
+  let promotion : Receiver.PromotionInput := ⟨some pin, pin, restored, "standby"⟩
   let .ok promoted := Receiver.promotionContract.invoke Receiver.preparePromotion promotion | return false
   let stagedPromotion := Revocation.Crash.recoverImage .staged pin promoted.result
   let committedPromotion := Revocation.Crash.recoverImage .durable pin promoted.result
   let fork : Receiver.Image := { restored with delivered := [] }
+  let contender : Receiver.PromotionInput := ⟨some committedPromotion, pin,
+    committedPromotion.image, "loser"⟩
+  let recovery : Receiver.PromotionRecovery :=
+    ⟨some committedPromotion, pin, "standby", committedPromotion.image⟩
+  let .ok recovered := Receiver.promotionRecoveryContract.invoke
+    Receiver.preparePromotionRecovery recovery | return false
   let some (action, outcome) := Receiver.evidence committedPromotion.image dispatch.operation | return false
   let newDispatch := { dispatch with cut := committedPromotion.image.cut }
   let retry : Receiver.Input := ⟨committedPromotion.image, ⟨newDispatch, "channel-two", outcome⟩,
@@ -65,6 +71,10 @@ private def crashExercise (durable : Revocation.Recovery.Store)
     (Receiver.promote { promotion with candidate := receiver }).isNone &&
     (Receiver.promote { promotion with candidate := fork }).isNone &&
     decide (stagedPromotion = pin) &&
+    (Receiver.promote contender).isNone &&
+    decide (recovered.result = committedPromotion.image.cut) &&
+    (Receiver.recoverPromotion { recovery with expected := committedPromotion }).isNone &&
+    (Receiver.recoverPromotion ⟨some committedPromotion, pin, "primary", committedPromotion.image⟩).isNone &&
     decide (committedPromotion.active = "standby") &&
     decide (committedPromotion.image.cut.generation = restored.cut.generation + 1) &&
     (Receiver.receiveManaged ⟨some committedPromotion, "primary", retry⟩).isNone &&
@@ -217,3 +227,7 @@ end Tests.Gateway.OAuthRefresh
 #print axioms CedarPooSpec.Gateway.OAuth.Receiver.promotion_keeps_signed_evidence
 #print axioms CedarPooSpec.Gateway.OAuth.Receiver.promoted_receiver_refuses_same_operation
 #print axioms CedarPooSpec.Gateway.OAuth.Receiver.fenced_placement_cannot_receive
+
+#print axioms CedarPooSpec.Gateway.OAuth.Receiver.promotion_cannot_consume_checkpoint_twice
+#print axioms CedarPooSpec.Gateway.OAuth.Receiver.committed_promotion_ack_can_recover
+#print axioms CedarPooSpec.Gateway.OAuth.Receiver.inactive_placement_cannot_recover_promotion

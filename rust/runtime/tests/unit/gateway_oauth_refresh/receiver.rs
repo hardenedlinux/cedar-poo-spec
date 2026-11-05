@@ -302,20 +302,31 @@ fn durable_lost_effect_reply_requires_independent_settlement_and_fences_old_writ
         delivered
     );
     let failover = durable_directory("receiver-failover");
-    let paths: Vec<_> = ["primary", "old", "fork", "interrupted", "standby", "pin"]
-        .into_iter()
-        .map(|name| {
-            let path = failover.join(name);
-            std::fs::create_dir(&path).unwrap();
-            path
-        })
-        .collect();
+    let paths: Vec<_> = [
+        "primary",
+        "old",
+        "fork",
+        "interrupted",
+        "standby",
+        "peer",
+        "lost-reply",
+        "pin",
+    ]
+    .into_iter()
+    .map(|name| {
+        let path = failover.join(name);
+        std::fs::create_dir(&path).unwrap();
+        path
+    })
+    .collect();
     let [
         primary_path,
         old_path,
         fork_path,
         interrupted_path,
         standby_path,
+        peer_path,
+        lost_reply_path,
         pin_path,
     ] = paths.as_slice()
     else {
@@ -332,7 +343,7 @@ fn durable_lost_effect_reply_requires_independent_settlement_and_fences_old_writ
         std::fs::copy(from.join("checkpoint.json"), to.join("checkpoint.json")).unwrap();
     };
     let primary = managed(primary_path);
-    assert!(managed(standby_path).promote().is_err());
+    assert!(managed(standby_path).acknowledged_checkpoint().is_err());
     primary.initialize().unwrap();
     copy(primary_path, old_path);
     let old_cut = primary.cut().unwrap();
@@ -349,7 +360,8 @@ fn durable_lost_effect_reply_requires_independent_settlement_and_fences_old_writ
     let operation = OperationId(effect.operation.clone());
     let acknowledged = primary.evidence(&operation).unwrap().unwrap();
     let acknowledged_cut = primary.advance(&old_cut).unwrap();
-    assert!(managed(old_path).promote().is_err());
+    let expected = primary.acknowledged_checkpoint().unwrap();
+    assert!(managed(old_path).promote(&expected).is_err());
 
     copy(primary_path, fork_path);
     let mut fork: serde_json::Value =
@@ -363,30 +375,79 @@ fn durable_lost_effect_reply_requires_independent_settlement_and_fences_old_writ
         serde_json::to_vec(&fork).unwrap(),
     )
     .unwrap();
-    assert!(managed(fork_path).promote().is_err());
+    assert!(managed(fork_path).promote(&expected).is_err());
 
     copy(primary_path, interrupted_path);
     copy(primary_path, standby_path);
+    copy(primary_path, peer_path);
     assert!(managed(standby_path).cut().is_err());
     assert!(DurableReceiver::new(standby_path, config()).cut().is_err());
     assert!(
         managed(interrupted_path)
-            .crash_promote(CheckpointStage::Staged)
+            .crash_promote(&expected, CheckpointStage::Staged)
             .is_err()
     );
     assert_eq!(primary.cut().unwrap(), acknowledged_cut);
     assert!(managed(interrupted_path).cut().is_err());
+    let standby = managed(standby_path);
+    let peer = managed(peer_path);
+    let unavailable = primary_path.join("offline-image");
+    std::fs::rename(primary_path.join("checkpoint.json"), &unavailable).unwrap();
+    assert!(primary.cut().is_err());
+    let race_checkpoint = standby.acknowledged_checkpoint().unwrap();
+    assert_eq!(race_checkpoint, expected);
+    let start = std::sync::Barrier::new(2);
+    let (left, right) = std::thread::scope(|scope| {
+        let left = scope.spawn(|| {
+            start.wait();
+            standby.promote(&race_checkpoint)
+        });
+        start.wait();
+        let right = peer.promote(&race_checkpoint);
+        (left.join().unwrap(), right)
+    });
+    let (winner_path, loser_path, winning_cut) = match (left, right) {
+        (Ok(cut), Err(_)) => (standby_path, peer_path, cut),
+        (Err(_), Ok(cut)) => (peer_path, standby_path, cut),
+        result => panic!("expected exactly one promotion, got {result:?}"),
+    };
+    let winner = managed(winner_path);
+    assert_eq!(winning_cut.generation, acknowledged_cut.generation + 1);
+    assert_eq!(
+        winner.recover_promotion(&expected).unwrap(),
+        Some(winning_cut)
+    );
+    assert!(managed(loser_path).recover_promotion(&expected).is_err());
+    assert!(primary.cut().is_err());
+
+    // The interrupted candidate can hold the same successor image as the
+    // winner. Its original promotion must still fail against the new pin.
+    assert_eq!(
+        std::fs::read(interrupted_path.join("checkpoint.json")).unwrap(),
+        std::fs::read(winner_path.join("checkpoint.json")).unwrap()
+    );
+    assert!(managed(interrupted_path).promote(&expected).is_err());
+
+    copy(winner_path, lost_reply_path);
+    let committed = winner.acknowledged_checkpoint().unwrap();
     assert!(
-        managed(standby_path)
-            .crash_promote(CheckpointStage::Durable)
+        managed(lost_reply_path)
+            .crash_promote(&committed, CheckpointStage::Durable)
             .is_err()
     );
-    let promoted = managed(standby_path);
+    let promoted = managed(lost_reply_path);
     let promoted_cut = promoted.cut().unwrap();
-    assert_eq!(promoted_cut.generation, acknowledged_cut.generation + 1);
-    assert!(primary.cut().is_err());
+    assert_eq!(promoted_cut.generation, acknowledged_cut.generation + 2);
+    assert_eq!(
+        promoted.recover_promotion(&committed).unwrap(),
+        Some(promoted_cut.clone())
+    );
+    assert!(promoted.recover_promotion(&expected).unwrap().is_none());
+    assert!(winner.recover_promotion(&committed).is_err());
+    assert!(managed(loser_path).cut().is_err());
     // Even an exact copy cannot assume the active placement without promotion.
-    copy(standby_path, primary_path);
+    copy(lost_reply_path, primary_path);
+    let primary = managed(primary_path);
     assert!(primary.cut().is_err());
     let retired =
         ReceiverDispatch::sign(acknowledged_cut, "channel-two", &fresh_intent, &sender).unwrap();
@@ -432,7 +493,8 @@ fn durable_lost_effect_reply_requires_independent_settlement_and_fences_old_writ
             .unwrap()
     );
     let permitted =
-        ReceiverDispatch::sign(promoted_cut, "channel-two", &fresh_intent, &sender).unwrap();
+        ReceiverDispatch::sign(promoted_cut.clone(), "channel-two", &fresh_intent, &sender)
+            .unwrap();
     assert!(
         primary
             .receive(deliver(&permitted, "channel-two", &fresh))
@@ -443,6 +505,10 @@ fn durable_lost_effect_reply_requires_independent_settlement_and_fences_old_writ
             .receive(deliver(&permitted, "channel-two", &fresh))
             .unwrap()
             .is_some()
+    );
+    assert_eq!(
+        promoted.recover_promotion(&committed).unwrap(),
+        Some(promoted_cut)
     );
     std::fs::remove_dir_all(failover).unwrap();
     std::fs::remove_dir_all(receiver_directory).unwrap();

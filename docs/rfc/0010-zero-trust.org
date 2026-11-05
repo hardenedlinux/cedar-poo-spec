@@ -1257,9 +1257,14 @@ digest covers the configured roots, operation reservations, signed
 dispatches, actions and signed outcomes. A copied image with an older
 cut or different contents at the same cut cannot be promoted.
 
-The promotion Contract requires the exact acknowledged image. A
-successful promotion advances the cut and changes the active
-placement while preserving the original reservations and signed
+The promotion Contract requires the exact acknowledged image and
+the expected independent checkpoint. A candidate can read that
+checkpoint while the primary is offline. The authority compares it
+under the shared lock before advancing it. At
+most one contender can consume a given checkpoint. A staged image
+that happens to match the winner's image still cannot replay its
+original promotion. A successful promotion advances the cut and
+changes the active placement while preserving reservations and signed
 outcomes. Every managed delivery and evidence read rechecks both
 placement and contents under the independent lock. Even an exact
 copy at a former placement cannot deliver without a new promotion.
@@ -1270,7 +1275,11 @@ The reference syncs the candidate image before installing and
 syncing the independent checkpoint. That checkpoint is the
 acknowledgment boundary. A stop before its installation leaves
 the prior placement authoritative. A stop after its sync leaves
-the new placement active despite acknowledgment loss. An ahead
+the new placement active despite acknowledgment loss. The checkpoint
+records the predecessor identity and the committed cut. The active
+placement can recover that acknowledgment using the original expected
+checkpoint without advancing the cut or resending. Ordinary writes
+preserve the handoff until the next promotion. An ahead
 replica refuses service until an exact acknowledged copy can be
 recovered. Availability after an interrupted write therefore
 requires keeping such a copy. Recovery never initializes a new
