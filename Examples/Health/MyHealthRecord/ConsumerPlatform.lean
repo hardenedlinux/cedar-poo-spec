@@ -109,8 +109,8 @@ def fhirRead : ResourceRead :=
 def fetchPermit : Policy := fhirRead.policy
 def purgePermit : Policy :=
   permit "purge-after-revocation" purge (kindIs .principal "app")
-def legacyAgentPermit : Policy :=
-  permit "legacy-agent-read" summarize (.lit (.bool true))
+def unrestrictedSummaryPermit : Policy :=
+  permit "unrestricted-agent-summary" summarize (.lit (.bool true))
 def summaryPermit : Policy :=
   permit "approved-summary" summarize
     (.and (kindIs .principal "agent")
@@ -149,7 +149,7 @@ def incidentControl : Veto :=
 def modelResult : Except LeanPoo.C4.Error Model := do
   let base : Model := { modules := [
     { name := "Base", edits := [
-      fhirRead.introduce, .extend purgePermit, .extend legacyAgentPermit] }] }
+      fhirRead.introduce, .extend purgePermit, .extend unrestrictedSummaryPermit] }] }
   let identity ← base.extend "Identity" "Base" [identityControl.edit .introduce]
   let session ← identity.extend "Session" "Base" [oauthControl.edit .introduce]
   let consent ← session.extend "Consent" "Base" [revocationControl.edit .introduce]
@@ -158,7 +158,7 @@ def modelResult : Except LeanPoo.C4.Error Model := do
     delegationControl.edit .introduce, releaseControl.edit .introduce]
   let integrated ← agent.mix "ConsumerPlatform"
     ["Identity", "Session", "Consent", "Agent"]
-    [disclosure.strengthen, .remove legacyAgentPermit.id]
+    [disclosure.strengthen, .remove unrestrictedSummaryPermit.id]
   let incident ← integrated.extend "AgentIncident" "ConsumerPlatform"
     [incidentControl.edit .introduce]
   incident.extend "Recovered" "AgentIncident"
@@ -206,7 +206,7 @@ def request (actor action resource : EntityUID) (facts : Facts := {}) : Request 
     ("auditReady", .prim (.bool facts.auditReady))]⟩
 
 def cases : List (String × String × Request × Decision) := [
-  ("legacy-agent-risk", "Base", request assistant summarize summaryA
+  ("unrestricted-agent-summary-baseline", "Base", request assistant summarize summaryA
     { modelApproved := false }, .allow),
   ("fetch-summary", "ConsumerPlatform", request app fetch summaryA, .allow),
   ("fetch-other-patient", "ConsumerPlatform", request app fetch summaryB, .deny),
@@ -272,8 +272,8 @@ theorem incidentChangesOnePolicy :
       (by native_decide)).changedPolicyIds = ["agent-incident"] := by native_decide
 theorem recoveryRestoresIntegrated :
     (model.compile "Recovered" == model.compile "ConsumerPlatform") = true := by native_decide
-theorem legacyPermitRemoved :
+theorem unrestrictedSummaryRemoved :
     ((model.compile "ConsumerPlatform").toOption.get (by native_decide)).all
-      (fun policy => policy.id != legacyAgentPermit.id) = true := by native_decide
+      (fun policy => policy.id != unrestrictedSummaryPermit.id) = true := by native_decide
 
 end CedarPooSpec.MyHealthRecordExample

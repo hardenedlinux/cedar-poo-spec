@@ -169,7 +169,7 @@ def decisions
     List Bool := ((replay (programContext := programContext)) root initial attempts).1.map Prod.snd
 
 def cases : List (String × String × Session × List Attempt × List Bool) := [
-  ("legacy-read-then-egress", "Base", {}, [readSecret, sendExternal], [true, true]),
+  ("independent-checks-read-then-egress", "Base", {}, [readSecret, sendExternal], [true, true]),
   ("intent-alone-still-leaks", "Intent", {}, [readSecret, sendExternal], [true, true]),
   ("history-alone-misses-task", "History", {}, [sendExternal "off-task"], [true]),
   ("budget-alone-first-leak", "Budget", {}, [readSecret, sendExternal], [true, true]),

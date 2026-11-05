@@ -21,11 +21,11 @@ The POO roots keep independent control changes visible:
 
 | Root | Payment release change |
 |------+------------------------|
-| =Base= | A legacy matched-payment permit allows any user to release. |
+| =Base= | A baseline matched-payment permit allows any user to release. |
 | =Threshold= | A controller permit adds a senior role requirement above =500.0000=. |
 | =Duties= | A preparer cannot release the same payment. |
 | =Risk= | A blocked payment cannot be released. |
-| =Retired= | The legacy broad release permit is removed. |
+| =Retired= | The baseline broad release permit is removed. |
 | =Integrated= | All four changes compose; four policies survive. |
 
 The Threshold owner instantiates the public
@@ -38,9 +38,9 @@ staged with =Model.extend= and the Integrated root uses =Model.mix=; payment
 amounts and workflow facts remain local to this example.
 
 =controlsNeedCompositionFully= proves why a partial update is insufficient:
-the legacy permit bypasses =Threshold=, while =Retired= alone leaves the
+the baseline permit bypasses =Threshold=, while =Retired= alone leaves the
 ordinary controller permit unbounded. The final root denies both paths.
-=thresholdEditLocal= identifies the one overlaid policy, and =legacyRetired=
+=thresholdEditLocal= identifies the one overlaid policy, and =matchedBypassRemoved=
 checks the surviving policy IDs. The [[file:PaymentReleaseExport.lean][exporter]]
 checks both authorization requests for each of ten operations, plus eight
 branch probes, against the official Rust Cedar authorizer. The

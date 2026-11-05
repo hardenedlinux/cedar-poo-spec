@@ -25,7 +25,7 @@ fact. The desired rule is: permit reading only a document in the same tenant
 from a trusted device.
 
 The starting policy set is realistic during migration: a tenant-scoped
-permit and a legacy broad read permit coexist. This matters because Cedar
+permit and a baseline broad read permit coexist. This matters because Cedar
 combines all applicable policies. Tightening one permit cannot revoke a
 different permit. A forbid has precedence over permits, while a policy that
 errors is excluded from the decision. Cedar documents both behaviors in its
@@ -35,11 +35,17 @@ policy sets; it does not reproduce that issue's malformed =in= expression.
 
 | Composed root | Change from parent | Tenant A, trusted | Tenant B, trusted | Tenant A, untrusted |
 |---------------+--------------------+-------------------+-------------------+---------------------|
-| Base | Tenant permit and legacy permit | Allow | Allow | Allow |
+| Base | Tenant permit and baseline permit | Allow | Allow | Allow |
 | TenantStrict | Overlay device trust on the tenant permit | Allow | Allow | Allow |
 | DeviceVeto | Independently forbid an untrusted device | Allow | Allow | Deny |
 | Composed | C4 joins both sibling controls | Allow | Allow | Deny |
-| Remove | Retire the inherited legacy permit | Allow | Deny | Deny |
+| Remove | Retire the inherited baseline permit | Allow | Deny | Deny |
+
+Policy IDs name authorization behavior. =unrestricted-read= is the
+deliberately broad baseline; =Remove= withdraws it through the current C4
+module API. These baseline policies are executable negative controls for
+composition and revision proofs. They do not denote deprecated APIs.
+All affected cases use the shared Functional and current Lean-POO contracts.
 
 The surprising =TenantStrict= row is the reason for the composition example.
 Its overlay changes one policy ID, but the old independent permit still
@@ -87,7 +93,7 @@ just check
 * POO composition scenarios
 
 The tenant-device example now composes two independent controls before
-retiring a shared legacy grant. The examples below scale that pattern to
+retiring a shared baseline grant. The examples below scale that pattern to
 multiple owners, proof reuse, and localized emergency changes.
 
 | Scenario | POO leverage | Evidence |
@@ -95,7 +101,7 @@ multiple owners, proof reuse, and localized emergency changes.
 | [[file:../Health/ClinicalBreakGlass.lean][Clinical break-glass]] | Privacy, security, and emergency owners form a diamond; a changed policy reuses unchanged policy certificates. | [[file:../Health/README.org][Health case and sources]] |
 | [[file:../Governance/AttestedDataAccess.lean][Attested data governance]] | Owner, platform, and compliance branches compose; one platform edit identifies affected descendants and reusable proof obligations. | [[file:../Governance/README.org][Governance case and sources]] |
 | [[file:../Governance/TicketSharing.lean][Ticket sharing]] | Template edits become exact POO overlay, remove, and extend revisions with incremental certificates. | [[file:../Governance/README.org][Governance case and sources]] |
-| [[file:../Enterprise/Payment/PaymentRelease.lean][Payment release]] | Budget, duties, risk, and legacy retirement branches close holes left by any branch alone. | [[file:../Enterprise/Payment/README.org][Payment case and sources]] |
+| [[file:../Enterprise/Payment/PaymentRelease.lean][Payment release]] | Budget, duties, risk, and baseline retirement branches close holes left by any branch alone. | [[file:../Enterprise/Payment/README.org][Payment case and sources]] |
 | [[file:../Enterprise/Agent/Chain/AgentChain.lean][Agent chain]] | One delegation root serves variable hop counts; a one-edge freeze and restoration stay local, and conflicting sibling edits fail. | [[file:../Enterprise/Agent/Chain/README.org][Agent chain case and sources]] |
 | [[file:../Enterprise/Agent/Payment/AgentPayment.lean][Agent payment]] | Account, amount, and origin owners compose independent vetoes; an account freeze and restoration affect one policy ID. | [[file:../Enterprise/Agent/Payment/README.org][Agent payment case and sources]] |
 | [[file:../Enterprise/Agent/DataFlow/AgentDataFlow.lean][Agent data flow]] | Data classification and security review branches each leave a distinct leak; C4 closes both without changing the read root. | [[file:../Enterprise/Agent/DataFlow/README.org][Agent data flow case and sources]] |

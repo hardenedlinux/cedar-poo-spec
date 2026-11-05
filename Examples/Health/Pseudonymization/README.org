@@ -85,7 +85,7 @@ from the mode's declared capabilities. A =GovernanceView= mixes one profile
 with independent =DataOwner=, =Privacy=, and =AgentBoundary= objects. Every
 profile and owner is staged through =Model.extend=; each view uses
 =Model.mix= so the C4 topology is built by Lean-POO's public API. Every
-view removes the inherited legacy re-identification grant. The incident
+view removes the inherited baseline re-identification grant. The incident
 object extends the AES-SIV view with a =Governance.Veto= and suspends only
 agent joins; steward joins remain available. The =Recovered= object withdraws
 that one veto and retains the other owner and privacy policies. This isolates
@@ -100,11 +100,11 @@ descendant. =incidentOnlyAddsAgentVetoFully= and
 =recoveryWithdrawsIncidentVeto= check the exact policy lists and restored
 agent join decision.
 
-=Base= deliberately contains a synthetic legacy grant to model a migration
+=Base= deliberately contains a synthetic baseline grant to model a migration
 hazard. =pre-governance-broad-reidentify= demonstrates the unsafe intermediate
 root; =HospitalSiv= removes that grant. Only governed views should be
 published. The example does not claim that a named hospital deployed this
-legacy rule.
+baseline rule.
 
 #+begin_src mermaid
 stateDiagram-v2
@@ -112,7 +112,7 @@ stateDiagram-v2
     Base --> AesSiv
     Base --> AesGcm
     Base --> Hmac
-    AesSiv --> HospitalSiv: mix Owner, Privacy, AgentBoundary; remove legacy grant
+    AesSiv --> HospitalSiv: mix Owner, Privacy, AgentBoundary; remove baseline grant
     AesGcm --> RandomizedGcm: same governance view
     Hmac --> OneWayHmac: same governance view
     HospitalSiv --> AgentIncident: extend agent join suspension
@@ -148,7 +148,7 @@ AES-SIV, GCM, HMAC, result-release, incident, and recovery roots. The unsafe
 =Base= and =AesSiv= migration ancestors remain regression inputs but cannot
 be selected through this publication function. The Justfile exports the
 deployment manifest separately and checks that no selected root contains the
-legacy re-identification grant.
+baseline re-identification grant.
 
 Joining existing deterministic tokens does not require releasing the token
 key to the analytics agent. =join-without-key-release= is allowed when the

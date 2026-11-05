@@ -75,8 +75,6 @@ def withinBudget : Expr := .and positiveAmount withinLimit
 def operationsGrant : MemberGrant :=
   ⟨"operations-approval", approver, .actionScope (.eq approve), operations, []⟩
 
-def legacyPermit : Policy := operationsGrant.policy
-
 def boundedPermit : Policy :=
   { operationsGrant with condition := [{ kind := .when, body := withinBudget }] }.policy
 

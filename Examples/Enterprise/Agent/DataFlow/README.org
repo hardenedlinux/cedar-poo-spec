@@ -16,9 +16,9 @@ and authorization pattern rather than claiming to reproduce an incident.
 
 | POO root | Control change |
 |----------+----------------|
-| =ReadBase= | Legacy agent read permit. |
+| =ReadBase= | Baseline agent read permit. |
 | =ReadTenant= | Overlay tenant and originating-user role checks. |
-| =PublishBase= | Legacy agent publication permit. |
+| =PublishBase= | Baseline agent publication permit. |
 | =PublishScoped= | Overlay source and destination tenant equality. |
 | =PublishClassified= | Data ownership independently forbids internal material at a public destination. |
 | =PublishReview= | Security independently forbids public publication without an approved, distinct reviewer with MFA. |
@@ -72,7 +72,7 @@ does not claim a measured reduction in source lines or runtime cost. The
 [[file:../../../../docs/rfc/0007-poo-dispatch-boundary.org][dispatch boundary RFC]] records where other complex cases do and do not
 benefit from the same abstraction.
 
-Fifteen operations cover a legacy internal-to-public leak, foreign source
+Fifteen operations cover a baseline internal-to-public leak, foreign source
 and destination tenants, an internal document sent to a public repository,
 public material with and without review, a reviewer with the wrong role,
 self approval, an unprivileged originating user, internal publication,

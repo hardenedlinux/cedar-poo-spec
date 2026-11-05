@@ -8,15 +8,6 @@ permit(
   context.breakGlassGranted && (context.sessionPatient == resource.patient)
 };
 
-// POO policy ID: legacy-broad-read
-permit(
-  principal,
-  action == Action::"read",
-  resource
-) when {
-  true
-};
-
 // POO policy ID: routine-read
 permit(
   principal,
@@ -24,4 +15,13 @@ permit(
   resource
 ) when {
   (principal.facility == resource.facility) && context.deviceTrusted
+};
+
+// POO policy ID: unrestricted-clinical-read
+permit(
+  principal,
+  action == Action::"read",
+  resource
+) when {
+  true
 };

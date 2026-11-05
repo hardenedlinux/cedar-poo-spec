@@ -5,7 +5,7 @@ import CedarPooSpec.Governance.Veto
 
 /-!
 Resource-specific approver roles follow Cedar's documented country timesheet
-pattern. The broad legacy grant and classification veto are explicit local
+pattern. The broad baseline grant and classification veto are explicit local
 revision assumptions, with fictive identities and records.
 -/
 
@@ -109,9 +109,9 @@ def ApprovalObject.grant (object : ApprovalObject) : MemberGrant :=
     actionScope := .actionScope (.mem approverActions),
     resourceGroup := object.sheetGroup }
 
--- This legacy grant is intentionally too broad; the integrated root removes it.
-def legacyEurope : MemberGrant :=
-  { policyId := "legacy-europe", principalGroup := europe,
+-- This baseline grant is intentionally too broad; the integrated root removes it.
+def europeMemberGrant : MemberGrant :=
+  { policyId := "europe-member-approval", principalGroup := europe,
     actionScope := .actionInAny [approve, review],
     resourceGroup := europeanSheets }
 
@@ -133,13 +133,13 @@ def modelResult : Except LeanPoo.C4.Error Model := do
   let base : Model := { modules := [
     { name := "Base", edits :=
         baseApprovals.map (fun object => object.grant.edit .introduce) ++
-          [legacyEurope.edit .introduce] }] }
+          [europeMemberGrant.edit .introduce] }] }
   let expansion ← base.extend "Expansion" "Base"
     (expandedApprovals.map (fun object => object.grant.edit .introduce))
   let sensitive ← expansion.extend "Sensitive" "Base"
     [sensitiveControl.edit .introduce]
   sensitive.mix "Integrated" ["Expansion", "Sensitive"]
-    [legacyEurope.edit .withdraw]
+    [europeMemberGrant.edit .withdraw]
 
 def model : Model := modelResult.toOption.get (by native_decide)
 
@@ -170,7 +170,7 @@ def request (principal action resource : EntityUID) : Request :=
   ⟨principal, action, resource, Map.empty⟩
 
 def cases : List (String × String × Request × Decision) := [
-  ("legacy-cross-country", "Base", request alice approve germanSheet, .allow),
+  ("europe-cross-country-baseline", "Base", request alice approve germanSheet, .allow),
   ("sensitive-cross-country", "Sensitive", request alice approve germanSheet, .allow),
   ("integrated-cross-country", "Integrated", request alice approve germanSheet, .deny),
   ("france-nested-role", "Integrated", request alice approve frenchSheet, .allow),
@@ -202,7 +202,7 @@ theorem sensitiveEditLocal :
       (by native_decide)).changedPolicyIds = ["restricted-clearance"] := by native_decide
 theorem integratedEditLocal :
     ((model.compileRevision "Expansion" "Integrated").toOption.get
-      (by native_decide)).changedPolicyIds = ["legacy-europe", "restricted-clearance"] := by
+      (by native_decide)).changedPolicyIds = ["europe-member-approval", "restricted-clearance"] := by
   native_decide
 
 def originalCountriesPreserved : Bool :=

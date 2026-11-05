@@ -104,11 +104,11 @@ example : ∀ p ∈ policies,
   CedarPooSpec.Slicing.certifiedNoMissingEntity sliced closedCertificate
 
 /-!
-Policy evolution is the POO use case. A legacy broad permit coexists with a
-tenant permit. Tightening the tenant permit alone cannot revoke the legacy
+Policy evolution is the POO use case. A baseline broad permit coexists with a
+tenant permit. Tightening the tenant permit alone cannot revoke the baseline
 permit: Cedar combines all applicable permits. A sibling adds a forbid for
 untrusted devices. C4 composes both branches; a descendant then removes the
-legacy permit. C4 determines which module
+baseline permit. C4 determines which module
 edits are inherited; Cedar alone computes authorization decisions.
 -/
 
@@ -122,8 +122,8 @@ def tenantPermit : Policy :=
     condition := [{ kind := .when, body := tenantMatches }] }
 def strictTenantPermit : Policy :=
   { policy with id := "tenant-read" }
-def legacyPermit : Policy :=
-  { id := "legacy-read", effect := .permit,
+def unrestrictedPermit : Policy :=
+  { id := "unrestricted-read", effect := .permit,
     principalScope := .principalScope .any,
     actionScope := .actionScope (.eq readAction),
     resourceScope := .resourceScope .any, condition := [] }
@@ -135,7 +135,7 @@ def untrustedForbid : Policy :=
     condition := [{ kind := .when, body := .unaryApp .not trustedDevice }] }
 
 def baseModule : Module :=
-  { name := "Base", edits := [.extend tenantPermit, .extend legacyPermit] }
+  { name := "Base", edits := [.extend tenantPermit, .extend unrestrictedPermit] }
 def tenantModule : Module :=
   { name := "TenantStrict", parentOrders := [["Base"]],
     edits := [.overlay strictTenantPermit] }
@@ -146,7 +146,7 @@ def composedModule : Module :=
   { name := "Composed", parentOrders := [["TenantStrict", "DeviceVeto"]] }
 def removeModule : Module :=
   { name := "Remove", parentOrders := [["Composed"]],
-    edits := [.remove legacyPermit.id] }
+    edits := [.remove unrestrictedPermit.id] }
 
 def modelResult : Except LeanPoo.C4.Error Model := do
   let initial : Model := { modules := [baseModule] }
@@ -201,9 +201,9 @@ theorem tenantEditLocal :
 theorem deviceEditLocal :
     ((model.compileRevision "Base" "DeviceVeto").toOption.get
       (by native_decide)).changedPolicyIds = ["untrusted-device"] := by native_decide
-theorem legacyRetirementLocal :
+theorem unrestrictedReadRemovalLocal :
     ((model.compileRevision "Composed" "Remove").toOption.get
-      (by native_decide)).changedPolicyIds = ["legacy-read"] := by native_decide
+      (by native_decide)).changedPolicyIds = ["unrestricted-read"] := by native_decide
 
 -- Issue-inspired skip-on-error case: a missing context attribute makes a
 -- forbid error. Cedar excludes that forbid, so the broad permit can allow.
@@ -216,7 +216,7 @@ def brokenForbid : Policy :=
     actionScope := .actionScope (.eq readAction),
     resourceScope := .resourceScope .any,
     condition := [{ kind := .when, body := missingDeviceFact }] }
-def brokenPolicies : Policies := [legacyPermit, brokenForbid]
+def brokenPolicies : Policies := [unrestrictedPermit, brokenForbid]
 def brokenPolicyDetected : Bool :=
   !(validate brokenPolicies schema).isOk &&
   (isAuthorized untrustedRequest entities brokenPolicies).decision == .allow &&
@@ -227,7 +227,7 @@ theorem brokenPolicyDetectedFully : brokenPolicyDetected = true := by native_dec
 -- Authoring mistakes and ambiguous sibling edits fail before Cedar evaluation.
 def duplicateModule : Module :=
   { name := "Duplicate", parentOrders := [["Base"]],
-    edits := [.extend legacyPermit] }
+    edits := [.extend unrestrictedPermit] }
 def duplicateModel : Model :=
   { modules := [baseModule, duplicateModule] }
 
@@ -257,7 +257,7 @@ def cyclicModel : Model :=
 
 def authoringErrorsDetected : Bool :=
   (match duplicateModel.compile "Duplicate" with
-   | .error (.policyAlreadyExists "legacy-read") => true
+   | .error (.policyAlreadyExists "unrestricted-read") => true
    | _ => false) &&
   (match missingModel.compile "Missing" with
    | .error (.missingPolicy "absent") => true
@@ -297,7 +297,7 @@ example : Cedar.Thm.AllEvaluateToBool evolvedSnapshot.policies
 
 def metadata : CedarPooSpec.Scenarios.Metadata :=
   { id := "tenant-device-policy-evolution", title := "Tenant and device policy evolution",
-    domain := "authorization/document-access", summary := "C4 composition and legacy-permit retirement",
+    domain := "authorization/document-access", summary := "C4 composition and baseline-permit retirement",
     kind := .synthetic, limitations := ["Synthetic identities and policy migration; no historical incident claim"] }
 
 def scenario := (CedarPooSpec.Scenarios.create metadata model).toOption.get (by native_decide)

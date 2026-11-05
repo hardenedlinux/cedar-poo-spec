@@ -82,8 +82,8 @@ def readPolicy (id : String) (effect : Effect) (body : Expr) : Policy :=
 
 def routinePermit : Policy :=
   readPolicy "routine-read" .permit (.and sameFacility trusted)
-def legacyPermit : Policy :=
-  readPolicy "legacy-broad-read" .permit (.lit (.bool true))
+def unrestrictedReadPermit : Policy :=
+  readPolicy "unrestricted-clinical-read" .permit (.lit (.bool true))
 def privacyForbid : Policy :=
   readPolicy "restricted-record" .forbid
     (.and restricted (.unaryApp .not breakGlassValid))
@@ -95,12 +95,12 @@ def boundedEmergencyPermit : Policy := emergencyControl.bounded
 
 def modelResult : Except LeanPoo.C4.Error Model := do
   let base : Model := { modules := [
-    { name := "Base", edits := [.extend routinePermit, .extend legacyPermit] }] }
+    { name := "Base", edits := [.extend routinePermit, .extend unrestrictedReadPermit] }] }
   let privacy ← base.extend "Privacy" "Base" [.extend privacyForbid]
   let security ← privacy.extend "Security" "Base" [.extend deviceForbid]
   let emergency ← security.extend "Emergency" "Base" [emergencyControl.introduce]
   emergency.mix "Integrated" ["Privacy", "Security", "Emergency"]
-    [emergencyControl.strengthen, .remove legacyPermit.id]
+    [emergencyControl.strengthen, .remove unrestrictedReadPermit.id]
 
 def model : Model := modelResult.toOption.get (by native_decide)
 
@@ -182,7 +182,7 @@ theorem scenarioConformsFully : scenarioConforms = true := by native_decide
 theorem caseNamesUnique : (cases.map (fun (name, _, _) => name)).Nodup := by
   native_decide
 
--- The branch carrying an emergency permit still inherits the broad legacy
+-- The branch carrying an emergency permit still inherits the broad baseline
 -- permit. Only the integrated root retires that independent authorization.
 def preIntegrationRisk : Bool :=
   match model.compile "Emergency" with
@@ -208,7 +208,7 @@ theorem provenanceConformsFully : provenanceConforms = true := by native_decide
 def removalRecorded : Bool :=
   compilation.applied.length == 7 &&
   (match compilation.applied.getLast? with
-   | some { moduleName := "Integrated", edit := .remove "legacy-broad-read" } => true
+   | some { moduleName := "Integrated", edit := .remove "unrestricted-clinical-read" } => true
    | _ => false)
 theorem removalRecordedFully : removalRecorded = true := by native_decide
 

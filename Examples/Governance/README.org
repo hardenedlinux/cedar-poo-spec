@@ -27,10 +27,10 @@ projects, datasets, and measurements in the Lean file are fictitious.
 
 * Composition and evolution
 
-=Base= has a project subscription permit and an inherited legacy broad permit.
+=Base= has a project subscription permit and an inherited baseline broad permit.
 =DataOwner=, =Platform=, and =Compliance= extend separate vetoes. =Governed=
 composes those owners, overlays the project permit with an analytics-purpose
-condition, and removes the legacy permit. =PlatformFreshness= overlays the attestation
+condition, and removes the baseline permit. =PlatformFreshness= overlays the attestation
 veto to require freshness; =FreshAttestation= composes the updated platform branch.
 [[file:AttestedManifest.lean][AttestedManifest.lean]] fixes the root names and
 Cedar artifact revision IDs in one typed selection. Composition roots have
@@ -59,7 +59,7 @@ baseline view names its owners once. =reviseOwner= replaces the platform
 owner for the strengthened view, and =prioritize= moves the existing
 compliance owner to the front for the reordered view. Both operations require
 a Lean proof that the selected owner belongs to the source view. Each view
-generates the same purpose overlay and legacy-grant removal; only its C4
+generates the same purpose overlay and baseline-grant removal; only its C4
 precedence varies. =governanceViewsShareEdits= checks that invariant.
 The owners are staged with =Model.extend= and the views with =Model.mix=;
 the separate =OwnerSplit= negative example still constructs its graph
@@ -77,7 +77,7 @@ stateDiagram-v2
 final removal, and the provenance of the platform policy: introduced by
 =Platform=, last edited by =PlatformFreshness=. =broadPermitRiskDetected= shows why
 removal is substantive: the owner branch alone can allow another project's
-dataset through the legacy permit, while the integrated module denies it.
+dataset through the baseline permit, while the integrated module denies it.
 
 =impactIsLocalFully= computes affected roots from the module graph. The
 platform revision affects =PlatformFreshness=, =FreshAttestation=, and its =AuditView=
@@ -331,7 +331,7 @@ policy. The documented pattern leaves group membership to an external
 identity provider. The example supplies fictive membership and resource
 hierarchies as input; it does not establish their provenance.
 
-The local POO evolution assumption is a legacy Europe-wide permit that
+The local POO evolution assumption is a baseline Europe-wide permit that
 accidentally allows a French approver to approve a German timesheet. The
 =Integrated= root composes an =Expansion= branch with a =Sensitive= branch
 and removes that grant. The sensitive branch uses Cedar's documented
@@ -362,7 +362,7 @@ flowchart LR
     B --> I[Integrated]
     E --> I
     S[Sensitive classification owner] --> I
-    I --> R[Remove legacy Europe grant]
+    I --> R[Remove baseline Europe grant]
 #+end_src
 
 =sensitive-cross-country= shows that the clearance branch alone still

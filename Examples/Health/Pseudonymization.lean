@@ -211,9 +211,9 @@ def siv : CryptoProfile := ⟨"AesSiv", .aesSiv⟩
 def gcm : CryptoProfile := ⟨"AesGcm", .aesGcm⟩
 def hmac : CryptoProfile := ⟨"Hmac", .hmacSha256⟩
 
-def legacyReveal : Policy :=
-  policy "legacy-reidentify" .permit reidentify (.lit (.bool true))
-def base : Module := { name := "Base", edits := [.extend legacyReveal] }
+def unrestrictedReidentificationPermit : Policy :=
+  policy "unrestricted-reidentification" .permit reidentify (.lit (.bool true))
+def base : Module := { name := "Base", edits := [.extend unrestrictedReidentificationPermit] }
 def veto (id : String) (action : EntityUID) (denyWhen : Expr) : Veto :=
   { policyId := id, actionScope := .actionScope (.eq action), denyWhen }
 
@@ -241,7 +241,7 @@ structure GovernanceView where
 def GovernanceView.module (view : GovernanceView) : Module :=
   { name := view.name,
     parentOrders := [[view.profile.name, "DataOwner", "Privacy", "AgentBoundary"]],
-    edits := [.remove legacyReveal.id] }
+    edits := [.remove unrestrictedReidentificationPermit.id] }
 def hospitalView : GovernanceView := ⟨"HospitalSiv", siv⟩
 def randomizedView : GovernanceView := ⟨"RandomizedGcm", gcm⟩
 def oneWayView : GovernanceView := ⟨"OneWayHmac", hmac⟩
@@ -449,7 +449,7 @@ def scenarioConforms
       response.decision == expected && response.erroringPolicies.isEmpty
 
 def composedViewsShareRemoval : Bool :=
-  views.all (fun view => view.module.edits == [.remove legacyReveal.id])
+  views.all (fun view => view.module.edits == [.remove unrestrictedReidentificationPermit.id])
 
 def compositionIsLocal : Bool :=
   let sivAffected := invalidatedNodes model.graph [siv.name]

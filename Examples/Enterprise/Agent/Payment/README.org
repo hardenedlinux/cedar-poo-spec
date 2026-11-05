@@ -28,7 +28,7 @@ of a published financial incident.
 | POO root | Added decision boundary |
 |----------+-------------------------|
 | =FinanceTool= | Check the finance agent's identity, tool UID, trust, namespace, and production stage. |
-| =PaymentBase= | Legacy transfer permit with no account or amount bound. |
+| =PaymentBase= | Baseline transfer permit with no account or amount bound. |
 | =PaymentAccount= | The account owner forbids transfers outside the approved account group. |
 | =PaymentAmount= | Treasury independently forbids zero, negative, or above-ceiling amounts. |
 | =PaymentOrigin= | The identity owner independently forbids callers without Admin role and MFA. |
