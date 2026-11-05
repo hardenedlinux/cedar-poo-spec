@@ -1,9 +1,17 @@
-import Examples.Enterprise.Payment.WalletAttack
+import Examples.Scenarios.FinancialServices.Wallet.Binance2026
 
 namespace CedarPooSpec.WalletSigningTest
 open CedarPooSpec.Vertical.FinancialServices PaymentSigning
 open CedarPooSpec.WalletSigningExample
 open CedarPooSpec.Gateway.EffectProtocol
+
+-- Concrete incident provenance is carried by the shared functional Scenario.
+example : CedarPooSpec.Binance2026Scenario.scenario.metadata.value.id = "binance-2026-10-29" := by native_decide
+example : CedarPooSpec.Binance2026Scenario.scenario.metadata.value.kind = .reportedIncident := by native_decide
+example : (CedarPooSpec.Binance2026Scenario.scenario.ancestors.map (·.id)) =
+    ["wallet-native-value-signing"] := by native_decide
+example : (CedarPooSpec.Binance2026Scenario.scenario.metadata.value.disclosures.map (·.status)) =
+    [.preliminary] := by native_decide
 
 -- Positive controls bind actual C4/Cedar decisions, preparation and final use.
 example : (authorization "PaymentGoverned" payment).allowed = true := by native_decide
@@ -150,7 +158,7 @@ example : (release { current with authenticatesAudit := fun _ => true }
     { request with evidence := inventedEvidence }).isSome = true := by native_decide
 
 -- Explicit attacker graph and traces, including acquisition preconditions.
-open CedarPooSpec.Attackers CedarPooSpec.WalletAttackExample
+open CedarPooSpec.Attackers CedarPooSpec.Binance2026Scenario
 example : decide (Capability.signerNetwork ∈ (run surface foothold path).known) = true := by native_decide
 example : (run surface foothold campaign).outputs.length = 0 := by native_decide
 example : (run surface foothold campaign).refused = 4 := by native_decide

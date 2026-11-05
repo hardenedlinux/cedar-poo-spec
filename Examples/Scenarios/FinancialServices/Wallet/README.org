@@ -1,4 +1,4 @@
-#+TITLE: Wallet Signing: Financial Payment Acceptance Case
+#+TITLE: Binance 2026: Wallet Signing Attack Scenario
 #+LANGUAGE: en
 #+OPTIONS: toc:2
 
@@ -44,14 +44,14 @@ must compose the new financial signing boundary rather than relabel dispatch.
 
 * Model and composition
 
-[[file:../../../CedarPooSpec/Vertical/FinancialServices/PaymentSigning.lean][PaymentSigning]] belongs to the financial vertical and imports the existing
+[[file:../../../../CedarPooSpec/Vertical/FinancialServices/PaymentSigning.lean][PaymentSigning]] belongs to the financial vertical and imports the existing
 payment ledger and shared Gateway effect contract. It introduces no Cedar
 evaluator, deployment service, credential manager or alternative payment
 ledger. =PaymentOperation.authorizedAtUse= factors the existing authorization,
 audit-policy and freshness checks; initial =admissible= additionally checks nonce
 freshness. Final use checks the reserved record without resetting that nonce.
 
-[[file:WalletSigning.lean][The payment example]] composes the existing =FinanceTool= and =PaymentGoverned=
+[[file:Base.lean][The payment example]] composes the existing =FinanceTool= and =PaymentGoverned=
 C4 roots, including their account, amount and originating-user/MFA controls.
 =PaymentFrozen= and =PaymentRestored= provide actual Cedar negative and positive
 controls. The existing three-stage audit policy supplies model, risk-human and
@@ -86,7 +86,7 @@ those finite evaluations from the reusable proofs.
 
 * Explicit attacker view and trace proofs
 
-[[file:../../../CedarPooSpec/Attackers/ProfileObject.lean][Attackers.ProfileObject]] owns the LeanPoo object family. Its initial-capability,
+[[file:../../../../CedarPooSpec/Attackers/ProfileObject.lean][Attackers.ProfileObject]] owns the LeanPoo object family. Its initial-capability,
 acquisition-rule, isolated-boundary and goal slots derive a certified model from
 final self. Cooperative C4 extensions add industry contributions. Shared-base
 diamonds remain in one declaration source. =Session= reads use the existing
@@ -97,7 +97,7 @@ The generic =certified_isolation= law obtains its premises from that selected
 model. Payment and health fixture branches exercise the same family in
 =Tests.Attackers.ProfileObject=; the health fixture is not a healthcare runtime.
 
-[[file:../../../CedarPooSpec/Attackers/Trace.lean][Attackers.Trace]] is the reusable functional execution owner of acquisition rules,
+[[file:../../../../CedarPooSpec/Attackers/Trace.lean][Attackers.Trace]] is the reusable functional execution owner of acquisition rules,
 capability knowledge, attempted calls, refused attempts and executable traces.
 It has no financial, Gateway, Examples or Tests dependency. Its generic
 =run_preserves_absence= theorem preserves an initially absent capability when
@@ -108,7 +108,7 @@ closed example additionally uses native evaluation for actual C4 object
 construction/admission; its printed axiom audit retains those native dependencies.
 Do not attribute the generic laws' smaller axiom set to the closed fixture.
 
-[[file:WalletAttack.lean][The financial attacker specialization]] starts from control of Engineer B's
+[[file:Binance2026.lean][The financial attacker specialization]] starts from control of Engineer B's
 endpoint. Rules permit internal AI access, compromise of Engineers A and C,
 acquisition of the deployment token, deployment from the compromised endpoint,
 and network access to signing. These are explicit assumptions abstracting the
@@ -136,8 +136,8 @@ that the checker protects a bypass route.
 
 * Quint threat exploration under dev/qnt
 
-[[file:../../../dev/qnt/README.org][The Quint owner]] maintains hand-written models only under =dev/qnt/=.
-=Examples.Enterprise.Payment.WalletAttackExport= exports the actual checked POO
+[[file:../../../../dev/qnt/README.org][The Quint owner]] maintains hand-written models only under =dev/qnt/=.
+=Examples.Scenarios.FinancialServices.Wallet.Binance2026Export= exports the actual checked POO
 initial capabilities, acquisition rules, independent boundaries and goals into
 =.lake/build/wallet-attackers-case.qnt=. Both required parent selections must
 succeed. This ignored build entry instantiates the maintained finite model
@@ -167,7 +167,7 @@ is claimed. Matching vocabulary and negative cases are a review discipline.
 
 * Acceptance and negative controls
 
-[[file:../../../Tests/Enterprise/Payment/WalletSigning.lean][The acceptance suite]] includes positive preparation and signing, actual
+[[file:../../../../Tests/Enterprise/Payment/WalletSigning.lean][The acceptance suite]] includes positive preparation and signing, actual
 Cedar freeze/restoration decisions, twelve named transaction substitutions,
 valid stolen deployment authority, forged role/release, unauthenticated caller
 and audit evidence, missing stage, same reviewer, fabricated source claims,
@@ -189,8 +189,8 @@ clears the modeled exposure. These transitions do not issue clearing signatures
 or prove consensus finality.
 
 #+begin_src sh
-just example enterprise payment wallet-signing
-just example enterprise payment wallet-threat-model
+just example scenarios financial-services wallet binance
+just example scenarios financial-services wallet binance-threat-model
 just check-payment-audit
 just check-lean-layers
 #+end_src
@@ -226,19 +226,19 @@ the modeled signing boundary refuses effects outside the independently retained
 payment and current authority, provided those Host premises hold. It does not
 prove that a deployed exchange would have prevented the historical incident.
 
-* Local qualification receipt (2026-11-05)
+* Initial local qualification receipt (before Scenario migration)
 
 The final plural =Attackers/= sources were qualified in checkout
 =37364c5cb5c18d946284002b86f4d32f483dac61= plus this uncommitted change. The
 initial audit baseline above predates concurrent receipt-recovery commits;
 those changes were preserved. Exact threat-model input hashes, versions,
 arguments and logs are retained in
-[[file:../../../.lake/build/wallet-threat/receipt.json][the local Quint receipt]]. These are worktree observations, not release or
+[[file:../../../../.lake/build/wallet-threat/receipt.json][the local Quint receipt]]. These are worktree observations, not release or
 remote-CI acceptance.
 
 | Check | Observed result and scope |
 |-------+---------------------------|
-| =just example enterprise payment wallet-signing= | Passed within the original producer limits; financial refusal controls and generic/closed-instance axiom audits. |
+| =just example scenarios financial-services wallet binance= | Passed within the original producer limits; financial refusal controls and generic/closed-instance axiom audits. |
 | =just check-quick= | Passed; library and complete Tests library, 643 Lake jobs. |
 | =just check-payment-audit= | Passed; existing payment reservation, audit and lifecycle regressions. |
 | =just check-lean-layers= | Passed; 382 local module import closures. |
@@ -262,3 +262,34 @@ source alone. Its typed constants are supplied by a generated Quint instance in
 fallback graph, committed generated module, new package loader or reduced
 verification depth is introduced. The same nine traces, hardened depth 12 and
 required stale-boundary depth 4 counterexample remain mandatory.
+
+* Scenario identity and provenance
+
+This reported incident is a derived =Scenarios.Scenario= under
+=Examples/Scenarios/FinancialServices/Wallet/=. Its synthetic parent is the
+adjacent =Base.lean=; reusable effects remain in the financial vertical.
+The shared =Scenarios.create=/=derive= functions require metadata, retain the
+exact parent/model binding and refuse ancestor identifier reuse. Other incidents
+may derive from the same wallet scenario without copying its controls.
+
+The incident identifier is =binance-2026-10-29=. Its UTC window starts
+2026-10-29 and includes the delegation-clearing containment boundary on
+2026-10-30; this is not a claim that transfers continued throughout that date.
+The primary disclosure is Binance's 2026-11-03 initial report, accessed on
+2026-11-05. Its status remains =preliminary=. Metadata records what the source
+claims; it does not authenticate the publisher or prove the attack mechanics.
+
+The producer emits =.lake/build/binance-2026-metadata.json= from the actual
+validated Scenario. Quint receipts retain this metadata and its source hash
+alongside the independently checked model, parent profiles and exact parameters.
+No generated input is committed or imported by maintained Quint source.
+
+* Adjacent figures
+
+[[file:Base.svg][Wallet signing parent]] ([[file:Base.d2][D2 source]]) and
+[[file:Binance2026.svg][Binance scenario]] ([[file:Binance2026.d2][D2 source]])
+are rendered from the declared SysML views through the existing pinned
+deterministic-engineering renderer. Their adjacent JSON receipts bind actual
+source bytes and proof declarations. The reported attack chain in the incident
+caption is contextual; theorem cards refer to modeled defenses and explicitly
+retain Host premises. Unknown AI exploit mechanics remain unknown.

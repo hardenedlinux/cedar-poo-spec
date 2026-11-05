@@ -57,6 +57,6 @@ contract at final signing. It retains exact native-value transaction terms,
 current payment/audit authorization, authenticated workload purpose and release,
 and the reserved-to-submitted transition. =PaymentOperation.authorizedAtUse=
 reassesses a reserved payment without resetting its nonce. The
-[[file:../../../Examples/Enterprise/Payment/WalletSigning.org][wallet-signing acceptance audit]] maps the motivating attack chain, negative
+[[file:../../../Examples/Scenarios/FinancialServices/Wallet/README.org][wallet-signing acceptance audit]] maps the motivating attack chain, negative
 controls and Host assumptions. Chain codecs, signing keys, IO mediation and
 authenticated finalized delegation-clearing observations remain adapter duties.

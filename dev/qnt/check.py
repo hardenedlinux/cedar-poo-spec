@@ -28,16 +28,19 @@ def main() -> None:
     if version != "0.33.0":
         raise SystemExit(f"Expected pinned Quint 0.33.0, got {version}")
     receipt.update(checkout=subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(), quint=version, apalache="0.62.1", seed=7, positive_depth=12, negative_depth=4)
-    inputs = [MODEL, "dev/qnt/attackers/Capabilities.qnt", CASE,
+    inputs = [MODEL, ".lake/build/binance-2026-metadata.json",
+              "CedarPooSpec/Scenarios/Metadata.lean", "CedarPooSpec/Scenarios/Functional.lean", "dev/qnt/attackers/Capabilities.qnt", CASE,
               "CedarPooSpec/Attackers/Trace.lean", "CedarPooSpec/Attackers/ProfileObject.lean",
               "CedarPooSpec/Vertical/FinancialServices/PaymentSigning.lean",
               "CedarPooSpec/Vertical/FinancialServices/PaymentOperation.lean",
-              "Examples/Enterprise/Payment/WalletSigning.lean",
-              "Examples/Enterprise/Payment/WalletAttack.lean",
-              "Examples/Enterprise/Payment/WalletAttackExport.lean",
+              "Examples/Scenarios/FinancialServices/Wallet/Base.lean",
+              "Examples/Scenarios/FinancialServices/Wallet/Binance2026.lean",
+              "Examples/Scenarios/FinancialServices/Wallet/Binance2026Export.lean",
               "Tests/Enterprise/Payment/WalletSigning.lean", "Tests/Attackers/ProfileObject.lean",
               "dev/qnt/check.py", "dev/package.json", "dev/bun.lock"]
     receipt["inputs"] = {p: hashlib.sha256((ROOT / p).read_bytes()).hexdigest() for p in inputs}
+
+    receipt["scenario"] = json.loads((ROOT / ".lake/build/binance-2026-metadata.json").read_text())
 
     def run(label: str, args: list[str], expected: int = 0) -> None:
         log = OUT / f"{label}.log"

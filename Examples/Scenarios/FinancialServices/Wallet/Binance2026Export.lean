@@ -1,7 +1,7 @@
-import Examples.Enterprise.Payment.WalletAttack
+import Examples.Scenarios.FinancialServices.Wallet.Binance2026
 import Lean.Data.Json
 
-namespace CedarPooSpec.WalletAttackExample
+namespace CedarPooSpec.Binance2026Scenario
 
 private def quoted (text : String) : String := (Lean.toJson text).compress
 private def name (cap : Capability) : String := ((reprStr cap).splitOn ".").getLast!
@@ -13,6 +13,8 @@ def exportQuint : Except String String := do
   let checked ← match selectedModel with
     | some model => .ok model
     | none => .error "attacker object admission failed"
+  if checked.model != scenario.model.2.model then
+    .error "scenario/attacker model mismatch"
   let initial := setOf (checked.model.initial.map (quoted ∘ name))
   let isolated := setOf (checked.model.isolated.map (quoted ∘ name))
   let goals := setOf (checked.model.goals.map quoted)
@@ -29,8 +31,12 @@ def exportQuint : Except String String := do
     "}", ""])
 
 
-end CedarPooSpec.WalletAttackExample
+end CedarPooSpec.Binance2026Scenario
 
-def main : IO Unit := match CedarPooSpec.WalletAttackExample.exportQuint with
-  | .ok source => IO.print source
-  | .error error => throw (IO.userError error)
+def main (args : List String) : IO Unit :=
+  match args with
+  | ["metadata"] => IO.println CedarPooSpec.Binance2026Scenario.scenario.provenanceJson.compress
+  | [] => match CedarPooSpec.Binance2026Scenario.exportQuint with
+    | .ok source => IO.print source
+    | .error error => throw (IO.userError error)
+  | _ => throw (IO.userError "expected no arguments or metadata")

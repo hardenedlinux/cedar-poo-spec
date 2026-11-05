@@ -1,0 +1,14 @@
+set working-directory := '../../../..'
+
+binance:
+    lake build Examples.Scenarios.FinancialServices.Wallet.Binance2026 Tests.Attackers.ProfileObject Tests.Scenarios.Metadata
+    timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 Tests/Enterprise/Payment/WalletSigning.lean
+
+binance-threat-profile:
+    lake build Examples.Scenarios.FinancialServices.Wallet.Binance2026Export
+    mkdir -p .lake/build
+    timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 --run Examples/Scenarios/FinancialServices/Wallet/Binance2026Export.lean metadata > .lake/build/binance-2026-metadata.json
+    timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 --run Examples/Scenarios/FinancialServices/Wallet/Binance2026Export.lean > .lake/build/wallet-attackers-case.qnt
+
+binance-threat-model: binance-threat-profile
+    python3 dev/qnt/check.py

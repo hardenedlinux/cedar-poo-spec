@@ -58,5 +58,5 @@ endpoint/AI/deployment compromise, using the existing C4 payment policy roots.
 It preserves the old ledger's stale-dispatch counterexample, twelve transaction
 substitutions, current-use/refusal/replay controls, outstanding delegation after
 local suspension, and a permissive-verifier trust counterexample. Run
-=just example enterprise payment wallet-signing=; the
-[[file:../Examples/Enterprise/Payment/WalletSigning.org][adjacent audit]] records the exact model and Host boundaries.
+=just example scenarios financial-services wallet binance=; the
+[[file:../Examples/Scenarios/FinancialServices/Wallet/README.org][adjacent audit]] records the exact model and Host boundaries.

@@ -1,8 +1,9 @@
+import CedarPooSpec.Scenarios
 import CedarPooSpec.Vertical.FinancialServices.PaymentSigning
 import Examples.Enterprise.Agent.Payment.PaymentAudit
 
-/-! Synthetic financial/payment acceptance case motivated by Binance's initial
-2026-11-03 incident report. Existing C4 payment roots supply real Cedar decisions;
+/-! Reusable synthetic wallet/payment signing scenario. Incident provenance and
+attacker acquisition rules belong to derived reported scenarios. Existing C4 payment roots supply real Cedar decisions;
 all source identities, approvals and chain observations are test fixtures. -/
 namespace CedarPooSpec.WalletSigningExample
 open CedarPooSpec.Vertical.FinancialServices
@@ -81,5 +82,13 @@ def clearObservation : ClearObservation :=
 replays its authentic old Allow and unchanged signed envelope. -/
 def frozen : PaymentSigning.Current :=
   { current with authorize := authorization "PaymentFrozen" }
+
+def metadata : CedarPooSpec.Scenarios.Metadata :=
+  { id := "wallet-native-value-signing", title := "Native-value wallet signing",
+    domain := "financial-services/payment", summary := "Current authorization, exact signing terms and retained consumption",
+    kind := .synthetic, limitations := ["Synthetic workflow, workload and chain readers", "No physical signer, transaction codec or deployed durability"] }
+
+def scenario : CedarPooSpec.Scenarios.Scenario (PaymentSigning.Current × PaymentSigning.Request) :=
+  (CedarPooSpec.Scenarios.create metadata (current, request)).toOption.get (by native_decide)
 
 end CedarPooSpec.WalletSigningExample

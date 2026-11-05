@@ -1,10 +1,10 @@
 import CedarPooSpec.Attackers.ProfileObject
-import Examples.Enterprise.Payment.WalletSigning
+import Examples.Scenarios.FinancialServices.Wallet.Base
 
 /-! Attacker capabilities and executable traces for the financial case.
 This graph encodes the public high-level campaign, not undisclosed exploits.
 Its independent workflow and signing roots are explicit separation premises. -/
-namespace CedarPooSpec.WalletAttackExample
+namespace CedarPooSpec.Binance2026Scenario
 open CedarPooSpec.Vertical.FinancialServices PaymentSigning
 open CedarPooSpec.WalletSigningExample CedarPooSpec.Attackers
 
@@ -62,6 +62,26 @@ def selectedModel : Option (ProfileObject.Certified baseModel) := do
 
 def model := selectedModel.get (by native_decide)
 
+/-- Reported dates are UTC source claims from the initial report, not an
+assertion that undisclosed exploit mechanics have been reproduced. -/
+def metadata : CedarPooSpec.Scenarios.Metadata :=
+  { id := "binance-2026-10-29", title := "Binance wallet-signing incident",
+    domain := "financial-services/payment", summary := "Endpoint and AI-tool compromise through deployment authority to wallet signing and persistent delegation",
+    kind := .reportedIncident,
+    event := some ⟨"2026-10-29", some "2026-10-30", "UTC"⟩,
+    disclosures := [{
+      publisher := "Binance", title := "29 October 2026 Binance Security Incident: Initial Findings and Response Update",
+      url := "https://www.binance.com/en/blog/community/3229153443759566763",
+      publishedOn := "2026-11-03", accessedOn := "2026-11-05", status := .preliminary }],
+    limitations := ["Initial report; investigation and independent review remain ongoing",
+      "UTC event window includes delegation-clearing containment on 2026-10-30",
+      "AI exploit mechanics are undisclosed; prompt injection is not assumed",
+      "Synthetic control-flow model; no malware, MPC/HSM or EVM reproduction"] }
+
+def scenario :=
+  (CedarPooSpec.Scenarios.derive CedarPooSpec.WalletSigningExample.scenario metadata
+    (fun wallet => (wallet, model))).toOption.get (by native_decide)
+
 def reachable (known : List Capability) (input : PaymentSigning.Request) : Bool :=
       decide (.signerNetwork ∈ known) &&
         ((decide (.deploymentToken ∈ known) && decide (input.caller = deployment)) ||
@@ -118,4 +138,4 @@ theorem attacker_outputs_are_checked (actions : List (Action Capability PaymentS
   run_preserves_outputs surface (fun event => event.safe = true) (fun world input next event observed => invoke_is_checked world next input event observed) foothold
     (by simp [foothold, ProfileObject.Certified.initialState]) actions
 
-end CedarPooSpec.WalletAttackExample
+end CedarPooSpec.Binance2026Scenario

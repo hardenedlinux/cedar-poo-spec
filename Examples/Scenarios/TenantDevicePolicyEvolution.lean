@@ -1,3 +1,4 @@
+import CedarPooSpec.Scenarios
 import CedarPooSpec.Functional.Capabilities
 import CedarPooSpec.Slicing
 import CedarPooSpec.PolicyModules
@@ -293,5 +294,12 @@ theorem policyRevisionFootprintExact : policyRevisionFootprint = true := by
 example : Cedar.Thm.AllEvaluateToBool evolvedSnapshot.policies
     evolvedSnapshot.request evolvedSnapshot.entities :=
   certifiedAuthorizationSound evolvedSnapshot evolvedCertificate
+
+def metadata : CedarPooSpec.Scenarios.Metadata :=
+  { id := "tenant-device-policy-evolution", title := "Tenant and device policy evolution",
+    domain := "authorization/document-access", summary := "C4 composition and legacy-permit retirement",
+    kind := .synthetic, limitations := ["Synthetic identities and policy migration; no historical incident claim"] }
+
+def scenario := (CedarPooSpec.Scenarios.create metadata model).toOption.get (by native_decide)
 
 end CedarPooSpec.TenantDeviceAuthorizationExample

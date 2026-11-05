@@ -1,0 +1,55 @@
+#+TITLE: Functional Scenario Construction
+#+LANGUAGE: en
+#+OPTIONS: toc:2
+
+* Ownership and mandatory metadata
+
+=Scenarios/= owns typed metadata admission and pure construction/derivation.
+Every =Scenario Model= contains =CertifiedMetadata=, the existing typed model
+and explicit ancestor metadata. A scenario cannot omit metadata. Domain logic,
+C4 object composition and actual effect contracts remain with their existing
+owners; this layer adds no evaluator, package loader or parallel module system.
+
+[[file:Metadata.lean][Metadata]] carries a stable identifier, title, domain, summary, kind,
+event window, publisher disclosures and limitations. A reported incident must
+have an event and at least one disclosure. Each disclosure records its publisher,
+title, HTTPS URL, publication/access dates and preliminary/publisher-confirmed
+status. Synthetic reusable scenarios have no invented incident date or source.
+Unknown event endpoints may remain absent. Timezone is explicit.
+
+Date-only strings use the official Cedar datetime parser. Invalid calendar
+dates, reversed windows, access before publication, empty identity/scope,
+missing reported-incident evidence and omitted limitations refuse admission.
+These checks validate representation and declared chronology. They do not fetch
+the URL, authenticate the publisher, prove reported facts or confer authority.
+
+* Functional composition
+
+[[file:Functional.lean][create]] validates metadata and retains the supplied model. =derive= binds
+the actual parent model through a typed function, validates the child's metadata,
+records the exact parent metadata and ancestor chain, and refuses identifier
+reuse within that ancestry. The metadata Contract uses existing LeanPoo
+DeclarativeMetadata machinery. Its Invocation retains the checked value.
+
+=create_preserves_model= and =derivation_preserves_binding= establish the actual
+typed model correspondence. =derivation_retains_parent= retains full provenance,
+not a caller-selected parent label. The industry's POO object and parent
+Contracts still establish its security refinement; metadata inheritance does
+not establish policy implication or Host authenticity.
+
+The [[file:../../Examples/Scenarios/FinancialServices/Wallet/Base.lean][synthetic wallet scenario]] provides reusable payment inputs. The
+[[file:../../Examples/Scenarios/FinancialServices/Wallet/Binance2026.lean][Binance scenario]] derives from it and binds the actual admitted Attackers
+object. It records the 2026-10-29 attack/containment window through 2026-10-30
+UTC, the initial Binance report of 2026-11-03 and access on 2026-11-05. The
+classification remains preliminary; undisclosed AI exploit mechanics are not
+invented. The existing tenant/device scenario also uses this shared builder.
+
+The incident exporter emits metadata/lineage JSON separately from its disposable
+Quint instance. The verifier hashes both and retains provenance with its bounded
+result. Hand-written Quint source never imports generated build paths.
+
+[[file:../../Tests/Scenarios/Metadata.lean][Metadata regressions]] retain calendar, chronology, missing-field, source,
+classification and ancestry controls. [[file:../../Tests/Enterprise/Payment/WalletSigning.lean][The financial acceptance suite]] checks
+the concrete incident classification and parent identity as well as the original
+security controls. These are models with stated premises, not a reconstruction
+of unpublished malware or a qualification of real wallet infrastructure.

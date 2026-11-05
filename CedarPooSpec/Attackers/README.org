@@ -59,7 +59,7 @@ authenticated workloads and deployment isolation. Other verticals supply their
 own writer and discharge the corresponding output property using the same
 object and trace mechanisms. Unknown exported goals must fail projection.
 
-The [[file:../../Examples/Enterprise/Payment/WalletSigning.org][financial acceptance audit]] records source evidence, all trust premises,
+The [[file:../../Examples/Scenarios/FinancialServices/Wallet/README.org][financial acceptance audit]] records source evidence, all trust premises,
 the actual C4 object specialization, finite Quint interleavings, native-decision
 axioms in closed fixtures, and unsafe-verifier/bypass counterexamples. Graph
 completeness, independent trust roots, authentic current facts, complete effect

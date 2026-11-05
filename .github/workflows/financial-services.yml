@@ -34,8 +34,8 @@ jobs:
     - run: just check-payment-delta
     - run: just check-payment-interaction
     - run: just check-payment-audit
-    - run: just example enterprise payment wallet-signing
-    - run: just example enterprise payment wallet-threat-model
+    - run: just example scenarios financial-services wallet binance
+    - run: just example scenarios financial-services wallet binance-threat-model
     - run: just check-agentic-ai-commerce-admission
 'on':
   push:

@@ -65,7 +65,7 @@ just check-cedar-language
 
 * Wallet signing after endpoint and deployment compromise
 
-[[file:WalletSigning.org][The financial wallet-signing case]] audits the initial Binance attack
+[[file:../../Scenarios/FinancialServices/Wallet/README.org][The financial wallet-signing case]] audits the initial Binance attack
 chain against existing payment/Gateway contracts, then composes actual C4 Cedar
 decisions with current payment assessment, exact typed signing transactions,
 authenticated workload/evidence sources, and the existing payment ledger.
@@ -75,5 +75,5 @@ separates model guarantees from Host identity, byte decoding, complete mediation
 durability and chain-finality assumptions.
 
 #+begin_src sh
-just example enterprise payment wallet-signing
+just example scenarios financial-services wallet binance
 #+end_src

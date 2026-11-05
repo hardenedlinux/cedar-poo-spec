@@ -2,17 +2,3 @@ set working-directory := '../../..'
 
 release:
     timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 Examples/Enterprise/Payment/PaymentRelease.lean
-
-# Current signing authorization after endpoint/AI/deployment compromise.
-wallet-signing:
-    lake build Examples.Enterprise.Payment.WalletAttack Tests.Attackers.ProfileObject
-    timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 Tests/Enterprise/Payment/WalletSigning.lean
-
-# Export the checked LeanPoo threat object before exploring finite interleavings.
-wallet-threat-profile:
-    lake build Examples.Enterprise.Payment.WalletAttackExport
-    mkdir -p .lake/build
-    timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 --run Examples/Enterprise/Payment/WalletAttackExport.lean > .lake/build/wallet-attackers-case.qnt
-
-wallet-threat-model: wallet-threat-profile
-    python3 dev/qnt/check.py

@@ -9,7 +9,7 @@ Maintain hand-written Quint models under =dev/qnt/=. The shared
 The [[file:financial/WalletSigning.qnt][financial model]] declares typed constants and imports only maintained source.
 A generated model-checking entry instantiates those constants from the actual
 checked LeanPoo attacker object. The producer is
-[[file:../../Examples/Enterprise/Payment/WalletAttackExport.lean][WalletAttackExport.lean]]. Generated entries import the maintained model, never the reverse. Generated
+[[file:../../Examples/Scenarios/FinancialServices/Wallet/Binance2026Export.lean][Binance2026Export.lean]]. Generated entries import the maintained model, never the reverse. Generated
 input and verification receipts live
 under ignored =.lake/build/=; they are not a second maintained model.
 
@@ -21,7 +21,7 @@ Quint manages the pinned solver distribution through its normal tool cache.
 cd dev
 bun install --frozen-lockfile --ignore-scripts
 cd ..
-just example enterprise payment wallet-threat-model
+just example scenarios financial-services wallet binance-threat-model
 #+end_src
 
 * Separate evidence classes
@@ -43,5 +43,5 @@ The [[https://quint.sh/docs/model-checkers][Quint documentation]] distinguishes 
 checking and other backend capabilities. This gate uses deterministic tests and
 bounded Apalache verification, not =quint run= or unbounded temporal/liveness
 verification. The finite domains and corresponding Lean laws are described in
-the [[file:../../Examples/Enterprise/Payment/WalletSigning.org][financial audit]]. No deployed Host behavior, cryptographic protocol,
+the [[file:../../Examples/Scenarios/FinancialServices/Wallet/README.org][financial audit]]. No deployed Host behavior, cryptographic protocol,
 consensus guarantee or Lean/Quint transition-refinement theorem is established.
