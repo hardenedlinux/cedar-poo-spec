@@ -124,6 +124,7 @@ pub(super) enum RecoveryRequest {
     Detached,
     Receiver(ReceiverBinding),
     LegacyMigration(ReceiverBinding),
+    SettledMappingMigration(ReceiverBinding),
 }
 
 impl RetainedEffect {
@@ -150,6 +151,13 @@ impl RetainedEffect {
             }
             (Some(RecoveryOrigin::Receiver(pinned)), RecoveryRequest::LegacyMigration(binding)) => {
                 self.resolved && pinned == binding
+            }
+            (
+                Some(RecoveryOrigin::Receiver(pinned)),
+                RecoveryRequest::SettledMappingMigration(binding),
+            ) => self.resolved && pinned == binding && self.settled_outcome.is_some(),
+            (None, RecoveryRequest::SettledMappingMigration(_)) => {
+                self.resolved && self.settled_outcome.is_some() && self.receipt_identity.is_none()
             }
             // Older settlements with an exact identity can only confirm that
             // outcome through the existing detached port.
@@ -603,7 +611,9 @@ impl<'a> DurableRefreshLedger<'a> {
         }
         let receipt_identity = match &request {
             RecoveryRequest::Detached => None,
-            RecoveryRequest::Receiver(binding) | RecoveryRequest::LegacyMigration(binding) => {
+            RecoveryRequest::Receiver(binding)
+            | RecoveryRequest::LegacyMigration(binding)
+            | RecoveryRequest::SettledMappingMigration(binding) => {
                 Some(StoredReceiptIdentity::from_audited(
                     ReceiptAuthority {
                         checkpoint: binding.checkpoint.clone(),
@@ -622,11 +632,18 @@ impl<'a> DurableRefreshLedger<'a> {
             None => outcome.source_sha256()?,
         };
         if effect.resolved {
-            return Ok(effect.settled_outcome.as_ref() == Some(&identity)
-                && effect
-                    .receipt_identity
-                    .as_ref()
-                    .is_none_or(|stored| Some(stored) == receipt_identity.as_ref()));
+            if effect.settled_outcome.as_ref() != Some(&identity) {
+                return Ok(false);
+            }
+            if let Some(stored) = &effect.receipt_identity {
+                return Ok(Some(stored) == receipt_identity.as_ref());
+            }
+            if let RecoveryRequest::SettledMappingMigration(binding) = request {
+                effect.recovery_origin = Some(RecoveryOrigin::Receiver(binding));
+                effect.receipt_identity = receipt_identity;
+                file.persist_at(&image, observe)?;
+            }
+            return Ok(true);
         }
         if effect.receipt_identity.is_some() {
             return Ok(false);

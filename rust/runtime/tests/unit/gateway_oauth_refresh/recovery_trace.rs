@@ -137,12 +137,14 @@ fn lean_plan_drives_both_native_commit_orders() {
         true,
         Some(FirstCommit::Takeover),
         &plan.rounds,
+        false,
     );
     settlement_race(
         "model-aligned-migration",
         true,
         Some(FirstCommit::Migration),
         &plan.rounds,
+        false,
     );
 }
 

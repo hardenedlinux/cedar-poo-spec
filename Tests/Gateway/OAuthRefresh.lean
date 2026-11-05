@@ -69,7 +69,7 @@ private def seedReceiptMapping (input : Receiver.LegacyBatchInput)
     retained := input.image.retained.map (fun entry =>
       if entry.intent.operation = operation then { entry with receiver := none, legacy := true } else entry) }
   let initial : ReceiptRecovery.Input :=
-    ⟨⟨before, []⟩, before.writer, authority, request, original⟩
+    ⟨⟨before, [], []⟩, before.writer, authority, request, original, .reservation⟩
   let foreignAuthority := { authority with providerKey := authority.providerKey ++ "-foreign" }
   let foreignRequest := { request with identity :=
     { request.identity with providerKey := foreignAuthority.providerKey } }
@@ -81,6 +81,61 @@ private def seedReceiptMapping (input : Receiver.LegacyBatchInput)
     let staged := Revocation.Crash.recoverImage .staged initial.image receipt.result
     let durable := Revocation.Crash.recoverImage .durable initial.image receipt.result
     if staged.rows.isEmpty && durable.oauth = input.image then some durable else none
+
+private def settledMappingExercise (input : Receiver.LegacyBatchInput)
+    (original missing : Receiver.ManagedReconciliation) (pin : Receiver.Checkpoint) : Bool := Id.run do
+  let some (authority, request) := identityContext input original pin | return false
+  let operation := request.operation
+  let legacy := { input.image with retained := input.image.retained.map (fun entry =>
+    if entry.intent.operation = operation then { entry with receiver := none, legacy := true } else entry) }
+  let initial : ReceiptRecovery.Input :=
+    { image := ⟨legacy, [], [(operation, request.identity.outcomeDigest)]⟩, writer := legacy.writer, authority, request, recovery := original, mode := .settled }
+  let .ok first := ReceiptRecovery.contract.invoke ReceiptRecovery.prepare initial | return false
+  let durable := Revocation.Crash.recoverImage .durable initial.image first.result
+  let staged := Revocation.Crash.recoverImage .staged initial.image first.result
+  let recovered := { initial with image := durable }
+  let .ok second := ReceiptRecovery.contract.invoke ReceiptRecovery.prepare recovered | return false
+  let missingEvidence := { initial with recovery := { original with audit :=
+    { original.audit with outcomes := [] } } }
+  let foreign := { initial with authority := { authority with receiver :=
+    { authority.receiver with checkpoint := authority.receiver.checkpoint ++ "-foreign" } } }
+  let conflicting := { recovered with request := { request with outcomeSource :=
+    { request.outcomeSource with signature := [99] } } }
+  let stale := { recovered with writer := recovered.writer + 1 }
+  let noDigest := { initial with image := { initial.image with legacyOutcomes := [] } }
+  let wrongDigest := { initial with image := { initial.image with legacyOutcomes := [(operation, "wrong-digest")] } }
+  let _history : ReceiptRecovery.Trace initial.image first.result :=
+    .commit (.start initial.image) first rfl .durable
+  let _kept := ReceiptRecovery.trace_preserves_original
+    (ReceiptRecovery.Trace.commit (.start first.result) second rfl .durable) (ReceiptRecovery.persistence_records first)
+  let mut tracked : { image : ReceiptRecovery.Image // ReceiptRecovery.Trace durable image } :=
+    ⟨durable, .start durable⟩
+  for _ in [:5] do
+    let before := tracked
+    match advanced : Revocation.Crash.handoff before.1.oauth before.1.oauth.writer with
+    | none => return false
+    | some next =>
+      tracked := ⟨{ before.1 with oauth := next },
+        .authorization before.2 (.handoff (.start before.1.oauth) advanced)⟩
+      let current := { recovered with image := tracked.1, writer := next.writer }
+      let .ok confirmed := ReceiptRecovery.contract.invoke ReceiptRecovery.prepare current | return false
+      if confirmed.result != tracked.1 then return false
+      let prior := tracked
+      tracked := ⟨confirmed.result, .commit prior.2 confirmed rfl .durable⟩
+  let _survived := ReceiptRecovery.trace_preserves_original tracked.2
+    (ReceiptRecovery.persistence_records first)
+  return staged.rows.isEmpty &&
+    decide (first.result.oauth.oauth = legacy.oauth) &&
+    decide (first.result.oauth.writer = legacy.writer) &&
+    decide (first.result.oauth.retained.map (·.intent) = legacy.retained.map (·.intent)) &&
+    decide (second.result = durable) &&
+    (ReceiptRecovery.persist missingEvidence).isNone &&
+    (ReceiptRecovery.persist foreign).isNone &&
+    (ReceiptRecovery.persist conflicting).isNone &&
+    (ReceiptRecovery.persist stale).isNone &&
+    (ReceiptRecovery.persist noDigest).isNone &&
+    (ReceiptRecovery.persist wrongDigest).isNone &&
+    (ReceiptRecovery.lookup durable.rows missing.audit.operation).isNone
 
 private def identityMappingChecks (input : Receiver.LegacyBatchInput)
     (original missing : Receiver.ManagedReconciliation) (image : Revocation.Crash.Image)
@@ -102,7 +157,7 @@ private def identityMappingChecks (input : Receiver.LegacyBatchInput)
   let managed := { original with
     independent := some pin, placement := pin.active, replica := pin.image
     audit := { original.audit with image, writer := image.writer } }
-  let durable : ReceiptRecovery.Input := ⟨⟨image, rows⟩, image.writer, authority, request, managed⟩
+  let durable : ReceiptRecovery.Input := ⟨⟨image, rows, []⟩, image.writer, authority, request, managed, .reservation⟩
   let confirmation := ReceiptRecovery.contract.invoke ReceiptRecovery.prepare durable
   let unchanged := match confirmation with
     | .ok receipt => receipt.result == durable.image
@@ -177,6 +232,7 @@ private def repeatedRecoveryExercise (input : Receiver.LegacyBatchInput)
     (retry : Revocation.Crash.BeginInput) : Bool := Id.run do
   let some start := original.independent | return false
   let some (_, outcome) := Receiver.evidence start.image ⟨original.audit.operation⟩ | return false
+  if !settledMappingExercise input original missing start then return false
   let some seed := seedReceiptMapping input original start | return false
   if aligned : seed.oauth = input.image then
     let mut tracked : { image : Revocation.Crash.Image // Receiver.LegacyRecoveryTrace input.image image } :=
@@ -900,3 +956,8 @@ end Tests.Gateway.OAuthRefresh
 #print axioms CedarPooSpec.Gateway.OAuth.ReceiptRecovery.stale_writer_refused
 #print axioms CedarPooSpec.Gateway.OAuth.ReceiptRecovery.replacement_refused
 #print axioms CedarPooSpec.Gateway.OAuth.ReceiptRecovery.mismatched_audit_root_refused
+#print axioms CedarPooSpec.Gateway.OAuth.Revocation.Crash.settled_migration_preserves_authority_and_burn
+#print axioms CedarPooSpec.Gateway.OAuth.Revocation.Crash.settled_migration_requires_prior_completion
+#print axioms CedarPooSpec.Gateway.OAuth.Revocation.Crash.settled_migration_missing_receipt_refused
+#print axioms CedarPooSpec.Gateway.OAuth.Revocation.Crash.settled_migration_detached_refused
+#print axioms CedarPooSpec.Gateway.OAuth.ReceiptRecovery.retained_digest_required

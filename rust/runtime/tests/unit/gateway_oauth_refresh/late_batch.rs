@@ -21,6 +21,8 @@ use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::time::{Duration, Instant};
 
+#[path = "settled_mapping.rs"]
+mod settled_mapping;
 #[path = "recovery_trace.rs"]
 mod trace;
 pub(super) use trace::{RecoveryRound, Worker};
@@ -60,6 +62,7 @@ fn legacy_migration_takeover_first_fences_batch_suffix() {
         true,
         Some(FirstCommit::Takeover),
         &[RecoveryRound::baseline()],
+        false,
     );
 }
 
@@ -70,6 +73,7 @@ fn legacy_migration_commit_first_survives_revoked_batch_takeover() {
         true,
         Some(FirstCommit::Migration),
         &[RecoveryRound::baseline()],
+        false,
     );
 }
 
@@ -79,6 +83,7 @@ pub(super) fn replay_across_processes(
     outcome: &Signed,
     first: FirstCommit,
     rounds: &[RecoveryRound],
+    settled_backfill: bool,
 ) -> (WriterCut, ReceiverCut, PathBuf) {
     let fixture_path = root.join("restart-fixture.json");
     let write_fixture = |fixture: &RestartFixture| {
@@ -192,6 +197,9 @@ pub(super) fn replay_across_processes(
                 "crashes": round.expected_crashes
             })
         );
+    }
+    if settled_backfill {
+        cut = settled_mapping::exercise(root, &mut fixture, outcome);
     }
     (fixture.writer, cut, fixture.active)
 }
@@ -385,6 +393,11 @@ fn restart_worker() {
     let root = fixture_path.parent().unwrap();
     let fixture: RestartFixture =
         serde_json::from_slice(&std::fs::read(&fixture_path).unwrap()).unwrap();
+    let requested = std::env::var(PHASE).unwrap();
+    if requested.starts_with("settled-map-") {
+        settled_mapping::worker(root, &fixture, &requested);
+        return;
+    }
     let signals = root.join(format!("recovery-round-{}", fixture.round));
     let oauth_path = root.join("oauth");
     let pin = root.join("pin");

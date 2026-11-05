@@ -1570,6 +1570,38 @@ without this field remain unbound: replay can confirm their existing outcome
 identity but cannot silently create a mapping. Unresolved records acquire a
 mapping only through the current independent-receiver reconciliation.
 
+Settled legacy records have a separate opt-in backfill path:
+=migrate_settled_oauth_mappings= and the =ReceiptRecovery.Mode.settled=
+Contract. Ordinary reconciliation still does not create a missing mapping.
+The explicit path requires an already settled operation, its retained original
+intent and outcome digest, matching provider and witness roots, a current
+independent receiver checkpoint, and the exact authenticated dispatch and
+signed outcome stored there. A conflicting retained digest, missing digest,
+missing receipt, foreign authority or explicitly detached origin remains
+unbound. A missing digest is not inferred from whichever receipt arrives first.
+The model keeps legacy digest observations in the persistent image, so the
+request cannot supply its own expected digest. Existing digest observations
+take precedence over mapped rows. Digest equality is an additional legacy
+check; it is combined with independent canonical receiver evidence and the
+trusted native signature and source-identity decoders.
+
+The same writer and independent receiver locks cover evidence checks and the
+mapping commit. Backfill changes neither OAuth authorization nor the operation
+burn; it records the receiver origin and exact mapping in the existing checkpoint
+transaction. The settled replay exercises two concurrent restarted workers,
+a crash before checkpoint replacement, acknowledgment loss after directory sync,
+a partially completed overlapping batch, two handoffs before backfill and
+five further ownership handoffs after it.
+Fresh workers confirm only the original receipts without writing them again.
+Conflicts and missing-evidence items remain pending, retired writers and replicas
+are fenced, and the revoked operation cannot execute again.
+
+The original 90-step conformance workload remains intact. The additional settled
+record fault scenario has its own fixed 120-second process gate with the same
+three-second drain; it does not partition or replace the original workload.
+Both gates run in the existing Zero Trust CI module, alongside the unchanged
+51-domain reviewed-effect and lifecycle acceptance suite.
+
 The first clean audit durably binds the canonical identity of the
 signed outcome. A later audit of that same outcome is idempotent.
 A different signed outcome cannot replace it, even if presented

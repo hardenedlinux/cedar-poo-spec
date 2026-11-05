@@ -448,6 +448,55 @@ def migrateFrom (input : ReconcileInput) (observation : ReceiverObservation) : O
     reconcileFrom input (some observation)
   else none
 
+/-- Explicit settled-record migration still uses the retained intent, pinned
+audit roots and independently selected receiver outcome. -/
+def migrateSettledFrom (input : ReconcileInput) (observation : ReceiverObservation) : Option Image := do
+  let entry ← input.retained
+  if (input.image.settledOutcome input.operation).isSome ∧
+      ((entry.legacy = true ∧ entry.receiver = none) ∨ entry.receiver = some observation.binding) then
+    reconcileFrom (input.bindLegacy observation.binding) (some observation)
+  else none
+
+theorem settled_migration_requires_prior_completion
+    (applied : migrateSettledFrom input observation = some after) :
+    (input.image.settledOutcome input.operation).isSome = true := by
+  cases found : input.retained with
+  | none => simp [migrateSettledFrom, found] at applied
+  | some entry =>
+    simp only [migrateSettledFrom, found, bind, Option.bind] at applied
+    split at applied
+    · rename_i qualified
+      exact qualified.1
+    · contradiction
+
+theorem settled_migration_missing_receipt_refused
+    (missing : observation.outcome ∉ input.outcomes) :
+    migrateSettledFrom input observation = none := by
+  have refused := missing_committed_outcome_refuses_recovery
+    (input.bindLegacy observation.binding) observation missing
+  cases found : input.retained <;> simp [migrateSettledFrom, found, refused]
+
+theorem settled_migration_detached_refused (found : input.retained = some entry)
+    (detached : entry.receiver = none) (notLegacy : entry.legacy = false) :
+    migrateSettledFrom input observation = none := by
+  simp [migrateSettledFrom, found, detached, notLegacy]
+
+theorem settled_migration_preserves_authority_and_burn
+    (applied : migrateSettledFrom input observation = some after) (operation : String) :
+    after.oauth = input.image.oauth ∧ after.writer = input.image.writer ∧
+      (after.retained.any fun entry => entry.intent.operation == operation) =
+        (input.image.retained.any fun entry => entry.intent.operation == operation) := by
+  cases found : input.retained with
+  | none => simp [migrateSettledFrom, found] at applied
+  | some entry =>
+    simp only [migrateSettledFrom, found, bind, Option.bind] at applied
+    split at applied
+    · have preserved := reconciliation_from_preserves_authority applied
+      refine ⟨preserved.1, preserved.2.1, ?_⟩
+      rw [preserved.2.2]
+      simp [ReconcileInput.bindLegacy, List.any_map, Function.comp_def]
+    · contradiction
+
 theorem migration_preserves_authority_and_burn
     (applied : migrateFrom input observation = some after) (operation : String) :
     after.oauth = input.image.oauth ∧ after.writer = input.image.writer ∧

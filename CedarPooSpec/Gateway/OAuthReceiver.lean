@@ -506,6 +506,13 @@ def migrateLegacy (input : LegacyMigration) : Option Revocation.Crash.Image := d
     Revocation.Crash.migrateFrom input.recovery.audit observation
   else none
 
+/-- A separate opt-in port for settled records without a receipt mapping. -/
+def migrateSettled (input : LegacyMigration) : Option Revocation.Crash.Image := do
+  let observation ← input.recovery.observation
+  if observation.binding = input.trusted then
+    Revocation.Crash.migrateSettledFrom input.recovery.audit observation
+  else none
+
 def legacyMigrationContract : Contract Unit LegacyMigration Revocation.Crash.Image where
   input := ⟨"trusted-legacy-receiver-and-independent-commit", fun _ => True, fun _ => inferInstance⟩
   output := ⟨"atomic-legacy-binding-and-settlement", fun _ => True, fun _ => inferInstance⟩

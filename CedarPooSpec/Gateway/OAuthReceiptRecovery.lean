@@ -68,6 +68,18 @@ theorem record_preserves (bound : lookup rows operation = some prior)
 structure Image where
   oauth : Revocation.Crash.Image
   rows : List Stored := []
+  legacyOutcomes : List (String × String) := []
+  deriving DecidableEq
+
+/-- The retained legacy digest is authoritative when present. Current rows
+already carry that source identity and need no extra model-side copy. -/
+def Image.outcomeDigest (image : Image) (operation : String) : Option String :=
+  ((image.legacyOutcomes.find? (fun entry => entry.1 == operation)).map Prod.snd).orElse
+    (fun _ => (lookup image.rows operation).map (fun row => row.identity.outcomeDigest))
+
+inductive Mode where
+  | reservation
+  | settled
   deriving DecidableEq
 
 structure Input where
@@ -76,24 +88,32 @@ structure Input where
   authority : ReceiptIdentity.Authority
   request : Request
   recovery : Receiver.ManagedReconciliation
+  mode : Mode := .reservation
 
 def checkedImage (input : Input) : Option Revocation.Crash.Image := do
+  if input.mode = .settled ∧ input.image.outcomeDigest input.request.operation ≠
+      some input.request.identity.outcomeDigest then none else do
   if input.writer ≠ input.image.oauth.writer ∨
       input.request.operation ≠ input.recovery.audit.operation ∨
       input.authority.providerKey ≠ input.recovery.audit.trust.providerKey ∨
       input.authority.witnessKey ≠ input.recovery.audit.trust.logKey then none else do
   let _ ← resolve input.authority input.request
+  let expected := match input.mode with
+    | .reservation => Revocation.Crash.EffectStatus.unresolved
+    | .settled => Revocation.Crash.EffectStatus.reconciled
   if (lookup input.image.rows input.request.operation).isNone &&
-      Revocation.Crash.effectStatus input.image.oauth input.request.operation != .unresolved then none else do
+      Revocation.Crash.effectStatus input.image.oauth input.request.operation != expected then none else do
   let current := { input.recovery with audit :=
     { input.recovery.audit with image := input.image.oauth, writer := input.writer } }
-  let next ← Receiver.migrateLegacy ⟨current, input.authority.receiver⟩
+  let next ← match input.mode with
+    | .reservation => Receiver.migrateLegacy ⟨current, input.authority.receiver⟩
+    | .settled => Receiver.migrateSettled ⟨current, input.authority.receiver⟩
   if next.settledOutcome input.request.operation = some input.request.symbolic then some next else none
 
 def persist (input : Input) : Option Image := do
   let image ← checkedImage input
   let rows ← record input.image.rows (Request.stored input.request)
-  return ⟨image, rows⟩
+  return ⟨image, rows, input.image.legacyOutcomes⟩
 
 def contract : Contract Unit Input Image where
   input := ⟨"current-writer-and-independent-receiver-receipt", fun _ => True, fun _ => inferInstance⟩
@@ -106,6 +126,11 @@ def prepare (input : Input) : Except String (Image × Unit) :=
   match persist input with
   | some result => .ok (result, ())
   | none => .error "durable receipt mapping refused"
+
+theorem retained_digest_required (settled : input.mode = .settled)
+    (missingOrConflicting : input.image.outcomeDigest input.request.operation ≠
+      some input.request.identity.outcomeDigest) : persist input = none := by
+  simp [persist, checkedImage, settled, missingOrConflicting]
 
 theorem stale_writer_refused (stale : input.writer ≠ input.image.oauth.writer) :
     persist input = none := by simp [persist, checkedImage, stale]
@@ -134,7 +159,7 @@ theorem persistence_records (receipt : Invocation contract prepare input) :
     cases stored : record input.image.rows (Request.stored input.request) with
     | none => simp [persist, checked, stored] at accepted
     | some rows =>
-      have same : receipt.result = ⟨image, rows⟩ := by
+      have same : receipt.result = ⟨image, rows, input.image.legacyOutcomes⟩ := by
         simpa [persist, checked, stored] using accepted.symm
       rw [same]
       exact record_binds stored
@@ -150,7 +175,7 @@ theorem persistence_keeps_original (receipt : Invocation contract prepare input)
     cases stored : record input.image.rows (Request.stored input.request) with
     | none => simp [persist, checked, stored] at accepted
     | some rows =>
-      have same : receipt.result = ⟨image, rows⟩ := by
+      have same : receipt.result = ⟨image, rows, input.image.legacyOutcomes⟩ := by
         simpa [persist, checked, stored] using accepted.symm
       rw [same]
       exact record_preserves bound stored

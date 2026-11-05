@@ -628,6 +628,41 @@ impl<'a> DurableReceiver<'a> {
         report
     }
 
+    /// Explicitly backfill settled legacy records using the current independent
+    /// receiver, original intent, retained outcome digest and pinned audit roots.
+    pub fn migrate_settled_oauth_mappings<'e>(
+        &self,
+        oauth: &DurableRefreshLedger<'_>,
+        inputs: impl IntoIterator<Item = DurableEffectRecovery<'e>>,
+        trusted: &LegacyReceiverTrust,
+    ) -> LegacyMigrationReport {
+        self.migrate_settled_oauth_mappings_at(oauth, inputs, trusted, |_, _| Ok(()))
+    }
+
+    pub(super) fn migrate_settled_oauth_mappings_at<'e>(
+        &self,
+        oauth: &DurableRefreshLedger<'_>,
+        inputs: impl IntoIterator<Item = DurableEffectRecovery<'e>>,
+        trusted: &LegacyReceiverTrust,
+        mut observe: impl FnMut(&OperationId, CheckpointStage) -> Result<(), String>,
+    ) -> LegacyMigrationReport {
+        let mut report = LegacyMigrationReport::default();
+        for input in inputs {
+            let operation = OperationId(input.effect.operation.clone());
+            match self.reconcile_oauth_mode_at(oauth, input, Some(trusted), true, |stage| {
+                observe(&operation, stage)
+            }) {
+                Ok(true) => report.confirmed.push(operation),
+                Ok(false) => report.pending.push(operation),
+                Err(error) => {
+                    report.stopped = Some(LegacyMigrationStop { operation, error });
+                    break;
+                }
+            }
+        }
+        report
+    }
+
     pub(super) fn reconcile_oauth_at(
         &self,
         oauth: &DurableRefreshLedger<'_>,
@@ -635,10 +670,27 @@ impl<'a> DurableReceiver<'a> {
         legacy: Option<&LegacyReceiverTrust>,
         observe: impl FnMut(CheckpointStage) -> Result<(), String>,
     ) -> Result<bool, String> {
+        self.reconcile_oauth_mode_at(oauth, input, legacy, false, observe)
+    }
+
+    fn reconcile_oauth_mode_at(
+        &self,
+        oauth: &DurableRefreshLedger<'_>,
+        input: DurableEffectRecovery<'_>,
+        legacy: Option<&LegacyReceiverTrust>,
+        settled: bool,
+        observe: impl FnMut(CheckpointStage) -> Result<(), String>,
+    ) -> Result<bool, String> {
         let authority = oauth.receiver_authority()?;
         let binding = self.receiver_binding(&authority.directory)?;
         let request = match legacy {
-            Some(trusted) if trusted.0 == binding => RecoveryRequest::LegacyMigration(binding),
+            Some(trusted) if trusted.0 == binding => {
+                if settled {
+                    RecoveryRequest::SettledMappingMigration(binding)
+                } else {
+                    RecoveryRequest::LegacyMigration(binding)
+                }
+            }
             Some(_) => return Ok(false),
             None => RecoveryRequest::Receiver(binding),
         };
