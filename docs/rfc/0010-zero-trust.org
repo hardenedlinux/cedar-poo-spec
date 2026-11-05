@@ -1382,6 +1382,13 @@ A batch uses that same receiver configuration for every item and
 reuses the single-operation migration. Missing or rejected evidence
 is reported as pending and leaves its reservation intact.
 
+Concurrent batches serialize each operation through the shared OAuth
+and receiver locks. A worker checks its writer cut and active receiver
+replica before classifying an item as pending, even when evidence is
+missing. A promotion or revocation can interleave between items.
+An overlapping receipt already committed by another worker confirms
+the same durable operation without another write.
+
 Each accepted item commits independently. An I/O error or fencing
 failure stops the attempt and identifies the affected operation.
 The stopped item may already be durable if its acknowledgment was

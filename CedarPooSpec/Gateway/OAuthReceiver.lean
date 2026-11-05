@@ -563,12 +563,16 @@ structure LegacyBatchInput where
   trusted : Revocation.Crash.ReceiverBinding
   items : List ManagedReconciliation
 
+def ManagedReconciliation.currentReplica (input : ManagedReconciliation) : Bool :=
+  input.independent.any fun pin => decide (pin.active = input.placement ∧ pin.image = input.replica)
+
 def LegacyBatchState.step (trusted : Revocation.Crash.ReceiverBinding)
     (state : LegacyBatchState) (item : ManagedReconciliation) : LegacyBatchState :=
   if state.stopped.isSome then state
   else
     let operation := item.audit.operation
-    if item.audit.writer ≠ state.image.writer then { state with stopped := some operation }
+    if item.audit.writer ≠ state.image.writer ∨ item.currentReplica = false then
+      { state with stopped := some operation }
     else
       let current := { item with audit := { item.audit with image := state.image } }
       match migrateLegacy ⟨current, trusted⟩ with
@@ -596,6 +600,21 @@ theorem legacyBatch_resume_prefix (trusted : Revocation.Crash.ReceiverBinding)
     (priorItems ++ remainingItems).foldl (LegacyBatchState.step trusted) state =
       remainingItems.foldl (LegacyBatchState.step trusted) (priorItems.foldl (LegacyBatchState.step trusted) state) :=
   List.foldl_append
+
+theorem legacyBatch_stops_at_retired_replica (trusted : Revocation.Crash.ReceiverBinding)
+    (state : LegacyBatchState) (item : ManagedReconciliation)
+    (running : state.stopped = none) (present : item.independent = some pin)
+    (retired : pin.active ≠ item.placement) :
+    state.step trusted item = { state with stopped := some item.audit.operation } := by
+  simp [LegacyBatchState.step, ManagedReconciliation.currentReplica, running, present, retired]
+
+theorem legacyBatch_stopped_keeps_state (trusted : Revocation.Crash.ReceiverBinding)
+    (state : LegacyBatchState) (items : List ManagedReconciliation)
+    (stopped : state.stopped.isSome = true) :
+    items.foldl (LegacyBatchState.step trusted) state = state := by
+  induction items with
+  | nil => rfl
+  | cons item tail ih => simpa [List.foldl_cons, LegacyBatchState.step, stopped] using ih
 
 theorem legacyBatch_step_preserves_authority (trusted : Revocation.Crash.ReceiverBinding)
     (state : LegacyBatchState) (item : ManagedReconciliation) (operation : String) :

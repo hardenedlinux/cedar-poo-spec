@@ -664,8 +664,14 @@ impl<'a> DurableReceiver<'a> {
             input,
             &authority,
             request,
-            |intent, outcome| {
-                self.committed_receipt(&authority, &operation, intent, outcome, legacy.is_some())
+            || {
+                let files = self.lock()?;
+                let (image, checkpoint) = self.current(&files)?;
+                let bound = checkpoint.and_then(|pin| pin.oauth).as_ref() == Some(&authority);
+                Ok(bound.then_some((files, image)))
+            },
+            |(_, image), intent, outcome| {
+                self.committed_receipt(image, &operation, intent, outcome, legacy.is_some())
             },
             observe,
         )
@@ -673,33 +679,27 @@ impl<'a> DurableReceiver<'a> {
 
     fn committed_receipt(
         &self,
-        authority: &ReceiverAuthority,
+        image: &Image,
         operation: &OperationId,
         intent: &Signed,
         outcome: &Signed,
         migration: bool,
-    ) -> Result<Option<LockedReceiver<'_>>, String> {
-        let files = self.lock()?;
-        let (image, checkpoint) = self.current(&files)?;
-        if checkpoint.and_then(|pin| pin.oauth).as_ref() != Some(authority) {
-            return Ok(None);
-        }
+    ) -> Result<bool, String> {
         let Some(delivery) = image.operations.admitted(operation) else {
-            return Ok(None);
+            return Ok(false);
         };
         if &delivery.outcome != outcome {
-            return Ok(None);
+            return Ok(false);
         }
         if !migration {
-            return Ok(Some(files));
+            return Ok(true);
         }
         let dispatch: ReceiverDispatch = verify(&delivery.authorization, self.trust.sender)?;
-        let matches = dispatch.version == VERSION
+        Ok(dispatch.version == VERSION
             && dispatch.domain == DISPATCH_DOMAIN
             && &dispatch.intent == intent
             && dispatch.cut.scope == image.cut.scope
-            && dispatch.cut.generation <= image.cut.generation;
-        Ok(matches.then_some(files))
+            && dispatch.cut.generation <= image.cut.generation)
     }
 
     /// Recover the original signed receipt and action without executing again.

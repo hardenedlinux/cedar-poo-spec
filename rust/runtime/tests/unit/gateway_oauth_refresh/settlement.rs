@@ -451,7 +451,7 @@ fn settlement_race(case: &str, legacy_migration: bool, handoff_first: bool) {
         .unwrap();
         let expected = active.acknowledged_checkpoint().unwrap();
         let standby_receiver = receiver(&standby);
-        let (migration_result, promoted, revoked_writer) = std::thread::scope(|scope| {
+        let (migration_result, promoted, handed_writer) = std::thread::scope(|scope| {
             let (staged, staged_observed) = mpsc::channel();
             let (release, proceed) = mpsc::channel();
             let (handoff_started, handoff_ready) = mpsc::channel();
@@ -475,10 +475,7 @@ fn settlement_race(case: &str, legacy_migration: bool, handoff_first: bool) {
             });
             let revoking = scope.spawn(move || {
                 revoke_started.send(()).unwrap();
-                let writer = open().rotate_writer()?;
-                let current = open().for_writer(writer);
-                assert!(current.revoke(verified(digest()))?);
-                Ok::<_, String>(writer)
+                open().rotate_writer()
             });
             handoff_ready.recv().unwrap();
             revoke_ready.recv().unwrap();
@@ -494,7 +491,7 @@ fn settlement_race(case: &str, legacy_migration: bool, handoff_first: bool) {
             "migration interrupted before checkpoint install"
         );
         promoted.unwrap();
-        let writer = revoked_writer.unwrap();
+        let writer = handed_writer.unwrap();
         let current = open().for_writer(writer);
         assert_eq!(
             current.effect_status(&operation).unwrap(),
@@ -712,7 +709,7 @@ fn settlement_race(case: &str, legacy_migration: bool, handoff_first: bool) {
                 .unwrap()
         );
     }
-    if handoff_first {
+    let (writer, successor_cut, final_replica) = if handoff_first {
         let current_receiver = receiver(&successor);
         assert_eq!(
             writer.legacy_unresolved_operations().unwrap(),
@@ -762,19 +759,95 @@ fn settlement_race(case: &str, legacy_migration: bool, handoff_first: bool) {
             current_receiver.migrate_legacy_oauth_batch(&standby_writer, batch(), &trusted);
         assert!(fenced.confirmed.is_empty());
         assert_eq!(fenced.stopped.unwrap().operation, operation);
-        let partial = current_receiver.migrate_legacy_oauth_batch_at(
-            &writer,
-            batch(),
-            &trusted,
-            |item, stage| {
-                assert_eq!(item, &batch_operations[0]);
-                if stage == CheckpointStage::Durable {
-                    Err("batch acknowledgment lost".into())
-                } else {
-                    Ok(())
-                }
-            },
+        let expected = current_receiver.acknowledged_checkpoint().unwrap();
+        std::fs::copy(
+            successor.join("checkpoint.json"),
+            primary.join("checkpoint.json"),
+        )
+        .unwrap();
+        let replacement = receiver(&primary);
+        let (partial, overlap, next_writer, next_cut) = std::thread::scope(|scope| {
+            let (durable, durable_seen) = mpsc::channel();
+            let (release, commit_release) = mpsc::channel();
+            let (started, overlap_started) = mpsc::channel();
+            let (between, overlap_between) = mpsc::channel();
+            let (continue_overlap, overlap_release) = mpsc::channel();
+            let old_receiver = &current_receiver;
+            let old_writer = &writer;
+            let lost_item = &batch_operations[0];
+            let migration_trust = &trusted;
+            let first = scope.spawn(move || {
+                old_receiver.migrate_legacy_oauth_batch_at(
+                    old_writer,
+                    batch(),
+                    migration_trust,
+                    |item, stage| {
+                        assert_eq!(item, lost_item);
+                        if stage == CheckpointStage::Durable {
+                            durable.send(()).unwrap();
+                            commit_release.recv().map_err(|error| error.to_string())?;
+                            Err("batch acknowledgment lost".into())
+                        } else {
+                            Ok(())
+                        }
+                    },
+                )
+            });
+            durable_seen.recv().unwrap();
+            assert_locked(&oauth_path);
+            assert_locked(&pin);
+            let second =
+                scope.spawn(move || {
+                    let [_, missing, repeated, suffix] = batch();
+                    started.send(()).unwrap();
+                    let items = [repeated, missing, suffix].into_iter().enumerate().map(
+                        |(index, input)| {
+                            if index == 1 {
+                                between.send(()).unwrap();
+                                overlap_release.recv().unwrap();
+                            }
+                            input
+                        },
+                    );
+                    old_receiver.migrate_legacy_oauth_batch_at(
+                        old_writer,
+                        items,
+                        migration_trust,
+                        |_, _| panic!("the overlapping worker attempted another write"),
+                    )
+                });
+            overlap_started.recv().unwrap();
+            release.send(()).unwrap();
+            overlap_between.recv().unwrap();
+            let cut = replacement.promote(&expected).unwrap();
+            let current = open().for_writer(writer.rotate_writer().unwrap());
+            assert!(current.revoke(verified(digest())).unwrap());
+            continue_overlap.send(()).unwrap();
+            (first.join().unwrap(), second.join().unwrap(), current, cut)
+        });
+        assert_eq!(
+            overlap.confirmed,
+            std::slice::from_ref(&batch_operations[0])
         );
+        assert!(overlap.pending.is_empty());
+        let overlap_stop = overlap.stopped.unwrap();
+        assert_eq!(overlap_stop.operation, batch_operations[2]);
+        assert_eq!(overlap_stop.error, "OAuth writer fenced");
+        let stale_replica = current_receiver.migrate_legacy_oauth_batch(
+            &next_writer,
+            batch().into_iter().skip(1),
+            &trusted,
+        );
+        assert!(stale_replica.confirmed.is_empty() && stale_replica.pending.is_empty());
+        let replica_stop = stale_replica.stopped.unwrap();
+        assert_eq!(replica_stop.operation, batch_operations[2]);
+        assert_eq!(
+            replica_stop.error,
+            "receiver replica differs from the independent checkpoint"
+        );
+        let writer = next_writer;
+        let current_receiver = replacement;
+        let successor_cut = next_cut;
         assert_eq!(partial.confirmed, std::slice::from_ref(&operation));
         assert_eq!(partial.pending, std::slice::from_ref(&batch_operations[2]));
         let stopped = partial.stopped.unwrap();
@@ -807,12 +880,19 @@ fn settlement_race(case: &str, legacy_migration: bool, handoff_first: bool) {
             writer.legacy_unresolved_operations().unwrap(),
             std::slice::from_ref(&batch_operations[2])
         );
-        assert_eq!(
-            current_receiver.migrate_legacy_oauth_batch_at(&writer, batch(), &trusted, |_, _| {
-                panic!("repeating a completed batch wrote another checkpoint")
-            }),
-            resumed
-        );
+        std::thread::scope(|scope| {
+            let repeat = || {
+                current_receiver.migrate_legacy_oauth_batch_at(
+                    &writer,
+                    batch(),
+                    &trusted,
+                    |_, _| panic!("repeating a completed batch wrote another checkpoint"),
+                )
+            };
+            let concurrent = scope.spawn(repeat);
+            assert_eq!(repeat(), resumed);
+            assert_eq!(concurrent.join().unwrap(), resumed);
+        });
         let checkpoint = writer.checkpoint().unwrap();
         let dispatch = ReceiverDispatch::sign(
             successor_cut.clone(),
@@ -849,12 +929,15 @@ fn settlement_race(case: &str, legacy_migration: bool, handoff_first: bool) {
                 .unwrap()
                 .is_none()
         );
-    }
+        (writer, successor_cut, &primary)
+    } else {
+        (writer, successor_cut, &successor)
+    };
     let latest = writer.checkpoint().unwrap();
     let new_dispatch =
         ReceiverDispatch::sign(successor_cut, "after-revocation", &intent, &sender).unwrap();
     assert!(
-        receiver(&successor)
+        receiver(final_replica)
             .receive_oauth(
                 &writer,
                 use_effect(&latest, &retry),

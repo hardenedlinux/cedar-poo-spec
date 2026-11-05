@@ -146,6 +146,9 @@ private def crashExercise (durable : Revocation.Recovery.Store)
   let batchInput : Receiver.LegacyBatchInput :=
     ⟨batchImage, successor.result.binding, [missingItem, legacyRecovery]⟩
   let .ok batch := Receiver.legacyBatchContract.invoke Receiver.prepareLegacyBatch batchInput | return false
+  let fencedMissing := { missingItem with placement := "standby" }
+  let staleReplicaBatch : Receiver.LegacyBatchInput := { batchInput with items := [fencedMissing, legacyRecovery] }
+  let staleRun : Receiver.LegacyBatchState := staleReplicaBatch.run
   let rerunBatch := { batchInput with image := batch.result.image }
   let oldWriterAudit := { legacyAudit with writer := 1 }
   let oldWriterRecovery := { legacyRecovery with audit := oldWriterAudit }
@@ -174,6 +177,9 @@ private def crashExercise (durable : Revocation.Recovery.Store)
     decide (lateSettlement.result.settledOutcome intent.operation = some outcome) &&
     decide (Revocation.Crash.reconcile { late with image := lateSettlement.result } = some lateSettlement.result) &&
     (Revocation.Crash.reconcile conflictingEvidence).isNone &&
+    (staleRun.stopped == some unrelated.operation) &&
+    staleRun.pending.isEmpty && staleRun.confirmed.isEmpty &&
+    decide (staleRun.image = batchImage) &&
     decide (batch.result.confirmed = [intent.operation]) &&
     decide (batch.result.pending = [unrelated.operation]) &&
     batch.result.stopped.isNone &&
@@ -406,3 +412,6 @@ end Tests.Gateway.OAuthRefresh
 #print axioms CedarPooSpec.Gateway.OAuth.Receiver.legacyBatch_resume_prefix
 #print axioms CedarPooSpec.Gateway.OAuth.Receiver.legacyBatch_preserves_authority
 #print axioms CedarPooSpec.Gateway.OAuth.Receiver.legacyBatch_cannot_reopen_operation
+
+#print axioms CedarPooSpec.Gateway.OAuth.Receiver.legacyBatch_stops_at_retired_replica
+#print axioms CedarPooSpec.Gateway.OAuth.Receiver.legacyBatch_stopped_keeps_state

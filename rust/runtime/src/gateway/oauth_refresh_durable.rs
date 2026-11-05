@@ -490,7 +490,8 @@ impl<'a> DurableRefreshLedger<'a> {
         self.reconcile_effect_at(
             input,
             RecoveryRequest::Detached,
-            |_, _| Ok(Some(())),
+            || Ok(Some(())),
+            |_, _, _| Ok(true),
             |_| Ok(()),
         )
     }
@@ -500,7 +501,8 @@ impl<'a> DurableRefreshLedger<'a> {
         input: DurableEffectRecovery<'_>,
         authority: &ReceiverAuthority,
         request: RecoveryRequest,
-        committed: impl FnOnce(&Signed, &Signed) -> Result<Option<G>, String>,
+        receiver: impl FnOnce() -> Result<Option<G>, String>,
+        committed: impl FnOnce(&G, &Signed, &Signed) -> Result<bool, String>,
         observe: impl FnMut(CheckpointStage) -> Result<(), String>,
     ) -> Result<bool, String> {
         let ledger = DurableRefreshLedger {
@@ -508,19 +510,25 @@ impl<'a> DurableRefreshLedger<'a> {
             authority: self.authority,
             writer: self.writer,
         };
-        ledger.reconcile_effect_at(input, request, committed, observe)
+        ledger.reconcile_effect_at(input, request, receiver, committed, observe)
     }
 
     fn reconcile_effect_at<G>(
         &self,
         input: DurableEffectRecovery<'_>,
         request: RecoveryRequest,
-        committed: impl FnOnce(&Signed, &Signed) -> Result<Option<G>, String>,
+        receiver: impl FnOnce() -> Result<Option<G>, String>,
+        committed: impl FnOnce(&G, &Signed, &Signed) -> Result<bool, String>,
         observe: impl FnMut(CheckpointStage) -> Result<(), String>,
     ) -> Result<bool, String> {
         let history = anchored_history(input.history, input.trust.authority)?;
         let file = LockedCheckpoint::open(self.directory)?;
         let mut image = self.read(&file)?;
+        // Even a missing or unqualified item must stop at a retired replica.
+        // Keep the observed receiver cut locked through any OAuth write.
+        let Some(receiver) = receiver()? else {
+            return Ok(false);
+        };
         let Some(effect) = image.effects.get_mut(&input.effect.operation) else {
             return Ok(false);
         };
@@ -538,11 +546,9 @@ impl<'a> DurableRefreshLedger<'a> {
         let Some(outcome) = outcome else {
             return Ok(false);
         };
-        // Keep the independently verified receiver cut locked until the
-        // OAuth checkpoint commits or the attempt returns.
-        let Some(_receiver_guard) = committed(&effect.intent, outcome)? else {
+        if !committed(&receiver, &effect.intent, outcome)? {
             return Ok(false);
-        };
+        }
         let identity = outcome.source_sha256()?;
         if effect.resolved {
             return Ok(effect.settled_outcome.as_ref() == Some(&identity));
