@@ -1452,6 +1452,18 @@ accepted confirmations are read-only, while every missing-evidence
 reservation remains intact. Separate retry proofs use distinct
 request identifiers for the two workers.
 
+Recovery itself can fail after a read-only confirmation. Both
+restarted workers pause after confirming the committed original
+receipt, with different confirmed and pending prefixes. The harness
+kills one worker, transfers ownership twice, then releases the
+surviving worker. Its suffix is fenced and the durable checkpoint
+does not change. A new pair replays both overlapping orders from the
+independent receiver checkpoint. The original receipt remains bound,
+missing-evidence reservations remain unresolved, and the revoked
+grant cannot authorize another send. The Lean model preserves the
+receipt and every retained reservation through the same repeated
+crash and takeover sequence.
+
 The first clean audit durably binds the canonical identity of the
 signed outcome. A later audit of that same outcome is idempotent.
 A different signed outcome cannot replace it, even if presented

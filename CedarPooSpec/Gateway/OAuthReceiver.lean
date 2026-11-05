@@ -709,6 +709,28 @@ theorem legacyBatch_read_only_fold_keeps_image (trusted : Revocation.Crash.Recei
     exact ih (fun next member => readOnly next (by simp [member]))
       (state.step trusted item) (unchanged.trans same)
 
+/-- A crash after read-only prefix confirmation cannot erase the committed
+receipt or release reservations when recovery transfers ownership twice. -/
+theorem legacyBatch_read_only_crash_survives_takeovers (trusted : Revocation.Crash.ReceiverBinding)
+    (image : Revocation.Crash.Image) (items : List ManagedReconciliation)
+    (readOnly : ∀ item ∈ items,
+      migrateLegacy ⟨{ item with audit := { item.audit with image } }, trusted⟩ = none ∨
+      migrateLegacy ⟨{ item with audit := { item.audit with image } }, trusted⟩ = some image)
+    (state : LegacyBatchState) (same : state.image = image) (outcome : ProviderOutcome)
+    (pinned : image.settledOutcome outcome.receipt.commit.operation = some outcome)
+    (first : Revocation.Crash.handoff
+      (Revocation.Crash.recoverImage .durable image
+        (items.foldl (LegacyBatchState.step trusted) state).image) writer = some standby)
+    (second : Revocation.Crash.handoff standby nextWriter = some after) :
+    after.retained = image.retained ∧
+      after.settledOutcome outcome.receipt.commit.operation = some outcome := by
+  have unchanged := legacyBatch_read_only_fold_keeps_image trusted image items readOnly state same
+  simp only [Revocation.Crash.recoverImage, unchanged] at first
+  have preserved := Revocation.Crash.handoff_preserves_effect_state second
+  have prior := Revocation.Crash.handoff_preserves_effect_state first
+  refine ⟨preserved.1.trans prior.1, ?_⟩
+  simpa only [Revocation.Crash.Image.settledOutcome, preserved.2, prior.2] using pinned
+
 theorem legacyBatch_step_preserves_authority (trusted : Revocation.Crash.ReceiverBinding)
     (state : LegacyBatchState) (item : ManagedReconciliation) (operation : String) :
     let next := state.step trusted item

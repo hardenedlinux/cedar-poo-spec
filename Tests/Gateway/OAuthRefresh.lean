@@ -47,10 +47,40 @@ private def overlappingRecoveryExercise (takeover : Receiver.LegacyBatchInput)
   let second : Receiver.LegacyBatchInput :=
     ⟨confirmed.result.image, takeover.trusted, [missingReceipt, receipt, receipt, other]⟩
   let .ok repeated := Receiver.legacyBatchContract.invoke Receiver.prepareLegacyBatch second | return false
+  let .ok recoveryPrefix := Receiver.legacyBatchContract.invoke Receiver.prepareLegacyBatch
+    { first with items := [receipt] } | return false
+  let .ok peerPrefix := Receiver.legacyBatchContract.invoke Receiver.prepareLegacyBatch
+    { first with items := [missingReceipt, receipt] } | return false
+  let crashedAgain := Revocation.Crash.recoverImage .durable writer recoveryPrefix.result.image
+  let some standby := Revocation.Crash.handoff crashedAgain writer.writer | return false
+  let some active := Revocation.Crash.handoff standby standby.writer | return false
+  let nextPromotion : Receiver.PromotionInput :=
+    ⟨some receiver.result, receiver.result, receiver.result.image, "recovery-standby"⟩
+  let .ok nextReceiver := Receiver.promotionContract.invoke Receiver.preparePromotion nextPromotion | return false
+  let finalPromotion : Receiver.PromotionInput :=
+    ⟨some nextReceiver.result, nextReceiver.result, nextReceiver.result.image, "recovery-active"⟩
+  let .ok finalReceiver := Receiver.promotionContract.invoke Receiver.preparePromotion finalPromotion | return false
+  let latest := { receipt with
+    independent := some finalReceiver.result
+    placement := "recovery-active"
+    replica := finalReceiver.result.image
+    audit := { receipt.audit with writer := active.writer } }
+  let latestConflict := { latest with audit := { other.audit with writer := active.writer } }
+  let latestMissing := { latest with audit := { missingReceipt.audit with writer := active.writer } }
+  let fencedPeer := { peerPrefix.result with image := active }
+  let peerSuffix := [receipt, other].foldl
+    (Receiver.LegacyBatchState.step takeover.trusted) fencedPeer
+  let finalInput : Receiver.LegacyBatchInput :=
+    ⟨active, takeover.trusted, [latest, latestConflict, latestMissing, latest]⟩
+  let .ok finalFirst := Receiver.legacyBatchContract.invoke Receiver.prepareLegacyBatch finalInput | return false
+  let finalReordered := { finalInput with
+    image := finalFirst.result.image
+    items := [latestMissing, latest, latest, latestConflict] }
+  let .ok finalSecond := Receiver.legacyBatchContract.invoke Receiver.prepareLegacyBatch finalReordered | return false
   let retryAfterRecovery := { retry with
-    image := repeated.result.image
-    writer := writer.writer
-    checkedWriter := writer.writer }
+    image := finalSecond.result.image
+    writer := active.writer
+    checkedWriter := active.writer }
   return decide (stopped = { peerState with stopped := some operation }) &&
     decide (confirmed.result.image = writer) &&
     decide (repeated.result.image = writer) &&
@@ -60,6 +90,20 @@ private def overlappingRecoveryExercise (takeover : Receiver.LegacyBatchInput)
     decide (repeated.result.pending = [pendingOperation, operation]) &&
     decide (repeated.result.image.settledOutcome operation = some outcome) &&
     decide (Revocation.Crash.effectStatus repeated.result.image pendingOperation = .unresolved) &&
+    decide (recoveryPrefix.result.image = writer) &&
+    decide (peerPrefix.result.image = writer) &&
+    decide (peerPrefix.result.confirmed = [operation]) &&
+    decide (peerPrefix.result.pending = [pendingOperation]) &&
+    decide (peerSuffix = { fencedPeer with stopped := some operation }) &&
+    decide (finalFirst.result.image = active) &&
+    decide (finalSecond.result.image = active) &&
+    decide (finalFirst.result.confirmed = [operation, operation]) &&
+    decide (finalSecond.result.confirmed = finalFirst.result.confirmed) &&
+    decide (finalSecond.result.pending = [pendingOperation, operation]) &&
+    decide (finalSecond.result.image.settledOutcome operation = some outcome) &&
+    decide (finalSecond.result.image.retained = writer.retained) &&
+    decide (finalSecond.result.image.oauth = writer.oauth) &&
+    decide (Revocation.Crash.effectStatus finalSecond.result.image pendingOperation = .unresolved) &&
     (Revocation.Crash.begin retryAfterRecovery).isNone
 
 private def crashExercise (durable : Revocation.Recovery.Store)
@@ -584,3 +628,4 @@ end Tests.Gateway.OAuthRefresh
 #print axioms CedarPooSpec.Gateway.OAuth.Revocation.Crash.committed_migration_cannot_reopen_after_failover
 #print axioms CedarPooSpec.Gateway.OAuth.Receiver.legacyBatch_fenced_suffix_keeps_prefix
 #print axioms CedarPooSpec.Gateway.OAuth.Receiver.legacyBatch_read_only_fold_keeps_image
+#print axioms CedarPooSpec.Gateway.OAuth.Receiver.legacyBatch_read_only_crash_survives_takeovers

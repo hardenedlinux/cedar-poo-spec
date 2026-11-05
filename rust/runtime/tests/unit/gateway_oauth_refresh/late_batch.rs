@@ -146,12 +146,29 @@ pub(super) fn replay_across_processes(
         run_worker(&fixture_path, "rebind");
     }
     // The takeover-first migration may now be durable without its acknowledgment.
-    let cut = takeover(root, &mut fixture);
+    takeover(root, &mut fixture);
     write_fixture(&fixture);
+    let before_recovery = std::fs::read(&checkpoint).unwrap();
     let first = spawn_worker(&fixture_path, "resumed-a");
     let second = spawn_worker(&fixture_path, "resumed-b");
-    finish_worker(first, "resumed-a");
+    wait_for_marker(&root.join("recovery-paused-resumed-a"));
+    wait_for_marker(&root.join("recovery-paused-resumed-b"));
+    assert_eq!(std::fs::read(&checkpoint).unwrap(), before_recovery);
+    kill_worker(first);
+    assert_eq!(std::fs::read(&checkpoint).unwrap(), before_recovery);
+    takeover(root, &mut fixture);
+    let cut = takeover(root, &mut fixture);
+    let after_recovery_takeover = std::fs::read(&checkpoint).unwrap();
+    std::fs::write(root.join("recovery-continue"), []).unwrap();
     finish_worker(second, "resumed-b");
+    assert_eq!(std::fs::read(&checkpoint).unwrap(), after_recovery_takeover);
+
+    write_fixture(&fixture);
+    let first = spawn_worker(&fixture_path, "recovered-a");
+    let second = spawn_worker(&fixture_path, "recovered-b");
+    finish_worker(first, "recovered-a");
+    finish_worker(second, "recovered-b");
+    assert_eq!(std::fs::read(&checkpoint).unwrap(), after_recovery_takeover);
     (fixture.writer, cut)
 }
 
@@ -308,7 +325,10 @@ fn restart_worker() {
     let phase = std::env::var(PHASE).unwrap();
     assert_eq!(
         oauth.effect_status(&operation).unwrap(),
-        if phase.starts_with("resumed-") || phase == "peer-migration" {
+        if phase.starts_with("resumed-")
+            || phase.starts_with("recovered-")
+            || phase == "peer-migration"
+        {
             EffectStatus::Reconciled
         } else {
             EffectStatus::Unresolved
@@ -377,7 +397,7 @@ fn restart_worker() {
         "receiver replica differs from the independent checkpoint"
     );
 
-    if phase == "fenced" || phase.starts_with("resumed-") {
+    if phase == "fenced" || phase.starts_with("resumed-") || phase.starts_with("recovered-") {
         let old_writer = oauth.for_writer(fixture.retired_writer.unwrap());
         let stopped = receiver
             .migrate_legacy_oauth_batch(
@@ -595,16 +615,20 @@ fn restart_worker() {
         );
         return;
     }
-    assert!(matches!(phase.as_str(), "resumed-a" | "resumed-b"));
+    assert!(matches!(
+        phase.as_str(),
+        "resumed-a" | "resumed-b" | "recovered-a" | "recovered-b"
+    ));
     std::fs::write(root.join(&phase), []).unwrap();
-    let other = if phase == "resumed-a" {
-        "resumed-b"
-    } else {
-        "resumed-a"
+    let other = match phase.as_str() {
+        "resumed-a" => "resumed-b",
+        "resumed-b" => "resumed-a",
+        "recovered-a" => "recovered-b",
+        _ => "recovered-a",
     };
     wait_for_marker(&root.join(other));
     let committed = snapshot();
-    let (items, pending) = if phase == "resumed-b" {
+    let (items, pending) = if phase.ends_with("-b") {
         (
             [missing, original(), original(), conflict],
             [missing_operation.clone(), operation.clone()],
@@ -615,9 +639,26 @@ fn restart_worker() {
             [operation.clone(), missing_operation.clone()],
         )
     };
+    let items = items.into_iter().enumerate().map(|(index, item)| {
+        let pause_after = if phase == "resumed-a" { 1 } else { 2 };
+        if phase.starts_with("resumed-") && index == pause_after {
+            std::fs::write(root.join(format!("recovery-paused-{phase}")), []).unwrap();
+            wait_for_marker(&root.join("recovery-continue"));
+        }
+        item
+    });
     let report = receiver.migrate_legacy_oauth_batch_at(&oauth, items, &trusted, |_, _| {
         panic!("retry attempted a second migration write")
     });
+    if phase.starts_with("resumed-") {
+        assert_eq!(phase, "resumed-b");
+        assert_eq!(report.confirmed, std::slice::from_ref(&operation));
+        assert_eq!(report.pending, std::slice::from_ref(&missing_operation));
+        let stopped = report.stopped.unwrap();
+        assert_eq!(stopped.operation, operation);
+        assert_eq!(stopped.error, "OAuth writer fenced");
+        return;
+    }
     assert_eq!(report.confirmed, [operation.clone(), operation.clone()]);
     assert_eq!(report.pending, pending);
     assert!(report.stopped.is_none());
