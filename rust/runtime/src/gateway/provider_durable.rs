@@ -2,9 +2,11 @@
 use super::checkpoint_store::{CheckpointStage, LockedCheckpoint};
 use super::oauth_refresh_durable::{
     DurableEffectRecovery, DurableEffectUse, DurableRefreshLedger, ReceiverAuthority,
-    ReceiverAuthorization, ReceiverBinding, RecoveryRequest,
+    ReceiverAuthorization, RecoveryRequest,
 };
 use super::provider::ProviderRequest;
+pub use super::receipt_identity::LegacyReceiverTrust;
+use super::receipt_identity::ReceiptAuthority as ReceiverBinding;
 use super::wire::sign;
 use super::{
     EffectIdentity, FactBinding, ProviderAction, ProviderJournal, Signed, Version, verify,
@@ -47,33 +49,6 @@ impl ReceiverDispatch {
             },
             sender,
         )
-    }
-}
-
-/// Receiver authority selected independently by the host for a legacy
-/// migration. Construct it from trusted deployment configuration.
-pub struct LegacyReceiverTrust(ReceiverBinding);
-
-impl LegacyReceiverTrust {
-    /// Project the configured receiver identity for a source-bound receipt mapping.
-    pub fn receipt_authority(&self) -> super::receipt_identity::ReceiptAuthority {
-        super::receipt_identity::ReceiptAuthority {
-            checkpoint: self.0.checkpoint.clone(),
-            scope: self.0.scope.clone(),
-        }
-    }
-
-    pub fn from_config(checkpoint: &Path, scope: &str) -> Result<Self, String> {
-        if scope.is_empty() {
-            return Err("missing legacy receiver scope".into());
-        }
-        let checkpoint = checkpoint
-            .canonicalize()
-            .map_err(|error| error.to_string())?;
-        Ok(Self(ReceiverBinding {
-            checkpoint,
-            scope: scope.into(),
-        }))
     }
 }
 

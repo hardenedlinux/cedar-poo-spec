@@ -1,11 +1,10 @@
 //! Exact source mapping selected from configured authority and independent evidence.
 use super::provider::PROVIDER_OUTCOME_DOMAIN;
-use super::provider_durable::LegacyReceiverTrust;
 use super::{Commit, EffectIdentity, ProviderOutcome, Signed, Version, verify};
 use cedar_poo_core::operation_identity::OperationId;
 use p256::ecdsa::VerifyingKey;
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 /// Receiver checkpoint and scope selected by trusted configuration.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -13,6 +12,34 @@ use std::path::PathBuf;
 pub struct ReceiptAuthority {
     pub checkpoint: PathBuf,
     pub scope: String,
+}
+
+/// Receiver authority selected independently by the host for a legacy
+/// migration. Construct it from trusted deployment configuration.
+pub struct LegacyReceiverTrust(pub(super) ReceiptAuthority);
+
+impl LegacyReceiverTrust {
+    /// Project the configured receiver identity for a source-bound receipt mapping.
+    pub fn receipt_authority(&self) -> ReceiptAuthority {
+        ReceiptAuthority {
+            checkpoint: self.0.checkpoint.clone(),
+            scope: self.0.scope.clone(),
+        }
+    }
+
+    /// Resolve the checkpoint from trusted deployment configuration.
+    pub fn from_config(checkpoint: &Path, scope: &str) -> Result<Self, String> {
+        if scope.is_empty() {
+            return Err("missing legacy receiver scope".into());
+        }
+        let checkpoint = checkpoint
+            .canonicalize()
+            .map_err(|error| error.to_string())?;
+        Ok(Self(ReceiptAuthority {
+            checkpoint,
+            scope: scope.into(),
+        }))
+    }
 }
 
 /// Versioned operation and authority identity of the exact signed sources.
@@ -35,6 +62,47 @@ pub struct ReceiptIdentityCandidate {
     pub identity: ReceiptIdentityBinding,
     pub intent: Signed,
     pub outcome: Signed,
+}
+
+/// Durable source binding; the retained effect already owns the signed intent.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(super) struct StoredReceiptIdentity {
+    pub(super) identity: ReceiptIdentityBinding,
+    outcome: Signed,
+}
+
+impl StoredReceiptIdentity {
+    /// Called only after the shared audit and locked independent receiver check.
+    pub(super) fn from_audited(
+        authority: ReceiptAuthority,
+        provider_key: &VerifyingKey,
+        witness_key: &VerifyingKey,
+        operation: OperationId,
+        intent: &Signed,
+        outcome: &Signed,
+    ) -> Result<Self, String> {
+        Ok(Self {
+            identity: ReceiptIdentityBinding {
+                version: Version { major: 1, minor: 0 },
+                authority,
+                provider_key: provider_key.to_encoded_point(false).as_bytes().to_vec(),
+                witness_key: witness_key.to_encoded_point(false).as_bytes().to_vec(),
+                operation,
+                intent_sha256: intent.source_sha256()?,
+                outcome_sha256: outcome.source_sha256()?,
+            },
+            outcome: outcome.clone(),
+        })
+    }
+
+    pub(super) fn candidate(&self, intent: &Signed) -> ReceiptIdentityCandidate {
+        ReceiptIdentityCandidate {
+            identity: self.identity.clone(),
+            intent: intent.clone(),
+            outcome: self.outcome.clone(),
+        }
+    }
 }
 
 /// Context comes from trusted configuration, the retained intent and the
@@ -84,23 +152,15 @@ impl ReceiptIdentityContext<'_> {
             return Err("receipt identity context differs from the verified sources".into());
         }
         Ok(VerifiedReceiptIdentity {
-            original: ReceiptIdentityCandidate {
-                identity: ReceiptIdentityBinding {
-                    version,
-                    authority: self.receiver.receipt_authority(),
-                    provider_key: self
-                        .provider_key
-                        .to_encoded_point(false)
-                        .as_bytes()
-                        .to_vec(),
-                    witness_key: self.witness_key.to_encoded_point(false).as_bytes().to_vec(),
-                    operation: OperationId(self.effect.operation.clone()),
-                    intent_sha256: self.intent.source_sha256()?,
-                    outcome_sha256: self.outcome.source_sha256()?,
-                },
-                intent: self.intent.clone(),
-                outcome: self.outcome.clone(),
-            },
+            original: StoredReceiptIdentity::from_audited(
+                self.receiver.receipt_authority(),
+                self.provider_key,
+                self.witness_key,
+                OperationId(self.effect.operation.clone()),
+                self.intent,
+                self.outcome,
+            )?
+            .candidate(self.intent),
         })
     }
 }

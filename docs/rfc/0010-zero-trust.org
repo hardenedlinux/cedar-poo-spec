@@ -1495,7 +1495,7 @@ same model executions that produce the Rust replay plan. The native
 conformance test runs both commit orders under the existing 120-second
 watchdog, with the existing process-drain allowance.
 
-Version 3 of the generated recovery plan contains an ordered state
+Version 4 of the generated recovery plan contains an ordered state
 projection after each worker crash, lost confirmation, fencing result,
 completed takeover and final recovery. The first crashing worker alternates
 between A and B across rounds. Each projection includes both incarnation
@@ -1539,6 +1539,33 @@ cross-authority inputs. Lean uses a deliberately colliding digest function
 in its exact-source negative controls. The mapping-survival theorem uses
 the finite recovery trace to keep the same settled symbolic source selected
 through crashes, handoffs and revocation.
+
+The =OAuth.ReceiptRecovery= Contract commits the OAuth settlement and exact
+mapping in one recoverable image. A versioned mapping stores the receiver
+authority, provider and witness keys, operation and source digests together
+with the exact signed outcome. The existing retained intent supplies the
+other signed source, avoiding a second persisted intent copy. Native
+construction reuses the authenticated shared audit and the locked independent
+receiver check. It introduces no second signature-verification pipeline.
+
+The mapping is written under the existing writer and receiver locks before
+the checkpoint acknowledgment. The same checkpoint persist operation owns
+the settlement, origin and mapping. A staged crash recovers the prior image;
+a durable crash or lost acknowledgment recovers the original mapping.
+Concurrent confirmations and overlapping batches can only confirm that
+same mapping. Reopening a process, rotating ownership or revoking a grant
+cannot replace it or make a delivery eligible for another send.
+
+The finite mapping trace composes actual legacy recovery traces with mapping
+Contract commits and their staged or durable boundaries. Its preservation
+theorem retains an already bound row across every finite trace. Separate
+theorems establish idempotence, replacement refusal and stale-writer refusal.
+Every native step compares a mapping loaded from the reopened OAuth checkpoint
+with the independently authenticated receiver source. It also checks that
+the missing-evidence operation still has no mapping. Legacy settled records
+without this field remain unbound: replay can confirm their existing outcome
+identity but cannot silently create a mapping. Unresolved records acquire a
+mapping only through the current independent-receiver reconciliation.
 
 The first clean audit durably binds the canonical identity of the
 signed outcome. A later audit of that same outcome is idempotent.

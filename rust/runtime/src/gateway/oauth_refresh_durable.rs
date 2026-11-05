@@ -1,5 +1,9 @@
 //! Durable OAuth final mediation on the shared trusted Unix checkpoint store.
 use super::oauth_refresh::{RefreshDigest, RefreshEnrollment, RefreshExchange, State};
+use super::receipt_identity::{
+    ReceiptAuthority, ReceiptAuthority as ReceiverBinding, ReceiptIdentityCandidate,
+    StoredReceiptIdentity,
+};
 use crate::gateway::audit::reconcile_recovery;
 use crate::gateway::checkpoint_store::{CheckpointStage, LockedCheckpoint};
 use crate::gateway::oauth::{CurrentUse, Grant, ProofReservation};
@@ -48,6 +52,8 @@ struct RetainedEffect {
     settled_outcome: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     recovery_origin: Option<RecoveryOrigin>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    receipt_identity: Option<StoredReceiptIdentity>,
 }
 
 /// Authority-assigned writer incarnation. Trusted configuration binds it
@@ -95,6 +101,8 @@ pub struct DurableEffectObservation {
     pub intent_identity: String,
     /// Absent for unresolved effects and older records without a stored outcome identity.
     pub outcome_identity: Option<String>,
+    /// Exact durable mapping; absent for unresolved and pre-mapping records.
+    pub receipt_identity: Option<ReceiptIdentityCandidate>,
 }
 
 /// Detached provider evidence and the independently selected audit roots.
@@ -104,13 +112,6 @@ pub struct DurableEffectRecovery<'a> {
     pub outcomes: &'a [Signed],
     pub history: &'a LogSnapshot,
     pub trust: ProviderAuditTrust<'a>,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub(super) struct ReceiverBinding {
-    pub(super) checkpoint: PathBuf,
-    pub(super) scope: String,
 }
 
 #[derive(PartialEq, Eq, Serialize, Deserialize)]
@@ -135,7 +136,10 @@ impl RetainedEffect {
     }
 
     fn is_legacy_unresolved(&self) -> bool {
-        self.recovery_origin.is_none() && !self.resolved && self.settled_outcome.is_none()
+        self.recovery_origin.is_none()
+            && !self.resolved
+            && self.settled_outcome.is_none()
+            && self.receipt_identity.is_none()
     }
 
     fn matches_origin(&self, request: &RecoveryRequest) -> bool {
@@ -420,6 +424,7 @@ impl<'a> DurableRefreshLedger<'a> {
                 resolved: false,
                 settled_outcome: None,
                 recovery_origin: Some(origin),
+                receipt_identity: None,
             },
         );
         file.persist(&image)?;
@@ -506,6 +511,10 @@ impl<'a> DurableRefreshLedger<'a> {
                     status: effect.status(),
                     intent_identity: effect.intent.source_sha256()?,
                     outcome_identity: effect.settled_outcome.clone(),
+                    receipt_identity: effect
+                        .receipt_identity
+                        .as_ref()
+                        .map(|stored| stored.candidate(&effect.intent)),
                 })
             })
             .transpose()
@@ -592,15 +601,42 @@ impl<'a> DurableRefreshLedger<'a> {
         if !committed(&receiver, &effect.intent, outcome)? {
             return Ok(false);
         }
-        let identity = outcome.source_sha256()?;
+        let receipt_identity = match &request {
+            RecoveryRequest::Detached => None,
+            RecoveryRequest::Receiver(binding) | RecoveryRequest::LegacyMigration(binding) => {
+                Some(StoredReceiptIdentity::from_audited(
+                    ReceiptAuthority {
+                        checkpoint: binding.checkpoint.clone(),
+                        scope: binding.scope.clone(),
+                    },
+                    input.trust.provider_key,
+                    &input.trust.authority.log_key,
+                    OperationId(input.effect.operation.clone()),
+                    &effect.intent,
+                    outcome,
+                )?)
+            }
+        };
+        let identity = match &receipt_identity {
+            Some(stored) => stored.identity.outcome_sha256.clone(),
+            None => outcome.source_sha256()?,
+        };
         if effect.resolved {
-            return Ok(effect.settled_outcome.as_ref() == Some(&identity));
+            return Ok(effect.settled_outcome.as_ref() == Some(&identity)
+                && effect
+                    .receipt_identity
+                    .as_ref()
+                    .is_none_or(|stored| Some(stored) == receipt_identity.as_ref()));
+        }
+        if effect.receipt_identity.is_some() {
+            return Ok(false);
         }
         if let RecoveryRequest::LegacyMigration(binding) = request {
             effect.recovery_origin = Some(RecoveryOrigin::Receiver(binding));
         }
         effect.resolved = true;
         effect.settled_outcome = Some(identity);
+        effect.receipt_identity = receipt_identity;
         file.persist_at(&image, observe)?;
         Ok(true)
     }

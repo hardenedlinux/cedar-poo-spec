@@ -959,6 +959,7 @@ fn durable_lost_effect_reply_requires_independent_settlement_and_fences_old_writ
     let retained = legacy["effects"][&operation.0].as_object_mut().unwrap();
     assert!(retained.remove("settled_outcome").is_some());
     assert!(retained.remove("recovery_origin").is_some());
+    assert!(retained.remove("receipt_identity").is_some());
     std::fs::write(
         legacy_dir.join("checkpoint.json"),
         serde_json::to_vec(&legacy).unwrap(),

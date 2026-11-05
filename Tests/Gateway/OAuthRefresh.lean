@@ -1,5 +1,5 @@
 import CedarPooSpec.Gateway.OAuthReceiver
-import CedarPooSpec.Gateway.OAuthReceiptIdentity
+import CedarPooSpec.Gateway.OAuthReceiptRecovery
 import Tests.Gateway.RecoveryPlan
 
 namespace Tests.Gateway.OAuthRefresh
@@ -35,12 +35,14 @@ private structure MappingChecks where
   foreignWitness : Bool := false
   changedSource : Bool := false
   changedIntent : Bool := false
+  persisted : Bool := false
+  missingAbsent : Bool := false
 
-private def identityMappingChecks (input : Receiver.LegacyBatchInput)
-    (original missing : Receiver.ManagedReconciliation) (image : Revocation.Crash.Image)
-    (pin : Receiver.Checkpoint) : MappingChecks := Id.run do
-  let some (_, outcome) := Receiver.evidence pin.image ⟨original.audit.operation⟩ | return {}
-  if pin.binding != input.trusted then return {}
+private def identityContext (input : Receiver.LegacyBatchInput)
+    (original : Receiver.ManagedReconciliation) (pin : Receiver.Checkpoint) :
+    Option (ReceiptIdentity.Authority × ReceiptIdentity.Request) := Id.run do
+  let some (_, outcome) := Receiver.evidence pin.image ⟨original.audit.operation⟩ | return none
+  if pin.binding != input.trusted then return none
   let source : ReceiptIdentity.CanonicalReceipt :=
     { symbolic := outcome, intent := outcome.receipt.commit
       intentSource := ⟨outcome.receipt.commit.payload, outcome.receipt.commit.signature⟩
@@ -51,11 +53,35 @@ private def identityMappingChecks (input : Receiver.LegacyBatchInput)
       read := fun operation => if operation = original.audit.operation then some source else none
       -- Deliberately colliding digests exercise the exact-source obligation.
       digest := fun _ => "collision-control" }
-  let current := authority.forImage image
   let request : ReceiptIdentity.Request :=
     { symbolic := outcome, operation := original.audit.operation
       identity := ReceiptIdentity.project authority original.audit.operation source
       intentSource := source.intentSource, outcomeSource := source.outcomeSource }
+  return some (authority, request)
+
+private def seedReceiptMapping (input : Receiver.LegacyBatchInput)
+    (original : Receiver.ManagedReconciliation) (pin : Receiver.Checkpoint) :
+    Option ReceiptRecovery.Image := do
+  let (authority, request) ← identityContext input original pin
+  let operation := request.operation
+  let before := { input.image with
+    resolved := input.image.resolved.filter (fun outcome => outcome.receipt.commit.operation != operation)
+    retained := input.image.retained.map (fun entry =>
+      if entry.intent.operation = operation then { entry with receiver := none, legacy := true } else entry) }
+  let initial : ReceiptRecovery.Input :=
+    ⟨⟨before, []⟩, before.writer, authority, request, original⟩
+  let .ok receipt := ReceiptRecovery.contract.invoke ReceiptRecovery.prepare initial | none
+  let staged := Revocation.Crash.recoverImage .staged initial.image receipt.result
+  let durable := Revocation.Crash.recoverImage .durable initial.image receipt.result
+  if staged.rows.isEmpty && durable.oauth = input.image then some durable else none
+
+private def identityMappingChecks (input : Receiver.LegacyBatchInput)
+    (original missing : Receiver.ManagedReconciliation) (image : Revocation.Crash.Image)
+    (pin : Receiver.Checkpoint) (rows : List ReceiptRecovery.Stored) : MappingChecks := Id.run do
+  let some (authority, request) := identityContext input original pin | return {}
+  let outcome := request.symbolic
+  let source := request
+  let current := authority.forImage image
   let invoke := fun candidate => (ReceiptIdentity.contract.invoke ReceiptIdentity.prepare (current, candidate)).isOk
   let wrongOperation := { request with identity := { request.identity with operation := missing.audit.operation } }
   let wrongSymbol := { request with symbolic := { outcome with receipt :=
@@ -66,6 +92,14 @@ private def identityMappingChecks (input : Receiver.LegacyBatchInput)
   let witness := { request with identity := { request.identity with witnessKey := "foreign-witness" } }
   let changed := { request with outcomeSource := { source.outcomeSource with payload := [6] } }
   let changedIntent := { request with intentSource := { source.intentSource with signature := [8] } }
+  let managed := { original with
+    independent := some pin, placement := pin.active, replica := pin.image
+    audit := { original.audit with image, writer := image.writer } }
+  let durable : ReceiptRecovery.Input := ⟨⟨image, rows⟩, image.writer, authority, request, managed⟩
+  let confirmation := ReceiptRecovery.contract.invoke ReceiptRecovery.prepare durable
+  let unchanged := match confirmation with
+    | .ok receipt => receipt.result == durable.image
+    | .error _ => false
   return {
     accepted := invoke request
     crossOperation := !invoke wrongOperation && !invoke wrongSymbol
@@ -73,12 +107,14 @@ private def identityMappingChecks (input : Receiver.LegacyBatchInput)
     foreignProvider := !invoke provider
     foreignWitness := !invoke witness
     changedSource := !invoke changed
-    changedIntent := !invoke changedIntent }
+    changedIntent := !invoke changedIntent
+    persisted := unchanged && ReceiptRecovery.lookup rows request.operation == some (ReceiptRecovery.Request.stored request)
+    missingAbsent := (ReceiptRecovery.lookup rows missing.audit.operation).isNone }
 
 private def observeRecoveryStep (input : Receiver.LegacyBatchInput)
     (original conflict missing : Receiver.ManagedReconciliation) (retry : Revocation.Crash.BeginInput)
     (initialWriter initialReceiver : Nat) (image : Revocation.Crash.Image) (pin : Receiver.Checkpoint)
-    (event worker : String) : RecoveryPlan.Step :=
+    (rows : List ReceiptRecovery.Stored) (event worker : String) : RecoveryPlan.Step :=
   let operation := original.audit.operation
   let pendingOperation := missing.audit.operation
   let expected := original.audit.outcomes.head?
@@ -99,7 +135,7 @@ private def observeRecoveryStep (input : Receiver.LegacyBatchInput)
   let presentMissing := image.retained.find? (fun entry => entry.intent.operation == pendingOperation)
   let presentOriginal := image.retained.find? (fun entry => entry.intent.operation == operation)
   let replay := { retry with image, writer := image.writer, checkedWriter := image.writer }
-  let mapping := identityMappingChecks input original missing image pin
+  let mapping := identityMappingChecks input original missing image pin rows
   { event, worker
     writerAdvance := image.writer - initialWriter
     receiverAdvance := pin.image.cut.generation - initialReceiver
@@ -125,92 +161,100 @@ private def observeRecoveryStep (input : Receiver.LegacyBatchInput)
     foreignProviderRefused := mapping.foreignProvider
     foreignWitnessRefused := mapping.foreignWitness
     sourceSubstitutionRefused := mapping.changedSource
-    intentSubstitutionRefused := mapping.changedIntent }
+    intentSubstitutionRefused := mapping.changedIntent
+    mappingPersisted := mapping.persisted
+    missingMappingAbsent := mapping.missingAbsent }
 
 private def repeatedRecoveryExercise (input : Receiver.LegacyBatchInput)
     (original conflict missing : Receiver.ManagedReconciliation)
     (retry : Revocation.Crash.BeginInput) : Bool := Id.run do
   let some start := original.independent | return false
   let some (_, outcome) := Receiver.evidence start.image ⟨original.audit.operation⟩ | return false
-  let mut tracked : { image : Revocation.Crash.Image // Receiver.LegacyRecoveryTrace input.image image } :=
-    ⟨input.image, .start input.image⟩
-  let mut pin := start
-  let mut receipt := original
-  for round in RecoveryPlan.rounds do
-    let initialWriter := tracked.1.writer
-    let initialReceiver := pin.image.cut.generation
-    let observe := observeRecoveryStep input original conflict missing retry initialWriter initialReceiver
-    let mut observed := #[observe tracked.1 pin "ready" "both",
-      observe tracked.1 pin "worker-crash" round.firstWorker.name]
-    for (label, handoffs) in [
-        ("first-worker-crash", round.handoffsAfterFirst),
-        ("second-worker-crash", round.handoffsAfterSecond),
-        ("repeated-confirmation-loss", round.handoffsAfterConfirmation)] do
-      let old := receipt
-      for _ in [:handoffs] do
-        let before := tracked
-        match applied : Revocation.Crash.handoff before.1 before.1.writer with
-        | none => return false
-        | some active =>
-          let next : Receiver.PromotionInput :=
-            ⟨some pin, pin, pin.image, label ++ toString active.writer⟩
-          let .ok promoted := Receiver.promotionContract.invoke Receiver.preparePromotion next | return false
-          pin := promoted.result
-          tracked := ⟨active, .handoff before.2 applied⟩
-          observed := observed.push (observe tracked.1 pin "handoff" "authority")
-      let image := tracked.1
-      receipt := { receipt with
-        independent := some pin
-        placement := pin.active
-        replica := pin.image
-        audit := { receipt.audit with writer := image.writer } }
-      let other := { receipt with audit := { conflict.audit with writer := image.writer } }
-      let absent := { receipt with audit := { missing.audit with writer := image.writer } }
-      let retired : Receiver.LegacyBatchInput := ⟨image, input.trusted, [old, receipt]⟩
-      if retired.run.stopped != some original.audit.operation || retired.run.image != image then
-        return false
-      let current : Receiver.LegacyBatchInput := ⟨image, input.trusted, [receipt, other, absent, receipt]⟩
-      let .ok first := Receiver.legacyBatchContract.invoke Receiver.prepareLegacyBatch current | return false
-      let reversed := { current with
-        image := first.result.image
-        items := [absent, receipt, receipt, other] }
-      let .ok second := Receiver.legacyBatchContract.invoke Receiver.prepareLegacyBatch reversed | return false
-      if first.result.confirmed != [original.audit.operation, original.audit.operation] ||
-          second.result.confirmed != first.result.confirmed ||
-          second.result.pending != [missing.audit.operation, original.audit.operation] then
-        return false
-      if firstSame : first.result.image = image then
-        if secondSame : second.result.image = image then
+  let some seed := seedReceiptMapping input original start | return false
+  if aligned : seed.oauth = input.image then
+    let mut tracked : { image : Revocation.Crash.Image // Receiver.LegacyRecoveryTrace input.image image } :=
+      ⟨input.image, .start input.image⟩
+    let mut pin := start
+    let mut receipt := original
+    for round in RecoveryPlan.rounds do
+      let initialWriter := tracked.1.writer
+      let initialReceiver := pin.image.cut.generation
+      let observe := observeRecoveryStep input original conflict missing retry initialWriter initialReceiver
+      let mut observed := #[observe tracked.1 pin seed.rows "ready" "both",
+        observe tracked.1 pin seed.rows "worker-crash" round.firstWorker.name]
+      for (label, handoffs) in [
+          ("first-worker-crash", round.handoffsAfterFirst),
+          ("second-worker-crash", round.handoffsAfterSecond),
+          ("repeated-confirmation-loss", round.handoffsAfterConfirmation)] do
+        let old := receipt
+        for _ in [:handoffs] do
           let before := tracked
-          let source : reversed.image = before.1 := by
-            change first.result.image = image
-            exact firstSame
-          tracked := ⟨_, .confirmation before.2 second source secondSame .durable⟩
+          match applied : Revocation.Crash.handoff before.1 before.1.writer with
+          | none => return false
+          | some active =>
+            let next : Receiver.PromotionInput :=
+              ⟨some pin, pin, pin.image, label ++ toString active.writer⟩
+            let .ok promoted := Receiver.promotionContract.invoke Receiver.preparePromotion next | return false
+            pin := promoted.result
+            tracked := ⟨active, .handoff before.2 applied⟩
+            observed := observed.push (observe tracked.1 pin seed.rows "handoff" "authority")
+        let image := tracked.1
+        receipt := { receipt with
+          independent := some pin
+          placement := pin.active
+          replica := pin.image
+          audit := { receipt.audit with writer := image.writer } }
+        let other := { receipt with audit := { conflict.audit with writer := image.writer } }
+        let absent := { receipt with audit := { missing.audit with writer := image.writer } }
+        let retired : Receiver.LegacyBatchInput := ⟨image, input.trusted, [old, receipt]⟩
+        if retired.run.stopped != some original.audit.operation || retired.run.image != image then
+          return false
+        let current : Receiver.LegacyBatchInput := ⟨image, input.trusted, [receipt, other, absent, receipt]⟩
+        let .ok first := Receiver.legacyBatchContract.invoke Receiver.prepareLegacyBatch current | return false
+        let reversed := { current with
+          image := first.result.image
+          items := [absent, receipt, receipt, other] }
+        let .ok second := Receiver.legacyBatchContract.invoke Receiver.prepareLegacyBatch reversed | return false
+        if first.result.confirmed != [original.audit.operation, original.audit.operation] ||
+            second.result.confirmed != first.result.confirmed ||
+            second.result.pending != [missing.audit.operation, original.audit.operation] then
+          return false
+        if firstSame : first.result.image = image then
+          if secondSame : second.result.image = image then
+            let before := tracked
+            let source : reversed.image = before.1 := by
+              change first.result.image = image
+              exact firstSame
+            tracked := ⟨_, .confirmation before.2 second source secondSame .durable⟩
+          else return false
         else return false
-      else return false
-      if label == "first-worker-crash" then
-        observed := observed.push (observe tracked.1 pin "fenced" round.firstWorker.other.name)
-        observed := observed.push (observe tracked.1 pin "worker-crash" round.firstWorker.other.name)
-      else if label == "second-worker-crash" then
-        observed := observed.push (observe tracked.1 pin "confirmed" "both")
-        observed := observed.push (observe tracked.1 pin "confirmation-lost" round.firstWorker.name)
-      else
-        observed := observed.push (observe tracked.1 pin "recovered" "both")
-    if observed.toList != round.steps then
-      return false
-    if tracked.1.writer - initialWriter != round.advances ||
-        pin.image.cut.generation - initialReceiver != round.advances then
-      return false
-  let image := tracked.1
-  let replay := { retry with
-    image
-    writer := image.writer
-    checkedWriter := image.writer }
-  return decide (image.retained = input.image.retained) &&
-    decide (image.oauth = input.image.oauth) &&
-    decide (image.settledOutcome original.audit.operation = some outcome) &&
-    decide (Revocation.Crash.effectStatus image missing.audit.operation = .unresolved) &&
-    (Revocation.Crash.begin replay).isNone
+        if label == "first-worker-crash" then
+          observed := observed.push (observe tracked.1 pin seed.rows "fenced" round.firstWorker.other.name)
+          observed := observed.push (observe tracked.1 pin seed.rows "worker-crash" round.firstWorker.other.name)
+        else if label == "second-worker-crash" then
+          observed := observed.push (observe tracked.1 pin seed.rows "confirmed" "both")
+          observed := observed.push (observe tracked.1 pin seed.rows "confirmation-lost" round.firstWorker.name)
+        else
+          observed := observed.push (observe tracked.1 pin seed.rows "recovered" "both")
+      let _persisted : { state : ReceiptRecovery.Image // ReceiptRecovery.Trace seed state } :=
+        ⟨{ seed with oauth := tracked.1 },
+          .authorization (.start seed) (by simpa [aligned] using tracked.2)⟩
+      if observed.toList != round.steps then
+        return false
+      if tracked.1.writer - initialWriter != round.advances ||
+          pin.image.cut.generation - initialReceiver != round.advances then
+        return false
+    let image := tracked.1
+    let replay := { retry with
+      image
+      writer := image.writer
+      checkedWriter := image.writer }
+    return decide (image.retained = input.image.retained) &&
+      decide (image.oauth = input.image.oauth) &&
+      decide (image.settledOutcome original.audit.operation = some outcome) &&
+      decide (Revocation.Crash.effectStatus image missing.audit.operation = .unresolved) &&
+      (Revocation.Crash.begin replay).isNone
+  else return false
 
 private def overlappingRecoveryExercise (takeover : Receiver.LegacyBatchInput)
     (settled prior : Receiver.LegacyBatchState)
@@ -841,3 +885,10 @@ end Tests.Gateway.OAuthRefresh
 #print axioms CedarPooSpec.Gateway.OAuth.ReceiptIdentity.changed_intent_refused
 #print axioms CedarPooSpec.Gateway.OAuth.ReceiptIdentity.mapping_survives_recovery
 #print axioms CedarPooSpec.Gateway.OAuth.ReceiptIdentity.foreign_witness_refused
+
+#print axioms CedarPooSpec.Gateway.OAuth.ReceiptRecovery.persistence_records
+#print axioms CedarPooSpec.Gateway.OAuth.ReceiptRecovery.persistence_keeps_original
+#print axioms CedarPooSpec.Gateway.OAuth.ReceiptRecovery.trace_preserves_original
+#print axioms CedarPooSpec.Gateway.OAuth.ReceiptRecovery.durable_mapping_recovers_without_ack
+#print axioms CedarPooSpec.Gateway.OAuth.ReceiptRecovery.stale_writer_refused
+#print axioms CedarPooSpec.Gateway.OAuth.ReceiptRecovery.replacement_refused

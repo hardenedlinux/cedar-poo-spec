@@ -40,6 +40,8 @@ structure Step where
   foreignWitnessRefused : Bool := true
   sourceSubstitutionRefused : Bool := true
   intentSubstitutionRefused : Bool := true
+  mappingPersisted : Bool := true
+  missingMappingAbsent : Bool := true
   deriving DecidableEq
 
 structure Round where
@@ -89,7 +91,9 @@ def Step.toJson (step : Step) : Lean.Json := Lean.Json.mkObj [
   ("foreign_provider_refused", Lean.toJson step.foreignProviderRefused),
   ("foreign_witness_refused", Lean.toJson step.foreignWitnessRefused),
   ("source_substitution_refused", Lean.toJson step.sourceSubstitutionRefused),
-  ("intent_substitution_refused", Lean.toJson step.intentSubstitutionRefused)]
+  ("intent_substitution_refused", Lean.toJson step.intentSubstitutionRefused),
+  ("mapping_persisted", Lean.toJson step.mappingPersisted),
+  ("missing_mapping_absent", Lean.toJson step.missingMappingAbsent)]
 
 def Round.toJson (round : Round) : Lean.Json := Lean.Json.mkObj [
   ("first_worker", Lean.toJson round.firstWorker.name),
@@ -101,7 +105,7 @@ def Round.toJson (round : Round) : Lean.Json := Lean.Json.mkObj [
   ("steps", Lean.Json.arr (round.steps.map Step.toJson).toArray)]
 
 def fixture : Lean.Json := Lean.Json.mkObj [
-  ("format", Lean.toJson "cedar-poo-legacy-recovery-plan-v3"),
+  ("format", Lean.toJson "cedar-poo-legacy-recovery-plan-v4"),
   ("scope", Lean.toJson "settled-read-only-recovery"),
   ("identity_mapping", Lean.toJson "operation-authority-provider-and-exact-signed-sources"),
   ("rounds", Lean.Json.arr (rounds.map Round.toJson).toArray)]

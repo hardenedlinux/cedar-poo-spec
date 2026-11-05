@@ -67,6 +67,8 @@ pub(crate) struct Step {
     foreign_witness_refused: bool,
     source_substitution_refused: bool,
     intent_substitution_refused: bool,
+    mapping_persisted: bool,
+    missing_mapping_absent: bool,
 }
 
 #[derive(Clone, Deserialize, Serialize)]
@@ -110,7 +112,7 @@ fn lean_plan_drives_both_native_commit_orders() {
     let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../../.lake/build/gateway-recovery-plan.json");
     let plan: RecoveryPlan = serde_json::from_slice(&std::fs::read(path).unwrap()).unwrap();
-    assert_eq!(plan.format, "cedar-poo-legacy-recovery-plan-v3");
+    assert_eq!(plan.format, "cedar-poo-legacy-recovery-plan-v4");
     assert_eq!(plan.scope, "settled-read-only-recovery");
     assert_eq!(
         plan.identity_mapping,
@@ -301,7 +303,11 @@ impl RoundObserver {
             outcome: &received.outcome,
         };
         let mapping = context.prepare().unwrap();
-        let candidate = mapping.candidate();
+        let candidate = original
+            .receipt_identity
+            .as_ref()
+            .expect("durable receipt mapping");
+        assert_eq!(candidate, &mapping.candidate());
         assert_eq!(candidate.identity.outcome_sha256, original_id);
         assert_eq!(candidate.identity.intent_sha256, original.intent_identity);
         let prefix_operation = OperationId(fixture.prefix.operation.clone());
@@ -374,15 +380,15 @@ impl RoundObserver {
             &trusted,
             |_, _| panic!("another provider authority replaced the original receipt"),
         );
-        let mut foreign_witness = candidate.clone();
+        let mut foreign_witness = (*candidate).clone();
         foreign_witness.identity.witness_key = foreign_provider
             .verifying_key()
             .to_encoded_point(false)
             .as_bytes()
             .to_vec();
-        let mut changed_source = candidate.clone();
+        let mut changed_source = (*candidate).clone();
         changed_source.outcome.payload[0] ^= 1;
-        let mut changed_intent = candidate.clone();
+        let mut changed_intent = (*candidate).clone();
         changed_intent.intent.signature[0] ^= 1;
         let old = oauth.for_writer(fixture.retired_writer.unwrap());
         let old_writer = receiver.migrate_legacy_oauth_batch(&old, [original_input()], &trusted);
@@ -436,7 +442,7 @@ impl RoundObserver {
                 stop.error == "receiver replica differs from the independent checkpoint"
             }),
             no_resend,
-            mapping_accepted: mapping.check(&candidate) == Some(candidate.identity.clone()),
+            mapping_accepted: mapping.check(candidate) == Some(candidate.identity.clone()),
             cross_operation_refused: mapping.check(&prefix_mapping.candidate()).is_none()
                 && mapping.check(&disguised_operation).is_none()
                 && cross_operation.confirmed.is_empty()
@@ -458,8 +464,11 @@ impl RoundObserver {
             foreign_witness_refused: mapping.check(&foreign_witness).is_none(),
             source_substitution_refused: mapping.check(&changed_source).is_none(),
             intent_substitution_refused: mapping.check(&changed_intent).is_none(),
+            mapping_persisted: mapping.check(candidate) == Some(candidate.identity.clone()),
+            missing_mapping_absent: missing.receipt_identity.is_none(),
         };
         assert!(actual.intent_bound && actual.missing_intent_bound && actual.revocation_preserved);
+        assert!(actual.mapping_persisted && actual.missing_mapping_absent);
         assert!(actual.original_idempotent && actual.conflict_refused && actual.missing_preserved);
         assert!(actual.old_writer_fenced && actual.old_replica_fenced && actual.no_resend);
         assert!(
