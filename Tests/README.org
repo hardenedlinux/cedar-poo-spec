@@ -60,3 +60,8 @@ substitutions, current-use/refusal/replay controls, outstanding delegation after
 local suspension, and a permissive-verifier trust counterexample. Run
 =just example scenarios financial-services wallet binance=; the
 [[file:../Examples/Scenarios/FinancialServices/Wallet/README.org][adjacent audit]] records the exact model and Host boundaries.
+
+=Enterprise/Payment/WalletContainment.lean= verifies the composed signing/exposure
+boundary, archived nonce retention, exact clearing observations and sticky pause
+through recovery. It retains the former isolated-exposure counterexample and
+uses the same admitted LeanPoo attacker family for the executable chain.

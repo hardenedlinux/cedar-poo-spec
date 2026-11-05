@@ -11,6 +11,7 @@ OUT = ROOT / ".lake/build/wallet-threat"
 QUINT = ROOT / "dev/node_modules/.bin/quint"
 MODEL = "dev/qnt/financial/WalletSigning.qnt"
 CASE = ".lake/build/wallet-attackers-case.qnt"
+CONTAINMENT = "dev/qnt/financial/WalletContainment.qnt"
 
 
 def main() -> None:
@@ -28,7 +29,8 @@ def main() -> None:
     if version != "0.33.0":
         raise SystemExit(f"Expected pinned Quint 0.33.0, got {version}")
     receipt.update(checkout=subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(), quint=version, apalache="0.62.1", seed=7, positive_depth=12, negative_depth=4)
-    inputs = [MODEL, ".lake/build/binance-2026-metadata.json",
+    inputs = [MODEL, CONTAINMENT, "CedarPooSpec/Vertical/FinancialServices/PaymentContainment.lean",
+              "Tests/Enterprise/Payment/WalletContainment.lean", ".lake/build/binance-2026-metadata.json",
               "CedarPooSpec/Scenarios/Metadata.lean", "CedarPooSpec/Scenarios/Functional.lean", "dev/qnt/attackers/Capabilities.qnt", CASE,
               "CedarPooSpec/Attackers/Trace.lean", "CedarPooSpec/Attackers/ProfileObject.lean",
               "CedarPooSpec/Vertical/FinancialServices/PaymentSigning.lean",
@@ -44,7 +46,7 @@ def main() -> None:
 
     def run(label: str, args: list[str], expected: int = 0) -> None:
         log = OUT / f"{label}.log"
-        command_args = [str(ROOT / arg) if arg in (MODEL, CASE) else arg for arg in args]
+        command_args = [str(ROOT / arg) if arg in (MODEL, CASE, CONTAINMENT) else arg for arg in args]
         command = ["timeout", "--signal=TERM", "--kill-after=3s", "120s", str(QUINT), *command_args]
         with log.open("w") as stream:
             result = subprocess.run(command, cwd=OUT, stdout=stream, stderr=subprocess.STDOUT, check=False)
@@ -59,11 +61,12 @@ def main() -> None:
 
     run("typecheck", ["typecheck", MODEL])
     with tempfile.TemporaryDirectory(prefix="source-only-", dir=OUT) as isolated:
-        for source in (MODEL, "dev/qnt/attackers/Capabilities.qnt"):
+        for source in (MODEL, CONTAINMENT, "dev/qnt/attackers/Capabilities.qnt"):
             target = Path(isolated) / source
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(ROOT / source, target)
         run("source-only-typecheck", ["typecheck", str(Path(isolated) / MODEL)])
+        run("containment-source-only-typecheck", ["typecheck", str(Path(isolated) / CONTAINMENT)])
     run("case-typecheck", ["typecheck", CASE])
     run("traces", ["test", CASE, "--main=wallet_attackers_case", "--max-samples=1", "--seed=7", "--backend=typescript"])
     if "9 passing" not in (OUT / "traces.log").read_text():
@@ -83,6 +86,29 @@ def main() -> None:
         receipt["status"] = "failed"
         save()
         raise SystemExit("Negative check did not retain the intended unsafe-signature counterexample")
+    run("containment-typecheck", ["typecheck", CONTAINMENT])
+    run("containment-traces", ["test", CONTAINMENT, "--main=wallet_containment", "--max-samples=1", "--seed=7", "--backend=typescript"])
+    if "9 passing" not in (OUT / "containment-traces.log").read_text():
+        raise SystemExit("All nine additional containment traces must run")
+    receipt["containment_trace_tests"] = 9
+    containment = ["verify", CONTAINMENT, "--main=wallet_containment", "--backend=apalache", "--apalache-version=0.62.1"]
+    run("containment-depth-12", [*containment, "--invariant=safety", "--max-steps=12"])
+    for label, step, invariant, intended in (
+        ("recovery-negative-depth-4", "stepBrokenRecovery", "signatureSafety", "unsafe"),
+        ("clearing-negative-depth-4", "stepFalseClear", "clearingTruth", "cleared"),
+    ):
+        negative = OUT / (label + ".itf.json")
+        negative.unlink(missing_ok=True)
+        run(label, [*containment, "--invariant=" + invariant, "--step=" + step,
+            "--max-steps=4", "--out-itf=" + str(negative)], expected=1)
+        counterexample = json.loads(negative.read_text())
+        variable = "c"  # Top-level module fields are unqualified in native ITF.
+        if counterexample.get("vars") != [variable]:
+            raise SystemExit("Unexpected containment counterexample binding")
+        states = [state.get(variable, {}) for state in counterexample.get("states", [])]
+        if not any(state.get(intended) is True and
+                (intended == "unsafe" or state.get("witness") is False) for state in states):
+            raise SystemExit("Containment counterexample does not demonstrate the intended failure")
     if any(hashlib.sha256((ROOT / p).read_bytes()).hexdigest() != digest
            for p, digest in receipt["inputs"].items()):
         receipt["status"] = "failed"

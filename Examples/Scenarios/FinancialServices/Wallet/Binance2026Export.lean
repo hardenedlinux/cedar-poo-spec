@@ -30,17 +30,28 @@ def exportQuint : Except String String := do
     "  import wallet_signing(Initial = ProfileInitial, Isolated = ProfileIsolated, Goals = ProfileGoals, Rules = ProfileRules).* from " ++ quoted "../../dev/qnt/financial/WalletSigning",
     "}", ""])
 
-/-- Observed synthetic outcomes for the illustrated defense path, not production telemetry. -/
+private def replayJson (stage : ReplayStage) : Lean.Json := Lean.Json.mkObj [
+  ("id", Lean.toJson stage.id), ("reported_on", Lean.toJson stage.reportedOn),
+  ("reached", Lean.toJson stage.reached), ("signer_reachable", Lean.toJson stage.signerReachable),
+  ("signatures", Lean.toJson stage.signatures), ("refused", Lean.toJson stage.refused)]
+
+private def containmentJson (observed : Containment.Observation) : Lean.Json := Lean.Json.mkObj [
+  ("id", Lean.toJson observed.id), ("paused", Lean.toJson observed.paused),
+  ("delegated", Lean.toJson observed.delegated), ("revoked", Lean.toJson observed.revoked),
+  ("signature_released", Lean.toJson observed.signatureReleased)]
+
+/-- Observed synthetic outcomes for source-bound diagrams, not production telemetry. -/
 def exportVisual : Lean.Json :=
-  let current := CedarPooSpec.WalletSigningExample.current
-  let request := CedarPooSpec.WalletSigningExample.request
+  let request := scenario.model.1.2
   Lean.Json.mkObj [
     ("provenance", scenario.provenanceJson),
+    ("attack", Lean.toJson (replayStages.map replayJson)),
+    ("containment", Lean.toJson (Containment.observations.map containmentJson)),
     ("defense", Lean.Json.mkObj [
-      ("deployment_refused", Lean.toJson (CedarPooSpec.Vertical.FinancialServices.PaymentSigning.release
-        current deploymentRequest).isNone),
-      ("valid_transfer_released", Lean.toJson (CedarPooSpec.Vertical.FinancialServices.PaymentSigning.release
-        current request).isSome)])]
+      ("deployment_refused", Lean.toJson (CedarPooSpec.Vertical.FinancialServices.PaymentContainment.release
+        Containment.clean deploymentRequest).isNone),
+      ("valid_transfer_released", Lean.toJson (CedarPooSpec.Vertical.FinancialServices.PaymentContainment.release
+        Containment.clean request).isSome)])]
 
 
 end CedarPooSpec.Binance2026Scenario

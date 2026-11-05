@@ -52,11 +52,15 @@ vars: {d2-config: {data: {figure: |json
     "scenarioLineageSource": "CedarPooSpec/Scenarios/Functional.lean",
     "incidentSource": "Examples/Scenarios/FinancialServices/Wallet/Binance2026.lean",
     "deploymentPurposeSource": "CedarPooSpec/Vertical/FinancialServices/PaymentSigning.lean",
-    "transferShapeSource": "CedarPooSpec/Vertical/FinancialServices/PaymentSigning.lean"
+    "transferShapeSource": "CedarPooSpec/Vertical/FinancialServices/PaymentSigning.lean",
+    "quarantineSource": "CedarPooSpec/Vertical/FinancialServices/PaymentContainment.lean",
+    "stickyPauseSource": "CedarPooSpec/Vertical/FinancialServices/PaymentContainment.lean",
+    "retainedBurnSource": "CedarPooSpec/Vertical/FinancialServices/PaymentContainment.lean",
+    "clearNoResumeSource": "CedarPooSpec/Vertical/FinancialServices/PaymentContainment.lean"
   },
   "copy": {
     "description": "Reported chain: endpoint compromise \u2192 internal AI lateral movement \u2192 deployment token \u2192 unauthorized signer use. Exact AI exploit is undisclosed.",
-    "status": "Disclosure: Binance initial findings, 2026-11-03; event starts 2026-10-29 UTC. Preliminary source. This is modeled acceptance, not an infrastructure replay."
+    "status": "Disclosure: Binance initial findings, 2026-11-03; wallet abuse window starts 2026-10-29 UTC; earlier AI pivot: 2026-10-20. Preliminary source. This is modeled acceptance, not an infrastructure replay."
   },
   "presentation": {
     "notation": "assurance",
@@ -103,6 +107,17 @@ vars: {d2-config: {data: {figure: |json
           "host"
         ],
         "columns": 3
+      },
+      {
+        "title": "Composed containment and recovery",
+        "icon": "recovery",
+        "subjects": [
+          "quarantine",
+          "stickyPause",
+          "retainedBurn",
+          "clearNoResume"
+        ],
+        "columns": 2
       }
     ]
   },
@@ -165,6 +180,22 @@ vars: {d2-config: {data: {figure: |json
       "transferShape": {
         "name": "FinancialAttackers::transferShape",
         "icon": "gate"
+      },
+      "quarantine": {
+        "name": "FinancialAttackers::quarantine",
+        "icon": "recovery"
+      },
+      "stickyPause": {
+        "name": "FinancialAttackers::stickyPause",
+        "icon": "recovery"
+      },
+      "retainedBurn": {
+        "name": "FinancialAttackers::retainedBurn",
+        "icon": "recovery"
+      },
+      "clearNoResume": {
+        "name": "FinancialAttackers::clearNoResume",
+        "icon": "recovery"
       }
     }
   },
@@ -190,3 +221,11 @@ incident: "Binance 2026-10-29\nPreliminary report; AI exploit unknown"
 deploymentPurpose: "A deployment key is not a signing key\nA deployment-purpose caller is refused"
 
 transferShape: "A payment cannot become code authority\nOnly native transfer; no calldata or delegation"
+
+quarantine: "Existing delegation means quarantine"
+
+stickyPause: "Pause survives every control trace"
+
+retainedBurn: "Recovery retains consumed nonces"
+
+clearNoResume: "Clearing does not resume payments"

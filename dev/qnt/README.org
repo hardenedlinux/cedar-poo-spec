@@ -45,3 +45,17 @@ bounded Apalache verification, not =quint run= or unbounded temporal/liveness
 verification. The finite domains and corresponding Lean laws are described in
 the [[file:../../Examples/Scenarios/FinancialServices/Wallet/README.org][financial audit]]. No deployed Host behavior, cryptographic protocol,
 consensus guarantee or Lean/Quint transition-refinement theorem is established.
+
+* Composed wallet containment
+
+=financial/WalletContainment.qnt= independently explores the composed financial
+containment protocol. It does not duplicate the incident's acquisition graph.
+The same canonical wallet threat-model command requires the original nine
+signing traces plus nine containment traces, both depth-12 safety checks, the
+original depth-4 stale-signing counterexample and new depth-4 recovery/false-clear
+counterexamples. Source-only checks and exact ITF variable/failure predicates
+remain enforced. All command timeouts and solver pins are unchanged.
+
+Finite matching/finality bits abstract trusted Host observations; Lean uses the
+actual typed wallet/network/nonce fields. This is complementary exploration,
+not a refinement proof or evidence of EVM/consensus behavior.

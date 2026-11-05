@@ -60,3 +60,13 @@ reassesses a reserved payment without resetting its nonce. The
 [[file:../../../Examples/Scenarios/FinancialServices/Wallet/README.org][wallet-signing acceptance audit]] maps the motivating attack chain, negative
 controls and Host assumptions. Chain codecs, signing keys, IO mediation and
 authenticated finalized delegation-clearing observations remain adapter duties.
+
+* Composed wallet containment
+
+[[file:PaymentContainment.lean][PaymentContainment]] binds the existing signing contract to the same wallet's
+exposure. Pause revokes the modeled gateway, outstanding delegation quarantines
+new signing, recovery retains the archived attempts/nonces, and verified final
+clearing does not resume withdrawals. Its finite-control-trace law keeps a
+paused wallet closed across recovery and clearing observations. Real signer
+mediation, atomic snapshot persistence and authentic chain/current readers remain
+Host duties; no emergency clearing signer or resumption service is implemented.

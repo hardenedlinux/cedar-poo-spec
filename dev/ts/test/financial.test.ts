@@ -25,8 +25,12 @@ test('actual payment exports retain source-bound model labels and embed both ori
   expect(svg).not.toContain('foreignObject');
   const claims=JSON.parse(await readFile(new URL(receiptArtifact(entry),root),'utf8')).proofClaims;
   if(story&&defense){
+   expect(story.attack.map(stage=>[stage.reached,stage.signatures,stage.refused])).toEqual([[true,0,0],[true,0,0],[true,0,0],[true,0,1]]);
+   expect(story.attack.map(stage=>stage.signer_reachable)).toEqual([false,false,false,true]);
+   expect(story.containment.map(state=>[state.id,state.delegated,state.signature_released])).toEqual([['exposed',true,false],['paused',true,false],['submitted',true,false],['cleared',false,false],['recovered',false,false]]);
+   for(const id of ['paused','submitted','cleared','recovered'])expect(svg).toContain('data-containment-state="'+id+'"');
    expect(story.defense).toEqual({deployment_refused:true,valid_transfer_released:true});
-   expect(claims.cards.find((card:{id:string})=>card.id==='PaymentDefenseFlow::refused')).toMatchObject({role:'Definition',symbol:'CedarPooSpec.Vertical.FinancialServices.PaymentSigning.release'});
+   expect(claims.cards.find((card:{id:string})=>card.id==='PaymentDefenseFlow::refused')).toMatchObject({role:'Definition',symbol:'CedarPooSpec.Vertical.FinancialServices.PaymentContainment.release'});
    for(const [id,uri] of Object.entries(story.images)){expect(svg).toContain('data-incident-scene="'+id+'"');expect(svg.includes(uri)).toBe(true);}
    for(const uri of Object.values(defense.images))expect(svg.includes(uri)).toBe(true);
    expect(svg.includes('data-flow-observation="deployment_refused"')).toBe(true);
