@@ -145,6 +145,7 @@ structure Checkpoint where
   active : String
   image : Image
   handoff : Option Handoff := none
+  oauthAuthority : Option String := none
   deriving DecidableEq
 
 def Checkpoint.permits (checkpoint : Checkpoint) (placement : String) (image : Image) : Prop :=
@@ -161,7 +162,7 @@ def promote (input : PromotionInput) : Option Checkpoint := do
   if pin = input.expected ∧ input.placement ≠ "" ∧ input.placement ≠ pin.active ∧
       input.candidate = pin.image then
     let image ← advance input.candidate input.candidate.cut
-    return ⟨input.placement, image, some ⟨pin.active, pin.image, image.cut⟩⟩
+    return ⟨input.placement, image, some ⟨pin.active, pin.image, image.cut⟩, pin.oauthAuthority⟩
   else none
 
 def promotionContract : Contract Unit PromotionInput Checkpoint where
@@ -202,6 +203,18 @@ theorem promotion_retains_acknowledged_delivery
       exact ⟨pin, rfl, rfl, rfl, checked.2.2.1, rfl, rfl, rfl, rfl, checked.1.symm, rfl⟩
     · contradiction
 
+theorem promotion_preserves_oauth_authority
+    (receipt : Invocation promotionContract preparePromotion input)
+    (present : input.independent = some pin) :
+    receipt.result.oauthAuthority = pin.oauthAuthority := by
+  have accepted := receipt.logic
+  change promote input = some receipt.result at accepted
+  simp only [promote, present, bind, Option.bind] at accepted
+  split at accepted
+  · simp [advance] at accepted
+    rw [← accepted]
+  · contradiction
+
 theorem promotion_fences_previous_placement
     (receipt : Invocation promotionContract preparePromotion input)
     (present : input.independent = some pin) :
@@ -217,6 +230,15 @@ theorem promotion_keeps_signed_evidence
   obtain ⟨actual, source, _, _, _, _, _, _, delivered, _, _⟩ := promotion_retains_acknowledged_delivery receipt
   have same : actual = pin := Option.some.inj (source.symm.trans present)
   simp only [evidence, delivered, same]
+
+theorem consecutive_promotions_keep_signed_evidence
+    (first : Invocation promotionContract preparePromotion input)
+    (second : Invocation promotionContract preparePromotion next)
+    (initial : input.independent = some pin) (successor : next.independent = some first.result)
+    (operation : Admission.OperationId) :
+    evidence second.result.image operation = evidence pin.image operation :=
+  (promotion_keeps_signed_evidence second successor operation).trans
+    (promotion_keeps_signed_evidence first initial operation)
 
 theorem promoted_receiver_refuses_same_operation
     (receipt : Invocation promotionContract preparePromotion input)
@@ -290,30 +312,74 @@ structure ManagedInput where
   independent : Option Checkpoint
   placement : String
   delivery : Input
+  authorization : Revocation.Crash.BeginInput
 
-def receiveManaged (input : ManagedInput) : Option Checkpoint := do
+structure ManagedResult where
+  oauth : Revocation.Crash.Image
+  receiver : Checkpoint
+  deriving DecidableEq
+
+/-- A successful observation reserves the exact OAuth intent and checks the
+active receiver in one serialized step. The native adapter commits the OAuth
+burn first, so an interrupted receiver commit may still leave that burn. -/
+def receiveManaged (input : ManagedInput) : Option ManagedResult := do
   let pin ← input.independent
-  if pin.active = input.placement ∧ pin.image = input.delivery.image then
+  let oauth ← Revocation.Crash.begin input.authorization
+  if pin.active = input.placement ∧ pin.image = input.delivery.image ∧
+      pin.oauthAuthority = some input.authorization.image.oauth.checkpoint.authorityId ∧
+      input.authorization.intent = input.delivery.witnessed then
     let image ← receive input.delivery
-    return { pin with image }
+    return ⟨oauth, { pin with image }⟩
   else none
 
-def managedContract : Contract Unit ManagedInput Checkpoint where
-  input := ⟨"active-receiver-and-exact-independent-image", fun _ => True, fun _ => inferInstance⟩
-  output := ⟨"independently-committed-delivery", fun _ => True, fun _ => inferInstance⟩
+def managedContract : Contract Unit ManagedInput ManagedResult where
+  input := ⟨"active-receiver-and-current-OAuth-authority", fun _ => True, fun _ => inferInstance⟩
+  output := ⟨"OAuth-burn-and-independently-committed-delivery", fun _ => True, fun _ => inferInstance⟩
   meaning := fun _ input result => receiveManaged input = some result
   decide := fun _ _ _ => inferInstance
   rule := .atom ()
 
-def prepareManaged (input : ManagedInput) : Except String (Checkpoint × Unit) :=
+def prepareManaged (input : ManagedInput) : Except String (ManagedResult × Unit) :=
   match receiveManaged input with
-  | some checkpoint => .ok (checkpoint, ())
+  | some result => .ok (result, ())
   | none => .error "managed receiver dispatch refused"
 
 theorem fenced_placement_cannot_receive (present : input.independent = some pin)
     (fenced : ¬ pin.permits input.placement input.delivery.image) :
     receiveManaged input = none := by
   change ¬ (pin.active = input.placement ∧ pin.image = input.delivery.image) at fenced
-  simp only [receiveManaged, present, bind, Option.bind, if_neg fenced]
+  cases oauth : Revocation.Crash.begin input.authorization <;>
+    simp [receiveManaged, present, oauth, ← and_assoc, fenced]
+
+theorem refused_oauth_cannot_receive (input : ManagedInput)
+    (refused : Revocation.Crash.begin input.authorization = none) : receiveManaged input = none := by
+  cases present : input.independent <;> simp [receiveManaged, present, refused]
+
+theorem stale_oauth_replica_cannot_receive (input : ManagedInput)
+    (stale : input.authorization.read.replica ≠ input.authorization.image.oauth.checkpoint) :
+    receiveManaged input = none := by
+  apply refused_oauth_cannot_receive
+  let final : Revocation.Recovery.FinalInput :=
+    ⟨input.authorization.image.oauth.checkpoint.authorityId,
+      some input.authorization.image.oauth, input.authorization.read⟩
+  have refused := Revocation.Recovery.cannot_finalize_from_failed_recovery final
+    (Revocation.Recovery.stale_replica_cannot_recover rfl stale)
+  change Revocation.Recovery.finalize
+    ⟨input.authorization.image.oauth.checkpoint.authorityId,
+      some input.authorization.image.oauth, input.authorization.read⟩ = none at refused
+  cases anchor : input.authorization.history.independent <;>
+    simp [Revocation.Crash.begin, anchor, refused]
+
+theorem revoked_grant_cannot_receive (input : ManagedInput)
+    (linked : input.authorization.image.oauth.checkpoint.ledger.accessEntry
+      input.authorization.read.attempt.grant.tokenHash = some entry)
+    (revoked : entry.family ∈ input.authorization.image.oauth.checkpoint.ledger.revoked) :
+    receiveManaged input = none := by
+  apply refused_oauth_cannot_receive
+  have refused := Revocation.Recovery.durable_revocation_blocks_final
+    (input := ⟨input.authorization.image.oauth.checkpoint.authorityId,
+      some input.authorization.image.oauth, input.authorization.read⟩) rfl linked revoked
+  cases anchor : input.authorization.history.independent <;>
+    simp [Revocation.Crash.begin, anchor, refused]
 
 end CedarPooSpec.Gateway.OAuth.Receiver

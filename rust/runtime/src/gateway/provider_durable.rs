@@ -1,5 +1,8 @@
 //! Receiver-owned cut, operation reservation, and signed simulated effect.
 use super::checkpoint_store::{CheckpointStage, LockedCheckpoint};
+use super::oauth_refresh_durable::{
+    DurableEffectUse, DurableRefreshLedger, ReceiverAuthority, ReceiverAuthorization,
+};
 use super::provider::ProviderRequest;
 use super::wire::sign;
 use super::{
@@ -100,6 +103,8 @@ pub struct ReceiverCheckpoint {
     digest: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     handoff: Option<Handoff>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    oauth: Option<ReceiverAuthority>,
 }
 
 impl ReceiverCheckpoint {
@@ -107,12 +112,13 @@ impl ReceiverCheckpoint {
         crate::json_sha256(&("cedar-poo/receiver-failover/v1", image))
     }
 
-    fn for_image(active: &Path, image: &Image, handoff: Option<Handoff>) -> Result<Self, String> {
+    fn for_image(active: &Path, image: &Image) -> Result<Self, String> {
         Ok(Self {
             active: active.into(),
             cut: image.cut.clone(),
             digest: Self::image_digest(image)?,
-            handoff,
+            handoff: None,
+            oauth: None,
         })
     }
 
@@ -231,11 +237,7 @@ impl<'a> DurableReceiver<'a> {
         }
         files.replica.initialize(&image)?;
         if let (Some(checkpoint), Some(placement)) = (&files.checkpoint, &self.placement) {
-            checkpoint.initialize(&ReceiverCheckpoint::for_image(
-                &placement.replica,
-                &image,
-                None,
-            )?)?;
+            checkpoint.initialize(&ReceiverCheckpoint::for_image(&placement.replica, &image)?)?;
         }
         Ok(())
     }
@@ -291,15 +293,46 @@ impl<'a> DurableReceiver<'a> {
         &self,
         files: &LockedReceiver<'_>,
         image: &Image,
-        handoff: Option<Handoff>,
+        checkpoint: Option<ReceiverCheckpoint>,
         observe: impl FnMut(CheckpointStage) -> Result<(), String>,
     ) -> Result<(), String> {
-        if let (Some(checkpoint), Some(placement)) = (&files.checkpoint, &self.placement) {
-            let next = ReceiverCheckpoint::for_image(&placement.replica, image, handoff)?;
+        if let Some(file) = &files.checkpoint {
+            let mut next = checkpoint.ok_or("missing independent receiver checkpoint")?;
+            next.cut = image.cut.clone();
+            next.digest = ReceiverCheckpoint::image_digest(image)?;
             files.replica.persist(image)?;
-            checkpoint.persist_at(&next, observe)
+            file.persist_at(&next, observe)
         } else {
             files.replica.persist_at(image, observe)
+        }
+    }
+
+    fn check_authority_directory(&self, directory: &Path) -> Result<(), String> {
+        let placement = self
+            .placement
+            .as_ref()
+            .ok_or("OAuth delivery requires a managed receiver")?;
+        if directory == placement.replica || directory == placement.checkpoint {
+            return Err("OAuth and receiver checkpoints must use separate directories".into());
+        }
+        Ok(())
+    }
+
+    fn bind_authority(&self, authority: &ReceiverAuthority) -> Result<(), String> {
+        let files = self.lock()?;
+        let (_, checkpoint) = self.current(&files)?;
+        let file = files
+            .checkpoint
+            .as_ref()
+            .ok_or("receiver has no independent checkpoint")?;
+        let mut checkpoint = checkpoint.ok_or("missing independent receiver checkpoint")?;
+        match &checkpoint.oauth {
+            Some(bound) if bound == authority => Ok(()),
+            Some(_) => Err("receiver already binds a different OAuth authority".into()),
+            None => {
+                checkpoint.oauth = Some(authority.clone());
+                file.persist(&checkpoint)
+            }
         }
     }
 
@@ -336,7 +369,7 @@ impl<'a> DurableReceiver<'a> {
             .ok_or("receiver has no independent checkpoint")?;
         let files = self.lock()?;
         let (mut image, checkpoint) = self.qualified(&files)?;
-        let checkpoint = checkpoint.ok_or("missing independent receiver checkpoint")?;
+        let mut checkpoint = checkpoint.ok_or("missing independent receiver checkpoint")?;
         if &checkpoint != expected {
             return Err("receiver promotion checkpoint changed".into());
         }
@@ -348,11 +381,12 @@ impl<'a> DurableReceiver<'a> {
             .generation
             .checked_add(1)
             .ok_or("receiver cut exhausted")?;
-        let handoff = Handoff {
+        checkpoint.active = placement.replica.clone();
+        checkpoint.handoff = Some(Handoff {
             predecessor: expected.identity()?,
             cut: image.cut.clone(),
-        };
-        self.persist(&files, &image, Some(handoff), observe)?;
+        });
+        self.persist(&files, &image, Some(checkpoint), observe)?;
         Ok(image.cut)
     }
 
@@ -395,28 +429,71 @@ impl<'a> DurableReceiver<'a> {
             .generation
             .checked_add(1)
             .ok_or("receiver cut exhausted")?;
-        self.persist(
-            &files,
-            &image,
-            checkpoint.and_then(|pin| pin.handoff),
-            observe,
-        )?;
+        self.persist(&files, &image, checkpoint, observe)?;
         Ok(image.cut)
+    }
+
+    /// Bind an active receiver to its independent OAuth authority. Existing
+    /// pins must be bound explicitly before the first managed delivery.
+    pub fn bind_oauth(&self, oauth: &DurableRefreshLedger<'_>) -> Result<(), String> {
+        let authority = oauth.receiver_authority()?;
+        self.check_authority_directory(&authority.directory)?;
+        oauth.bind_receiver_authority(&authority, || self.bind_authority(&authority))
+    }
+
+    /// Commit a managed simulated effect with current OAuth and receiver state.
+    /// Lock order is OAuth authority, receiver authority, then receiver replica.
+    pub fn receive_oauth(
+        &self,
+        oauth: &DurableRefreshLedger<'_>,
+        input: DurableEffectUse<'_>,
+        delivery: ReceiverDelivery<'_>,
+    ) -> Result<Option<Signed>, String> {
+        self.receive_oauth_at(oauth, input, delivery, |_| Ok(()))
+    }
+
+    fn receive_oauth_at(
+        &self,
+        oauth: &DurableRefreshLedger<'_>,
+        input: DurableEffectUse<'_>,
+        delivery: ReceiverDelivery<'_>,
+        observe: impl FnMut(CheckpointStage) -> Result<(), String>,
+    ) -> Result<Option<Signed>, String> {
+        if input.effect != delivery.effect {
+            return Ok(None);
+        }
+        let authority = oauth.receiver_authority()?;
+        self.check_authority_directory(&authority.directory)?;
+        oauth.authorize_receiver(input, &authority, |permission| {
+            self.receive_at(delivery, Some(permission), observe)
+        })
     }
 
     /// Apply the simulated effect and persist its signed outcome atomically.
     pub fn receive(&self, input: ReceiverDelivery<'_>) -> Result<Option<Signed>, String> {
-        self.receive_at(input, |_| Ok(()))
+        self.receive_at(input, None, |_| Ok(()))
     }
 
     fn receive_at(
         &self,
         input: ReceiverDelivery<'_>,
+        permission: Option<ReceiverAuthorization<'_>>,
         observe: impl FnMut(CheckpointStage) -> Result<(), String>,
     ) -> Result<Option<Signed>, String> {
         let files = self.lock()?;
         let (mut image, checkpoint) = self.current(&files)?;
         let dispatch: ReceiverDispatch = verify(input.authorization, self.trust.sender)?;
+        if let Some(pin) = &checkpoint {
+            let permission =
+                permission.ok_or("managed receiver requires current OAuth authorization")?;
+            if !permission.matches(
+                pin.oauth.as_ref(),
+                &dispatch.intent,
+                self.trust.provider.verifying_key(),
+            ) {
+                return Ok(None);
+            }
+        }
         let id = OperationId(input.effect.operation.clone());
         if dispatch.version != VERSION
             || dispatch.domain != DISPATCH_DOMAIN
@@ -453,12 +530,7 @@ impl<'a> DurableReceiver<'a> {
                 },
             )
             .map_err(|_| "receiver operation already reserved")?;
-        self.persist(
-            &files,
-            &image,
-            checkpoint.and_then(|pin| pin.handoff),
-            observe,
-        )?;
+        self.persist(&files, &image, checkpoint, observe)?;
         Ok(Some(outcome))
     }
 
@@ -473,6 +545,17 @@ impl<'a> DurableReceiver<'a> {
                 journal: ProviderJournal::observation(delivered.action.clone()),
                 outcome: delivered.outcome.clone(),
             }))
+    }
+
+    #[cfg(test)]
+    pub(super) fn crash_receive_oauth(
+        &self,
+        oauth: &DurableRefreshLedger<'_>,
+        input: DurableEffectUse<'_>,
+        delivery: ReceiverDelivery<'_>,
+        crash: CheckpointStage,
+    ) -> Result<Option<Signed>, String> {
+        self.receive_oauth_at(oauth, input, delivery, |stage| crash_at(stage, crash))
     }
 
     #[cfg(test)]
@@ -499,7 +582,7 @@ impl<'a> DurableReceiver<'a> {
         input: ReceiverDelivery<'_>,
         crash: CheckpointStage,
     ) -> Result<Option<Signed>, String> {
-        self.receive_at(input, |stage| crash_at(stage, crash))
+        self.receive_at(input, None, |stage| crash_at(stage, crash))
     }
 }
 

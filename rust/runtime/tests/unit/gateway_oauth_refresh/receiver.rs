@@ -342,20 +342,37 @@ fn durable_lost_effect_reply_requires_independent_settlement_and_fences_old_writ
     let copy = |from: &std::path::Path, to: &std::path::Path| {
         std::fs::copy(from.join("checkpoint.json"), to.join("checkpoint.json")).unwrap();
     };
+    let oauth_directory = durable_directory("receiver-oauth");
+    let oauth = DurableRefreshLedger::new(&oauth_directory, "receiver-oauth");
+    oauth.initialize().unwrap();
+    let live_grant = enroll_with(Confirmation::Dpop("key".into()), |input| {
+        oauth.enroll(input).unwrap()
+    });
+    let live_use = actual(live_grant.clone(), 14, "receiver-first-proof");
+    let live_checkpoint = oauth.checkpoint().unwrap();
     let primary = managed(primary_path);
     assert!(managed(standby_path).acknowledged_checkpoint().is_err());
     primary.initialize().unwrap();
+    primary.bind_oauth(&oauth).unwrap();
     copy(primary_path, old_path);
     let old_cut = primary.cut().unwrap();
     let dispatch =
         ReceiverDispatch::sign(old_cut.clone(), "channel-one", &intent, &sender).unwrap();
     assert!(
         primary
-            .crash_receive(
-                deliver(&dispatch, "channel-one", &effect),
-                CheckpointStage::Durable
-            )
+            .receive(deliver(&dispatch, "channel-one", &effect))
             .is_err()
+    );
+    assert_eq!(
+        primary
+            .crash_receive_oauth(
+                &oauth,
+                use_effect(&live_checkpoint, &live_use),
+                deliver(&dispatch, "channel-one", &effect),
+                CheckpointStage::Durable,
+            )
+            .unwrap_err(),
+        "simulated receiver crash"
     );
     let operation = OperationId(effect.operation.clone());
     let acknowledged = primary.evidence(&operation).unwrap().unwrap();
@@ -428,36 +445,10 @@ fn durable_lost_effect_reply_requires_independent_settlement_and_fences_old_writ
     );
     assert!(managed(interrupted_path).promote(&expected).is_err());
 
-    copy(winner_path, lost_reply_path);
-    let committed = winner.acknowledged_checkpoint().unwrap();
-    assert!(
-        managed(lost_reply_path)
-            .crash_promote(&committed, CheckpointStage::Durable)
-            .is_err()
-    );
-    let promoted = managed(lost_reply_path);
-    let promoted_cut = promoted.cut().unwrap();
-    assert_eq!(promoted_cut.generation, acknowledged_cut.generation + 2);
-    assert_eq!(
-        promoted.recover_promotion(&committed).unwrap(),
-        Some(promoted_cut.clone())
-    );
-    assert!(promoted.recover_promotion(&expected).unwrap().is_none());
-    assert!(winner.recover_promotion(&committed).is_err());
-    assert!(managed(loser_path).cut().is_err());
-    // Even an exact copy cannot assume the active placement without promotion.
-    copy(lost_reply_path, primary_path);
-    let primary = managed(primary_path);
-    assert!(primary.cut().is_err());
-    let retired =
-        ReceiverDispatch::sign(acknowledged_cut, "channel-two", &fresh_intent, &sender).unwrap();
-    assert!(
-        promoted
-            .receive(deliver(&retired, "channel-two", &fresh))
-            .unwrap()
-            .is_none()
-    );
-
+    let first_writer = oauth.rotate_writer().unwrap();
+    let switched = oauth.for_writer(first_writer);
+    let current_checkpoint = switched.checkpoint().unwrap();
+    let fresh_use = actual(live_grant.clone(), 14, "receiver-unused-proof");
     let mut reapproval = Witness::simulation();
     let mut reviewed_again = ReviewBinding {
         epoch: review.epoch + 1,
@@ -476,25 +467,152 @@ fn durable_lost_effect_reply_requires_independent_settlement_and_fences_old_writ
         .unwrap();
     assert_ne!(reapproved, intent);
     let alternate_dispatch =
-        ReceiverDispatch::sign(promoted_cut.clone(), "channel-two", &reapproved, &sender).unwrap();
+        ReceiverDispatch::sign(winner.cut().unwrap(), "channel-two", &reapproved, &sender).unwrap();
+    let alternate_history = reapproval.snapshot();
+    let alternate_audit = AuditAuthority {
+        gateway_key: audit.gateway_key,
+        log_key,
+        facts: audit.facts.clone(),
+        minimum_size: 1,
+        independent_frontier: Some(
+            WitnessFrontier::from_checkpoint(&alternate_history.checkpoint, &log_key).unwrap(),
+        ),
+        review_trust: None,
+        prepared_publications: None,
+    };
+    let alternate_use = DurableEffectUse {
+        admission: DurableFinalUse {
+            checked: &current_checkpoint,
+            replica: &current_checkpoint,
+            current: &fresh_use,
+            base_allowed: true,
+        },
+        intent: &reapproved,
+        history: &alternate_history,
+        trust: ProviderAuditTrust {
+            authority: &alternate_audit,
+            provider_key: &provider_key,
+        },
+        effect: &effect,
+    };
     assert!(
-        promoted
-            .receive(deliver(&alternate_dispatch, "channel-two", &effect))
+        winner
+            .receive_oauth(
+                &switched,
+                alternate_use,
+                deliver(&alternate_dispatch, "channel-two", &effect)
+            )
             .unwrap()
             .is_none()
     );
-    let recovered = promoted.evidence(&operation).unwrap().unwrap();
-    assert_eq!(recovered.outcome, acknowledged.outcome);
-    assert_eq!(recovered.journal.actions, acknowledged.journal.actions);
-    let recovered_outcomes = [recovered.outcome];
-    assert!(
-        reopened
-            .reconcile_effect(evidence(&recovered.journal, &recovered_outcomes))
-            .unwrap()
+
+    copy(winner_path, lost_reply_path);
+    let committed = winner.acknowledged_checkpoint().unwrap();
+    let last_replica = managed(lost_reply_path);
+    let fresh_effect = |checkpoint| DurableEffectUse {
+        admission: DurableFinalUse {
+            checked: checkpoint,
+            replica: checkpoint,
+            current: &fresh_use,
+            base_allowed: true,
+        },
+        effect: &fresh,
+        intent: &fresh_intent,
+        history: &history,
+        trust,
+    };
+    let anticipated_cut = cedar_poo_core::operation_identity::ReceiverCut {
+        generation: winner.cut().unwrap().generation + 1,
+        ..winner.cut().unwrap()
+    };
+    let takeover_dispatch = ReceiverDispatch::sign(
+        anticipated_cut.clone(),
+        "channel-two",
+        &fresh_intent,
+        &sender,
+    )
+    .unwrap();
+    std::thread::scope(|scope| {
+        let (committed_revoke, revoke_is_durable) = std::sync::mpsc::channel();
+        let (release_revoke, allow_return) = std::sync::mpsc::channel();
+        let authority = &switched;
+        let revoke = scope.spawn(move || {
+            authority.revoke_observed(verified(digest()), |stage| {
+                if stage == CheckpointStage::Durable {
+                    committed_revoke.send(()).unwrap();
+                    allow_return.recv().map_err(|error| error.to_string())?;
+                    return Err("simulated checkpoint crash".into());
+                }
+                Ok(())
+            })
+        });
+        revoke_is_durable.recv().unwrap();
+        assert_eq!(
+            last_replica
+                .crash_promote(&committed, CheckpointStage::Durable)
+                .unwrap_err(),
+            "simulated receiver crash"
+        );
+        assert_eq!(last_replica.cut().unwrap(), anticipated_cut);
+        let (starting, request_started) = std::sync::mpsc::channel();
+        let delivery = deliver(&takeover_dispatch, "channel-two", &fresh);
+        let input = fresh_effect(&current_checkpoint);
+        let active = &last_replica;
+        let attempt = scope.spawn(move || {
+            starting.send(()).unwrap();
+            active.receive_oauth(authority, input, delivery)
+        });
+        request_started.recv().unwrap();
+        release_revoke.send(()).unwrap();
+        assert_eq!(
+            revoke.join().unwrap().unwrap_err(),
+            "simulated checkpoint crash"
+        );
+        assert!(attempt.join().unwrap().unwrap().is_none());
+    });
+    let promoted = managed(lost_reply_path);
+    let promoted_cut = promoted.cut().unwrap();
+    assert_eq!(promoted_cut.generation, acknowledged_cut.generation + 2);
+    assert_eq!(
+        promoted.recover_promotion(&committed).unwrap(),
+        Some(promoted_cut.clone())
     );
+    assert!(promoted.recover_promotion(&expected).unwrap().is_none());
+    assert!(winner.recover_promotion(&committed).is_err());
+    assert!(managed(loser_path).cut().is_err());
+    // Even an exact copy cannot assume the active placement without promotion.
+    copy(lost_reply_path, primary_path);
+    let primary = managed(primary_path);
+    assert!(primary.cut().is_err());
+    let next_writer = switched.rotate_writer().unwrap();
+    let worker =
+        DurableRefreshLedger::new(&oauth_directory, "receiver-oauth").for_writer(next_writer);
+    let revoked = worker.checkpoint().unwrap();
     let permitted =
         ReceiverDispatch::sign(promoted_cut.clone(), "channel-two", &fresh_intent, &sender)
             .unwrap();
+    assert!(
+        promoted
+            .receive_oauth(
+                &oauth,
+                fresh_effect(&live_checkpoint),
+                deliver(&permitted, "channel-two", &fresh)
+            )
+            .is_err()
+    );
+    for frontier in [&live_checkpoint, &revoked] {
+        assert!(
+            promoted
+                .receive_oauth(
+                    &worker,
+                    fresh_effect(frontier),
+                    deliver(&permitted, "channel-two", &fresh)
+                )
+                .unwrap()
+                .is_none()
+        );
+    }
+    assert!(promoted.evidence(&fresh_id).unwrap().is_none());
     assert!(
         primary
             .receive(deliver(&permitted, "channel-two", &fresh))
@@ -503,13 +621,46 @@ fn durable_lost_effect_reply_requires_independent_settlement_and_fences_old_writ
     assert!(
         promoted
             .receive(deliver(&permitted, "channel-two", &fresh))
+            .is_err()
+    );
+
+    let other_directory = durable_directory("receiver-unbound-oauth");
+    let other = DurableRefreshLedger::new(&other_directory, "receiver-oauth");
+    other.initialize().unwrap();
+    enroll_with(Confirmation::Dpop("key".into()), |input| {
+        other.enroll(input).unwrap()
+    });
+    let other_checkpoint = other.checkpoint().unwrap();
+    assert!(promoted.bind_oauth(&other).is_err());
+    assert!(
+        promoted
+            .receive_oauth(
+                &other,
+                fresh_effect(&other_checkpoint),
+                deliver(&permitted, "channel-two", &fresh)
+            )
             .unwrap()
-            .is_some()
+            .is_none()
+    );
+    assert!(promoted.evidence(&fresh_id).unwrap().is_none());
+
+    let recovered = promoted.evidence(&operation).unwrap().unwrap();
+    assert_eq!(recovered.outcome, acknowledged.outcome);
+    assert_eq!(recovered.journal.actions, acknowledged.journal.actions);
+    let recovered_outcomes = [recovered.outcome];
+    let reconciliation = evidence(&recovered.journal, &recovered_outcomes);
+    assert!(worker.reconcile_effect(reconciliation).unwrap());
+    assert!(
+        worker
+            .reconcile_effect(evidence(&recovered.journal, &recovered_outcomes))
+            .unwrap()
     );
     assert_eq!(
         promoted.recover_promotion(&committed).unwrap(),
         Some(promoted_cut)
     );
+    std::fs::remove_dir_all(other_directory).unwrap();
+    std::fs::remove_dir_all(oauth_directory).unwrap();
     std::fs::remove_dir_all(failover).unwrap();
     std::fs::remove_dir_all(receiver_directory).unwrap();
     std::fs::remove_dir_all(directory).unwrap();

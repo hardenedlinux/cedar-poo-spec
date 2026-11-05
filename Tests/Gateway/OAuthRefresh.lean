@@ -43,12 +43,14 @@ private def crashExercise (durable : Revocation.Recovery.Store)
   let delivery : Receiver.Delivery := ⟨dispatch, "channel-one", outcome⟩
   let request : Receiver.Input := ⟨receiver, delivery, dispatch, "channel-one", intent, true⟩
   let .ok delivered := Receiver.contract.invoke Receiver.prepare request | return false
-  let managed : Receiver.ManagedInput := ⟨some ⟨"primary", receiver, none⟩, "primary", request⟩
+  let authority := openRevocation.oauth.checkpoint.authorityId
+  let primary : Receiver.Checkpoint := ⟨"primary", receiver, none, some authority⟩
+  let managed : Receiver.ManagedInput := ⟨some primary, "primary", request, begin⟩
   let .ok committed := Receiver.managedContract.invoke Receiver.prepareManaged managed | return false
   let some advanced := Receiver.advance delivered.result cut | return false
   let restored := Revocation.Crash.recoverImage .durable delivered.result advanced
   let staged := Revocation.Crash.recoverImage .staged receiver delivered.result
-  let pin : Receiver.Checkpoint := ⟨"primary", restored, none⟩
+  let pin : Receiver.Checkpoint := { primary with image := restored }
   let promotion : Receiver.PromotionInput := ⟨some pin, pin, restored, "standby"⟩
   let .ok promoted := Receiver.promotionContract.invoke Receiver.preparePromotion promotion | return false
   let stagedPromotion := Revocation.Crash.recoverImage .staged pin promoted.result
@@ -60,13 +62,22 @@ private def crashExercise (durable : Revocation.Recovery.Store)
     ⟨some committedPromotion, pin, "standby", committedPromotion.image⟩
   let .ok recovered := Receiver.promotionRecoveryContract.invoke
     Receiver.preparePromotionRecovery recovery | return false
-  let some (action, outcome) := Receiver.evidence committedPromotion.image dispatch.operation | return false
-  let newDispatch := { dispatch with cut := committedPromotion.image.cut }
-  let retry : Receiver.Input := ⟨committedPromotion.image, ⟨newDispatch, "channel-two", outcome⟩,
+  let next : Receiver.PromotionInput :=
+    ⟨some committedPromotion, committedPromotion, committedPromotion.image, "successor"⟩
+  let .ok successor := Receiver.promotionContract.invoke Receiver.preparePromotion next | return false
+  let some (action, outcome) := Receiver.evidence successor.result.image dispatch.operation | return false
+  let newDispatch := { dispatch with cut := successor.result.image.cut }
+  let retry : Receiver.Input := ⟨successor.result.image, ⟨newDispatch, "channel-two", outcome⟩,
     newDispatch, "channel-two", intent, true⟩
   let reconcile : Revocation.Crash.ReconcileInput := ⟨live, 1, intent.operation, trust, source, history, [action], [outcome]⟩
   let .ok settled := Revocation.Crash.reconcileContract.invoke Revocation.Crash.prepareReconcile reconcile | return false
-  return decide (committed.result.image = delivered.result) &&
+  let revokedUse := { begin with image := live, writer := 1, checkedWriter := 1 }
+  let afterTakeover : Receiver.ManagedInput :=
+    ⟨some successor.result, "successor", retry, revokedUse⟩
+  return decide (committed.result.receiver.image = delivered.result) &&
+    decide (committed.result.oauth = started.result) &&
+    decide (successor.result.oauthAuthority = some authority) &&
+    (Receiver.receiveManaged afterTakeover).isNone &&
     (Receiver.promote { promotion with independent := none }).isNone &&
     (Receiver.promote { promotion with candidate := receiver }).isNone &&
     (Receiver.promote { promotion with candidate := fork }).isNone &&
@@ -77,8 +88,8 @@ private def crashExercise (durable : Revocation.Recovery.Store)
     (Receiver.recoverPromotion ⟨some committedPromotion, pin, "primary", committedPromotion.image⟩).isNone &&
     decide (committedPromotion.active = "standby") &&
     decide (committedPromotion.image.cut.generation = restored.cut.generation + 1) &&
-    (Receiver.receiveManaged ⟨some committedPromotion, "primary", retry⟩).isNone &&
-    (Receiver.receiveManaged ⟨some committedPromotion, "standby", retry⟩).isNone &&
+    (Receiver.receiveManaged { afterTakeover with placement := "primary", authorization := begin }).isNone &&
+    (Receiver.receiveManaged { afterTakeover with authorization := begin }).isNone &&
     (Receiver.evidence staged dispatch.operation).isNone &&
     decide (restored.cut.generation = cut.generation + 1) &&
     (Receiver.receive { request with image := restored }).isNone &&
@@ -231,3 +242,8 @@ end Tests.Gateway.OAuthRefresh
 #print axioms CedarPooSpec.Gateway.OAuth.Receiver.promotion_cannot_consume_checkpoint_twice
 #print axioms CedarPooSpec.Gateway.OAuth.Receiver.committed_promotion_ack_can_recover
 #print axioms CedarPooSpec.Gateway.OAuth.Receiver.inactive_placement_cannot_recover_promotion
+
+#print axioms CedarPooSpec.Gateway.OAuth.Receiver.promotion_preserves_oauth_authority
+#print axioms CedarPooSpec.Gateway.OAuth.Receiver.consecutive_promotions_keep_signed_evidence
+#print axioms CedarPooSpec.Gateway.OAuth.Receiver.revoked_grant_cannot_receive
+#print axioms CedarPooSpec.Gateway.OAuth.Receiver.stale_oauth_replica_cannot_receive

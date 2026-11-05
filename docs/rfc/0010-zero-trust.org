@@ -1285,6 +1285,33 @@ recovered. Availability after an interrupted write therefore
 requires keeping such a copy. Recovery never initializes a new
 checkpoint from candidate bytes.
 
+*** Continuing authorization after receiver takeover
+
+An active managed receiver is explicitly bound to the independent
+OAuth authority. The receiver pin retains that binding across
+promotion and writer rotation. A legacy pin can still recover
+evidence and promote, but managed delivery requires the binding.
+A different OAuth store with the same authority name cannot supply
+the permission.
+
+The synchronous execution path holds the OAuth lock from the final
+check through the receiver commit. It checks the live writer, grant
+and revocation state, then persists the OAuth operation reservation
+before acquiring the receiver authority and replica locks. The
+receiver checks the active placement, cut, signed route and exact
+OAuth-authorized intent. A promotion does not carry a permission
+into the next placement. If revocation commits first, even a signed
+dispatch for the new cut cannot execute. If delivery commits first,
+revocation leaves its signed evidence available for reconciliation.
+
+An interrupted receiver commit may leave the OAuth operation
+reserved. Only the current receiver supplies its retained action
+and signed outcome, and the OAuth authority reconciles them against
+the original intent, independently witnessed history and pinned
+provider key. Reconciliation does not require the revoked grant to
+become usable again. It preserves the operation reservation through
+subsequent writer and receiver handoffs.
+
 Standalone receiver stores retain their local behavior. Managed
 stores require explicit bootstrap and cannot be reopened through
 the standalone interface. The deployment must retain independent

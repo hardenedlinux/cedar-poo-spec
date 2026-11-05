@@ -9,9 +9,10 @@ use crate::gateway::{
     AuditAuthority, EffectIdentity, LogSnapshot, ProviderAuditTrust, ProviderJournal,
     Reconciliation, Signed, WitnessFrontier,
 };
+use p256::ecdsa::VerifyingKey;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 /// Portable replica image. Trust comes from equality with the independent
@@ -85,6 +86,34 @@ fn anchored_history<'a>(
         return Err("OAuth effect lacks an exact independent witness frontier".into());
     }
     Ok(verified)
+}
+
+/// Receiver pin for the trusted OAuth checkpoint. Writer rotations retain it.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(super) struct ReceiverAuthority {
+    pub(super) directory: PathBuf,
+    authority: String,
+}
+
+/// Short-lived permission constructed only inside final OAuth mediation.
+pub(super) struct ReceiverAuthorization<'a> {
+    authority: &'a ReceiverAuthority,
+    intent: &'a Signed,
+    provider_key: &'a VerifyingKey,
+}
+
+impl ReceiverAuthorization<'_> {
+    pub(super) fn matches(
+        &self,
+        authority: Option<&ReceiverAuthority>,
+        intent: &Signed,
+        provider_key: &VerifyingKey,
+    ) -> bool {
+        authority == Some(self.authority)
+            && intent == self.intent
+            && provider_key == self.provider_key
+    }
 }
 
 /// Trusted independent directory for one OAuth authority. Every worker and
@@ -202,16 +231,22 @@ impl<'a> DurableRefreshLedger<'a> {
         verified: VerifiedClient<RefreshDigest>,
         crash_at: CheckpointStage,
     ) -> Result<bool, String> {
-        self.update_at(
-            |ledger| State::revoke(ledger, verified),
-            |stage| {
-                if stage == crash_at {
-                    Err("simulated checkpoint crash".into())
-                } else {
-                    Ok(())
-                }
-            },
-        )
+        self.revoke_observed(verified, |stage| {
+            if stage == crash_at {
+                Err("simulated checkpoint crash".into())
+            } else {
+                Ok(())
+            }
+        })
+    }
+
+    #[cfg(test)]
+    pub(super) fn revoke_observed(
+        &self,
+        verified: VerifiedClient<RefreshDigest>,
+        observe: impl FnMut(CheckpointStage) -> Result<(), String>,
+    ) -> Result<bool, String> {
+        self.update_at(|ledger| State::revoke(ledger, verified), observe)
     }
 
     /// Read the independently retained committed checkpoint.
@@ -283,6 +318,51 @@ impl<'a> DurableRefreshLedger<'a> {
         file.persist(&image)?;
         observe_effect(&commit.effect)?;
         Ok(true)
+    }
+
+    pub(super) fn receiver_authority(&self) -> Result<ReceiverAuthority, String> {
+        let directory = self
+            .directory
+            .canonicalize()
+            .map_err(|error| error.to_string())?;
+        Ok(ReceiverAuthority {
+            directory,
+            authority: self.authority.into(),
+        })
+    }
+
+    pub(super) fn bind_receiver_authority(
+        &self,
+        authority: &ReceiverAuthority,
+        bind: impl FnOnce() -> Result<(), String>,
+    ) -> Result<(), String> {
+        let file = LockedCheckpoint::open(&authority.directory)?;
+        self.read(&file)?;
+        bind()
+    }
+
+    pub(super) fn authorize_receiver(
+        &self,
+        input: DurableEffectUse<'_>,
+        authority: &ReceiverAuthority,
+        receive: impl FnOnce(ReceiverAuthorization<'_>) -> Result<Option<Signed>, String>,
+    ) -> Result<Option<Signed>, String> {
+        let permission = ReceiverAuthorization {
+            authority,
+            intent: input.intent,
+            provider_key: input.trust.provider_key,
+        };
+        let ledger = DurableRefreshLedger {
+            directory: &authority.directory,
+            authority: self.authority,
+            writer: self.writer,
+        };
+        let mut outcome = None;
+        ledger.execute_effect(input, |_| {
+            outcome = receive(permission)?;
+            Ok(())
+        })?;
+        Ok(outcome)
     }
 
     /// Settle a retained intent only from its independent provider evidence.
