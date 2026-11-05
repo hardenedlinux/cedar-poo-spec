@@ -281,4 +281,22 @@ theorem trace_preserves_realization (history : Trace initial after)
     after.receiptRealization symbol = initial.receiptRealization symbol := by
   simp [Image.receiptRealization, trace_preserves_original history bound, bound]
 
+/-- Stored rows do not authenticate themselves, even when their digest fields agree. -/
+def Image.restoreReceipt (image : Image) (authority : ReceiptIdentity.Authority) (request : Request)
+    (symbol : ReceiptIdentity.ReceiptSymbol) : Option ReceiptIdentity.Realization :=
+  ReceiptIdentity.restore ⟨authority, request, image.receiptRealization symbol⟩
+
+theorem trace_preserves_restoration (history : Trace initial after)
+    (bound : lookup initial.rows symbol.operation = some row) :
+    after.restoreReceipt authority request symbol =
+      initial.restoreReceipt authority request symbol := by
+  simp only [Image.restoreReceipt, trace_preserves_realization history bound]
+
+theorem restored_row_requires_independent_sources (image : Image)
+    (authority : ReceiptIdentity.Authority) (request : Request) (symbol : ReceiptIdentity.ReceiptSymbol)
+    (accepted : image.restoreReceipt authority request symbol = some result) :
+    image.receiptRealization symbol = some result ∧
+      ReceiptIdentity.realize authority request result.symbol = some result :=
+  ReceiptIdentity.restored_exact accepted
+
 end CedarPooSpec.Gateway.OAuth.ReceiptRecovery

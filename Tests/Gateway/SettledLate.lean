@@ -100,6 +100,8 @@ def alternating (image : ReceiptRecovery.Image) (delayed first : ReceiptRecovery
       rw [symbolOperation]
       exact bound
     let _realized := ReceiptRecovery.trace_preserves_realization resumed.2 symbolicBound
+    let _restored := ReceiptRecovery.trace_preserves_restoration
+      (authority := delayed.authority) (request := delayed.request) resumed.2 symbolicBound
     let complete := ReceiptRecovery.Trace.trans historyPrefix resumed.2
     let finalRetry := { retry with
       image := resumed.1.oauth, operation := operation
@@ -204,3 +206,9 @@ end Tests.Gateway.SettledLate
 #print axioms CedarPooSpec.Gateway.OAuth.ReceiptIdentity.realization_wrong_receipt
 #print axioms CedarPooSpec.Gateway.OAuth.ReceiptIdentity.realization_check_exact
 #print axioms CedarPooSpec.Gateway.OAuth.ReceiptRecovery.trace_preserves_realization
+
+#print axioms CedarPooSpec.Gateway.OAuth.ReceiptIdentity.restoration_requires_sources
+#print axioms CedarPooSpec.Gateway.OAuth.ReceiptIdentity.restoration_rejects_substitution
+#print axioms CedarPooSpec.Gateway.OAuth.ReceiptIdentity.restoration_missing_refused
+#print axioms CedarPooSpec.Gateway.OAuth.ReceiptIdentity.restoration_idempotent
+#print axioms CedarPooSpec.Gateway.OAuth.ReceiptRecovery.trace_preserves_restoration

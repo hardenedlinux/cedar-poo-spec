@@ -1727,8 +1727,39 @@ object. An explicit =candidate= call materializes transport data. Checking a
 transport proposal compares both the complete symbol and the existing native
 source binding. It grants no authorization and performs no persistence.
 
-The late-recovery fixture advances to version 2 because it adds six explicit
-realization predicates; its 22-step schedule and all acceptance budgets remain
+A recovered row is still an untrusted proposal. The shared
+=ReceiptIdentity.restorationContract= requires a present candidate and resolves
+its symbol again against the independently selected source context. It accepts
+only equality of the complete realization, including exact signed bytes.
+=restoration_requires_sources= proves that the accepted result is both the
+recovered candidate and the independently resolved value. Missing mappings,
+changed versions, source substitutions and cross-operation or cross-authority
+mappings fail closed, including substitutions retaining plausible digest fields.
+=Image.restoreReceipt= applies this boundary to the existing durable row;
+=trace_preserves_restoration= preserves its result along the finite recovery
+trace when the independent source context is fixed.
+
+The public Rust =VerifiedReceiptIdentity.restore= returns the existing borrowed
+verified-realization type only after these checks. Restarted workers use it on
+the deserialized mapping; all 22 observations exercise the same path, including
+a serialized transport round trip and missing/substituted proposals. The plan
+format is =cedar-poo-settled-late-plan-v3=; only its predicates change, with no
+extra fault rounds or relaxed acceptance controls. No storage format or extra
+mapping journal is introduced.
+
+This recovery Contract authenticates historical settlement. It neither proves
+that a cached source context is current nor permits a new effect. Source-context
+selection remains with the independent reader; writer incarnation, live replica,
+revocation and final-use ordering remain with the existing locked OAuth/receiver
+transaction. This separation is consistent with RFC 9700's token replay
+protections and RFC 9449's sender constraints: a valid signature or past
+settlement cannot replace current authorization. The historical restoration rule
+is this library's explicit composition boundary, not a claim that those RFCs
+specify application receipt recovery.
+
+
+The late-recovery fixture uses version 3 with eight explicit
+realization/restoration predicates; its 22-step schedule and all acceptance budgets remain
 unchanged. At every step, a valid signed sibling-operation receipt and a source
 context under another receiver authority are rejected by the target realization.
 Rewriting their operation labels cannot hide the different symbolic body or raw

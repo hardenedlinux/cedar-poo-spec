@@ -274,7 +274,6 @@ pub(super) fn worker<'a>(
     .prepare()
     .unwrap();
     let symbol = identity.symbol().unwrap();
-    let realized = identity.realize(&symbol).unwrap();
     let stored = oauth
         .effect_observation(&OperationId(fixture.prefix.operation.clone()))
         .unwrap()
@@ -285,6 +284,7 @@ pub(super) fn worker<'a>(
         symbol: symbol.clone(),
         native: stored,
     };
+    let realized = identity.restore(Some(&recovered)).unwrap();
     assert_eq!(
         realized.check(&recovered),
         Some(recovered.native.identity.clone())

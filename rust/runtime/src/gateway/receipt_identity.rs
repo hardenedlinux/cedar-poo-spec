@@ -213,6 +213,22 @@ impl VerifiedReceiptIdentity {
         })
     }
 
+    /// Re-establish trust in an optional deserialized mapping using this independently
+    /// prepared context. Missing rows and any symbol/source substitution fail closed.
+    /// This is historical receipt recovery; current authorization and fencing remain
+    /// with the locked OAuth/receiver transaction.
+    pub fn restore<'a>(
+        &'a self,
+        candidate: Option<&'a ReceiptRealizationCandidate>,
+    ) -> Result<VerifiedReceiptRealization<'a>, String> {
+        let candidate = candidate.ok_or("missing recovered receipt mapping")?;
+        let realized = self.realize(&candidate.symbol)?;
+        realized
+            .check(candidate)
+            .ok_or("recovered receipt mapping differs from independently verified sources")?;
+        Ok(realized)
+    }
+
     /// Return the source-bound candidate for transport or subsequent comparisons.
     pub fn candidate(&self) -> ReceiptIdentityCandidate {
         self.original.clone()

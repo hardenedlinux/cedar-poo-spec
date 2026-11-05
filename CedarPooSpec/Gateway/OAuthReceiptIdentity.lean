@@ -309,6 +309,67 @@ theorem realization_check_rejects_replacement (expected candidate : Realization)
     (different : candidate ≠ expected) :
     expected.check candidate = none := by simp [Realization.check, different]
 
+/-- A deserialized mapping remains a proposal until independently selected sources accept it. -/
+structure RestoreInput where
+  authority : Authority
+  request : Request
+  candidate : Option Realization
+
+def restore (input : RestoreInput) : Option Realization := do
+  let candidate ← input.candidate
+  let fresh ← realize input.authority input.request candidate.symbol
+  if candidate = fresh then some fresh else none
+
+def restorationContract : Contract Unit RestoreInput Realization where
+  input := ⟨"independent-sources-and-untrusted-recovered-mapping", fun _ => True, fun _ => inferInstance⟩
+  output := ⟨"exact-recovered-symbol-and-verified-native-sources", fun _ => True, fun _ => inferInstance⟩
+  meaning := fun _ input result => restore input = some result
+  decide := fun _ _ _ => inferInstance
+  rule := .atom ()
+
+def prepareRestoration (input : RestoreInput) : Except String (Realization × Unit) :=
+  match restore input with
+  | some result => .ok (result, ())
+  | none => .error "recovered receipt mapping refused"
+
+theorem restored_exact (accepted : restore input = some result) :
+    input.candidate = some result ∧
+      realize input.authority input.request result.symbol = some result := by
+  cases candidate : input.candidate with
+  | none => simp [restore, candidate] at accepted
+  | some stored =>
+    cases checked : realize input.authority input.request stored.symbol with
+    | none => simp [restore, candidate, checked] at accepted
+    | some fresh =>
+      simp only [restore, candidate, checked, bind, Option.bind] at accepted
+      split at accepted
+      · rename_i same
+        have resultSame : fresh = result := Option.some.inj accepted
+        subst result
+        subst stored
+        exact ⟨rfl, checked⟩
+      · contradiction
+
+theorem restoration_requires_sources
+    (receipt : Invocation restorationContract prepareRestoration input) :
+    input.candidate = some receipt.result ∧
+      realize input.authority input.request receipt.result.symbol = some receipt.result :=
+  restored_exact receipt.logic
+
+theorem restoration_missing_refused (missing : input.candidate = none) :
+    restore input = none := by simp [restore, missing]
+
+theorem restoration_rejects_substitution
+    (present : input.candidate = some candidate)
+    (selected : realize input.authority input.request candidate.symbol = some fresh)
+    (different : candidate ≠ fresh) : restore input = none := by
+  simp [restore, present, selected, different]
+
+theorem restoration_idempotent
+    (selected : realize authority request candidate.symbol = some candidate) :
+    restore ⟨authority, request, some candidate⟩ = some candidate := by
+  simp [restore, selected]
+
 /-- Recovery cannot reselect a symbolic receipt from a different settled operation. -/
 def Authority.forImage (authority : Authority) (image : Revocation.Crash.Image) : Authority :=
   { authority with read := fun operation =>

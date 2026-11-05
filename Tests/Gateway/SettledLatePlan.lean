@@ -30,6 +30,8 @@ structure Step where
   crossAuthorityRefused : Bool
   symbolicReceiptRefused : Bool
   sourceSubstitutionRefused : Bool
+  missingMappingRefused : Bool
+  recoveredSubstitutionRefused : Bool
   deriving DecidableEq
 
 private def expected (event worker : String) (advance : Nat) (bound : Bool) : Step :=
@@ -41,7 +43,8 @@ private def expected (event worker : String) (advance : Nat) (bound : Bool) : St
     intentsPreserved := true, revocationPreserved := true, noResend := true
     realizationBound := bound, realizationDigestsBound := true
     crossOperationRefused := true, crossAuthorityRefused := true
-    symbolicReceiptRefused := true, sourceSubstitutionRefused := true }
+    symbolicReceiptRefused := true, sourceSubstitutionRefused := true
+    missingMappingRefused := true, recoveredSubstitutionRefused := true }
 
 def steps : List Step :=
   [expected "ready" "both" 0 false] ++
@@ -65,6 +68,8 @@ private structure RealizationChecks where
   crossAuthority : Bool
   wrongReceipt : Bool
   changedSource : Bool
+  missingMapping : Bool
+  recoveredSubstitution : Bool
 
 private def realizationChecks (image : ReceiptRecovery.Image)
     (input : ReceiptRecovery.Input) : RealizationChecks := Id.run do
@@ -72,7 +77,7 @@ private def realizationChecks (image : ReceiptRecovery.Image)
   let authority := input.authority.forImage image.oauth
   let .ok mapped := ReceiptIdentity.realizationContract.invoke
     ReceiptIdentity.prepareRealization (authority, input.request, symbol)
-    | return ⟨false, false, false, false, false, false⟩
+    | return ⟨false, false, false, false, false, false, false, false⟩
   let _nativeDigests := ReceiptIdentity.realized_source_digests mapped
   let original := mapped.result
   let rejected := fun candidate => !(ReceiptIdentity.realizationContract.invoke
@@ -89,8 +94,14 @@ private def realizationChecks (image : ReceiptRecovery.Image)
     row.identity.operation != input.request.identity.operation).any fun row =>
       (original.check { original with intentSource := row.intentSource, outcomeSource := row.outcomeSource }).isNone
   let changedDigest := { original with native := { original.native with outcomeDigest := "substituted-digest" } }
+  let changedVersion := { original with native := { original.native with version := ⟨99, 0⟩ } }
+  let restore := fun candidate => ReceiptIdentity.restorationContract.invoke
+    ReceiptIdentity.prepareRestoration ⟨authority, input.request, candidate⟩
+  let changedStored := { ReceiptRecovery.Request.stored input.request with
+    outcomeSource := changedSource.outcomeSource }
+  let changedImage := { image with rows := changedStored :: image.rows }
   return {
-    persisted := image.receiptRealization symbol == some original
+    persisted := (restore (image.receiptRealization symbol)).toOption.any (fun mapped => mapped.result == original)
     digests := original.native.intentDigest == authority.digest original.intentSource &&
       original.native.outcomeDigest == authority.digest original.outcomeSource
     crossOperation := rejected differentOperation &&
@@ -99,7 +110,13 @@ private def realizationChecks (image : ReceiptRecovery.Image)
       (original.check { original with symbol := differentReceiver }).isNone
     wrongReceipt := rejected differentBody && rejected differentSignature
     changedSource := siblingSourcesRefused &&
-      (original.check changedSource).isNone && (original.check changedDigest).isNone }
+      (original.check changedSource).isNone && (original.check changedDigest).isNone
+    missingMapping := !(restore none).isOk
+    recoveredSubstitution := !(restore (some changedSource)).isOk &&
+      !(restore (some changedDigest)).isOk && !(restore (some changedVersion)).isOk &&
+      !(restore (some { original with symbol := differentOperation })).isOk &&
+      !(restore (some { original with symbol := differentReceiver })).isOk &&
+      (changedImage.restoreReceipt authority input.request symbol).isNone }
 
 def observe (initial image : ReceiptRecovery.Image) (delayed : ReceiptRecovery.Input)
     (retry : Revocation.Crash.BeginInput) (event worker : String) : Step :=
@@ -151,7 +168,9 @@ def observe (initial image : ReceiptRecovery.Image) (delayed : ReceiptRecovery.I
     crossOperationRefused := realization.crossOperation
     crossAuthorityRefused := realization.crossAuthority
     symbolicReceiptRefused := realization.wrongReceipt
-    sourceSubstitutionRefused := realization.changedSource }
+    sourceSubstitutionRefused := realization.changedSource
+    missingMappingRefused := realization.missingMapping
+    recoveredSubstitutionRefused := realization.recoveredSubstitution }
 
 def Step.toJson (step : Step) : Lean.Json := Lean.Json.mkObj [
   ("event", Lean.toJson step.event), ("worker", Lean.toJson step.worker),
@@ -176,10 +195,12 @@ def Step.toJson (step : Step) : Lean.Json := Lean.Json.mkObj [
   ("cross_operation_refused", Lean.toJson step.crossOperationRefused),
   ("cross_authority_refused", Lean.toJson step.crossAuthorityRefused),
   ("symbolic_receipt_refused", Lean.toJson step.symbolicReceiptRefused),
-  ("source_substitution_refused", Lean.toJson step.sourceSubstitutionRefused)]
+  ("source_substitution_refused", Lean.toJson step.sourceSubstitutionRefused),
+  ("missing_mapping_refused", Lean.toJson step.missingMappingRefused),
+  ("recovered_substitution_refused", Lean.toJson step.recoveredSubstitutionRefused)]
 
 def fixture : Lean.Json := Lean.Json.mkObj [
-  ("format", Lean.toJson "cedar-poo-settled-late-plan-v2"),
+  ("format", Lean.toJson "cedar-poo-settled-late-plan-v3"),
   ("scope", Lean.toJson "late-settled-receipt-step-alignment"),
   ("identity_mapping", Lean.toJson "scoped-symbolic-receipt-and-native-signed-source-identity"),
   ("steps", Lean.Json.arr (steps.map Step.toJson).toArray)]

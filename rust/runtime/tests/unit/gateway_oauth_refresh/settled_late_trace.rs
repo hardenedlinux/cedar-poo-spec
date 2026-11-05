@@ -46,6 +46,8 @@ struct Step {
     cross_authority_refused: bool,
     symbolic_receipt_refused: bool,
     source_substitution_refused: bool,
+    missing_mapping_refused: bool,
+    recovered_substitution_refused: bool,
 }
 
 #[derive(Deserialize)]
@@ -92,6 +94,8 @@ struct RealizationChecks {
     cross_authority: bool,
     wrong_receipt: bool,
     changed_source: bool,
+    missing_mapping: bool,
+    recovered_substitution: bool,
     symbol_sha256: String,
     realization_sha256: Option<String>,
 }
@@ -109,12 +113,15 @@ fn realization_checks(
         prepared.check(&expected),
         Some(expected.native.identity.clone())
     );
-    let bound = stored.is_some_and(|native| {
-        prepared.check(&ReceiptRealizationCandidate {
-            symbol: symbol.clone(),
-            native: native.clone(),
-        }) == Some(native.identity.clone())
+    let recovered = stored.map(|native| ReceiptRealizationCandidate {
+        symbol: symbol.clone(),
+        native: native.clone(),
     });
+    // A restarted consumer must restore the serialized proposal through the
+    // same public API, rather than trusting a digest or a decoded row.
+    let recovered: Option<ReceiptRealizationCandidate> =
+        serde_json::from_slice(&serde_json::to_vec(&recovered).unwrap()).unwrap();
+    let bound = mapping.restore(recovered.as_ref()).is_ok();
     let sibling_symbol = sibling.symbol().unwrap();
     let sibling_mapping = sibling.realize(&sibling_symbol).unwrap();
     let mut disguised = sibling_mapping.candidate();
@@ -165,6 +172,24 @@ fn realization_checks(
         changed_intent.native.intent.source_sha256().unwrap();
     let changed_source =
         prepared.check(&changed_outcome).is_none() && prepared.check(&changed_intent).is_none();
+    let mut changed_version = expected.clone();
+    changed_version.native.identity.version.major = 99;
+    let recovered_substitution = [
+        &changed_outcome,
+        &changed_intent,
+        &changed_version,
+        &disguised,
+        &laundered,
+        &sibling_mapping.candidate(),
+        &foreign_mapping.candidate(),
+    ]
+    .into_iter()
+    .all(|candidate| mapping.restore(Some(candidate)).is_err());
+    let restored_original = mapping.restore(Some(&expected)).unwrap();
+    assert_eq!(
+        restored_original.check(&expected),
+        Some(expected.native.identity.clone())
+    );
     RealizationChecks {
         bound,
         digests: expected.native.identity.intent_sha256
@@ -175,6 +200,8 @@ fn realization_checks(
         cross_authority,
         wrong_receipt,
         changed_source,
+        missing_mapping: mapping.restore(None).is_err(),
+        recovered_substitution,
         symbol_sha256: crate::json_sha256(&symbol).unwrap(),
         realization_sha256: bound.then(|| crate::json_sha256(&expected).unwrap()),
     }
@@ -189,7 +216,7 @@ impl Observer {
         let path = Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("../../.lake/build/gateway-settled-late-plan.json");
         let plan: Plan = serde_json::from_slice(&std::fs::read(path).unwrap()).unwrap();
-        assert_eq!(plan.format, "cedar-poo-settled-late-plan-v2");
+        assert_eq!(plan.format, "cedar-poo-settled-late-plan-v3");
         assert_eq!(plan.scope, "late-settled-receipt-step-alignment");
         assert_eq!(
             plan.identity_mapping,
@@ -467,6 +494,8 @@ impl Observer {
             cross_authority_refused: realization.cross_authority,
             symbolic_receipt_refused: realization.wrong_receipt,
             source_substitution_refused: realization.changed_source,
+            missing_mapping_refused: realization.missing_mapping,
+            recovered_substitution_refused: realization.recovered_substitution,
         };
         let receiver_advance = receiver.cut().unwrap().generation - self.initial_receiver;
         assert_eq!(receiver_advance, actual.writer_advance);
