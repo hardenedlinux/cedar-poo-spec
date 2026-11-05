@@ -239,6 +239,22 @@ theorem trace_preserves_original (history : Trace initial after)
     | staged => exact ih
     | durable => exact persistence_keeps_original receipt (by simpa [current] using ih)
 
+/-- Concrete maintenance closure for the shared lineage invariant: receiver
+takeovers, revocations, mapping commits and both crash boundaries retain it. -/
+theorem trace_retains_oauth_lineage (history : Trace initial after) :
+    initial.oauth.oauth.checkpoint.ledger.retains after.oauth.oauth.checkpoint.ledger := by
+  induction history with
+  | start => exact Refresh.Ledger.retains_refl _
+  | authorization prior history ih =>
+    exact Refresh.Ledger.retains_trans ih (Receiver.legacyRecoveryTrace_retains_oauth_lineage history)
+  | commit prior receipt current boundary ih =>
+    cases boundary with
+    | staged => exact ih
+    | durable =>
+      change initial.oauth.oauth.checkpoint.ledger.retains receipt.result.oauth.oauth.checkpoint.ledger
+      rw [receipt.logic.2.1, current]
+      exact ih
+
 theorem trace_cannot_resend (history : Trace initial after)
     (retry : Revocation.Crash.BeginInput)
     (burned : (initial.oauth.retained.any fun entry => entry.intent.operation == retry.operation) = true) :

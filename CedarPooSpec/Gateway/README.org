@@ -341,3 +341,13 @@ recovery/renewal laws retain original consumption, revocation and current Cedar
 admission. No theorem turns a historical review into a fresh-world receipt.
 The [[file:../../docs/protocol/gateway-effect.org][protocol audit]] maps these laws to native source writers, mediator fencing,
 independent historical audit and the explicit cross-world publication refusal.
+
+
+* OAuth lineage safety
+
+=OAuth.Refresh.Ledger.retains= binds historical access digests to their original
+family/grant and retains committed revocations. The existing ledger transitions
+instantiate =ZeroTrust.Framework.atInvariant=; durable effect reservation and
+the shared receipt-recovery trace preserve the same lineage. See the
+[[file:../../docs/agent-authorization-research.org][research and concrete refinement review]] for theorem scope, duplicate-JSON
+countermodels and the native persisted-reader controls.

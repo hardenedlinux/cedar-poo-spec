@@ -779,6 +779,12 @@ private def exercise (confirmation replacement : Confirmation) : Bool := Id.run 
   let current := second.result.2
   let revocation : RevocationInput := ⟨current, verified digest⟩
   let .ok revoked := revokeContract.invoke prepareRevoke revocation | return false
+  let _actualLineage : initial.retains revoked.result :=
+    Ledger.retains_trans
+      (step_retains_lineage (LedgerStep.refreshed (E := Unit) first))
+      (Ledger.retains_trans
+        (step_retains_lineage (LedgerStep.refreshed (E := Unit) second))
+        (step_retains_lineage (LedgerStep.revoked (E := Unit) revoked)))
   let authority : Authority := { activeGrants := [grant, first.result.1, second.result.1], now := 14, maxProofAge := 5 }
   let target : Target :=
     ⟨grant.identity, "fhir", ["patient.read"], "GET", "https://gateway.example/patient"⟩
@@ -975,3 +981,27 @@ end Tests.Gateway.OAuthRefresh
 #print axioms CedarPooSpec.Gateway.OAuth.ReceiptBatch.batch_cannot_resend
 #print axioms CedarPooSpec.Gateway.OAuth.ReceiptBatch.accepted_step_binds
 #print axioms CedarPooSpec.Gateway.OAuth.ReceiptBatch.suffix_keeps_committed
+
+
+#print axioms CedarPooSpec.Gateway.OAuth.Refresh.step_retains_lineage
+#print axioms CedarPooSpec.Gateway.OAuth.Refresh.protected_lineage_preserves_run
+#print axioms CedarPooSpec.Gateway.OAuth.Refresh.historical_access_cannot_rebind
+#print axioms CedarPooSpec.Gateway.OAuth.Refresh.committed_historical_access_refused
+#print axioms CedarPooSpec.Gateway.OAuth.Revocation.Recovery.persisted_revocation_retains_lineage
+#print axioms CedarPooSpec.Gateway.OAuth.Revocation.Crash.begin_retains_oauth_checkpoint
+#print axioms CedarPooSpec.Gateway.OAuth.Receiver.legacyRecoveryTrace_retains_oauth_lineage
+
+
+namespace Tests.Gateway.OAuthRefresh
+open CedarPooSpec.Gateway.OAuth.Refresh
+
+/-- Even identical duplicate rows have no authoritative unique lookup. -/
+theorem duplicate_digest_lookup_is_refused (first second : Access)
+    (same : second.grant.tokenHash = first.grant.tokenHash) :
+    ({ access := [first, second] } : Ledger).accessEntry first.grant.tokenHash = none := by
+  simp [Ledger.accessEntry, same]
+
+end Tests.Gateway.OAuthRefresh
+#print axioms Tests.Gateway.OAuthRefresh.duplicate_digest_lookup_is_refused
+
+#print axioms CedarPooSpec.Gateway.OAuth.Refresh.protected_lineage_retains_base

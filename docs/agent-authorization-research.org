@@ -85,6 +85,53 @@ claim that each domain has already supplied a complete transition model and
 proved this new invariant. Such an instantiation must name its actual states,
 invariant, effect relation, maintenance relation and native coverage argument.
 
+* Concrete OAuth lineage and recovery instantiation
+
+The shared =Refresh.LedgerStep= relation already records actual enrollment,
+sender-constrained refresh, revocation and unchanged-ledger transitions.
+=Ledger.retains= now anchors two concrete obligations to an independently
+selected historical ledger: every uniquely resolved access token keeps its
+exact family and grant, and every committed family revocation remains present.
+
+=step_retains_lineage= proves these obligations for every constructor, using
+the real issuance freshness guards. =protectLineage= instantiates the shared
+statewise invariant guard with this relation. =protected_lineage_preserves_run=
+and =committed_run_retains_lineage= cover arbitrary finite histories.
+=committed_historical_access_refused= needs the original token/family lookup;
+it derives the later lookup instead of assuming the final reader supplies the
+same association. A live unrelated family cannot adopt a revoked token digest.
+
+The maintenance projection is concrete as well. Successful durable final-use
+reservation retains the OAuth checkpoint. Actual revoke installation preserves
+lineage; receiver handoff and confirmation preserve it, and
+=ReceiptRecovery.trace_retains_oauth_lineage= covers both crash boundaries,
+mapping commits and the existing receiver recovery trace. The real DPoP and
+mTLS model exercises consume the typed issuance/revocation proof, and the
+22-step receipt-recovery fixture retains this lineage law.
+
+** Native representation boundary
+
+Audit found a model/decoder mismatch: Lean =accessEntry= refuses a digest with
+multiple matching rows, while default Rust =HashMap= deserialization silently
+collapses duplicate JSON member names. The regression first reproduces that
+acceptance, then checks the shared decoder's strict rejection before map
+construction. Literal and escaped spellings of the same digest, either arrival
+order, identical duplicates, and keys that differ from their grant digest are
+refused. Valid serialized state keeps the same wire representation.
+
+[[https://www.rfc-editor.org/rfc/rfc8259.html#section-4][RFC 8259, Section 4]]
+recommends unique object names and describes inconsistent receiver behavior
+for duplicates. This library deliberately adopts strict refusal to preserve
+its unique-lookup semantics. The decoder checks representation consistency;
+it does not authenticate arbitrary checkpoint contents or prove storage durability.
+
+Rust controls exercise the actual persisted reader, reject ambiguous checkpoint
+bytes without repairing them, and preserve historical token mappings through
+issuance of an unrelated family, revocation and three writer takeovers under
+both DPoP and mTLS. Old grants remain refused while the unrelated live grant
+can still execute. The original recovery schedules, resource limits and complete
+51-domain consumer gate remain unchanged.
+
 * Integrated next research obligations
 
 | Layer | Existing owner to reuse | Concrete next obligation |

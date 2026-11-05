@@ -150,6 +150,26 @@ theorem old_writer_fenced_after_handoff (advanced : handoff before writer = some
 theorem stale_writer_cannot_revoke (stale : writer ≠ image.writer) :
     revoke image writer verified = none := by simp [revoke, stale]
 
+theorem handoff_retains_oauth_lineage (advanced : handoff before writer = some after) :
+    before.oauth.checkpoint.ledger.retains after.oauth.checkpoint.ledger := by
+  unfold handoff at advanced
+  split at advanced
+  · cases advanced
+    exact Refresh.Ledger.retains_refl _
+  · contradiction
+
+theorem revocation_retains_oauth_lineage (applied : revoke before writer verified = some after) :
+    before.oauth.checkpoint.ledger.retains after.oauth.checkpoint.ledger := by
+  unfold revoke at applied
+  split at applied
+  · cases next : before.oauth.revoke verified with
+    | none => simp [next] at applied
+    | some oauth =>
+      have same : { before with oauth } = after := by simpa [next] using applied
+      rw [← same]
+      exact Recovery.persisted_revocation_retains_lineage next
+  · contradiction
+
 structure History where
   logKey : String
   entries : List CommitRef
@@ -222,6 +242,26 @@ theorem begin_records_burn (receipt : Invocation beginContract prepareBegin inpu
         simp [applied] at accepted
         rw [← accepted]
         simp [operation]
+    · contradiction
+
+/-- Actual effect reservation updates replay/intent state while keeping the
+independently recovered OAuth token/family checkpoint unchanged. -/
+theorem begin_retains_oauth_checkpoint (receipt : Invocation beginContract prepareBegin input) :
+    receipt.result.oauth.checkpoint = input.image.oauth.checkpoint := by
+  have accepted := receipt.logic
+  change begin input = some receipt.result at accepted
+  cases anchored : input.history.independent with
+  | none => simp [begin, anchored] at accepted
+  | some anchor =>
+    simp only [begin, anchored, bind, Option.bind] at accepted
+    split at accepted
+    · cases applied : Recovery.finalize
+          ⟨input.image.oauth.checkpoint.authorityId, some input.image.oauth, input.read⟩ with
+      | none => simp [applied] at accepted
+      | some oauth =>
+        simp [applied] at accepted
+        rw [← accepted]
+        exact Recovery.final_retains_original_checkpoint applied rfl
     · contradiction
 
 structure ReconcileInput where
