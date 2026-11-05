@@ -6,9 +6,11 @@ use super::{
 #[test]
 fn durable_lost_effect_reply_requires_independent_settlement_and_fences_old_writer() {
     use crate::gateway::checkpoint_store::CheckpointStage;
-    use crate::gateway::oauth_refresh_durable::{DurableEffectRecovery, DurableEffectUse};
+    use crate::gateway::oauth_refresh_durable::{
+        DurableEffectRecovery, DurableEffectUse, EffectStatus,
+    };
     use crate::gateway::provider_durable::{
-        DurableReceiver, ReceiverDelivery, ReceiverDispatch, ReceiverTrust,
+        DurableReceiver, ManagedDeliveryStage, ReceiverDelivery, ReceiverDispatch, ReceiverTrust,
     };
     use crate::gateway::wire::{sign, simulation_key};
     use crate::gateway::witness::PrecommitInput;
@@ -79,6 +81,20 @@ fn durable_lost_effect_reply_requires_independent_settlement_and_fences_old_writ
             publications: &[],
         })
         .unwrap();
+    let uncertain = EffectIdentity {
+        operation: "reserved-without-receipt".into(),
+        ..effect.clone()
+    };
+    let uncertain_intent = witness
+        .append(PrecommitInput {
+            current_world: "world",
+            effect: &uncertain,
+            review: &review,
+            facts: std::slice::from_ref(&fact),
+            publications: &[],
+        })
+        .unwrap();
+    let uncertain_id = OperationId(uncertain.operation.clone());
     let history = witness.snapshot();
     let log_key = witness.verifying_key();
     let provider_signer = simulation_key(8);
@@ -369,13 +385,70 @@ fn durable_lost_effect_reply_requires_independent_settlement_and_fences_old_writ
                 &oauth,
                 use_effect(&live_checkpoint, &live_use),
                 deliver(&dispatch, "channel-one", &effect),
-                CheckpointStage::Durable,
+                ManagedDeliveryStage::Receiver(CheckpointStage::Durable),
             )
             .unwrap_err(),
-        "simulated receiver crash"
+        "simulated managed delivery crash"
     );
     let operation = OperationId(effect.operation.clone());
     let acknowledged = primary.evidence(&operation).unwrap().unwrap();
+    assert_eq!(
+        oauth.effect_status(&operation).unwrap(),
+        EffectStatus::Unresolved
+    );
+    assert_eq!(
+        oauth.effect_status(&uncertain_id).unwrap(),
+        EffectStatus::Unreserved
+    );
+    let before_reservation = primary.acknowledged_checkpoint().unwrap();
+    let uncertain_dispatch =
+        ReceiverDispatch::sign(old_cut.clone(), "channel-one", &uncertain_intent, &sender).unwrap();
+    let uncertain_use = actual(live_grant.clone(), 14, "reserved-without-receipt-proof");
+    assert_eq!(
+        primary
+            .crash_receive_oauth(
+                &oauth,
+                DurableEffectUse {
+                    admission: DurableFinalUse {
+                        checked: &live_checkpoint,
+                        replica: &live_checkpoint,
+                        current: &uncertain_use,
+                        base_allowed: true,
+                    },
+                    effect: &uncertain,
+                    intent: &uncertain_intent,
+                    history: &history,
+                    trust,
+                },
+                deliver(&uncertain_dispatch, "channel-one", &uncertain),
+                ManagedDeliveryStage::OAuthReserved,
+            )
+            .unwrap_err(),
+        "simulated managed delivery crash"
+    );
+    let primary = managed(primary_path);
+    assert_eq!(
+        primary.acknowledged_checkpoint().unwrap(),
+        before_reservation
+    );
+    assert!(primary.evidence(&uncertain_id).unwrap().is_none());
+    assert_eq!(
+        oauth.effect_status(&uncertain_id).unwrap(),
+        EffectStatus::Unresolved
+    );
+    assert!(
+        !oauth
+            .execute_final(
+                DurableFinalUse {
+                    checked: &live_checkpoint,
+                    replica: &live_checkpoint,
+                    current: &uncertain_use,
+                    base_allowed: true,
+                },
+                || panic!("persisted proof reservation was lost"),
+            )
+            .unwrap()
+    );
     let acknowledged_cut = primary.advance(&old_cut).unwrap();
     let expected = primary.acknowledged_checkpoint().unwrap();
     assert!(managed(old_path).promote(&expected).is_err());
@@ -468,6 +541,16 @@ fn durable_lost_effect_reply_requires_independent_settlement_and_fences_old_writ
     assert_ne!(reapproved, intent);
     let alternate_dispatch =
         ReceiverDispatch::sign(winner.cut().unwrap(), "channel-two", &reapproved, &sender).unwrap();
+    let uncertain_reapproved = reapproval
+        .append(PrecommitInput {
+            current_world: "world",
+            effect: &uncertain,
+            review: &reviewed_again,
+            facts: std::slice::from_ref(&fact),
+            publications: &[],
+        })
+        .unwrap();
+    assert_ne!(uncertain_reapproved, uncertain_intent);
     let alternate_history = reapproval.snapshot();
     let alternate_audit = AuditAuthority {
         gateway_key: audit.gateway_key,
@@ -504,6 +587,57 @@ fn durable_lost_effect_reply_requires_independent_settlement_and_fences_old_writ
             )
             .unwrap()
             .is_none()
+    );
+
+    let unknown_reconciliation = || DurableEffectRecovery {
+        effect: &uncertain,
+        journal: &absent,
+        outcomes: &[],
+        history: &history,
+        trust,
+    };
+    let retry_uncertain =
+        |receiver: &DurableReceiver<'_>, authority: &DurableRefreshLedger<'_>, checkpoint| {
+            let dispatch = ReceiverDispatch::sign(
+                receiver.cut().unwrap(),
+                "channel-three",
+                &uncertain_reapproved,
+                &sender,
+            )
+            .unwrap();
+            receiver.receive_oauth(
+                authority,
+                DurableEffectUse {
+                    admission: DurableFinalUse {
+                        checked: checkpoint,
+                        replica: checkpoint,
+                        current: &fresh_use,
+                        base_allowed: true,
+                    },
+                    effect: &uncertain,
+                    intent: &uncertain_reapproved,
+                    history: &alternate_history,
+                    trust: ProviderAuditTrust {
+                        authority: &alternate_audit,
+                        provider_key: &provider_key,
+                    },
+                },
+                ReceiverDelivery {
+                    authorization: &dispatch,
+                    ..deliver(&uncertain_dispatch, "channel-three", &uncertain)
+                },
+            )
+        };
+    assert!(!switched.reconcile_effect(unknown_reconciliation()).unwrap());
+    assert!(
+        retry_uncertain(&winner, &switched, &current_checkpoint)
+            .unwrap()
+            .is_none()
+    );
+    assert!(winner.evidence(&uncertain_id).unwrap().is_none());
+    assert_eq!(
+        switched.effect_status(&uncertain_id).unwrap(),
+        EffectStatus::Unresolved
     );
 
     copy(winner_path, lost_reply_path);
@@ -644,6 +778,26 @@ fn durable_lost_effect_reply_requires_independent_settlement_and_fences_old_writ
     );
     assert!(promoted.evidence(&fresh_id).unwrap().is_none());
 
+    assert!(switched.effect_status(&uncertain_id).is_err());
+    assert!(!worker.reconcile_effect(unknown_reconciliation()).unwrap());
+    assert!(
+        retry_uncertain(&promoted, &worker, &revoked)
+            .unwrap()
+            .is_none()
+    );
+    assert!(promoted.evidence(&uncertain_id).unwrap().is_none());
+    assert_eq!(
+        worker.effect_status(&uncertain_id).unwrap(),
+        EffectStatus::Unresolved
+    );
+    assert_eq!(
+        worker.effect_status(&fresh_id).unwrap(),
+        EffectStatus::Unreserved
+    );
+    assert_eq!(
+        worker.effect_status(&operation).unwrap(),
+        EffectStatus::Unresolved
+    );
     let recovered = promoted.evidence(&operation).unwrap().unwrap();
     assert_eq!(recovered.outcome, acknowledged.outcome);
     assert_eq!(recovered.journal.actions, acknowledged.journal.actions);
@@ -654,6 +808,16 @@ fn durable_lost_effect_reply_requires_independent_settlement_and_fences_old_writ
         worker
             .reconcile_effect(evidence(&recovered.journal, &recovered_outcomes))
             .unwrap()
+    );
+    let restarted =
+        DurableRefreshLedger::new(&oauth_directory, "receiver-oauth").for_writer(next_writer);
+    assert_eq!(
+        restarted.effect_status(&operation).unwrap(),
+        EffectStatus::Reconciled
+    );
+    assert_eq!(
+        restarted.effect_status(&uncertain_id).unwrap(),
+        EffectStatus::Unresolved
     );
     assert_eq!(
         promoted.recover_promotion(&committed).unwrap(),

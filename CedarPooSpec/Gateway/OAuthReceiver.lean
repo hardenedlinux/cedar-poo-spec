@@ -344,6 +344,42 @@ def prepareManaged (input : ManagedInput) : Except String (ManagedResult × Unit
   | some result => .ok (result, ())
   | none => .error "managed receiver dispatch refused"
 
+/-- Recover the durable OAuth reservation when the receiver checkpoint
+never advanced. This branch has no receiver completion witness. -/
+def recoverReservation
+    (reservation : Invocation Revocation.Crash.beginContract Revocation.Crash.prepareBegin input)
+    (before : Checkpoint) : ManagedResult :=
+  ⟨reservation.result, before⟩
+
+theorem managed_retains_oauth_reservation
+    (receipt : Invocation managedContract prepareManaged input) :
+    Revocation.Crash.begin input.authorization = some receipt.result.oauth := by
+  have accepted := receipt.logic
+  change receiveManaged input = some receipt.result at accepted
+  cases present : input.independent with
+  | none => simp [receiveManaged, present] at accepted
+  | some pin =>
+    cases reserved : Revocation.Crash.begin input.authorization with
+    | none => simp [receiveManaged, present, reserved] at accepted
+    | some oauth =>
+      simp only [receiveManaged, present, reserved, bind, Option.bind] at accepted
+      split at accepted
+      · cases delivered : receive input.delivery with
+        | none => simp [delivered] at accepted
+        | some image =>
+          simp [delivered] at accepted
+          rw [← accepted]
+      · contradiction
+
+theorem reservation_without_receiver_commit
+    (reservation : Invocation Revocation.Crash.beginContract Revocation.Crash.prepareBegin input)
+    (before : Checkpoint) :
+    let recovered := recoverReservation reservation before
+    recovered.receiver = before ∧
+      (recovered.oauth.retained.any (fun entry =>
+        entry.intent.operation == input.operation)) = true :=
+  ⟨rfl, Revocation.Crash.begin_records_burn reservation⟩
+
 theorem fenced_placement_cannot_receive (present : input.independent = some pin)
     (fenced : ¬ pin.permits input.placement input.delivery.image) :
     receiveManaged input = none := by
@@ -354,6 +390,14 @@ theorem fenced_placement_cannot_receive (present : input.independent = some pin)
 theorem refused_oauth_cannot_receive (input : ManagedInput)
     (refused : Revocation.Crash.begin input.authorization = none) : receiveManaged input = none := by
   cases present : input.independent <;> simp [receiveManaged, present, refused]
+
+theorem reserved_operation_refused_after_failover
+    (retry : ManagedInput) (before : Revocation.Crash.Image)
+    (burned : (before.retained.any fun entry => entry.intent.operation == retry.authorization.operation) = true)
+    (retained : retry.authorization.image.retained = before.retained) :
+    receiveManaged retry = none := by
+  apply refused_oauth_cannot_receive
+  exact Revocation.Crash.burned_operation_cannot_begin _ (retained.symm ▸ burned)
 
 theorem stale_oauth_replica_cannot_receive (input : ManagedInput)
     (stale : input.authorization.read.replica ≠ input.authorization.image.oauth.checkpoint) :

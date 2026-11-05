@@ -141,6 +141,12 @@ struct LockedReceiver<'a> {
     checkpoint: Option<LockedCheckpoint<'a>>,
 }
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(super) enum ManagedDeliveryStage {
+    OAuthReserved,
+    Receiver(CheckpointStage),
+}
+
 /// Detached evidence read from the receiver without applying an effect.
 pub struct ReceiverEvidence {
     pub journal: ProviderJournal,
@@ -457,16 +463,23 @@ impl<'a> DurableReceiver<'a> {
         oauth: &DurableRefreshLedger<'_>,
         input: DurableEffectUse<'_>,
         delivery: ReceiverDelivery<'_>,
-        observe: impl FnMut(CheckpointStage) -> Result<(), String>,
+        observe: impl Fn(ManagedDeliveryStage) -> Result<(), String>,
     ) -> Result<Option<Signed>, String> {
         if input.effect != delivery.effect {
             return Ok(None);
         }
         let authority = oauth.receiver_authority()?;
         self.check_authority_directory(&authority.directory)?;
-        oauth.authorize_receiver(input, &authority, |permission| {
-            self.receive_at(delivery, Some(permission), observe)
-        })
+        oauth.authorize_receiver(
+            input,
+            &authority,
+            || observe(ManagedDeliveryStage::OAuthReserved),
+            |permission| {
+                self.receive_at(delivery, Some(permission), |stage| {
+                    observe(ManagedDeliveryStage::Receiver(stage))
+                })
+            },
+        )
     }
 
     /// Apply the simulated effect and persist its signed outcome atomically.
@@ -553,9 +566,15 @@ impl<'a> DurableReceiver<'a> {
         oauth: &DurableRefreshLedger<'_>,
         input: DurableEffectUse<'_>,
         delivery: ReceiverDelivery<'_>,
-        crash: CheckpointStage,
+        crash: ManagedDeliveryStage,
     ) -> Result<Option<Signed>, String> {
-        self.receive_oauth_at(oauth, input, delivery, |stage| crash_at(stage, crash))
+        self.receive_oauth_at(oauth, input, delivery, |stage| {
+            if stage == crash {
+                Err("simulated managed delivery crash".into())
+            } else {
+                Ok(())
+            }
+        })
     }
 
     #[cfg(test)]

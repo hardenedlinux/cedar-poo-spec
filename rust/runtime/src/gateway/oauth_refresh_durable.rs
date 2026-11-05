@@ -9,6 +9,7 @@ use crate::gateway::{
     AuditAuthority, EffectIdentity, LogSnapshot, ProviderAuditTrust, ProviderJournal,
     Reconciliation, Signed, WitnessFrontier,
 };
+use cedar_poo_core::operation_identity::OperationId;
 use p256::ecdsa::VerifyingKey;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
@@ -65,6 +66,15 @@ pub struct DurableEffectUse<'a> {
     pub intent: &'a Signed,
     pub history: &'a LogSnapshot,
     pub trust: ProviderAuditTrust<'a>,
+}
+
+/// Durable OAuth view of an operation. Only independent evidence can
+/// advance an unresolved reservation to reconciled.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum EffectStatus {
+    Unreserved,
+    Unresolved,
+    Reconciled,
 }
 
 /// Detached provider evidence and the independently selected audit roots.
@@ -279,6 +289,15 @@ impl<'a> DurableRefreshLedger<'a> {
         input: DurableEffectUse<'_>,
         observe_effect: impl FnOnce(&EffectIdentity) -> Result<(), String>,
     ) -> Result<bool, String> {
+        self.execute_effect_at(input, || Ok(()), observe_effect)
+    }
+
+    fn execute_effect_at(
+        &self,
+        input: DurableEffectUse<'_>,
+        after_reservation: impl FnOnce() -> Result<(), String>,
+        observe_effect: impl FnOnce(&EffectIdentity) -> Result<(), String>,
+    ) -> Result<bool, String> {
         let history = anchored_history(input.history, input.trust.authority)?;
         let commit = history
             .intent(input.intent)
@@ -316,6 +335,7 @@ impl<'a> DurableRefreshLedger<'a> {
             },
         );
         file.persist(&image)?;
+        after_reservation()?;
         observe_effect(&commit.effect)?;
         Ok(true)
     }
@@ -345,6 +365,7 @@ impl<'a> DurableRefreshLedger<'a> {
         &self,
         input: DurableEffectUse<'_>,
         authority: &ReceiverAuthority,
+        after_reservation: impl FnOnce() -> Result<(), String>,
         receive: impl FnOnce(ReceiverAuthorization<'_>) -> Result<Option<Signed>, String>,
     ) -> Result<Option<Signed>, String> {
         let permission = ReceiverAuthorization {
@@ -358,11 +379,23 @@ impl<'a> DurableRefreshLedger<'a> {
             writer: self.writer,
         };
         let mut outcome = None;
-        ledger.execute_effect(input, |_| {
+        ledger.execute_effect_at(input, after_reservation, |_| {
             outcome = receive(permission)?;
             Ok(())
         })?;
         Ok(outcome)
+    }
+
+    /// Read status from the current writer's durable store. An unresolved
+    /// operation remains reserved, including when the receiver has no receipt.
+    pub fn effect_status(&self, operation: &OperationId) -> Result<EffectStatus, String> {
+        let file = LockedCheckpoint::open(self.directory)?;
+        let image = self.read(&file)?;
+        Ok(match image.effects.get(&operation.0) {
+            None => EffectStatus::Unreserved,
+            Some(effect) if effect.resolved => EffectStatus::Reconciled,
+            Some(_) => EffectStatus::Unresolved,
+        })
     }
 
     /// Settle a retained intent only from its independent provider evidence.

@@ -1312,6 +1312,24 @@ provider key. Reconciliation does not require the revoked grant to
 become usable again. It preserves the operation reservation through
 subsequent writer and receiver handoffs.
 
+*** Interruption after OAuth reservation
+
+The OAuth authority can recover the operation state from its own
+durable store. An unreserved operation has no entry. An unresolved
+operation has a durable reservation and may or may not already have
+a receiver outcome. A reconciled operation has passed independent
+provider audit. The state query requires the current OAuth writer
+and grants no permission to send.
+
+An interruption after OAuth sync and before the receiver commit
+leaves an unresolved operation. The absence of a receiver receipt
+does not settle it or release its operation or proof reservation.
+Consecutive receiver promotions and OAuth writer handoffs preserve
+that distinction. A new route, approval or proof does not change
+the stable operation identity. Revocation continues to govern new
+authorization, while existing signed evidence remains available
+for independent settlement.
+
 Standalone receiver stores retain their local behavior. Managed
 stores require explicit bootstrap and cannot be reopened through
 the standalone interface. The deployment must retain independent

@@ -320,6 +320,20 @@ def reconcileProviderIntent (trust : ProviderAuditTrust) (source : FactAuthority
     (outcomes.length - authenticated.length + relevant.length - accepted.length)
     (logValid && (precommits.any (fun entry => decide (entry = intent)))) precommits
 
+theorem scoped_missing_outcome_is_unclean (trust : ProviderAuditTrust)
+    (source : FactAuthority String String) (intent : CommitRef) (actions : List AuditRecord)
+    (logValid : Bool) (precommits : List CommitRef) (logged : intent ∈ precommits) :
+    (reconcileProviderIntent trust source intent actions [] logValid precommits).clean = false := by
+  have unresolved : intent.operation ∈
+      (reconcileProviderIntent trust source intent actions [] logValid precommits).unresolvedPrecommits := by
+    simpa [reconcileProviderIntent, reconcileOperation, reconcile, ids, List.mem_map] using
+      (show ∃ entry ∈ precommits, entry.operation = intent.operation from ⟨intent, logged, rfl⟩)
+  apply Bool.eq_false_iff.mpr
+  intro clean
+  have empty := congrArg AuditReport.unresolvedPrecommits (of_decide_eq_true clean)
+  rw [empty] at unresolved
+  exact List.not_mem_nil unresolved
+
 theorem scoped_invalid_log_is_not_hidden (trust : ProviderAuditTrust) (source : FactAuthority String String)
     (intent : CommitRef) (actions : List AuditRecord) (outcomes : List ProviderOutcome)
     (precommits : List CommitRef) :

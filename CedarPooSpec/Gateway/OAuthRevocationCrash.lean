@@ -20,6 +20,34 @@ structure Image where
   resolved : List CommitRef := []
   deriving DecidableEq
 
+inductive EffectStatus where
+  | unreserved
+  | unresolved
+  | reconciled
+  deriving DecidableEq
+
+def effectStatus (image : Image) (operation : String) : EffectStatus :=
+  if image.retained.any (fun entry => entry.intent.operation == operation) then
+    if image.resolved.any (fun entry => entry.operation == operation) then .reconciled
+    else .unresolved
+  else .unreserved
+
+structure StatusInput where
+  image : Image
+  writer : Nat
+  operation : String
+
+def statusContract : Contract Unit StatusInput EffectStatus where
+  input := ⟨"current-OAuth-writer", fun input => input.writer = input.image.writer, fun _ => inferInstance⟩
+  output := ⟨"durable-operation-status", fun _ => True, fun _ => inferInstance⟩
+  meaning := fun _ input result => effectStatus input.image input.operation = result
+  decide := fun _ _ _ => inferInstance
+  rule := .atom ()
+
+def prepareStatus (input : StatusInput) : Except String (EffectStatus × Unit) :=
+  if input.writer = input.image.writer then .ok (effectStatus input.image input.operation, ())
+  else .error "OAuth writer fenced"
+
 inductive CommitBoundary where
   | staged
   | durable
@@ -56,6 +84,42 @@ theorem durable_revoke_retains_marker
       rw [← equal]
       exact Recovery.persisted_revocation_marks_family result
   · contradiction
+
+theorem handoff_preserves_effect_state (advanced : handoff before writer = some after) :
+    after.retained = before.retained ∧ after.resolved = before.resolved := by
+  unfold handoff at advanced
+  split at advanced
+  · rw [← Option.some.inj advanced]
+    exact ⟨rfl, rfl⟩
+  · contradiction
+
+theorem revocation_preserves_effect_state (applied : revoke before writer verified = some after) :
+    after.retained = before.retained ∧ after.resolved = before.resolved := by
+  unfold revoke at applied
+  split at applied
+  · cases next : before.oauth.revoke verified with
+    | none => simp [next] at applied
+    | some oauth =>
+      have same : { before with oauth } = after := by simpa [next] using applied
+      rw [← same]
+      exact ⟨rfl, rfl⟩
+  · contradiction
+
+theorem effect_status_retained (retained : after.retained = before.retained)
+    (resolved : after.resolved = before.resolved) :
+    effectStatus after operation = effectStatus before operation := by
+  simp [effectStatus, retained, resolved]
+
+theorem effect_status_survives_failover
+    (first : handoff before oldWriter = some standby)
+    (second : handoff standby standbyWriter = some active)
+    (revoked : revoke active activeWriter verified = some after) :
+    effectStatus after operation = effectStatus before operation := by
+  have h₁ := handoff_preserves_effect_state first
+  have h₂ := handoff_preserves_effect_state second
+  have h₃ := revocation_preserves_effect_state revoked
+  exact (effect_status_retained h₃.1 h₃.2).trans
+    ((effect_status_retained h₂.1 h₂.2).trans (effect_status_retained h₁.1 h₁.2))
 
 theorem old_writer_fenced_after_handoff (advanced : handoff before writer = some after) :
     writer ≠ after.writer := by
@@ -205,5 +269,12 @@ theorem unclean_evidence_cannot_settle (found : input.retained = some entry)
     (unclean : (reconcileProviderIntent input.trust input.source entry.intent input.actions input.outcomes
       input.history.valid input.history.entries).clean = false) : reconcile input = none := by
   simp [reconcile, found, unclean]
+
+theorem missing_outcome_cannot_settle (found : input.retained = some entry)
+    (logged : entry.intent ∈ input.history.entries) (absent : input.outcomes = []) :
+    reconcile input = none := by
+  apply unclean_evidence_cannot_settle found
+  rw [absent]
+  exact scoped_missing_outcome_is_unclean _ _ _ _ _ _ logged
 
 end CedarPooSpec.Gateway.OAuth.Revocation.Crash

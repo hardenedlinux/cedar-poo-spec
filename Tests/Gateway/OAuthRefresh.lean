@@ -47,6 +47,34 @@ private def crashExercise (durable : Revocation.Recovery.Store)
   let primary : Receiver.Checkpoint := ⟨"primary", receiver, none, some authority⟩
   let managed : Receiver.ManagedInput := ⟨some primary, "primary", request, begin⟩
   let .ok committed := Receiver.managedContract.invoke Receiver.prepareManaged managed | return false
+  let reservedOnly := Receiver.recoverReservation started primary
+  let firstTakeover : Receiver.PromotionInput :=
+    ⟨some reservedOnly.receiver, reservedOnly.receiver, reservedOnly.receiver.image, "standby"⟩
+  let .ok first := Receiver.promotionContract.invoke Receiver.preparePromotion firstTakeover | return false
+  let secondTakeover : Receiver.PromotionInput :=
+    ⟨some first.result, first.result, first.result.image, "successor"⟩
+  let .ok second := Receiver.promotionContract.invoke Receiver.preparePromotion secondTakeover | return false
+  let some nextWriter := Revocation.Crash.handoff reservedOnly.oauth 0 | return false
+  let some finalWriter := Revocation.Crash.handoff nextWriter 1 | return false
+  let .ok unknown := Revocation.Crash.statusContract.invoke Revocation.Crash.prepareStatus
+    ⟨finalWriter, 2, intent.operation⟩ | return false
+  let some revokedWriter := Revocation.Crash.revoke finalWriter 2 (verified digest) | return false
+  let .ok unknownAfterRevoke := Revocation.Crash.statusContract.invoke Revocation.Crash.prepareStatus
+    ⟨revokedWriter, 2, intent.operation⟩ | return false
+  let changedIntent : CedarPooSpec.Gateway.EffectProtocol.CommitRef := ⟨intent.operation, [3], [4]⟩
+  let reviewed : Revocation.Crash.History :=
+    ⟨"log", [changedIntent], true,
+      some (CedarPooSpec.Gateway.Lifecycle.WitnessFrontier.observe "log" [changedIntent])⟩
+  let retryAuthorization : Revocation.Crash.BeginInput :=
+    ⟨finalWriter, 2, 2, read, intent.operation, changedIntent, "provider", reviewed⟩
+  let newCut := { dispatch with cut := second.result.image.cut }
+  let changedOutcome := { outcome with receipt := ⟨action, changedIntent⟩ }
+  let retryDelivery : Receiver.Input :=
+    ⟨second.result.image, ⟨newCut, "other-channel", changedOutcome⟩,
+      newCut, "other-channel", changedIntent, true⟩
+  let unknownRetry : Receiver.ManagedInput := ⟨some second.result, "successor", retryDelivery, retryAuthorization⟩
+  let unknownReconcile : Revocation.Crash.ReconcileInput :=
+    ⟨finalWriter, 2, intent.operation, trust, source, history, [], []⟩
   let some advanced := Receiver.advance delivered.result cut | return false
   let restored := Revocation.Crash.recoverImage .durable delivered.result advanced
   let staged := Revocation.Crash.recoverImage .staged receiver delivered.result
@@ -74,7 +102,14 @@ private def crashExercise (durable : Revocation.Recovery.Store)
   let revokedUse := { begin with image := live, writer := 1, checkedWriter := 1 }
   let afterTakeover : Receiver.ManagedInput :=
     ⟨some successor.result, "successor", retry, revokedUse⟩
-  return decide (committed.result.receiver.image = delivered.result) &&
+  return decide (unknown.result = Revocation.Crash.EffectStatus.unresolved) &&
+    decide (unknownAfterRevoke.result = unknown.result) &&
+    !(Revocation.Crash.prepareStatus ⟨finalWriter, 0, intent.operation⟩).isOk &&
+    (Receiver.evidence second.result.image dispatch.operation).isNone &&
+    (Revocation.Crash.reconcile unknownReconcile).isNone &&
+    (Receiver.receiveManaged unknownRetry).isNone &&
+    decide (Revocation.Crash.effectStatus settled.result intent.operation = .reconciled) &&
+    decide (committed.result.receiver.image = delivered.result) &&
     decide (committed.result.oauth = started.result) &&
     decide (successor.result.oauthAuthority = some authority) &&
     (Receiver.receiveManaged afterTakeover).isNone &&
@@ -247,3 +282,11 @@ end Tests.Gateway.OAuthRefresh
 #print axioms CedarPooSpec.Gateway.OAuth.Receiver.consecutive_promotions_keep_signed_evidence
 #print axioms CedarPooSpec.Gateway.OAuth.Receiver.revoked_grant_cannot_receive
 #print axioms CedarPooSpec.Gateway.OAuth.Receiver.stale_oauth_replica_cannot_receive
+
+#print axioms CedarPooSpec.Gateway.OAuth.Receiver.reservation_without_receiver_commit
+#print axioms CedarPooSpec.Gateway.OAuth.Receiver.reserved_operation_refused_after_failover
+#print axioms CedarPooSpec.Gateway.OAuth.Revocation.Crash.handoff_preserves_effect_state
+#print axioms CedarPooSpec.Gateway.OAuth.Revocation.Crash.revocation_preserves_effect_state
+#print axioms CedarPooSpec.Gateway.OAuth.Revocation.Crash.missing_outcome_cannot_settle
+#print axioms CedarPooSpec.Gateway.OAuth.Revocation.Crash.effect_status_survives_failover
+#print axioms CedarPooSpec.Gateway.OAuth.Receiver.managed_retains_oauth_reservation
