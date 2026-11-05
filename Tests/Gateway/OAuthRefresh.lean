@@ -17,6 +17,56 @@ private def tokenSender : Confirmation → PAR.TokenSender
   | .dpop key => .dpop ⟨key⟩
   | .mtls certificate => .mtls certificate
 
+private def repeatedRecoveryExercise (input : Receiver.LegacyBatchInput)
+    (original conflict missing : Receiver.ManagedReconciliation)
+    (retry : Revocation.Crash.BeginInput) : Bool := Id.run do
+  let some start := original.independent | return false
+  let some (_, outcome) := Receiver.evidence start.image ⟨original.audit.operation⟩ | return false
+  let mut image := input.image
+  let mut pin := start
+  let mut receipt := original
+  for label in ["second-worker-crash", "repeated-confirmation-loss"] do
+    let some standby := Revocation.Crash.handoff image image.writer | return false
+    let some active := Revocation.Crash.handoff standby standby.writer | return false
+    let promotion : Receiver.PromotionInput := ⟨some pin, pin, pin.image, label ++ "-standby"⟩
+    let .ok promoted := Receiver.promotionContract.invoke Receiver.preparePromotion promotion | return false
+    let next : Receiver.PromotionInput :=
+      ⟨some promoted.result, promoted.result, promoted.result.image, label ++ "-active"⟩
+    let .ok promotedAgain := Receiver.promotionContract.invoke Receiver.preparePromotion next | return false
+    let old := receipt
+    pin := promotedAgain.result
+    receipt := { receipt with
+      independent := some pin
+      placement := label ++ "-active"
+      replica := pin.image
+      audit := { receipt.audit with writer := active.writer } }
+    let other := { receipt with audit := { conflict.audit with writer := active.writer } }
+    let absent := { receipt with audit := { missing.audit with writer := active.writer } }
+    let retired : Receiver.LegacyBatchInput := ⟨active, input.trusted, [old, receipt]⟩
+    if retired.run.stopped != some original.audit.operation || retired.run.image != active then
+      return false
+    let current : Receiver.LegacyBatchInput := ⟨active, input.trusted, [receipt, other, absent, receipt]⟩
+    let .ok first := Receiver.legacyBatchContract.invoke Receiver.prepareLegacyBatch current | return false
+    let reversed := { current with
+      image := first.result.image
+      items := [absent, receipt, receipt, other] }
+    let .ok second := Receiver.legacyBatchContract.invoke Receiver.prepareLegacyBatch reversed | return false
+    if first.result.image != active || second.result.image != active ||
+        first.result.confirmed != [original.audit.operation, original.audit.operation] ||
+        second.result.confirmed != first.result.confirmed ||
+        second.result.pending != [missing.audit.operation, original.audit.operation] then
+      return false
+    image := Revocation.Crash.recoverImage .durable active second.result.image
+  let replay := { retry with
+    image
+    writer := image.writer
+    checkedWriter := image.writer }
+  return decide (image.retained = input.image.retained) &&
+    decide (image.oauth = input.image.oauth) &&
+    decide (image.settledOutcome original.audit.operation = some outcome) &&
+    decide (Revocation.Crash.effectStatus image missing.audit.operation = .unresolved) &&
+    (Revocation.Crash.begin replay).isNone
+
 private def overlappingRecoveryExercise (takeover : Receiver.LegacyBatchInput)
     (settled prior : Receiver.LegacyBatchState)
     (original conflict missing : Receiver.ManagedReconciliation)
@@ -104,6 +154,7 @@ private def overlappingRecoveryExercise (takeover : Receiver.LegacyBatchInput)
     decide (finalSecond.result.image.retained = writer.retained) &&
     decide (finalSecond.result.image.oauth = writer.oauth) &&
     decide (Revocation.Crash.effectStatus finalSecond.result.image pendingOperation = .unresolved) &&
+    repeatedRecoveryExercise finalInput latest latestConflict latestMissing retryAfterRecovery &&
     (Revocation.Crash.begin retryAfterRecovery).isNone
 
 private def crashExercise (durable : Revocation.Recovery.Store)
@@ -629,3 +680,5 @@ end Tests.Gateway.OAuthRefresh
 #print axioms CedarPooSpec.Gateway.OAuth.Receiver.legacyBatch_fenced_suffix_keeps_prefix
 #print axioms CedarPooSpec.Gateway.OAuth.Receiver.legacyBatch_read_only_fold_keeps_image
 #print axioms CedarPooSpec.Gateway.OAuth.Receiver.legacyBatch_read_only_crash_survives_takeovers
+#print axioms CedarPooSpec.Gateway.OAuth.Receiver.legacyRecoveryTrace_keeps_original_receipt
+#print axioms CedarPooSpec.Gateway.OAuth.Receiver.legacyRecoveryTrace_cannot_reopen_operation

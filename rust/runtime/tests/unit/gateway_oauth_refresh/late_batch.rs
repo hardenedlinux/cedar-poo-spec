@@ -157,18 +157,38 @@ pub(super) fn replay_across_processes(
     kill_worker(first);
     assert_eq!(std::fs::read(&checkpoint).unwrap(), before_recovery);
     takeover(root, &mut fixture);
-    let cut = takeover(root, &mut fixture);
+    takeover(root, &mut fixture);
     let after_recovery_takeover = std::fs::read(&checkpoint).unwrap();
     std::fs::write(root.join("recovery-continue"), []).unwrap();
-    finish_worker(second, "resumed-b");
+    wait_for_marker(&root.join("recovery-second-fenced"));
+    assert_eq!(std::fs::read(&checkpoint).unwrap(), after_recovery_takeover);
+    kill_worker(second);
     assert_eq!(std::fs::read(&checkpoint).unwrap(), after_recovery_takeover);
 
+    takeover(root, &mut fixture);
+    takeover(root, &mut fixture);
     write_fixture(&fixture);
+    let before_confirmation = std::fs::read(&checkpoint).unwrap();
+    let confirmation = spawn_worker(&fixture_path, "ack-lost-a");
+    let peer = spawn_worker(&fixture_path, "ack-lost-b");
+    wait_for_marker(&root.join("confirmation-verified"));
+    finish_worker(peer, "ack-lost-b");
+    assert_eq!(std::fs::read(&checkpoint).unwrap(), before_confirmation);
+    kill_worker(confirmation);
+    assert_eq!(std::fs::read(&checkpoint).unwrap(), before_confirmation);
+
+    takeover(root, &mut fixture);
+    let cut = takeover(root, &mut fixture);
+    write_fixture(&fixture);
+    let after_confirmation_takeover = std::fs::read(&checkpoint).unwrap();
     let first = spawn_worker(&fixture_path, "recovered-a");
     let second = spawn_worker(&fixture_path, "recovered-b");
     finish_worker(first, "recovered-a");
     finish_worker(second, "recovered-b");
-    assert_eq!(std::fs::read(&checkpoint).unwrap(), after_recovery_takeover);
+    assert_eq!(
+        std::fs::read(&checkpoint).unwrap(),
+        after_confirmation_takeover
+    );
     (fixture.writer, cut)
 }
 
@@ -327,6 +347,7 @@ fn restart_worker() {
         oauth.effect_status(&operation).unwrap(),
         if phase.starts_with("resumed-")
             || phase.starts_with("recovered-")
+            || phase.starts_with("ack-lost-")
             || phase == "peer-migration"
         {
             EffectStatus::Reconciled
@@ -397,7 +418,11 @@ fn restart_worker() {
         "receiver replica differs from the independent checkpoint"
     );
 
-    if phase == "fenced" || phase.starts_with("resumed-") || phase.starts_with("recovered-") {
+    if phase == "fenced"
+        || phase.starts_with("resumed-")
+        || phase.starts_with("recovered-")
+        || phase.starts_with("ack-lost-")
+    {
         let old_writer = oauth.for_writer(fixture.retired_writer.unwrap());
         let stopped = receiver
             .migrate_legacy_oauth_batch(
@@ -617,15 +642,11 @@ fn restart_worker() {
     }
     assert!(matches!(
         phase.as_str(),
-        "resumed-a" | "resumed-b" | "recovered-a" | "recovered-b"
+        "resumed-a" | "resumed-b" | "recovered-a" | "recovered-b" | "ack-lost-a" | "ack-lost-b"
     ));
     std::fs::write(root.join(&phase), []).unwrap();
-    let other = match phase.as_str() {
-        "resumed-a" => "resumed-b",
-        "resumed-b" => "resumed-a",
-        "recovered-a" => "recovered-b",
-        _ => "recovered-a",
-    };
+    let (round, side) = phase.rsplit_once('-').unwrap();
+    let other = format!("{round}-{}", if side == "a" { "b" } else { "a" });
     wait_for_marker(&root.join(other));
     let committed = snapshot();
     let (items, pending) = if phase.ends_with("-b") {
@@ -657,7 +678,9 @@ fn restart_worker() {
         let stopped = report.stopped.unwrap();
         assert_eq!(stopped.operation, operation);
         assert_eq!(stopped.error, "OAuth writer fenced");
-        return;
+        std::fs::write(root.join("recovery-second-fenced"), []).unwrap();
+        wait_for_marker(&root.join("recovery-second-acknowledgment"));
+        panic!("parent did not kill the second recovery worker");
     }
     assert_eq!(report.confirmed, [operation.clone(), operation.clone()]);
     assert_eq!(report.pending, pending);
@@ -684,4 +707,9 @@ fn restart_worker() {
     );
     assert_eq!(snapshot(), committed);
     assert!(receiver.evidence(&missing_operation).unwrap().is_none());
+    if phase == "ack-lost-a" {
+        std::fs::write(root.join("confirmation-verified"), []).unwrap();
+        wait_for_marker(&root.join("confirmation-acknowledgment"));
+        panic!("parent did not drop the repeated confirmation");
+    }
 }

@@ -1464,6 +1464,18 @@ grant cannot authorize another send. The Lean model preserves the
 receipt and every retained reservation through the same repeated
 crash and takeover sequence.
 
+The repeated-crash replay also kills the second recovery worker after
+it has observed fencing but before its report reaches the caller.
+After two more handoffs, a fresh pair verifies the original receipt.
+One of those confirmations is lost by terminating its process before
+returning the result. Two further handoffs precede the final overlapping
+replay. Every checkpoint is compared before and after each process
+termination. =LegacyRecoveryTrace= proves preservation of the retained
+reservations and original receipt through any finite sequence of
+read-only Contract confirmations, crashes, writer handoffs and
+revocations. It also proves that a conflicting outcome cannot replace
+that receipt and that a retained operation cannot begin again.
+
 The first clean audit durably binds the canonical identity of the
 signed outcome. A later audit of that same outcome is idempotent.
 A different signed outcome cannot replace it, even if presented

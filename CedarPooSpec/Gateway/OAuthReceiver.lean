@@ -731,6 +731,55 @@ theorem legacyBatch_read_only_crash_survives_takeovers (trusted : Revocation.Cra
   refine ⟨preserved.1.trans prior.1, ?_⟩
   simpa only [Revocation.Crash.Image.settledOutcome, preserved.2, prior.2] using pinned
 
+/-- Recovery may lose confirmations and crash repeatedly. Each confirmation
+uses the shared Contract; ownership and revocation remain serialized changes. -/
+inductive LegacyRecoveryTrace : Revocation.Crash.Image → Revocation.Crash.Image → Prop where
+  | start (image) : LegacyRecoveryTrace image image
+  | handoff (prior : LegacyRecoveryTrace initial before)
+      (applied : Revocation.Crash.handoff before writer = some after) :
+      LegacyRecoveryTrace initial after
+  | revoke (prior : LegacyRecoveryTrace initial before)
+      (applied : Revocation.Crash.revoke before writer verified = some after) :
+      LegacyRecoveryTrace initial after
+  | confirmation (prior : LegacyRecoveryTrace initial before)
+      (receipt : Invocation legacyBatchContract prepareLegacyBatch input)
+      (current : input.image = before) (unchanged : receipt.result.image = before)
+      (boundary : Revocation.Crash.CommitBoundary) :
+      LegacyRecoveryTrace initial (Revocation.Crash.recoverImage boundary before receipt.result.image)
+
+theorem legacyRecoveryTrace_preserves_effect_state (history : LegacyRecoveryTrace initial after) :
+    after.retained = initial.retained ∧ after.resolved = initial.resolved := by
+  induction history with
+  | start => exact ⟨rfl, rfl⟩
+  | handoff prior applied ih =>
+    have preserved := Revocation.Crash.handoff_preserves_effect_state applied
+    exact ⟨preserved.1.trans ih.1, preserved.2.trans ih.2⟩
+  | revoke prior applied ih =>
+    have preserved := Revocation.Crash.revocation_preserves_effect_state applied
+    exact ⟨preserved.1.trans ih.1, preserved.2.trans ih.2⟩
+  | confirmation prior receipt current unchanged boundary ih =>
+    cases boundary <;> simpa [Revocation.Crash.recoverImage, unchanged] using ih
+
+theorem legacyRecoveryTrace_keeps_original_receipt (history : LegacyRecoveryTrace initial after)
+    (original conflict : ProviderOutcome)
+    (pinned : initial.settledOutcome original.receipt.commit.operation = some original)
+    (sameOperation : conflict.receipt.commit.operation = original.receipt.commit.operation)
+    (different : original ≠ conflict) :
+    after.settledOutcome original.receipt.commit.operation = some original ∧
+      after.settle original = some after ∧ after.settle conflict = none := by
+  have preserved := (legacyRecoveryTrace_preserves_effect_state history).2
+  have bound : after.settledOutcome original.receipt.commit.operation = some original := by
+    simpa only [Revocation.Crash.Image.settledOutcome, preserved] using pinned
+  exact ⟨bound, Revocation.Crash.pinned_outcome_is_idempotent bound,
+    by simp [Revocation.Crash.Image.settle, sameOperation, bound, different]⟩
+
+theorem legacyRecoveryTrace_cannot_reopen_operation (history : LegacyRecoveryTrace initial after)
+    (retry : Revocation.Crash.BeginInput)
+    (burned : (initial.retained.any fun entry => entry.intent.operation == retry.operation) = true) :
+    Revocation.Crash.begin { retry with image := after } = none := by
+  apply Revocation.Crash.burned_operation_cannot_begin
+  simpa only [(legacyRecoveryTrace_preserves_effect_state history).1] using burned
+
 theorem legacyBatch_step_preserves_authority (trusted : Revocation.Crash.ReceiverBinding)
     (state : LegacyBatchState) (item : ManagedReconciliation) (operation : String) :
     let next := state.step trusted item
