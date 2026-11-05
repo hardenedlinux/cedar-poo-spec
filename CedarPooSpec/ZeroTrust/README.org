@@ -33,6 +33,7 @@ They are reading maps of selected laws, not automatically extracted proof terms.
 | [[file:Composition.lean][Functional refinement]] | =with_requirement_preserves_framework= retains all core conjuncts. | The selected requirement is actually accepted at this effect/view. |
 | [[file:Continuous.lean][Observation/currentness]] | =changed_generation_blocks= rejects an observation from another generation. | The application supplies an authoritative observation reader. |
 | [[file:Continuous.lean][Mediated traces]] | =effect_step_rechecks= extracts fresh requirements for each marked effect; =run_preserves= transports an invariant. | A real transition relation and its invariant-preservation law are supplied. |
+| [[file:Continuous.lean][Statewise invariant guard]] | =invariant_guard_preserves_run= proves finite-history safety using admitted effects and a separate maintenance law. | The real transition model must cover every native successor; a favorable sample or review vote does not supply that proof. |
 | [[file:UsageControl.lean][Usage/recovery]] | =usage_retains_core= and =usage_rechecks_after_recovery= retain the core at ongoing admission. Missing conditions/obligations block; unknown accounting blocks closure. | Recovery alone is not acceptance; obligation/mutation witnesses and actual accounting remain required. |
 | [[file:ProfileObject.lean][Typed objects]] | =selected_child_preserves_original= preserves the indexed root. | A source-bound Session read and the selected requirement hold. This does not preserve every parent rule. |
 | [[file:ProfileObject.lean][Retained parent composition]] | =composed_preserves_actual_parent_and_original= preserves both actual reads, both requirements and the root. | Independently required-parent and selected Sessions are retained; their conjunction is accepted. |
@@ -133,3 +134,7 @@ The existing =Run= relation also supports =run_generation_monotone= and
 for every actual writer, including recovery, a retired cut is refused after any
 finite forward run under arbitrary checked callbacks. Mediation alone does not
 establish this premise; the tests retain a whole-authority rollback counterexample.
+
+The [[file:../../docs/agent-authorization-research.org][agent authorization research review]] distinguishes state invariants from
+expected-utility, protocol and semantic-inference guarantees, and records the
+shared proof boundary and adversarial countermodels.

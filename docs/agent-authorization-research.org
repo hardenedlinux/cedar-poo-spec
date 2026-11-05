@@ -1,0 +1,96 @@
+#+TITLE: Agent Authorization Research: From Local Admission to Safe Histories
+#+LANGUAGE: en
+#+OPTIONS: toc:2
+
+* Research question and evidence
+
+Reviewed on 2026-11-05 against the shared Zero Trust, Authorization Delta,
+OAuth and Gateway models. The question is how current authorization can
+preserve an application invariant as agent choices change future state.
+Cryptographic identity, authorization non-expansion, semantic fact correctness
+and trajectory safety are separate obligations.
+
+| Primary source inspected | Exact useful result or mechanism | Boundary for SPEC |
+|--------------------------+----------------------------------+-------------------|
+| Collina, Goel, Roth and Sengupta, [[https://arxiv.org/abs/2609.15803][Delegating Authorization to Misaligned Agents]], Sections 4.1–4.2, Theorem 2; Section 5, Theorem 3 | Continuation-aware baseline advantages connect statewise authorization to expected discounted utility. Strategic guarantees require additional coalition conditions. | No reward model, transition kernel, reviewer alignment or baseline-value estimator has been established here. Approval count alone supplies none of these premises. |
+| Hosseyni, Küsters and Würtele, [[https://eprint.iacr.org/2024/1540][Formal Security Analysis of the OpenID FAPI 2.0 Family of Protocols]], Sections 2.6–2.7 and 4 | Formal authorization, authentication and session-integrity goals under an explicit Web attacker model. | Our protocol bindings must remain separate from application-state preservation and external-effect ordering. The paper is not a storage-recovery or application-invariant theorem. |
+| [[https://www.ietf.org/archive/id/draft-niyikiza-oauth-attenuating-agent-tokens-02.txt][Attenuating Authorization Tokens]], individual Internet-Draft -02, 26 October 2026, Section 9.8 | Offline delegation-chain verification with narrowed authority; revocation remains a separate mechanism. | This is work in progress. Offline chain validity cannot replace our independently ordered current revocation frontier or allocate a shared sibling budget. No draft wire format is adopted. |
+| Ma et al., [[https://arxiv.org/abs/2609.31039v1][MetaPermit]], Section 4.5 | Separates inferred semantic attributes from deterministic policy evaluation; its stated semantic-correctness limitation is explicit. | Reproducible evaluation does not establish attribute truth. Inference remains source-bound evidence; signatures and confidence values cannot certify its meaning. |
+
+The local contribution below is qualitative inductive safety over the existing
+transition relation. It does not implement the discounted-MDP theorem or
+reproduce a paper's experimental results. No universal decision procedure for
+future agent behavior is claimed.
+
+* Shared model improvement
+
+Previously, =run_preserves= required every raw transition to preserve the
+invariant independently of authorization. That rule remains valid. It is too
+strong for an application whose raw action space includes dangerous actions
+that its authorization boundary is intended to exclude.
+
+=run_preserves_mediated= exposes the actual mediated-step premise in the
+preservation law. =preservesInvariant step invariant= then supplies a statewise
+requirement:
+
+#+begin_example
+for every after:
+  step before (some effect) after ->
+  invariant before ->
+  invariant after
+#+end_example
+
+=Framework.atInvariant= adds this requirement through the existing strengthening
+operation. =invariant_guard_preserves_framework= retains all original identity,
+authorization, currentness, consumption, unknown-retention, revocation and
+mediation requirements. =unsafe_successor_blocks= refuses an effect whenever
+one possible successor violates the invariant from a safe source state.
+
+=invariant_guard_preserves_run= proves safety after every finite admitted
+history from a safe initial state, given a separate preservation law for
+unmarked transitions. Recovery, publication, fact updates and owner handoff
+cannot disappear from this premise by being labeled maintenance.
+
+The universal successor condition matters for nondeterminism: one favorable
+sample cannot discharge it. An adapter must establish that its transition model
+covers every actual successor. Omitting a dangerous outcome would invalidate the
+implementation refinement. An empty transition relation establishes no progress.
+The predicate is a Lean proof obligation, not a new Rust runtime analyzer.
+
+The [[file:../CedarPooSpec/ZeroTrust/Continuous.lean][shared implementation]] extends the existing framework.
+It adds no state store, token format, scheduler or alternative Cedar evaluator.
+
+* Countermodels and scope
+
+The existing [[file:../Tests/ZeroTrust/Functional.lean][functional model tests]] retain three distinct failures:
+
+1. Identical authorization before and after a revision still admits a two-action
+   path to an unsafe state. Same-world no-expansion alone cannot rule it out.
+2. An action has both a safe and an unsafe successor. The invariant guard rejects
+   it even though a favorable sample exists.
+3. An unmarked rollback reaches an unsafe state despite effect guarding. This
+   witnesses why the maintenance preservation premise cannot be omitted.
+
+The positive law accepts a harmless first action, refuses the newly dangerous
+second action, and quantifies over arbitrary finite guarded runs. It does not
+prove liveness, fairness, unbounded probabilistic value, semantic intent or
+physical IO refinement. No new axiom or native decision oracle is needed.
+
+Existing 51-domain Rust replay remains a consumer regression gate. It is not a
+claim that each domain has already supplied a complete transition model and
+proved this new invariant. Such an instantiation must name its actual states,
+invariant, effect relation, maintenance relation and native coverage argument.
+
+* Integrated next research obligations
+
+| Layer | Existing owner to reuse | Concrete next obligation |
+|-------+-------------------------+--------------------------|
+| Statewise effect safety | =ZeroTrust.Continuous= and =UsageControl= | Instantiate the actual domain invariant, including spent authority and unresolved exposure, and prove every permitted effect and maintenance step preserves it. |
+| Current semantic evidence | =FactBinding=, =FactAuthority= and current Cedar assessment | Bind extraction/model version, original task and exact inputs; distinguish authentic statements from justified semantic predicates and refuse unsupported upgrades. |
+| Delegated authority | Existing Commerce delegation/shared-budget and OAuth sender constraints | Compose ancestor scope checks with the current revocation frontier and the same shared budget; chain validity alone must not reset consumption or bypass a revoked ancestor. |
+| Governed policy change | Delta review/publication and current-release binding | Keep the same-world comparison, then separately prove the publication and fact-update transitions preserve the chosen invariant. |
+| Native refinement | Existing Gateway final-use and receipt/recovery paths | Show that actual native transitions and failure outcomes are covered by the model; retain original timeouts, counterexamples and full consumer replay. |
+
+These obligations form one authorization-to-effect proof path. A paper's claim,
+an LLM review vote or a successful trace is not substituted for a missing step law.
+Changes continue on the existing draft PR without merging.

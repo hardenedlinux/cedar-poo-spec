@@ -60,6 +60,55 @@ theorem run_preserves (invariant : V → Prop)
   | next prior event ih => exact preserve _ _ _ event.1 ih
 
 
+/-- The admitted transition, rather than every raw action, may establish the
+application invariant. The law still covers unmarked maintenance transitions. -/
+theorem run_preserves_mediated (invariant : V → Prop)
+    (preserve : ∀ before effect after, MediatedStep framework step before effect after →
+      invariant before → invariant after)
+    (initial : invariant a) (run : Run framework step a b) : invariant b := by
+  induction run with
+  | refl => exact initial
+  | next prior event ih => exact preserve _ _ _ event ih
+
+/-- Statewise safety covers every possible successor of the selected effect.
+An adapter must justify its actual transition relation; this predicate does not
+infer future behavior from an Allow, a vote or a sampled successful outcome. -/
+def preservesInvariant (step : V → Option E → V → Prop) (invariant : V → Prop) :
+    Requirement E V :=
+  fun effect before => ∀ after, step before (some effect) after →
+    invariant before → invariant after
+
+def Framework.atInvariant (framework : Framework E V)
+    (step : V → Option E → V → Prop) (invariant : V → Prop) : Framework E V :=
+  framework.withRequirement (preservesInvariant step invariant)
+
+theorem invariant_guard_preserves_framework (framework : Framework E V)
+    (step : V → Option E → V → Prop) (invariant : V → Prop) :
+    Refines framework.required (framework.atInvariant step invariant).required :=
+  with_requirement_preserves_framework framework _
+
+theorem unsafe_successor_blocks (framework : Framework E V)
+    (step : V → Option E → V → Prop) (invariant : V → Prop)
+    (initial : invariant before) (possible : step before (some effect) after)
+    (violated : ¬ invariant after) :
+    ¬ (framework.atInvariant step invariant).required effect before :=
+  fun accepted => violated (accepted.2.1.2 after possible initial)
+
+/-- Inductive safety under arbitrary finite checked proposals, including
+nondeterministic effects. Unmarked recovery, publication and fact updates
+need a separate real preservation law; complete mediation alone omits it. -/
+theorem invariant_guard_preserves_run (framework : Framework E V)
+    (step : V → Option E → V → Prop) (invariant : V → Prop)
+    (maintenance : ∀ before after, step before none after →
+      invariant before → invariant after)
+    (initial : invariant a)
+    (run : Run (framework.atInvariant step invariant) step a b) : invariant b := by
+  apply run_preserves_mediated invariant _ initial run
+  intro before effect after event safe
+  cases effect with
+  | none => exact maintenance before after event.1 safe
+  | some effect => exact (event.2 effect rfl).2.1.2 after event.1 safe
+
 /-- Pure specification of an authority-owned compare-and-advance operation.
 The transition receives the actual attributes, never a cached assessment. All
 relevant writers must advance this non-reused generation. A native Host must

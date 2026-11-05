@@ -25,6 +25,11 @@ a theorem, a solver report, a finite test and an unimplemented Host obligation.
 | Disselkoen et al., [[https://arxiv.org/abs/2407.01688][How We Built Cedar: A Verification-Guided Approach]] | Executable models, proofs, differential testing and PBT | Separate model reasoning from implementation conformance | Passing examples do not establish full implementation refinement |
 | Collina et al., [[https://arxiv.org/abs/2609.15803][Delegating Authorization to Misaligned Agents]] | Sequential safety under its utility/MDP and reviewer-alignment assumptions | Retain RFC 0004's distinction between same-world Delta and trajectory safety | We do not implement its reviewer model or inherit its safety theorem |
 
+The [[file:../agent-authorization-research.org][agent authorization research review]] connects continuation-aware review,
+FAPI protocol goals, delegated-token attenuation and semantic evidence to a
+shared admission-aware invariant proof. It records the exact missing premises
+and countermodels without inheriting the papers' broader guarantees.
+
 The official Cedar repository provides executable definitions and theorem
 artifacts. A GitHub repository mentioning Zero Trust is not equivalent evidence.
 The inspected [[https://github.com/sarmishra/ZT-MCP-Project][ZT-MCP repository]] is a
