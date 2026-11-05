@@ -19,7 +19,7 @@ permit(
   action == AgentCore::Action::"set-draw-status___set_draw_status",
   resource == AgentCore::Gateway::"recon-egress-gateway"
 ) when {
-  ((context.input) has confidence) && (((context.input).confidence).greaterThanOrEqual(decimal("85.0")))
+  (context.input has confidence) && context.input.confidence.greaterThanOrEqual(decimal("85.0"))
 };
 
 // POO policy ID: recon_write_human

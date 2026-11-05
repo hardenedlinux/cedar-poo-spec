@@ -5,5 +5,5 @@ permit(
   action == Action::"verify-origin",
   resource == Tool::"delete-records"
 ) when {
-  ((context.origin) in Role::"Admin") && (((context.origin).mfa) && ((context.depth) <= 2))
+  (context.origin in Role::"Admin") && (context.origin.mfa && (context.depth <= 2))
 };

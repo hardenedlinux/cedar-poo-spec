@@ -20,3 +20,8 @@ __pycache__/
 
 # Local browser export intermediates.
 /.cache/render/
+
+# Local maturin editable build products; publish wheels as CI artifacts only.
+/python/packages/bridge/src/cedar_poo_bridge/_native*.so
+/python/packages/bridge/src/cedar_poo_bridge/_native*.pyd
+/python/packages/bridge/src/cedar_poo_bridge/_native*.dylib

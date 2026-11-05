@@ -5,7 +5,7 @@ forbid(
   action == Action::"accelerate",
   resource
 ) when {
-  (context.modelAffected) && (resource.affectedCohort)
+  context.modelAffected && resource.affectedCohort
 };
 
 // POO policy ID: hazard-report
@@ -23,7 +23,7 @@ permit(
   action == Action::"accelerate",
   resource
 ) when {
-  (context.routeApproved) && (!(resource.pedestriansPresent))
+  context.routeApproved && (!resource.pedestriansPresent)
 };
 
 // POO policy ID: safe-braking

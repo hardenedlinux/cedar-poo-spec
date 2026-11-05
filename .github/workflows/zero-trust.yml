@@ -1,0 +1,111 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: Apache-2.0
+
+name: Cedar Zero Trust and authorization
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+defaults:
+  run:
+    shell: bash
+jobs:
+  zero-trust:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      with:
+        persist-credentials: false
+    - uses: ./.github/actions/setup-verification
+      with:
+        rust: 'true'
+        cvc5: 'true'
+    - run: lake build Tests.ZeroTrust.Functional Tests.ZeroTrust.ProfileObject Tests.ZeroTrust.UsageControl Tests.ZeroTrust.ImportBoundary
+    - run: just check-gateway-delta
+    - name: Shared evidence, effect protocol and independent reconciliation
+      run: just check-effect-protocol
+    - run: just check-agent-trace-delta
+  reviewed-effects:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      with:
+        persist-credentials: false
+    - uses: ./.github/actions/setup-verification
+      with:
+        rust: 'true'
+        cvc5: 'true'
+    - name: Actual C4 reviews, bound publications and current effects across all domains
+      run: just check-reviewed-effects
+    - name: Native API latency and append-only log scale across all qualified Cases
+      run: just bench-gateway-runtime
+    - name: Publish validated full-history comparison inputs
+      if: ${{ github.event_name == 'workflow_dispatch' && inputs.history_comparison }}
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      with:
+        name: shared-history-inputs-${{ github.sha }}
+        include-hidden-files: true
+        if-no-files-found: error
+        path: |
+          .lake/build/functional-catalog.json
+          .lake/build/gateway-lifecycle.jsonl
+          .lake/build/reviewed-effects/
+  history-comparison:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.history_comparison }}
+    needs: reviewed-effects
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      with:
+        persist-credentials: false
+    - uses: ./.github/actions/setup-verification
+      with:
+        rust: 'true'
+    - name: Read only this revision's validated native inputs
+      uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+      with:
+        name: shared-history-inputs-${{ github.sha }}
+        path: .lake/build
+    - name: Fixed full-history revision comparison on one Ubuntu runner
+      run: just bench-gateway-history
+    - name: Upload complete history comparison observations
+      if: ${{ always() }}
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      with:
+        name: shared-history-comparison
+        include-hidden-files: true
+        if-no-files-found: error
+        path: .lake/build/resources/history-comparison/
+  authorization-delta:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      with:
+        persist-credentials: false
+    - uses: ./.github/actions/setup-verification
+      with:
+        rust: 'true'
+        cvc5: 'true'
+    - run: just check-authorization-delta
+    - run: just check-authorization-delta-operational
+    - run: just check-authorization-delta-reasons
+    - run: just check-authorization-delta-effective-reasons
+'on':
+  push:
+    branches:
+    - main
+  pull_request:
+    branches:
+    - main
+  workflow_dispatch:
+    inputs:
+      history_comparison:
+        description: Run the fixed historical A-B-C-C-B-A experiment on validated complete inputs
+        type: boolean
+        required: false
+        default: false

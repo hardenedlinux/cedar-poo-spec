@@ -41,6 +41,24 @@ fn phase(start: Option<std::time::Instant>, name: &str) {
 fn run_with_observation(observe: bool) -> Result<(), String> {
     let started = observe.then(std::time::Instant::now);
     let args: Vec<String> = std::env::args().skip(1).collect();
+    #[cfg(feature = "gateway")]
+    if let [command, path, mode] = args.as_slice()
+        && command == "gateway-stdio"
+        && (mode == "--enforce" || mode == "--shadow")
+    {
+        return crate::gateway::stdio(path, mode == "--enforce");
+    }
+    #[cfg(feature = "gateway")]
+    if let [command, path, index, mode] = args.as_slice()
+        && command == "gateway-reviewed-stdio"
+        && (mode == "--enforce" || mode == "--shadow")
+    {
+        return crate::reviewed::stdio(
+            path,
+            index.parse::<usize>().map_err(|e| e.to_string())?,
+            mode == "--enforce",
+        );
+    }
     let input_started = (args == ["benchmark-catalog"]).then(std::time::Instant::now);
     let mut input = String::new();
     io::stdin()
@@ -58,6 +76,35 @@ fn dispatch(
     args: &[String],
     started: Option<std::time::Instant>,
 ) -> Result<(), String> {
+    #[cfg(feature = "gateway")]
+    if let [command, path] = args {
+        if command == "gateway-replay-catalog" {
+            return crate::gateway::replay(
+                input,
+                path,
+                &mut std::io::BufWriter::new(std::io::stdout().lock()),
+            );
+        }
+        if command == "gateway-reviewed-catalog" || command == "gateway-lifecycle-catalog" {
+            return crate::reviewed::replay(
+                input,
+                path,
+                &mut std::io::BufWriter::new(std::io::stdout().lock()),
+                command == "gateway-lifecycle-catalog",
+            );
+        }
+        if command == "benchmark-gateway-runtime" || command == "benchmark-gateway-append" {
+            return crate::reviewed::benchmark(
+                input,
+                path,
+                &mut std::io::BufWriter::new(std::io::stdout().lock()),
+                command == "benchmark-gateway-append",
+            );
+        }
+        if command == "gateway-reconcile" {
+            return write_json(&crate::gateway::audit(input, path)?);
+        }
+    }
     if args.len() == 1 && args[0] == "render" {
         let policies: CompiledPolicyJson = input
             .parse()

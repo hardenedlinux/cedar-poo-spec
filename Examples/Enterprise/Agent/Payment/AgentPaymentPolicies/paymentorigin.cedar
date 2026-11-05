@@ -14,5 +14,5 @@ forbid(
   action == Action::"transfer",
   resource
 ) when {
-  !(((context.origin) in Role::"Admin") && ((context.origin).mfa))
+  !((context.origin in Role::"Admin") && context.origin.mfa)
 };

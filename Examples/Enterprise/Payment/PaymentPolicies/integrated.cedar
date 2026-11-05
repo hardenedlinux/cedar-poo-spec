@@ -14,7 +14,7 @@ permit(
   action == Action::"release",
   resource in PaymentGroup::"Operations"
 ) when {
-  (resource.matched) && (((resource.amount).lessThanOrEqual(decimal("500.0000"))) || (principal in Role::"SeniorController"))
+  resource.matched && (resource.amount.lessThanOrEqual(decimal("500.0000")) || (principal in Role::"SeniorController"))
 };
 
 // POO policy ID: prepare-matched-payment
@@ -23,7 +23,7 @@ permit(
   action == Action::"prepare",
   resource in PaymentGroup::"Operations"
 ) when {
-  (principal == (resource.preparedBy)) && ((resource.matched) && ((resource.amount).greaterThan(decimal("0.0000"))))
+  (principal == resource.preparedBy) && (resource.matched && resource.amount.greaterThan(decimal("0.0000")))
 };
 
 // POO policy ID: separate-preparer-and-releaser
@@ -32,5 +32,5 @@ forbid(
   action == Action::"release",
   resource in PaymentGroup::"Operations"
 ) when {
-  principal == (resource.preparedBy)
+  principal == resource.preparedBy
 };

@@ -32,6 +32,17 @@ domain-specific reference candidate; its README claim of a formal CapBAC model
 is not admitted as a checked dependency or a proof of this API. No repository
 above supplies a universal, drop-in Zero Trust theorem covering Gateway recovery.
 
+* Integrated current-release binding
+
+The [[file:../zero-trust-contract.org][current-release coherence implementation]] makes the active release an
+independent mandatory input to ongoing Gateway admission. A valid old receipt
+can coexist with a changed active root; the new binding joins current compiled
+policies, root, enforcing mode and epoch to the current request and entities.
+Production medical/financial POO profiles and independent strict-schema Rust
+replay exercise the composition through the existing Zero Trust CI module.
+This discharges a local safety obligation, not all architecture, temporal or
+trajectory guarantees in the source table above.
+
 * Architecture completeness review
 
 The predicate conjunction is an effect-boundary kernel. It is insufficient as a
@@ -294,3 +305,1450 @@ Applications on an older fixed pin must validate the new API separately in
 isolation. Import and namespace migration is direct; no dependency pin change
 or native Gateway implementation is included in this review. Model proofs,
 finite integration tests and remote CI are separate receipts.
+
+* 2026-11-02 research re-audit and next integrated unit
+
+This is a design and implementation plan, not a new theorem or native Host
+qualification. It extends the existing frameworks rather than creating another
+Gateway, identity service, authorization language or provider-specific backend.
+
+** Rechecked sources and the research questions they settle
+
+| Primary source / location | Consequence for this design | Question still owned by SPEC/application |
+|---------------------------+-----------------------------+-----------------------------------------|
+| [[https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-207.pdf][SP 800-207]], Sections 2.1, 3 and 3.1.1 | PE decides, PA establishes/revokes, PEP mediates the resource path; decisions use changing evidence. | Which actual transition orders publication, revocation and effect admission? |
+| [[https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-207A.pdf][SP 800-207A]], Section 4.5 | Ingress, egress and sidecar enforcement serve different paths; workload identity complements application policy. | Which paths and credentials can bypass the modeled effect boundary? |
+| [[https://profsandhu.com/journals/tissec/p128-park.pdf][UCONABC]], Sections 4.2, 4.4 and 4.6; [[https://profsandhu.com/journals/tissec/p351-zhang.pdf][formal UCON]], Sections 4–8 | Ongoing decisions, witnessed obligation actions and mutable state belong in usage transitions. | Which mutation preserves consumption and unknown holds, including recovery? |
+| [[https://arxiv.org/abs/2403.04651v2][Cedar]]; [[https://arxiv.org/abs/2407.01688v1][verification-guided development]] | Reuse the defined policy semantics, executable model, proofs and independent implementation comparisons. | Does the concrete publication/use path consume the same reviewed policy/schema and current input? |
+| [[https://arxiv.org/html/2609.15803v1#S4][Delegating Authorization]], Section 4, Theorem 2 | Its baseline-value result needs statewise continuation-aware soundness in a discounted MDP. | SPEC supplies neither that utility model nor reviewer-alignment evidence; Cedar no-gain cannot discharge these premises. |
+| [[https://arxiv.org/html/2609.31039v1][MetaPermit]], Sections 3.1, 3.3 and 4.5 | Typed inferred attributes and deterministic enforcement do not establish the attributes' semantic truth. | Bind inference inputs, schema/model version, authority and validity; treat changed inference as changed facts. |
+| [[https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/policy-enforcement-modes.html][AgentCore enforcement modes]] | LOG_ONLY does not block calls; removing the policy engine bypasses its checks. | Read/fence actual enforcement configuration at publication and use, rather than trusting a policy revision label. |
+
+These are distinct contributions. NIST gives architectural roles; UCON gives
+usage semantics; Cedar supplies authorization semantics; the delegated-agent
+paper studies a different sequential objective. No source supplies a universal
+proof that their combination makes this Gateway safe. The integration and proof
+obligations below are our design deductions from those sources and actual APIs.
+
+** One control loop, two semantic comparisons
+
+At publication, compare the independently selected active parent with the
+candidate under the exact schema and policy sources. Review decision gain/loss,
+error-free execution gain/loss, and required reason/provenance changes separately.
+At each effect, evaluate current authenticated facts and requirements under the
+actually active publication, then join that admission with committed original
+consumption, outstanding exposure and the final mediation transition.
+
+#+begin_example
+independent active parent + candidate + schema/source binding
+  -> Delta analysis and original Contract review
+  -> governed publication (current parent/epoch/mode; atomic Host commit)
+  -> current identity/facts + actual request + active publication
+  -> error-free Cedar admission + current Zero Trust requirements
+  -> committed consumption / unknown holds + final effect boundary
+  -> witnessed outcome / mutation / recovery -> next current assessment
+#+end_example
+
+This is a proposed integration flow, not an extracted theorem graph. Delta is
+an input to governed policy change; it is not a cached permission to use a
+resource. Zero Trust does not require every legitimate change to be no-gain.
+A financial unfreeze, consent grant or delegation extension may intentionally
+gain access and needs independently authorized, precisely bound review. Existing
+=advanceNoGain= remains the restriction/equivalence path; it must not silently
+be reused as an approved-expansion path. Unknown/error/incomplete analysis is
+neither no-gain nor approval.
+
+Let =Exec(P,w)= mean error-free Cedar Allow in one validated world. The existing
+no-expansion theorem proves =Exec(after,w) -> Exec(before,w)=. It does not prove
+=Exec(after,w_new) -> Exec(before,w_old)=. RFC 0004's existing 2-by-2 trace table
+holds policy or input fixed to expose this distinction; its diagonal alone
+cannot establish causation or safety of an alternate trajectory. Fact-source,
+projection or schema changes must be identified explicitly and revalidated.
+Cross-schema safety requires a separately specified relation between worlds.
+
+** Exact current coverage and the next proof interfaces
+
+| Existing owner / result | What is already available | Next obligation; no duplicate owner |
+|-------------------------+---------------------------+-------------------------------------|
+| =Authorization.Delta.Release.ReviewedInteraction= | Supported construction captures actual four-root analysis and snapshot together; =advanceNoGain= checks active policy/root/epoch/mode. | Specify how the actual analysis result and coverage become the admitted publication artifact; reference equality alone is insufficient. |
+| =Gateway.PublicationReview.Final= | Original invocation Contract, parent/artifact/cut binding, current guards, registration/recovery/registrar premises and Host commit relation. | Instantiate the generic Artifact meaning with the actual Delta/replay review and governed outcome. Generic test artifacts are intentionally not semantic Delta certificates. |
+| =Gateway.AdmissionBinding= and =ExactCoverage= | Actual schema/scope/source/root/policies and upstream typed-query/UNSAT proof premises. | Retain these premises at the concrete bridge; an executable UNSAT report has no conversion into =ExactCoverage=. |
+| =Gateway.ZeroTrust.final_use_preserves_authorization_delta= | Initial published admission, original Contract, current use and pointwise no-expansion compose conditionally. | Preserve this initial-use theorem; do not reuse its captured pre-state for a changed current world. |
+| =Gateway.ZeroTrust.continuing= | Current supplied assessment, original scope/profile, committed history prefix and unknown retention; renewed authority cannot reconsume the original operation. | Bind the supplied assessment to an actual current Cedar request/entities/admission, then compose the applicable same-world Delta premise for that assessment. |
+| =ZeroTrust.UsageControl= and =Run= | Per-effect core checks, obligation/mutation witnesses, recovery separation and invariant transport. | Supply and prove the real application transition's invariant-preservation law; =run_preserves= does not manufacture it. |
+
+The ongoing proof target is: accepted current assessment implies error-free
+Allow for its exact current request/entities and active policies; if a bound
+no-gain proof applies to that same validated world, it also implies baseline
+execution there. At the same time the original operation remains consumed and
+unknown exposure remains retained. A separate governed-gain path retains all
+current-use and consumption requirements without asserting baseline implication.
+These are proposed targets, not declarations already implemented in Lean.
+
+For histories, prove preservation of an explicitly defined application invariant
+under policy publication, fact updates, effect commits and recovery. Required
+components include scope continuity, retained consumption, retained unresolved
+exposure, and no new mediated effect after an ordered revocation. Each component
+needs a step law, including the non-effect transitions. This is an inductive
+safety goal; it establishes neither liveness nor the delegated-agent paper's
+expected-utility guarantee. Already admitted bytes are outside a retroactive
+revocation claim.
+
+** Terminal revocation across maintenance histories
+
+The UCON continuity requirement motivates testing the effect boundary after
+each change of authority. The current simulator represents terminal revocation
+for one original operation. Its maintenance trace includes monotone clock
+updates, fact renewal, source invalidation and observed settlement.
+=Gateway.Lifecycle.revoked_trace_blocks_use_and_publication= proves by induction
+that any finite maintenance suffix preserves refusal by both the current-use
+guard and the reviewed publication guard. The theorem quantifies over every
+handle and envelope, including a fresh one. =burned_trace_stays_burned= shows
+that the same suffix preserves recorded consumption.
+
+The publication result applies to the guard used by =publicationContract=.
+Rust also exercises the concrete publication path with a ticket issued before
+revocation and checks that refusal leaves the epoch and history length intact.
+The existing recovery control checks that renewal and mediator replacement
+preserve revocation even when the current Cedar evaluation allows the request.
+These are safety results for the modeled simulator transitions. The trace
+takes observed settlement as an input. The recovery Contract and native
+independent verification govern how that input is obtained.
+
+Gray and Lamport's [[https://arxiv.org/abs/cs/0408036][Consensus on Transaction Commit]]
+provides a separate comparison for distributed recovery. The simulator's
+surviving owner and independently signed outcome are explicit premises.
+A distributed Host would require a separate agreement and durability model
+before this result could cover concurrent writers across failures.
+
+** Distributed writer and recovery boundaries
+
+A signature authenticates the writer's bytes. If two processes can use the
+same witness key, two signed histories can have the same length and disagree
+at the same position. The audit authority may now supply an independently
+retained signed checkpoint through =independent_checkpoint= in the trust
+configuration. The runtime verifies that checkpoint against the configured
+witness key, then requires the authenticated candidate history to extend the
+pinned boundary. Recovery also checks its surviving local frontier. A pin must
+come from a durable authority independent of the candidate. Selecting a pin
+from the history being audited gives no independent fork protection.
+
+=Lifecycle.historyContract= binds both frontiers to the same checked history.
+=history_invocation_extends_independent= extracts the independent extension
+from a successful invocation. =same_length_fork_refused= checks that signature
+validity and equal length cannot override a different boundary. The Rust
+control constructs two valid chains with the same signer and height, confirms
+the old floor alone admits both, then exercises independent audit and recovery
+refusal as well as acceptance of a proper extension.
+
+Three separate obligations remain at the distributed Host boundary.
+
+| Boundary | Required Host premise | Failure when absent |
+|----------+-----------------------+---------------------|
+| Committed history | One authenticated committed prefix per authority and configuration, with a durable checkpoint reader that does not roll back. Raft's leader completeness and membership-change protocol are reference mechanisms for a crash-fault deployment. | Two writers can certify different state at the same position, or recovery can reopen a retired cut. |
+| Revocation and Delta publication | Order both in the same authority and enforce the authenticated current cut at the final resource or publication receiver. Chubby's sequencer puts the check at the recipient. | A delayed writer can act after revocation even when its earlier local check passed. |
+| Independent effect recovery | Verify the retained intent and a provider outcome under independent keys and retain quarantine while the outcome remains unresolved. | Agreement about the intent log alone cannot establish whether external IO took place. |
+
+The existing =PublicationReview.Final= binds the original review and the
+current registrar, cut and Host commit relation. The finite revocation trace
+covers the modeled maintenance transitions. A replicated deployment still
+needs to establish the premises of both results: configuration transitions,
+durable non-reuse of cuts, and receiver-side fencing ordered with each actual
+write. An independent checkpoint detects a divergent presented history.
+Quorum agreement and external effect settlement require their own witnesses.
+
+Sources: [[https://www.usenix.org/conference/atc14/technical-sessions/presentation/ongaro][Ongaro and Ousterhout, Raft]],
+[[https://research.google.com/archive/chubby-osdi06.pdf][Burrows, Chubby, Section 2.4]],
+and [[https://arxiv.org/abs/cs/0408036][Gray and Lamport, Consensus on Transaction Commit]].
+
+** Receiver ordering and independent checkpoint custody
+
+=Lifecycle.receiverPublicationContract= refines the actual reviewed publication
+Contract with the receiver's current owner and generation. The release result
+still comes from the original Delta invocation. The Lean proofs reject a
+retired ticket even if the reviewed policy and source bytes remain equal, and
+reject publication after revocation even with a fresh cut. Revocation advances
+the same cut used by publication. In the Rust simulator, the final receiver
+checks the private ticket, the current guards and the release under the same
+deciding lock used by revocation. The replay covers both commit orders and a
+two-thread race. If publication wins, the committed epoch remains visible
+after revocation. If revocation wins, the old ticket cannot install a release.
+
+The Unix =CheckpointStore= is a local adapter for the independent history
+Contract. An operator bootstraps it with a trusted signed checkpoint in a
+separate trusted directory. Recovery uses =load= to obtain the typed pin for
+=AuditAuthority.independent_frontier=. =advance= takes the writer lock before
+reading that pin and verifies that the complete signed candidate chain extends
+it. Persistence stages the signed checkpoint, synchronizes its bytes, replaces
+the live name atomically and synchronizes the directory before reporting
+success. Reopening the store must use the existing pin. Missing or invalid
+state fails closed. Errors after replacement require rereading the store
+because the replacement might already be visible.
+
+The file adapter assumes a trusted, non-rollback local filesystem and stable
+lock-file identity. The test races two same-key, same-height writers and
+reopens the store to verify that only the winning prefix survives, a proper
+extension advances it, and a corrupt pin cannot be replaced from candidate
+data. Reopening exercises custody across handle restart. Power-loss behavior
+and remote storage semantics require separate qualification.
+
+A replicated Host must serialize receiver fencing with the actual publication
+or effect write, using the authenticated current authority cut. A receiver
+that only remembers its latest observed cut cannot detect a revocation it
+has yet to observe. Chubby's receiver-side sequencer check motivates the
+boundary. Raft's committed-log properties explain the separate premise that
+an independent durable pin represents one committed history across replica
+failover. The local lock and file adapter establish neither replicated
+consensus nor external effect settlement.
+
+** P0–P2 as one acceptance unit
+
+| Phase | Work in existing owners | Exit evidence |
+|-------+-------------------------+---------------|
+| P0: freeze meanings and counterexamples | Specify reviewed publication outcome, exact current-use assessment and application transitions in RFC 0004/0010 and existing Gateway/ZeroTrust tests. Inventory applicable domains and bypass paths. | For each proposed stronger claim, a precise premise list and a counterexample without it: changed facts, erroring Allow, replaced review, mode bypass, stale owner, ledger rollback and unresolved exposure. |
+| P1: implement the semantic joins | Extend existing Release/PublicationReview and Gateway.ZeroTrust composition; use current POO Contract/Session and parent refinement. Keep generic ZeroTrust independent of Gateway and domain IO. | Kernel-checked binding/composition and transition-preservation laws; governed gain and no-gain remain distinct; current request rejection, mutation and recovery controls pass. |
+| P2: close the complete simulated execution path | Replay the common transition scenarios in Lean and Rust using a deterministic simulated authority/store/final-effect observer in existing test owners. Retain normal official Cedar replay and the complete catalog. | Matching decisions, errors, review/source bindings, ordered effects and post-states; competing/stale commits, lost replies, unknown outcomes and restart preserve the invariant. Existing correctness, import, resource and exact-head CI gates pass. |
+
+No live Host deployment or production credential is needed for this phase.
+Simulation must contain an explicit authoritative state and an observable final
+effect boundary; a Boolean named authenticated/committed is not the whole test.
+Its native trace checks implementation correspondence for the simulated model,
+not a deployed Gateway or rollback-resistant external store. Use existing shared
+backend/test interfaces where applicable; no SQL dependency or provider-specific
+backend is introduced by this research plan.
+
+Coverage is by semantics across the existing catalog, not one industry at a
+time. Payment/commerce/banking exercise reservation and unknown settlement;
+healthcare exercises consent, approval and lineage changes; enterprise agent and
+cloud/Gateway cases exercise delegation, identity and enforcement mode; data,
+controller and pipeline cases exercise release, source, residency and lineage.
+Every existing catalog entry retains its type/Contract/proof and Rust replay.
+Apply continuous-use/fault scenarios where those effects exist; explicitly record
+inapplicable cases rather than inventing a streaming effect for a static object.
+
+Performance uses Lean native producer/benchmark workloads and Rust replay,
+including current checks and failure paths. Reuse only immutable preparation
+bound to exact sources/schema/query scope and query semantics; authenticate the
+current parent/epoch/mode and current facts again. Cached analysis does not issue
+a use capability or eliminate final admission. A change in inferred facts can
+leave policy analysis reusable while still invalidating the current-use decision.
+Retain misses, invalidations, gains, refusals and non-winning samples; measure the
+complete process, live allocations and RSS separately before claiming a benefit.
+
+Existing acceptance entrypoints remain =just check-lean=, =just check-gateway=,
+=just check-delta= and the full functional catalog/native replay checks. The
+publication-review fixture is in the full =Tests= target; do not infer its
+coverage merely from the shorter explicit =check-gateway= module list. New joins
+must enter the relevant existing focused gate as well as the aggregate. Remote
+CI qualifies its exact submitted source, not the unimplemented plan above.
+
+
+** Implementation and bounded acceptance of the semantic joins
+
+The P0–P2 table above records the integrated design, not an assertion that all
+Host obligations have been discharged. Its two API joins are now implemented:
+=Release.advanceReviewed= and =advanceReviewed_without_approval= retain the old
+no-gain path while admitting independently approved gains;
+=PublicationReview.Host.withDeltaReview= binds the selected/resolved actual
+analysis and exact committed post-state; =delta_final_retains_exact_review=,
+=unresolved_delta_cannot_commit= and =rejected_delta_cannot_commit= expose its
+positive meaning and refusals. A positive Final construction retains the actual
+original Contract as well as the checked release transition.
+
+=Gateway.ZeroTrust.currentAdmission= binds the current typed Cedar receipt and
+required-profile refinement. =current_admission_has_error_free_allow= retains
+the canonical operation and current error-free decision, including governed
+gains. =continuing_current_admission_preserves_delta= composes the actual current
+world, AdmissionBinding and ExactCoverage with original consumption and unknown
+retention. The changed-fact fixture proves that an old receipt cannot provide
+this current assessment, and that the current deny world has no such assessment.
+No solver-report-to-ExactCoverage conversion or new authorization evaluator is
+introduced. In particular, the current four-root Release analyzer classifies
+Cedar decisions, not exact error-free execution coverage. Publication review
+does not establish the ongoing Delta theorem without its additional explicit
+ExactCoverage premise. Actual current-use admission still rejects evaluation
+errors. Core ZeroTrust still imports no Gateway.
+
+The existing Gateway test owner reuses released LeanPoo =PropertyTesting.samples=,
+=TraceModel=, =traceValid= and =traceObservations=. This is deterministic finite
+Cartesian/sequence coverage, not a statistical claim about random sampling:
+384 release configurations and 1,372 complete three-command histories over seven
+commands. All 4,116 transition replies and full post-states are compared with an
+independent test-only Rust store interpreter. Actual analyzer results supply the
+no-gain/gain classifications; those reports remain external-solver evidence.
+Ten Functional-produced Cedar policy/current-fact cases are independently replayed
+by the official Rust authorizer. The full catalog acceptance additionally retains
+all 51 entries, frozen artifacts, native/interpreted equality and original
+uncached Rust workflow comparisons.
+
+Simulated recovery retains the authority's durable active image, independent
+epoch floor and unresolved result flag. Live rollback cannot revive a consumed
+review; lost replies remain unresolved through recovery. A deliberate control
+which also rewinds the authority floor can commit twice. This states the precise
+source-authority assumption, not a proof of rollback-resistant native storage.
+The model covers publication histories and current Cedar inputs; full application
+transition refinement, real credential custody, provider IO, settlement and
+unbounded fairness remain outside this bounded acceptance. Generic per-use
+requirements and existing consumption laws are retained rather than replaced
+with new domain-specific ledgers.
+
+=check-gateway= now explicitly includes publication review, UsageControl and
+import-boundary fixtures. =check-gateway-delta= uses the existing 120-second,
+M2048/T10000000 Lean limits and runs both native consumers; it remains in
+=check-delta= and the existing Ubuntu authorization-delta job. No dependency pin,
+job-count environment variable, provider backend or Python semantic test is added.
+Only source and tests are versioned; generated trace/receipt JSON stays in the
+ignored Lake build directory. Final source and remote CI qualification must be
+reported separately from this design/implementation inventory.
+
+** General publication laws and finite-history induction
+
+The follow-up strengthens the proof coverage without changing the release or
+simulation algorithms. =ReviewSnapshot.currentPolicies_epoch= exposes the epoch
+check in actual successful revalidation. =advanceReviewed_postcondition= proves
+that every successful no-gain or governed-gain advance matches that review epoch
+and installs exactly the returned policies/root in enforcing mode at the next
+natural epoch. =stale_epoch_cannot_advance= and
+=returned_state_rejects_republication= refuse reuse of that review under arbitrary
+later approval callbacks, models and schemas. The guarantee is about the actual
+returned state, not about a caller supplying an older state again.
+
+=PublicationReview.delta_final_retires_resolved_review= connects these laws to
+the actual Final receipt, selected artifact, resolved review and committed
+post-state. Original Contract, registration, fencing and current-use premises
+remain unchanged. The proof supplies neither an affine IO capability nor atomic
+arbitration between two callers holding the same pre-state.
+
+The existing test-owned =publicationStep= now has a checked step invariant:
+the independent epoch floor never decreases, a successful commit advances the
+matched review epoch, and unknown results remain retained. Induction directly
+over released LeanPoo =traceObservations= proves, for arbitrary finite command
+lists interpreted by that function, that the same fixed review commits at most
+once, and that every later observation retains an already unknown result.
+These proofs have no three-step horizon or sample-count premise. No second
+runner or runtime state machine is introduced. The seven declared commands,
+fixed reviewed artifact and preserved independent authority floor delimit the
+model; exchanging artifacts or rewinding that authority is a different model.
+
+The 384 configuration checks and 1,372 three-command Lean/Rust histories remain
+unchanged as executable conformance evidence. The pure-model induction does not
+extend the Rust comparison to unbounded executions or machine-word overflow,
+and establishes no deployed storage/IO refinement, fair scheduling or MDP utility
+guarantee. Existing floor-rewind and concurrent-pre-state counterexamples remain
+valid outside the strengthened forward-history premises. All new lifecycle and
+history proofs are kernel-checked using ordinary logical axioms; they consume no
+new native-decision axiom or external UNSAT certificate.
+
+The standalone current-admission consequence no longer requires unused =BEq E=
+or =LawfulBEq E= instances. Consumption still requires its actual lawful effect
+comparator. This removes an irrelevant API prerequisite without changing
+admission, equality or runtime execution.
+
+** Observation-cut compare-and-advance and native arbitration
+
+=ZeroTrust.Observation.compareAndAdvance= is a pure specification for an
+optimistic preparation followed by an authority-owned current transition. It
+compares the captured generation first, passes the actual attributes to the
+checked transition, preserves a fresh transition's original error, and advances
+the observation generation only on success. The successful-transition theorem
+retains its exact input/output and successor generation. The returned-cut law
+rejects an old generation under arbitrary later callbacks, including when the
+attribute values have been restored. The framework composition theorem retains
+the existing MediatedStep requirements; matching a cut is not authorization.
+
+The observation cut is independent of the policy epoch. Every participating
+posture/configuration/recovery writer must advance the same authority cut,
+even when it restores equal attributes or does not publish a policy. Generation
+values are scoped to that authority and require authenticated, non-reused
+interpretation. Two pure evaluations against copies of the same pre-state can
+still both succeed. The primitive performs no IO and makes no atomicity claim.
+The native adapter must linearize read, compare, current admission, installation
+and the local commit observer under one actual authority boundary.
+
+The test-owned Rust authority now supplies that boundary using one shared mutex
+for publication and control writers. Two real threads capture before a barrier
+and race to commit; only one eligible callback observes installation. A second
+native writer demonstrably cannot acquire the boundary while the final observer
+runs. Ticket ownership uses an allocation-owned Arc identity, so equal generation
+numbers from another authority are refused. This is process-local ownership,
+not a workload credential, signature or persistent identity scheme.
+
+The existing release interpreter is reused; no new Cedar evaluator, production
+Gateway crate, backend provider or database is introduced. The Rust fixture code
+moves from SDK preparation tests to the explicit =publication_review= test owner.
+The existing 1,372 histories and ten Cedar replay cases remain intact. A companion
+Lean producer invokes the actual compare-and-advance primitive for 2,528 prepared
+histories / 12,528 steps: all six legal two-actor prepare/commit interleavings,
+both actors' lost-reply choices, every insertion boundary for recovery, live
+rollback and mode updates, plus old-cut and freshly recaptured ABA histories.
+The native authority compares every reply, complete modeled state, prepared cuts
+and actual observer invocation count with those Lean observations.
+
+Eight additional native controls cover eligible/refused thread races, ABA,
+lost-reply recovery, machine-counter exhaustion, a competing writer, foreign
+ownership and two intentional counterexamples. Independent prechecks can admit
+two callbacks; rolling back the whole authority record can revive an old ticket.
+Both counterexamples remain green diagnostics of absent premises, not admitted
+behaviors. Native generation exhaustion uses checked addition and refuses before
+installation/observation. The finite native fixture range and that explicit
+word-boundary refusal do not establish unbounded machine arithmetic refinement.
+
+The tests model logical recovery while the authority record survives. They do
+not implement process-crash durability, cryptographic custody, physical rollback
+resistance, remote delivery, fairness or a production mutex architecture. Other
+Host implementations may use a transactional CAS with the same ordering; the
+source reader, all relevant writers and the final use boundary must participate.
+Generated CAS fixtures stay in the ignored Lake build directory. Lean/Rust own
+all semantic assertions; Python remains unchanged process/artifact glue.
+
+** Prepared-history induction and persistent retirement
+
+The finite interleaving corpus is accompanied by kernel induction over the
+actual =publicationScheduleStep= function and the released POO
+=traceObservations= projection. For every finite command list, with arbitrary
+initial schedule, captured tickets and fixed reviewed artifact/approval/fault
+choice, the proofs establish at most one successful publication and retention of
+an already unknown result. Preparation, missing/stale/denied commits, recovery,
+live-image rollback and mode changes all participate in the proof. There is no
+five-command horizon or legal actor-order premise; the model still has its two
+caller slots and one fixed review. This does not prove arbitrary artifact
+replacement or unbounded native machine-word refinement.
+
+The step proof derives generation/floor monotonicity from the actual
+compare-and-advance and release postconditions. Induction proves that a retired
+cut remains refused at every later observation, for arbitrary checked callbacks,
+even after equal attributes are restored. Independently, the public
+=run_generation_monotone= and =Observation.retired_cut_refuses_after_run= laws
+reuse the existing application =Run= relation. Their premise explicitly covers
+every writer, including no-effect recovery edges; mediation alone does not
+imply monotonic recovery. A Lean counterexample retains a mediated rollback edge
+that revives the cut when that premise is removed.
+
+The native fixture interpreter checks monotone generations/floors, unknown
+retention and stale-ticket state/observer preservation against its actual shared
+authority, separately from complete Lean JSON equality. The original fixtures,
+counts and negative controls remain intact. These are functional safety proofs
+and conformance checks, not fairness, persistence or performance claims.
+
+** Review replacement and consecutive publications
+
+The same test-owned native authority now keeps its registered reviewed artifact
+inside the current-state mutex. Registration checks generation exhaustion,
+installs the selected immutable review and advances the same cut without
+changing the release image or clearing unknown results. Equal-artifact
+re-registration also advances the cut. A real competing registrar cannot write
+while the final commit observer holds that boundary. No registration credential,
+durable registry or new production provider is implemented here.
+
+The actual four-root analyzer supplies three reviews: an epoch-seven governed
+gain, a distinct epoch-seven no-gain alternative, and an epoch-eight no-gain
+follow-up. The follow-up has two distinct branches inheriting the first
+candidate and their actual C4 merge; it does not fake four roots with the same
+name. Its three new roots also pass six original Functional/Cedar SDK Case
+replays. The companion POO corpus covers 800 histories / 4,064 steps: each
+registration at every boundary of all six actor interleavings, lost-reply
+choices, registration ABA, stale retries, recovery, rollback and two legitimate
+successive publications. Full replies, registered review, state, tickets and
+per-review observer counts agree with Rust. The earlier fixture bytes stay
+unchanged. The finite two-epoch corpus is conformance evidence, not a universal
+two-publication limit or a general registry protocol.
+
+=delta_final_rejects_resolved_review_after_run= extends the actual Final's
+resolved-review retirement across later application runs, which may use other
+reviews or approvals. Its strengthened Final binds the post-commit independent
+frontier to the installed epoch. Remaining premises preserve the frontier for
+every later writer and require freshness before the later raw Delta check.
+A restored live image can rewind; that is why this law uses an independent
+frontier rather than assuming the live epoch is monotone. The companion
+registration scheduler has a kernel step law and arbitrary-finite-history
+induction retaining both frontiers and unknown results, for arbitrary selected
+reviews and both publication models. The current floor guard remains mandatory.
+
+The native tests retain an unfenced replacement counterexample: if a writer
+changes the review without changing the cut, an old ticket can publish that
+substituted candidate. This violates the participating-writer premise, and
+matching cuts alone do not bind original evidence. Registration and release
+epoch exhaustion refuse without modifying the current record; Rust uses checked
+machine arithmetic. The existing Contract, trusted registration, pending-source
+qualification and anti-rollback premises remain intact. Retaining a lost reply
+about a locally committed publication does not discharge an unresolved external
+dependency. All semantic checks remain Lean/Rust; no Python semantic owner or
+performance claim is added.
+
+** Frontier binding belongs to the actual Final
+
+=Host.withDeltaReview= now requires =frontierAt : View → Nat=. Its commit
+relation retains the original Contract and resolved Delta, and requires the
+pre-state epoch to equal that frontier and the post-frontier to equal the
+installed epoch. Callers migrate to this required reader; no default or
+compatibility adapter is added. Reader authenticity and atomic native ordering
+remain Host obligations. Reading the live epoch twice does not establish an
+independent frontier.
+
+=delta_final_retains_frontier= extracts these bindings, and
+=delta_final_advances_frontier= derives the exact one-step advance.
+=successive_delta_finals_advance_review_epoch= composes two actual Finals with an
+arbitrary forward Run and proves that their resolved review epochs increase.
+Currentness and installation come from the Finals; every-writer frontier
+preservation remains explicit. The raw-check retirement theorem still requires
+freshness at its later observation because that observation need not be a Final.
+
+Positive-control kernel fixtures keep accepted analysis and a constructible
+Final while refusing wrong pre-frontiers or omitted post-frontier installation.
+A whole-reader rollback counterexample retains the nonrollback premise. Native
+fault controls reject ahead and behind frontiers even after registration and
+recovery. These are shared adapter laws and simulated controls, not physical
+persistence, credential custody or production IO.
+
+** OAuth evidence at the Gateway resource boundary
+
+=Gateway.OAuth= is a sender-constrained resource-side profile. Its Contract
+binds an authenticated, active grant to the issuer, subject, client, resource
+audience, required scopes and time of the actual use. The Gateway selects
+the expected identity and required scopes independently of the token claims.
+The resulting OAuth requirement strengthens existing Cedar and Zero Trust
+checks. It cannot waive effect authorization, consumption or final mediation.
+
+The Host verifies token bytes and current grant status, including revocation
+according to its issuer profile. JWT verification or authenticated token
+introspection must supply these facts. DPoP uses verified proof bytes, the
+effective request method and RFC-normalized target URI, token hash, key
+thumbprint, freshness, applicable nonce validation and a committed replay
+reservation. The Host owns the replay policy and storage. DPoP URI binding
+does not bind query parameters or request content. The original Gateway
+Contract still binds the exact effect. Mutual TLS uses the certificate
+thumbprint of the authenticated request connection. An unauthenticated
+forwarded certificate header cannot provide that observation.
+
+The proof is conditional on these Host observations. The model has no
+authorization server, token parser, signature verifier, TLS terminator or
+distributed replay store. A deployment must bind the authenticated evidence
+to the same deciding view used by the Gateway. AgentCore and FHIR expose the same strengthening over their resource
+policies. FHIR patient, session and inactivity checks remain in its base
+policy. AgentCore retains its principal and action restrictions.
+
+The Rust Gateway accepts the trusted current-use projection at its OAuth
+boundary. One shared process-local replay guard admits at most one use of
+an issuer, proof key and proof ID. A deployment must supply bounded replay
+retention and a shared atomic reservation across processes and restarts.
+The native controls race two applicable routes, reject a replaced peer
+certificate, and deny a fresh proof after revocation. Each use requires
+fresh grant status. The adapter must obtain it under the same authority
+boundary as final effect admission. This repository does not contain the
+deployed OAuth verifier or a production shared replay store.
+
+The upstream Lean =Authority= owns the active grant inventory, revoked token
+identities, current clock and replay reservations. =commitContract= binds the
+exact successor for one verified attempt. The proof key joins issuer, sender
+key thumbprint and proof ID across routes served by the same authority. An
+attempt cannot supply its own active status or install a reservation by
+setting a flag. A successful commit makes another attempt using the same
+proof key inadmissible. Revocation refuses the token on every later use,
+including with a fresh proof or the original authenticated TLS certificate.
+
+This is a pure library transition. A downstream Gateway must serialize it
+against the actual current authority and combine it with Cedar authorization
+and final effect admission. Two evaluations against independent copies of
+the same pre-state can both succeed. The contract therefore does not claim
+cross-worker atomicity without a shared deciding store.
+
+*** Research basis and proof boundary
+
+OAuth contributes delegated authority scoped to a resource. The Zero Trust
+policy still evaluates the actual use with current evidence, applies the
+resource's own authorization policy and mediates the resulting effect.
+An earlier grant does not establish current permission. This separation
+follows the resource-centered architecture in
+[[https://csrc.nist.gov/pubs/sp/800/207/final][NIST SP 800-207]].
+
+| Source | Design obligation for this library | Scope of the result |
+|--------+------------------------------------+---------------------|
+| [[https://arxiv.org/abs/1601.01229][Fett, Küsters and Schmitz, A Comprehensive Formal Security Analysis of OAuth 2.0]] | Separate authorization, authentication and session integrity. Treat the configured issuer and verified grant as distinct from caller claims. | Their authorization-server and browser flow results are conditional on their web model and protocol assumptions. The resource transition here does not prove those flows. |
+| [[https://openid.net/wordpress-content/uploads/2022/12/Formal-Security-Analysis-of-FAPI-2.0_FINAL_2022-10.pdf][Formal Security Analysis of FAPI 2.0]] | Model sender constraint explicitly. Select the DPoP or certificate check from the grant and refuse a mismatched mechanism. | FAPI's protocol and attacker model cover more than the resource boundary. The resource transition establishes current-use properties. The PAR and code transitions below establish specific request and session bindings under trusted endpoint inputs. |
+| [[https://www.rfc-editor.org/rfc/rfc9700.html][RFC 9700]], [[https://www.rfc-editor.org/rfc/rfc9449.html][RFC 9449]] and [[https://www.rfc-editor.org/rfc/rfc8705.html][RFC 8705]] | Check audience and scope against the actual target. For DPoP retain proof freshness, token hash, method, URI, key, nonce and replay state. For mTLS use the authenticated connection certificate. | The Lean checks assume sound cryptographic verification and trusted current observations. The model does not prove key custody, transport integrity or distributed storage correctness. |
+
+A useful counterexample is an authenticated, unexpired token presented to
+a different resource audience. A second is a request using the right token
+and certificate after revocation. Neither can satisfy the resource profile.
+A captured DPoP proof can satisfy the same cryptographic checks on a second
+worker. It is rejected by the modeled successor only if both workers consult
+and update the same authoritative reservation state.
+
+*** Authorization-code redemption and resource composition
+
+The client selects the issuer before redirect and keeps the pending session
+in trusted state. The callback issuer must match that selection. Endpoint
+routing is derived from the configured issuer, so a response cannot select
+its own token endpoint. The issuer-scoped code lookup refuses ambiguous
+records. The issued record and redemption request must match the saved
+client, exact redirect URI, browser session, state and S256 challenge.
+A successful transition returns the original grant and records the spent
+issuer/code pair together. A replay against the committed successor fails.
+
+The Lean input carries the S256 projection of a verifier. The adapter must
+compute it from a syntactically valid verifier. The Rust reference computes
+unpadded base64url SHA-256 and exercises the RFC 7636 Appendix B vector.
+Its mutex models a single authorization server process. Cross-process
+deployment requires an authoritative atomic code store and durable
+consumption before returning the token. The client must bind the callback
+to its own pending session and obtain token results through the selected
+authenticated issuer endpoint.
+
+The resource path requires the exact redeemed grant and reruns current
+OAuth authority checks, including sender constraint and revocation. Cedar
+and the existing final mediation requirements still apply. The Rust replay
+refuses a changed token and a revoked grant after successful redemption.
+
+The OAuth formal analysis motivates independent issuer selection and session
+integrity. The FAPI 2.0 analysis motivates the hardened authorization-code
+profile and sender-constrained use. This local transition assumes secure
+session custody, authenticated issuer metadata, authorization server
+issuance, and trustworthy cryptographic inputs. The model treats browser
+and network behavior, endpoint discovery, and cryptographic verification as
+adapter responsibilities. Protocol references include
+[[https://www.rfc-editor.org/rfc/rfc9207.html][Authorization Server Issuer Identification]]
+and [[https://www.rfc-editor.org/rfc/rfc7636.html][PKCE]].
+
+
+*** Pushed authorization requests and confidential clients
+
+The [[https://www.rfc-editor.org/rfc/rfc9126.html][PAR specification]]
+moves authorization parameters to an authenticated back-channel request.
+The [[https://openid.net/specs/fapi-security-profile-2_0-final.html#section-5.3][FAPI 2.0 Security Profile]]
+restricts the client front channel to the client ID and request URI. The
+OAuth and FAPI analyses distinguish issuer mix-up, request substitution and
+code injection. The library checks each at a different point:
+
+- Push authenticates the submitted payload against issuer and client
+  registration. The configured credential method is mTLS or
+  =private_key_jwt=. The credential identity and exact registered redirect
+  must match, and the requested scopes must be permitted by registration.
+  The issuer-scoped handle holds the submitted session, S256
+  challenge, audiences and scopes for fewer than 600 seconds.
+- Authorization compares the front-channel reference with the independently
+  retained pending session and handle. Extra parameters are refused. The
+  transition consumes the handle when issuing the code, limits the code
+  lifetime to 60 seconds from issuance, and binds the issued
+  grant to the saved client and issuer. Its scopes and audiences can only
+  narrow the pushed request. This profile requires one use at authorization,
+  allowing a page load to precede the decision without consuming the handle.
+- Redemption authenticates the token request again and checks the recorded
+  credential binding, exact code record, callback issuer, redirect, session
+  and S256 verifier. It spends the code through the existing code Contract.
+  The redeemed grant enters the shared AgentCore and FHIR resource
+  refinement, where the current sender constraint, revocation and Cedar
+  decision still govern admission.
+
+The adapter must independently select the issuer and pending handle, parse
+the front channel without losing duplicates, and authenticate the mTLS
+connection or JWT assertion against current client registration for the
+actual endpoint and request. JWT key
+trust, issuer and subject claims, audience, expiry and any required assertion
+replay checks are part of that verification. The reference pins the
+registered credential through redemption, so a credential change requires
+a new flow. Trusted inputs also include the clock, a fresh opaque handle,
+the user's authorization decision, and the issued code and grant. The
+modeled authorization payload covers redirect, state, browser session,
+PKCE, audiences and scopes. Rich authorization details and other extensions
+require their own bindings.
+
+Lean proves retention of the pushed payload, authorization binding,
+single-use transitions against their committed successors, and refusal
+after revocation. The Rust reference exercises both credential methods,
+handle replacement, wrong client and issuer, rejected overrides, and two
+threads competing for one handle. A downstream deployment must serialize
+authorization and code redemption in its authoritative store. The model
+establishes these local safety properties under its adapter assumptions.
+Full FAPI conformance also depends on the surrounding protocol, deployment
+and attacker model.
+
+
+*** Sender binding from PAR to protected resource use
+
+The [[https://openid.net/specs/fapi-security-profile-2_0-final.html#section-5.3.2][FAPI 2.0 Security Profile]]
+requires sender-constrained access tokens and support for authorization-code
+binding when using DPoP. [[https://datatracker.ietf.org/doc/html/rfc9449#section-10.1][RFC 9449, Section 10.1]]
+provides two PAR inputs: =dpop_jkt= in the pushed request body, or a DPoP
+proof header verified at the PAR endpoint. The model accepts either form
+and checks agreement when both are supplied. In the DPoP branch, a missing
+or empty key or disagreement between inputs refuses the push. An invalid
+proof header must be rejected by the adapter before constructing an
+observation, even if the body supplies a valid thumbprint.
+
+Authorization records a grant candidate whose =cnf.jkt= must match that
+PAR key. Token redemption checks a DPoP proof verified for the actual token
+request against the exact code record before spending the code and returning
+the grant. A rejected sender check leaves the code unspent. Resource
+admission checks the exact redeemed grant and binds the resource proof to
+its key, token hash and actual request. It still consults current
+revocation and reserves the resource proof against replay.
+
+[[https://datatracker.ietf.org/doc/html/rfc8705#section-3][RFC 8705]]
+separates client authentication from certificate-bound access tokens. In
+the certificate-bound branch, the token's =cnf.x5t#S256= must match the
+authenticated peer certificate at the token endpoint. When mTLS also
+authenticates the client there, both observations must describe the same
+TLS peer. With =private_key_jwt=, the client assertion key and the TLS
+certificate serve different purposes and can differ. The resource endpoint
+compares its own TLS peer to the certificate thumbprint carried by the
+redeemed grant. A valid client authentication observation cannot replace
+resource proof of possession. An mTLS-authenticated client can instead use
+the DPoP branch, where the certificate and the DPoP key remain independent.
+
+The Lean model and Rust reference distinguish verified PAR observations
+from verified token endpoint observations. They
+assume sound JWK and certificate thumbprint calculation, proof signature,
+HTTP target, freshness, nonce and applicable replay checks at the PAR and
+token endpoints, and TLS peer provenance. These transitions establish
+binding and refusal properties under those assumptions. They do not
+implement TLS, JOSE, endpoint discovery or wire token signing.
+
+
+*** Nonrotating refresh families and revocation
+
+The [[https://openid.net/specs/fapi-security-profile-2_0-final.html#section-5.3.2.1][FAPI 2.0 Security Profile]]
+uses nonrotating refresh tokens in ordinary operation. This library models
+that path for confidential clients. An enrollment consumes a successful
+PAR-backed redemption and records the initial access grant and an opaque
+refresh-token digest in the same issuer-qualified family. The digest is
+unique within the issuer. It is retained along with access lineage after
+revocation, so a revoked family or access digest cannot be re-enrolled.
+
+Refresh uses the current family record, the original client registration
+and sender binding, and a DPoP proof verified for the actual token request
+or the actual mTLS peer. Each successful exchange issues a distinct access
+grant with the same identity and confirmation. Audiences and scopes can
+narrow within the original authorization. The refresh handle and its
+expiry remain unchanged. A refresh can outlive an individual access grant,
+and refresh expiry by itself does not revoke a still-valid access grant.
+
+[[https://datatracker.ietf.org/doc/html/rfc9449#section-5][RFC 9449, Section 5]]
+describes DPoP refresh binding for public clients. This profile also
+requires possession of the original DPoP key for confidential-client
+refresh. The mTLS branch pins the certificate and checks client
+authentication independently, following the distinctions in
+[[https://datatracker.ietf.org/doc/html/rfc8705#section-4][RFC 8705, Section 4]].
+The adapter authenticates the current registration and verifies DPoP
+proofs, including freshness, target, nonce and applicable replay
+reservation, on each token request. Sender keys and certificates are
+fixed for the lifetime of the modeled family.
+
+In the revocation policy selected from
+[[https://datatracker.ietf.org/doc/html/rfc7009#section-2.1][RFC 7009, Section 2.1]],
+the authenticated client can revoke the refresh family after loss of
+its sender key. The family marker refuses every later refresh and every
+linked access grant, including the original token and earlier refresh
+outputs. Resource admission resolves the exact presented access digest
+to its stored lineage and evaluates the current family marker, sender
+proof and existing Zero Trust rules. The family check complements
+individual access-token validity, expiry, and revocation.
+
+The Rust reference serializes the refresh, revoke, and resource
+admission decisions under one process-local ledger. If refresh wins the
+race, the newly linked grant is covered by the subsequent revocation.
+If revocation wins, refresh is refused. A downstream deployment must
+enroll lineage before making tokens available, supply a current
+authoritative view at each resource decision, and serialize these
+transitions across workers. The model does not prove propagation delays
+through distributed caches or cancellation of a previously mediated effect.
+
+
+*** Research boundary for revocation across replicas
+
+Sender possession and revocation freshness establish different facts. A
+resource can receive a valid DPoP proof or the original mTLS certificate
+while its local copy of the family still looks active. The Lean fixture
+=stale_snapshot_counterexample_and_current_refusal= evaluates the same
+refresh or resource attempt at the same time against two views. The
+pre-revocation snapshot permits the attempt even after the authority
+committed revocation. The successor refuses it, including for access
+tokens already issued by refresh.
+
+| Source | Property used here | Additional premise for this library |
+|--------+--------------------+-------------------------------------|
+| [[https://eprint.iacr.org/2024/1540][Hosseyni, Küsters and Würtele, Formal Security Analysis of the OpenID FAPI 2.0 Family of Protocols]] | Use the web attacker model to distinguish protocol authorization, authentication and session integrity. | Prove that the actual deciding OAuth ledger contains the revocation. The cited results do not establish that a recovered replica in this system has applied that commit. |
+| [[https://www.usenix.org/conference/atc19/presentation/pang][Pang et al., Zanzibar, ATC 2019, Sections 2.2 and 2.4]] | A consistency token can require a snapshot at least as fresh as a causally preceding change. | Bind the minimum position to the actual authority and authenticate the snapshot's committed prefix. The floor must be obtained independently of the replica being checked. |
+| [[https://www.cs.princeton.edu/courses/archive/spr22/cos418/papers/cap.pdf][Gilbert and Lynch, 2002, Section 2]] | A partition can separate a reader from a completed write. Availability and atomic reads cannot both be guaranteed in that execution model. | For strict post-acknowledgment revocation, an isolated reader without the required proof must defer or refuse. A positive cache hit alone provides no ordering evidence. |
+
+[[https://datatracker.ietf.org/doc/html/rfc7009#section-2.1][RFC 7009]]
+recognizes revocation propagation delays, and
+[[https://datatracker.ietf.org/doc/html/rfc7662#section-4][RFC 7662]]
+describes the security trade-off of caching introspection. A cache TTL
+limits how long that cached response is reused. Even a short TTL permits
+the stale-positive execution while the entry remains valid.
+
+=committed_run_preserves_revocation= uses the existing Zero Trust run
+relation. Enrollment, refresh, further revocations and unchanged ledger
+steps preserve every acknowledged revocation marker. The descendant laws
+then refuse refresh and linked access after any finite such history.
+This result assumes that the reader has a genuine descendant of the
+revocation commit. It does not compare replica clocks or implement
+consensus, and it makes no claim about a route using a different ledger.
+
+An authority-scoped minimum commit position can support causal reads.
+It protects a decision only when the required minimum includes the
+relevant revoke commit. A floor carried by one caller does not protect
+another caller whose floor is older. Strict post-acknowledgment semantics
+add an authoritative read or commit fence that orders revocation with the
+actual protected effect. The Gateway publication design supplies the same
+independent-reader requirement. A caller-supplied epoch or a watermark
+read from the same restored replica cannot detect whole-view rollback.
+
+*** Independent revocation frontier at final mediation
+
+=Gateway.OAuth.Revocation= binds the authority identity, committed
+position, and exact ledger in one checkpoint. The precheck checkpoint
+and the replica used for the actual request must both match the
+independently read current checkpoint. A missing independent read, an
+older position, or different contents at the same position all refuse.
+An intervening commit invalidates a precheck and requires a new one,
+including an unrelated ledger change. That is the strict policy for
+this adapter.
+
+=protect= refines the existing Gateway =FinalUse.mediated= obligation
+and the same Host slot used for continuing effects. A successful
+invocation retains the original mediation requirement, authentic
+checkpoint evidence, exact sender and family checks, and the committed
+OAuth replay reservation. =revoked_descendant_refused= connects the
+authenticated prefix to a committed revocation through the existing
+Zero Trust run relation. The theorem applies when the independent
+checkpoint is a genuine descendant and the access digest resolves to
+the revoked family.
+
+The Rust reference retains immutable process-local checkpoints and
+checks them against the live ledger while holding the writer lock.
+Every enrollment, refresh, or first revocation advances its position.
+The final method reserves the DPoP proof and calls a synchronous effect
+observer before releasing that lock. The replay verifies that an
+acknowledged revoke refuses a stale request, a fork at the current
+position, a check superseded before execution, and a newly checked use
+of a revoked grant. It also checks the reverse ordering, where an
+effect already inside final mediation finishes before a waiting
+revocation can commit.
+
+The native boundary remains explicit. A deployment must obtain the
+current prefix from an independently authenticated, rollback-resistant
+authority and bind its exact ledger contents to the position. It must
+serialize the reservation and final effect with all revocation writers.
+The reference uses exact in-memory equality and a synchronous observer.
+Distributed proof transport and external effect atomicity remain
+adapter obligations.
+
+*** Durable revocation recovery and cross-worker ordering
+
+=Gateway.OAuth.Revocation.Recovery= adds a persisted image containing
+the independent checkpoint and the committed OAuth proof reservations.
+Recovery selects an authority from trusted configuration and requires
+exact equality with its current persisted checkpoint. A missing image,
+wrong authority, old position, or fork at the same position cannot
+restore access. The recovery Contract returns the independent image,
+including its reservations. A replica is never a bootstrap input.
+
+Final use reopens and checks that same authority at the actual effect
+boundary. The durable final Contract reuses the existing frontier and
+sender checks, taking DPoP reservations from the recovered image. An
+authenticated revocation updates the family marker and advances the
+checkpoint position on a change. Enrollment and refresh use the same
+ledger transitions as the process-local reference.
+
+The Unix Rust reference reuses the trusted checkpoint directory, file
+lock, staged write, file sync, rename, and directory sync. Every worker
+reopens the same lock inode. Revocation acknowledges only after the
+updated image is durable. Final execution holds that lock from the
+independent read through proof reservation and the synchronous effect
+observer. A revoke that acquires the lock first refuses a previously
+checked use. An effect already inside the boundary precedes the
+revocation. A DPoP reservation is durable before the observer runs,
+and remains consumed if the worker stops before observing an effect.
+
+The authority directory and its lock must remain outside replica
+rollback and under trusted custody. The Rust replay covers a separate
+writer process, reopened readers, stale and substituted images, and
+corrupt or missing authoritative state. The model assumes the
+filesystem honors the lock, atomic rename, and sync operations. It
+does not establish remote consensus, physical power-loss behavior, or
+atomicity with an external recipient. The application effect protocol
+still owns unknown outcomes and reconciliation.
+
+
+*** Crash boundaries, writer handoff, and detached outcomes
+
+=Gateway.OAuth.Revocation.Crash= distinguishes a synced staged image
+from a committed image. A stop before installation leaves the prior
+authoritative state. A stop after file and directory sync preserves
+the new revocation even if the writer lost the acknowledgment.
+The Rust fault controls interrupt the actual checkpoint write at
+both boundaries and reopen the directory. They model these outcomes
+under the filesystem contract. A physical power-loss guarantee and
+the unacknowledged rename-to-directory-sync window require evidence
+from the storage backend.
+
+An authority-approved writer handoff advances the persisted cut under
+the same lock as final use and revocation. The old incarnation cannot
+write, reconcile, or emit an effect after the handoff. A recovered
+worker needs the cut assigned by trusted configuration, and a precheck
+from the preceding cut must be replaced. The cut fences stale workers
+that follow this interface. Store custody and admission to the
+control plane remain trust assumptions.
+
+For a recoverable external effect, =execute_effect= binds the actual
+effect to the exact signed precommit in the independently pinned
+witness prefix. It atomically persists the intent, the pinned provider
+key, and any DPoP reservation before invoking the observer. The
+operation stays consumed after a lost reply, including after handoff
+or a new proof. A missing provider observation leaves the outcome
+unresolved, including when the effect may never have left the worker.
+
+Settlement reuses the scoped Gateway provider audit. It requires the
+retained exact intent, a current independently authenticated witness
+prefix extending the retained anchor, the pinned provider root, and
+matching provider journal and signed outcome evidence. Missing,
+conflicting, and substituted evidence cannot settle an intent.
+Settlement updates only the outcome status. It preserves the operation
+burn, proof reservations and current revocations, and does not send
+another effect. The Rust observer is a simulation; the external
+recipient's own journal and stable operation identity remain required.
+
+
+*** Durable receiver cut and detached delivery evidence
+
+=Gateway.OAuth.Receiver= composes the existing stable operation
+ledger and receiver-cut check with an atomic provider delivery record.
+The sender signs the exact witnessed intent, receiver cut and channel.
+The receiver verifies that signature under its configured sender root,
+checks the actual channel, and verifies the witnessed effect under
+its configured witness root. Scope and the sender, witness, and
+provider roots are pinned to the receiver's independently held image.
+
+The receiver advances its cut under the same lock as effect
+admission. A staged cut update leaves the previous cut authoritative.
+An installed and synced cut survives a lost acknowledgment. The
+reopened receiver refuses the older cut even for an operation that
+has never been delivered. Advancing the cut preserves prior
+reservations and outcomes. Channel and worker identity are excluded
+from the deduplication key, which remains the stable operation ID.
+An authenticated dispatch for a new channel can deliver a fresh
+operation, while the same operation remains consumed.
+
+The Rust reference represents the simulated effect as the provider's
+durable action record. It stores that action, the authenticated
+dispatch, and the signed outcome in one checkpoint before returning
+a reply. After reopening, evidence is read from the receiver's own
+store and passed to the existing scoped provider reconciliation.
+The sender may settle after revocation or writer handoff without
+reopening the operation. The replay also refuses a forged dispatch,
+a mismatched observed channel, and a stale cut carrying an unspent
+operation.
+
+The fault injection distinguishes failure before checkpoint install
+from acknowledgment loss after sync on the trusted Unix filesystem.
+The receiver directory and lock inode remain under independent
+custody. A real external effect requires an equivalent recipient
+transaction or durable idempotency protocol. The simulation provides
+no physical power-loss or external transport guarantee.
+
+
+*** Receiver replica promotion
+
+The managed receiver uses a separate trusted checkpoint directory.
+The checkpoint binds the active placement, the acknowledged receiver
+cut, and the canonical digest of the complete receiver image. The
+digest covers the configured roots, operation reservations, signed
+dispatches, actions and signed outcomes. A copied image with an older
+cut or different contents at the same cut cannot be promoted.
+
+The promotion Contract requires the exact acknowledged image and
+the expected independent checkpoint. A candidate can read that
+checkpoint while the primary is offline. The authority compares it
+under the shared lock before advancing it. At
+most one contender can consume a given checkpoint. A staged image
+that happens to match the winner's image still cannot replay its
+original promotion. A successful promotion advances the cut and
+changes the active placement while preserving reservations and signed
+outcomes. Every managed delivery and evidence read rechecks both
+placement and contents under the independent lock. Even an exact
+copy at a former placement cannot deliver without a new promotion.
+A retry under a new channel, worker or witnessed review still uses
+the same operation ID and cannot redeliver.
+
+The reference syncs the candidate image before installing and
+syncing the independent checkpoint. That checkpoint is the
+acknowledgment boundary. A stop before its installation leaves
+the prior placement authoritative. A stop after its sync leaves
+the new placement active despite acknowledgment loss. The checkpoint
+records the predecessor identity and the committed cut. The active
+placement can recover that acknowledgment using the original expected
+checkpoint without advancing the cut or resending. Ordinary writes
+preserve the handoff until the next promotion. An ahead
+replica refuses service until an exact acknowledged copy can be
+recovered. Availability after an interrupted write therefore
+requires keeping such a copy. Recovery never initializes a new
+checkpoint from candidate bytes.
+
+*** Continuing authorization after receiver takeover
+
+An active managed receiver is explicitly bound to the independent
+OAuth authority. The receiver pin retains that binding across
+promotion and writer rotation. A legacy pin can still recover
+evidence and promote, but managed delivery requires the binding.
+A different OAuth store with the same authority name cannot supply
+the permission.
+
+The synchronous execution path holds the OAuth lock from the final
+check through the receiver commit. It checks the live writer, grant
+and revocation state, then persists the OAuth operation reservation
+before acquiring the receiver authority and replica locks. The
+receiver checks the active placement, cut, signed route and exact
+OAuth-authorized intent. A promotion does not carry a permission
+into the next placement. If revocation commits first, even a signed
+dispatch for the new cut cannot execute. If delivery commits first,
+revocation leaves its signed evidence available for reconciliation.
+
+An interrupted receiver commit may leave the OAuth operation
+reserved. Only the current receiver supplies its retained action
+and signed outcome, and the OAuth authority reconciles them against
+the original intent, independently witnessed history and pinned
+provider key. Reconciliation does not require the revoked grant to
+become usable again. It preserves the operation reservation through
+subsequent writer and receiver handoffs.
+
+*** Interruption after OAuth reservation
+
+The OAuth authority can recover the operation state from its own
+durable store. An unreserved operation has no entry. An unresolved
+operation has a durable reservation and may or may not already have
+a receiver outcome. A reconciled operation has passed independent
+provider audit. The state query requires the current OAuth writer
+and grants no permission to send.
+
+An interruption after OAuth sync and before the receiver commit
+leaves an unresolved operation. The absence of a receiver receipt
+does not settle it or release its operation or proof reservation.
+Consecutive receiver promotions and OAuth writer handoffs preserve
+that distinction. A new route, approval or proof does not change
+the stable operation identity. Revocation continues to govern new
+authorization, while existing signed evidence remains available
+for independent settlement.
+
+*** Late provider evidence
+
+The current OAuth writer can settle an unresolved operation when
+its original provider action and signed outcome arrive after
+receiver failover or revocation. Settlement checks the exact
+retained intent, a current independently witnessed extension of
+the original log, and the pinned provider key. Missing evidence,
+mismatched observations and competing outcomes in the evidence
+bundle leave the operation unresolved.
+
+Managed delivery records the receiver scope and independent
+checkpoint identity in the OAuth reservation before sending.
+During reconciliation, the OAuth writer reads the committed
+outcome from that checkpoint's active, exact receiver image.
+The audited incoming envelope must match those committed bytes.
+An earlier conflicting envelope can pass signature and journal
+checks in isolation, but it cannot settle the managed operation.
+A copied checkpoint under a different authority and a former
+active replica also cannot supply the observation.
+
+Explicitly detached delivery uses the detached audit entry point.
+An originless legacy reservation remains reserved until the host
+selects its original receiver authority from trusted deployment
+configuration. The migration checks the selected checkpoint and
+scope, the reciprocal OAuth authority binding, and the active
+receiver image. It authenticates the persisted dispatch against
+the original retained intent and independently audits the exact
+committed receipt. Missing or conflicting evidence leaves the
+legacy reservation intact. A different checkpoint authority cannot
+supply the migration, even if it holds a byte-identical copy.
+
+The receiver binding and settlement identity commit in one OAuth
+checkpoint write. Migration holds the OAuth lock and then the
+independent receiver lock through that write. A competing promotion
+or revocation is ordered before or after that commit. If a handoff
+wins first, the retired writer or replica cannot bind the operation.
+
+A staged interruption leaves the record unresolved. After a durable
+write with acknowledgment loss, the current writer can confirm the
+exact committed outcome through the same migration port or ordinary
+managed reconciliation. Confirmation makes no checkpoint write.
+Migration and confirmation preserve the OAuth revocation frontier
+and the operation and proof reservations.
+
+*** Resumable legacy batches
+
+The current OAuth writer can list originless unresolved operation
+IDs and collect evidence from the independently configured receiver.
+A batch uses that same receiver configuration for every item and
+reuses the single-operation migration. Missing or rejected evidence
+is reported as pending and leaves its reservation intact.
+
+Concurrent batches serialize each operation through the shared OAuth
+and receiver locks. A worker checks its writer cut and active receiver
+replica before classifying an item as pending, even when evidence is
+missing. A promotion or revocation can interleave between items.
+An overlapping receipt already committed by another worker confirms
+the same durable operation without another write.
+
+Each accepted item commits independently. An I/O error or fencing
+failure stops the attempt and identifies the affected operation.
+The stopped item may already be durable if its acknowledgment was
+lost. After reopening the active writer and receiver, resubmit the
+original batch. The durable OAuth image supplies the resume point,
+including any committed item whose acknowledgment was lost.
+Previously accepted receipts confirm without another write.
+Remaining eligible operations can migrate, while pending operations
+stay reserved. A batch does not replay delivery or reset revocation.
+
+A pending item can appear in a later batch with its original
+signed receipt. A restarted worker reads the durable OAuth
+reservation and the current receiver checkpoint before accepting
+the late envelope. The envelope must match the committed receipt
+carried through receiver handoffs. A missing envelope leaves the
+record pending even when the receiver already has the receipt.
+An operation without a committed receiver outcome remains pending.
+
+Two restarted workers may submit overlapping batches in different
+orders. Each attempt compares the supplied evidence with the same
+independent receiver authority. A conflicting signed receipt leaves
+the reservation pending, and repeated copies of the committed receipt
+confirm the same binding without another write. If the first worker
+loses its acknowledgment after the checkpoint is durable, the next
+writer can confirm that receipt after receiver promotion and revocation.
+The replay forcibly terminates a Rust worker after a restarted
+contender attempts both checkpoint locks and finds them held. Before
+rename, recovery
+uses the previous checkpoint even if a synced staging file remains.
+After rename and directory sync, recovery uses the new checkpoint
+even if the worker died before acknowledgment. Receiver promotion
+and writer rotation follow both crashes. Without the original
+envelope, a staged item remains reserved. After revocation, the
+committed item confirms with its original envelope, and a delivery
+retry on a new channel is refused.
+
+Two Rust replay fixtures fix the commit order with a barrier between
+batch items. When takeover wins, the old worker has confirmed an
+earlier item, but it stops before binding the late receipt. The new
+worker preserves the unresolved reservation until the original
+envelope is supplied. When migration wins, the original receipt
+is already durable and a restarted worker confirms it before
+pausing at the next item. In both schedules, the harness promotes
+the receiver and rotates the writer, revokes the grant, then
+promotes and rotates again before releasing the paused batch.
+The retired writer cannot process the suffix. The latest writer
+confirms only the original receipt without rewriting the image,
+retains reservations with missing evidence, and refuses a retry
+of the same delivery on a different channel.
+
+Each ordering also starts a second worker with an overlapping batch
+in a different order. Both workers pause after their acknowledged
+prefixes. After revocation and two handoffs, both suffixes are fenced,
+and their reports retain their own confirmed and pending prefixes.
+The harness checks that neither resumed suffix rewrites the shared
+checkpoint. In the takeover-first schedule, the successor binds the
+late receipt, loses its acknowledgment after directory sync, and
+hands off again. Two fresh workers then replay the original,
+conflicting, duplicate and missing receipts concurrently. All
+accepted confirmations are read-only, while every missing-evidence
+reservation remains intact. Separate retry proofs use distinct
+request identifiers for the two workers.
+
+Recovery itself can fail after a read-only confirmation. Both
+restarted workers pause after confirming the committed original
+receipt, with different confirmed and pending prefixes. The harness
+kills one worker, transfers ownership twice, then releases the
+surviving worker. Its suffix is fenced and the durable checkpoint
+does not change. A new pair replays both overlapping orders from the
+independent receiver checkpoint. The original receipt remains bound,
+missing-evidence reservations remain unresolved, and the revoked
+grant cannot authorize another send. The Lean model preserves the
+receipt and every retained reservation through the same repeated
+crash and takeover sequence.
+
+The repeated-crash replay also kills the second recovery worker after
+it has observed fencing but before its report reaches the caller.
+After two more handoffs, a fresh pair verifies the original receipt.
+One of those confirmations is lost by terminating its process before
+returning the result. Two further handoffs precede the final overlapping
+replay. Every checkpoint is compared before and after each process
+termination. =LegacyRecoveryTrace= proves preservation of the retained
+reservations and original receipt through any finite sequence of
+read-only Contract confirmations, crashes, writer handoffs and
+revocations. It also proves that a conflicting outcome cannot replace
+that receipt and that a retained operation cannot begin again.
+
+The model-to-native conformance gate emits
+=.lake/build/gateway-recovery-plan.json= from Lean after replaying
+its typed Contracts for both sender-constraint profiles. Rust consumes
+that versioned plan directly. Three rounds vary the handoffs after
+the first worker crash, second worker crash and lost confirmation.
+For each round, both implementations check the writer and receiver
+generation advances. Rust additionally checks the three actual process
+terminations, stale-owner refusals, read-only confirmations, retained
+missing-evidence operation and denied delivery retries. Round-local
+synchronization files prevent an earlier round from releasing a later
+worker. This generated plan stays in the build directory.
+
+The Lean interpreter carries a =LegacyRecoveryTrace= proof with its
+current image. Each accepted handoff and read-only Contract confirmation
+extends that proof. The existing trace theorems therefore apply to the
+same model executions that produce the Rust replay plan. The native
+conformance test runs both commit orders under the existing 120-second
+watchdog, with the existing process-drain allowance.
+
+Version 4 of the generated recovery plan contains an ordered state
+projection after each worker crash, lost confirmation, fencing result,
+completed takeover and final recovery. The first crashing worker alternates
+between A and B across rounds. Each projection includes both incarnation
+advances, the two selected operation statuses, intent bindings, stored and
+receiver receipt roles, revocation preservation and each refusal result.
+Rust rejects a missing, additional or reordered projection.
+
+The identity mapping uses the Lean roles =original=, =conflict= and
+=missing=. Rust binds these roles to the exact original signed outcome
+and intent source SHA-256 identities captured before the replay. At every
+step it reads the authoritative effect observation, verifies the independent
+receiver outcome, and checks both against those identities. It then
+performs read-only original confirmation, conflict refusal, missing-evidence
+retention, stale-writer refusal, stale-replica refusal and a fresh revoked
+final-use attempt. Full checkpoint bytes must remain unchanged by these
+observations. Native trace rows retain the actual source digests in build
+logs. The Lean interpreter computes the matching projections from its
+typed images and Contract operations before the plan is emitted.
+
+The =OAuth.ReceiptIdentity= Contract binds the symbolic outcome to the
+configured receiver authority, provider key, witness key, operation, exact signed
+intent source and exact signed outcome source. Its digests are computed
+by the configured native adapter. The Contract also compares the full
+source bytes with the independently selected canonical sources. The
+rejection theorems therefore require no digest-injectivity premise for
+cross-operation, cross-authority or exact-source substitution.
+
+The Rust adapter verifies the witness and provider signatures, protocol
+versions, provider domain, full effect identity and signed intent linkage
+before preparing an immutable =VerifiedReceiptIdentity=. Candidate checks
+compare the complete authority, key, operation, digest and source tuple.
+The trusted context is selected from deployment configuration, the retained
+intent and independent receiver evidence. A mapping result carries source
+identity information; execution uses the current authorization Contract.
+
+Every generated recovery step checks the positive mapping and rejection
+of a valid receipt for another operation, the same sources under another
+receiver authority, and a same-operation receipt validly signed by another
+provider. Native recovery ports also reject those cross-operation and
+cross-authority inputs. Lean uses a deliberately colliding digest function
+in its exact-source negative controls. The mapping-survival theorem uses
+the finite recovery trace to keep the same settled symbolic source selected
+through crashes, handoffs and revocation.
+
+The =OAuth.ReceiptRecovery= Contract commits the OAuth settlement and exact
+mapping in one recoverable image. A versioned mapping stores the receiver
+authority, provider and witness keys, operation and source digests together
+with the exact signed outcome. The existing retained intent supplies the
+other signed source, avoiding a second persisted intent copy. Native
+construction reuses the authenticated shared audit and the locked independent
+receiver check. The mapping Contract explicitly equates its provider and
+witness identities with those audit roots. A relabelled authority cannot
+persist a mapping under another audit root. Native construction introduces
+no second signature-verification pipeline.
+
+The mapping is written under the existing writer and receiver locks before
+the checkpoint acknowledgment. The same checkpoint persist operation owns
+the settlement, origin and mapping. A staged crash recovers the prior image;
+a durable crash or lost acknowledgment recovers the original mapping.
+Concurrent confirmations and overlapping batches can only confirm that
+same mapping. Reopening a process, rotating ownership or revoking a grant
+cannot replace it or make a delivery eligible for another send.
+
+The finite mapping trace composes actual legacy recovery traces with mapping
+Contract commits and their staged or durable boundaries. Its preservation
+theorem retains an already bound row across every finite trace. Separate
+theorems establish idempotence, replacement refusal and stale-writer refusal.
+Every native step compares a mapping loaded from the reopened OAuth checkpoint
+with the independently authenticated receiver source. It also checks that
+the missing-evidence operation still has no mapping. Legacy settled records
+without this field remain unbound: replay can confirm their existing outcome
+identity but cannot silently create a mapping. Unresolved records acquire a
+mapping only through the current independent-receiver reconciliation.
+
+Settled legacy records have a separate opt-in backfill path:
+=migrate_settled_oauth_mappings= and the =ReceiptRecovery.Mode.settled=
+Contract. Ordinary reconciliation still does not create a missing mapping.
+The explicit path requires an already settled operation, its retained original
+intent and outcome digest, matching provider and witness roots, a current
+independent receiver checkpoint, and the exact authenticated dispatch and
+signed outcome stored there. A conflicting retained digest, missing digest,
+missing receipt, foreign authority or explicitly detached origin remains
+unbound. A missing digest is not inferred from whichever receipt arrives first.
+The model keeps legacy digest observations in the persistent image, so the
+request cannot supply its own expected digest. Existing digest observations
+take precedence over mapped rows. Digest equality is an additional legacy
+check; it is combined with independent canonical receiver evidence and the
+trusted native signature and source-identity decoders.
+
+The same writer and independent receiver locks cover evidence checks and the
+mapping commit. Backfill changes neither OAuth authorization nor the operation
+burn; it records the receiver origin and exact mapping in the existing checkpoint
+transaction. The settled replay exercises two concurrent restarted workers,
+a crash before checkpoint replacement, acknowledgment loss after directory sync,
+a partially completed overlapping batch, two handoffs before backfill and
+five further ownership handoffs after it.
+Fresh workers confirm only the original receipts without writing them again.
+Conflicts and missing-evidence items remain pending, retired writers and replicas
+are fenced, and the revoked operation cannot execute again.
+
+The original 90-step conformance workload remains intact. The additional settled
+record fault scenario has its own fixed 120-second process gate with the same
+three-second drain; it does not partition or replace the original workload.
+Both gates run in the existing Zero Trust CI module, alongside the unchanged
+51-domain reviewed-effect and lifecycle acceptance suite.
+
+The =ReceiptBatch= Contract folds the same typed per-operation backfill
+Contract over the current image. Its report records the confirmed prefix,
+pending evidence and the first fenced suffix item. A report or worker-local
+offset is not durable progress. =settled_unmapped_operations= reads that
+progress from the current writer's checkpoint, including records still
+missing evidence. A successor replays the original or overlapping inputs
+against the recovered image and refreshed actor metadata.
+
+Every item rereads writer and receiver authority. The shared Rust batch driver
+releases per-item locks before obtaining the next iterator item, permitting
+handoff or revocation between items. Both old workers stop with their own
+confirmed prefixes intact. The new writer can confirm committed rows without
+rewriting them, retain missing-evidence rows, and reject conflicts regardless
+of their position in a resumed batch. No batch-wide rollback or fabricated
+completion is needed.
+
+The single-operation Contract also checks that backfill preserves authorization,
+writer identity and the exact retained intent list. The finite batch trace
+therefore preserves every operation burn. The batch no-resend theorem follows
+from that burn even without relying on revocation as an extra refusal. Fold
+composition, stopped-suffix preservation and immutable receipt bindings cover
+interrupted and reordered replay.
+
+The batch fault replay runs two restarted workers over overlapping inputs,
+loses the first durable acknowledgment, pauses both after the same committed
+prefix, then hands off, performs a real revocation transition and hands off
+again. Both retired suffixes are fenced. Fresh workers discover the remaining
+settled row from durable state, lose another read-only confirmation and resume
+through five additional handoffs. The missing-evidence row stays discoverable;
+the original mapping remains idempotent and conflicting receipts cannot replace
+it. This fixed scenario is additional to both existing recovery workloads and
+uses the same 120-second process limit and three-second drain.
+
+Late evidence resumes the same explicit batch Contract. The historical receiver
+checkpoint must already contain the authenticated dispatch and original signed
+outcome; delaying the incoming evidence packet does not create a new receiver
+commit. A retained legacy digest is still mandatory. The Lean replay starts
+with an unbound settled item, performs two ownership handoffs, then processes
+both worker orders with a conflicting receipt before or after the original.
+=accepted_step_binds= establishes the exact accepted row;
+=suffix_keeps_committed= preserves it across every later batch suffix.
+Staged recovery leaves the row absent, while durable recovery and three further
+handoffs preserve that row and the operation burn.
+
+The shared =ReceiptBatch.RecoveryInput= names the current image, one batch
+item and the observed =staged= or =durable= boundary. Its =recoveryContract=
+returns only the recovered image; a transient report is not a durable cursor.
+A staged attempt recovers exactly the prior image. A durable accepted attempt
+binds the exact original row. Both preserve OAuth authorization. The
+=recovery_trace= theorem embeds each attempt into the same finite recovery
+trace, and =trace_cannot_resend= preserves the retained operation burn through
+any finite composition of recovery, revocation and handoff. This safety result
+does not assert eventual evidence arrival or recovery completion.
+
+The extended Lean replay invokes this Contract for two pre-install crashes,
+checks old-writer and old-replica suffix rejection after each handoff, then
+installs the original mapping. Four further handoffs and reordered duplicate
+and conflict batches preserve its identity. It checks both the complete trace's
+operation burn and the post-install trace's immutable row.
+
+The Rust batch replay keeps its original workload and appends late-evidence
+recovery within the same 120-second gate. After seven prior handoffs, two
+restarted workers consume overlapping, reordered packets containing the original
+receipt, a validly signed conflicting receipt and duplicates. Worker A and then
+worker B die after syncing the staging file and before checkpoint replacement.
+Their peers pause between items outside all store locks; the parent promotes
+the receiver and rotates the OAuth writer before resuming the old suffix.
+Neither fenced peer can install a mapping, and the target remains discoverable.
+
+A later worker dies after durable installation without acknowledging it; its
+peer independently confirms the original row. Four subsequent confirmations
+alternate between A and B and are lost after the read-only checks. Fresh peers
+confirm the original row without writing it again. Six handoffs in total occur
+during this extended recovery. The original digest and receipt remain unchanged,
+the unrelated missing-evidence record retains its exact observation, and durable
+discovery stops reporting the successfully migrated item. A receipt supplies
+recovery evidence only: it neither renews authorization nor permits the revoked
+operation to execute again.
+
+The native Lean exporter also writes =gateway-settled-late-plan.json= after
+the typed OAuth replay validates the complete fixture. This separate, versioned
+fixture preserves the original 90-step plan and its protocol. The extended batch
+compares 22 observations in exact order: ready, two staged crashes with handoffs
+and fenced peers, durable installation, and four lost confirmations followed by
+independent confirmations and final recovery. Missing, extra or reordered steps
+and differing fields fail the same native gate.
+
+Each Lean observation is computed from the recovered image and the shared
+=receiptIdentity= and =receiptSources= readback. Before installation, receipt
+identity fields and original idempotency are false; after installation they bind
+the original operation, receiver, provider, witness, version and exact signed
+sources. The trace theorems preserve both the identity and raw source projections.
+The native observer independently verifies the provider signature, retained
+intent and independent receiver evidence, then compares these portable predicates.
+It emits actual source SHA-256 values and the stored native identity in each
+=SETTLED-LATE-STEP-OK= record. Abstract Lean digest names are not compared with
+native digest strings. Exact signed-source checks remain required even when
+model digest values collide.
+
+The agreement concerns this finite projection and its frame conditions.
+Logical target and missing-receipt roles identify different native operations.
+Lean checks the missing mapping and retained-intent frame; Rust additionally
+compares the complete missing-evidence observation, every retained signed intent,
+the prior mapped operation and the current receiver generation. Each observation
+probes conflict refusal, old-writer and old-replica fencing, and revoked final use.
+Observers cannot write checkpoints. Once bound, source substitution, operation
+substitution and a foreign authority are also rejected at every observation.
+Signature verification and persistence-boundary observations remain trusted
+inputs to the formal model; this is not a proof of the native cryptographic
+implementation or of all possible scheduler interleavings.
+
+=SETTLED-LATE-OK= reports the observed handoff count, two staged crashes, one
+durable crash, four lost confirmations, 22 aligned steps and the checked recovery invariants.
+The boundary observation is a trusted persistence input to the Lean model.
+Rust injects faults at the matching checkpoint hooks on a trusted local
+filesystem. These are deterministic process-fault simulations, not proofs of
+physical power-loss durability or an external storage service.
+
+The first clean audit durably binds the canonical identity of the
+signed outcome. A later audit of that same outcome is idempotent.
+A different signed outcome cannot replace it, even if presented
+with a matching journal entry. Older checkpoints that recorded
+settlement without the outcome identity preserve their settled
+status and operation reservation. Replaying such a settlement
+cannot establish a binding retroactively. Settlement preserves
+the OAuth checkpoint and the original operation reservation.
+
+Concurrent workers use the same OAuth lock for the read, audit
+and checkpoint write. Only the first accepted outcome can bind the
+operation. A stop before checkpoint installation leaves the prior
+reservation unresolved. Once the new checkpoint is durable, the
+binding survives acknowledgment loss, writer handoffs, receiver
+promotions and revocation. The current writer can re-audit the
+original receipt without another write or provider action.
+
+Standalone receiver stores retain their local behavior. Managed
+stores require explicit bootstrap and cannot be reopened through
+the standalone interface. The deployment must retain independent
+custody of the checkpoint directory and stable lock, and configure
+all workers to use that same authority. The local replay uses
+separate directories and injected write failures. It relies on
+the filesystem and collision-resistance assumptions and does not
+model a simultaneous rollback of the independent authority.
+
+
+References include [[https://www.rfc-editor.org/rfc/rfc9700.html#section-2.3][OAuth Security BCP]],
+[[https://www.rfc-editor.org/rfc/rfc8707.html][Resource Indicators]],
+[[https://www.rfc-editor.org/rfc/rfc7662.html][Token Introspection]],
+[[https://www.rfc-editor.org/rfc/rfc9449.html][DPoP]], and
+[[https://www.rfc-editor.org/rfc/rfc8705.html][Certificate-Bound Access Tokens]].

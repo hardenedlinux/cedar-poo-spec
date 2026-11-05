@@ -14,7 +14,7 @@ forbid(
   action == Action::"query",
   resource
 ) when {
-  !((context.ownerApproved) && (!((principal.operator) == (context.approver))))
+  !(context.ownerApproved && (!(principal.operator == context.approver)))
 };
 
 // POO policy ID: project-subscription
@@ -23,5 +23,5 @@ permit(
   action == Action::"query",
   resource
 ) when {
-  ((principal.project) == (resource.project)) && (context.subscriptionActive)
+  (principal.project == resource.project) && context.subscriptionActive
 };

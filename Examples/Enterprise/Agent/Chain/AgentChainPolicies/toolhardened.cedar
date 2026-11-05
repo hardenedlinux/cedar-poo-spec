@@ -5,5 +5,5 @@ permit(
   action == Action::"invoke",
   resource == Tool::"delete-records"
 ) when {
-  (3 <= (principal.trust)) && (((principal.namespace) == "data") && ((principal.stage) == "production"))
+  (3 <= principal.trust) && ((principal.namespace == "data") && (principal.stage == "production"))
 };

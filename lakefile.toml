@@ -1,16 +1,19 @@
 name = "CedarPooSpec"
 version = "0.1.0"
 defaultTargets = ["CedarPooSpec"]
+# Use Lake's toolchain-owned, input-indexed cache; retain normal artifact paths.
+enableArtifactCache = true
+restoreAllArtifacts = true
 
 [[require]]
 name = "Cedar"
 git = { url = "https://github.com/cedar-policy/cedar-spec.git", subDir = "cedar-lean" }
-rev = "017c35c3d1f856a0f8b62a66660ee6628870bbcf"
+rev = "ac201c127d31cff4bea784c87d3e3d3e8fb8bfe9"
 
 [[require]]
 name = "LeanPoo"
 git = "https://github.com/tao3k/lean-poo.git"
-rev = "ed1a2834991b44e8b8e7f47d739229edd599da9b"
+rev = "v0.1.2"
 
 [[lean_lib]]
 name = "CedarPooSpec"
@@ -49,9 +52,21 @@ root = "Examples.Manifests"
 # Only the diagnostic executable imports this initialization observer.
 [[lean_lib]]
 name = "Benchmarks"
-roots = ["Benchmarks.ManifestInitialization"]
-globs = ["Benchmarks.ManifestInitialization"]
+roots = ["Benchmarks.ManifestInitialization", "Benchmarks.CatalogLifecycle"]
+globs = ["Benchmarks.ManifestInitialization", "Benchmarks.CatalogLifecycle"]
 
 [[lean_exe]]
 name = "manifestLifecycleNative"
 root = "Benchmarks.ManifestLifecycle"
+
+# Same producer and limits as the interpreted oracle; ordinary native execution.
+[[lean_exe]]
+name = "reviewedEffectsNative"
+root = "Examples.Gateway.ReviewedEffects"
+
+# Only the runtime budget adapter needs interpreter FFI loading.
+[[lean_lib]]
+name = "Examples.Gateway.ReviewedEffectsLimits"
+roots = ["Examples.Gateway.ReviewedEffectsLimits"]
+globs = ["Examples.Gateway.ReviewedEffectsLimits"]
+precompileLibrary = true

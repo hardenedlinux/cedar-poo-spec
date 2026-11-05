@@ -5,7 +5,7 @@ permit(
   action == Action::"verify-origin",
   resource == Tool::"delete-records"
 ) when {
-  ((context.origin) in Role::"Admin") && (((context.origin).mfa) && ((context.depth) <= 2))
+  (context.origin in Role::"Admin") && (context.origin.mfa && (context.depth <= 2))
 };
 
 // POO policy ID: revoke-admin-origin
@@ -14,5 +14,5 @@ forbid(
   action == Action::"verify-origin",
   resource == Tool::"delete-records"
 ) when {
-  (context.origin) == User::"admin"
+  context.origin == User::"admin"
 };

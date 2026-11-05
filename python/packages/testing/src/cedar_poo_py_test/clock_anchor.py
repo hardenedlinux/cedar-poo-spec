@@ -40,3 +40,24 @@ def clock_anchor() -> dict | None:
                 "scope": "Read-only bracketed clock anchor; OS event clock domain requires independent verification"}
     except (AttributeError, OSError, ValueError):
         return None
+
+
+def mach_event_interval(anchor: dict, ticks: int, domain: str) -> tuple[int, int]:
+    """Map verified OS ticks to a monotonic interval, never a wall timestamp.
+
+    The caller must independently establish the event's clock domain and boot.
+    When both Mach domains fit the observed clock probe, retain the union of
+    their intervals rather than silently choosing one. This is observation,
+    not a resource bound, authorization input or causal waiting attribution.
+    """
+    if domain not in ("absolute", "continuous"):
+        raise ValueError("explicit verified Mach clock domain required")
+    fields = ("numer", "denom", "monotonic_before_ns", "monotonic_after_ns", domain + "_ticks")
+    if type(ticks) is not int or ticks < 0 or any(type(anchor.get(k)) is not int for k in fields):
+        raise ValueError("integer Mach ticks and complete integer anchor required")
+    numer, denom = anchor["numer"], anchor["denom"]
+    before, after = anchor["monotonic_before_ns"], anchor["monotonic_after_ns"]
+    if numer <= 0 or denom <= 0 or before < 0 or after < before or anchor[domain + "_ticks"] < 0:
+        raise ValueError("invalid timebase or reversed clock bracket")
+    scaled = (ticks - anchor[domain + "_ticks"]) * numer
+    return before + scaled // denom, after - (-scaled // denom)

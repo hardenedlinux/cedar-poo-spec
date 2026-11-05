@@ -47,11 +47,10 @@ Those premises cannot be replaced by an earlier Allow or an empty solver report.
 
 The view checks evaluate each SysML symbol through the actual SDK, then ask Lean
 whether every law/counterexample is a theorem declaration and every source path
-matches its actual compiled Lean module. The two arrows explicitly claiming lemma
-use are additionally checked against constants in the compiled proof terms. Other
-arrows describe premises or design motivation, not an extracted proof dependency.
-The existing Lean
-modules/tests compile their proofs independently; drawing a card issues no evidence.
+matches its actual compiled Lean module. Each basis item labelled /checked lemma dependency/ must occur in the actual
+Lean proof term. Other basis items describe premises or design motivation.
+The panels organize the argument by topic and proof role; their positions do
+not specify an execution order.
 
 * Module ownership
 
@@ -112,3 +111,25 @@ typed API laws and remaining Host premises. Pure proof data cannot authenticate
 a state reader, persist a ledger or enforce complete mediation on a socket.
 The transitive import-boundary test, generic functional/POO tests and Gateway
 adapter tests are separate checks in the existing Tests aggregate.
+
+Gateway's =currentAdmission= now supplies a typed current-Cedar assessment for
+=continuing=. =current_admission_has_error_free_allow= retains its actual receipt,
+original-profile refinement and canonical operation identity;
+=continuing_current_admission_preserves_delta= additionally joins same-world
+Delta coverage with original consumption and unknown retention. The selected
+proof diagrams above are not a complete inventory of these application laws.
+Current readers, original authority selection and final Host ordering remain
+explicit premises. See [[file:../Gateway/README.org][Gateway's executable acceptance]].
+
+=Observation.compareAndAdvance= models a captured-cut comparison and a checked
+transition over the actual attributes. Its laws preserve the current transition,
+original error and successor generation, and refuse reuse after success. All
+relevant writers must advance a scoped, non-reused cut. The Host must implement
+read/check/install atomically; the function is pure and grants no authorization.
+The existing MediatedStep law supplies current framework requirements.
+
+The existing =Run= relation also supports =run_generation_monotone= and
+=Observation.retired_cut_refuses_after_run=. With an explicit monotonicity law
+for every actual writer, including recovery, a retired cut is refused after any
+finite forward run under arbitrary checked callbacks. Mediation alone does not
+establish this premise; the tests retain a whole-authority rollback counterexample.

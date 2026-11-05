@@ -1,5 +1,4 @@
-import CedarPooSpec.Transport.Case
-import CedarPooSpec.Transport.Wire
+import CedarPooSpec.Transport.CaseFields
 
 /-! Both public authoring JSON and the canonical bulk wire project typed entries.
 No inline case JSON is constructed and then decoded by the bulk publisher. -/
@@ -38,12 +37,11 @@ private def prepareManifest (value : Manifest) : Encode EncodedJson := do
     if let some prior := bindings[revision]? then
       unless prior = policy.index do throw s!"conflicting source for revision: {revision}"
     bindings := bindings.insert revision policy.index
-    rows := rows.push (EncodedJson.nativeObject ((← row.fields) ++ [
-      ("policy_ref", Lean.toJson policy.index), ("entities_ref", Lean.toJson entities.index)]))
+    rows := rows.push (← row.encodedFields policy entities)
   let mut fields := [("cases", EncodedJson.array rows.toList),
     ("revision_sources", EncodedJson.nativeObject (bindings.toList.map fun (key, index) => (key, Lean.toJson index)))]
   if let some schema := value.schema then
-    let ref ← schemaRef schema
+    let ref ← schemaRef schema.toSourceSnapshot
     fields := fields ++ [("schema_ref", EncodedJson.native (Lean.toJson ref.index)), ("manifest_kind", EncodedJson.native (Lean.toJson "schema-bound"))]
   else
     fields := fields ++ [("manifest_kind", EncodedJson.native (Lean.toJson "raw"))]

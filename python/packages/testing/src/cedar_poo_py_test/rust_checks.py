@@ -77,6 +77,21 @@ def run(repository: Path) -> None:
             raise ValueError(f"{package}/{feature} imports MRR")
         cargo("clippy", *args, "--all-targets", "--", "-D", "warnings")
 
+    # The simulation adapter is optional; default SDK consumers must not acquire
+    # its cryptographic stack through workspace feature unification.
+    for package in ("cedar-poo-runtime", "cedar-poo-bridge"):
+        for enabled in (False, True):
+            args = ["-p", package, "--no-default-features"]
+            if enabled:
+                args += ["--features", "gateway"]
+            tree = subprocess.check_output(
+                ["cargo", "tree", *base, *args, "-e", "normal", "--prefix", "none", "--format", "{p}"],
+                cwd=repository, text=True,
+            )
+            if ("p256" in dependency_names(tree)) != enabled:
+                raise ValueError(f"{package}/gateway={enabled} leaks or loses P-256")
+            cargo("clippy", *args, "--all-targets", "--", "-D", "warnings")
+
     subprocess.run(["cargo", "fmt", "--all", "--check"], cwd=repository, check=True)
     cargo("clippy", "--workspace", "--all-targets", "--all-features", "--", "-D", "warnings")
     cargo("test", "--workspace", "--all-features", "--exclude", "cedar-poo-commerce-case")

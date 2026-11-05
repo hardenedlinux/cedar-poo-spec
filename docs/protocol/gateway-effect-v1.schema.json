@@ -1,0 +1,606 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:cedar-poo:gateway-effect:1.0",
+  "title": "Cedar POO Gateway Effect Protocol 1.0",
+  "$ref": "#/$defs/envelope",
+  "$defs": {
+    "version": {
+      "type": "object",
+      "properties": {
+        "major": {
+          "const": 1
+        },
+        "minor": {
+          "const": 0
+        }
+      },
+      "required": [
+        "major",
+        "minor"
+      ],
+      "additionalProperties": false
+    },
+    "signed": {
+      "type": "object",
+      "properties": {
+        "payload": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]*$",
+          "maxLength": 1398102
+        },
+        "signature": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{86}$"
+        }
+      },
+      "required": [
+        "payload",
+        "signature"
+      ],
+      "additionalProperties": false
+    },
+    "fact": {
+      "type": "object",
+      "properties": {
+        "issuer": {
+          "type": "string"
+        },
+        "subject": {
+          "type": "string"
+        },
+        "audience": {
+          "type": "string"
+        },
+        "source": {
+          "type": "string"
+        },
+        "field": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        },
+        "generation": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "origin": {
+          "enum": [
+            "claimed",
+            "observed",
+            "attested"
+          ]
+        },
+        "not_before": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "expires_at": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        }
+      },
+      "required": [
+        "issuer",
+        "subject",
+        "audience",
+        "source",
+        "field",
+        "value",
+        "generation",
+        "origin",
+        "not_before",
+        "expires_at"
+      ],
+      "additionalProperties": false
+    },
+    "effect": {
+      "type": "object",
+      "properties": {
+        "operation": {
+          "type": "string"
+        },
+        "object": {
+          "type": "string"
+        },
+        "payload": {
+          "type": "string"
+        },
+        "action_schema": {
+          "type": "string"
+        },
+        "audience": {
+          "type": "string"
+        },
+        "generation": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        }
+      },
+      "required": [
+        "operation",
+        "object",
+        "payload",
+        "action_schema",
+        "audience",
+        "generation"
+      ],
+      "additionalProperties": false
+    },
+    "review": {
+      "type": "object",
+      "properties": {
+        "before": {
+          "type": "string"
+        },
+        "after": {
+          "type": "string"
+        },
+        "schema": {
+          "type": "string"
+        },
+        "source": {
+          "type": "string"
+        },
+        "report": {
+          "type": "string"
+        },
+        "epoch": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        }
+      },
+      "required": [
+        "before",
+        "after",
+        "schema",
+        "source",
+        "report",
+        "epoch"
+      ],
+      "additionalProperties": false
+    },
+    "envelope": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "$ref": "#/$defs/version"
+        },
+        "effect": {
+          "$ref": "#/$defs/effect"
+        },
+        "review": {
+          "$ref": "#/$defs/review"
+        },
+        "facts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/signed"
+          },
+          "minItems": 1
+        },
+        "current_world": {
+          "type": "string",
+          "description": "Exact SDK-prepared current request/entity world, independently bound by every fact source."
+        }
+      },
+      "required": [
+        "version",
+        "effect",
+        "review",
+        "facts",
+        "current_world"
+      ],
+      "additionalProperties": false
+    },
+    "commit": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "$ref": "#/$defs/version"
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "previous": {
+          "type": "string"
+        },
+        "effect": {
+          "$ref": "#/$defs/effect"
+        },
+        "review": {
+          "$ref": "#/$defs/review"
+        },
+        "facts": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "publications": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "current_world": {
+          "type": "string",
+          "description": "Exact SDK-prepared current request/entity world, independently bound by every fact source."
+        }
+      },
+      "required": [
+        "version",
+        "sequence",
+        "previous",
+        "effect",
+        "review",
+        "facts",
+        "publications",
+        "current_world"
+      ],
+      "additionalProperties": false
+    },
+    "provider_action": {
+      "type": "object",
+      "properties": {
+        "effect": {
+          "$ref": "#/$defs/effect"
+        },
+        "result": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "effect",
+        "result"
+      ],
+      "additionalProperties": false
+    },
+    "receipt": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "$ref": "#/$defs/version"
+        },
+        "commit": {
+          "$ref": "#/$defs/signed"
+        },
+        "action": {
+          "$ref": "#/$defs/provider_action"
+        },
+        "facts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/signed"
+          }
+        },
+        "publications": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/signed"
+          }
+        }
+      },
+      "required": [
+        "version",
+        "commit",
+        "action",
+        "facts",
+        "publications"
+      ],
+      "additionalProperties": false
+    },
+    "checkpoint": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "$ref": "#/$defs/version"
+        },
+        "size": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "root": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "version",
+        "size",
+        "root"
+      ],
+      "additionalProperties": false
+    },
+    "log_snapshot": {
+      "type": "object",
+      "properties": {
+        "checkpoint": {
+          "$ref": "#/$defs/signed"
+        },
+        "entries": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/signed"
+          }
+        }
+      },
+      "required": [
+        "checkpoint",
+        "entries"
+      ],
+      "additionalProperties": false
+    },
+    "audit_input": {
+      "type": "object",
+      "properties": {
+        "snapshot": {
+          "$ref": "#/$defs/log_snapshot"
+        },
+        "journal": {
+          "type": "object",
+          "properties": {
+            "actions": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/provider_action"
+              }
+            }
+          },
+          "required": [
+            "actions"
+          ],
+          "additionalProperties": false
+        },
+        "receipts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/signed"
+          }
+        }
+      },
+      "required": [
+        "snapshot",
+        "journal",
+        "receipts"
+      ],
+      "additionalProperties": false
+    },
+    "audit_report": {
+      "type": "object",
+      "properties": {
+        "missing_receipts": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "missing_actions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "mismatched": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "duplicates": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "invalid_receipts": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "invalid_log": {
+          "type": "boolean"
+        },
+        "unresolved_precommits": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "missing_receipts",
+        "missing_actions",
+        "mismatched",
+        "duplicates",
+        "invalid_receipts",
+        "invalid_log",
+        "unresolved_precommits"
+      ],
+      "additionalProperties": false
+    },
+    "review_record": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "$ref": "#/$defs/version"
+        },
+        "before_root": {
+          "type": "string"
+        },
+        "after_root": {
+          "type": "string"
+        },
+        "before": {
+          "type": "string"
+        },
+        "after": {
+          "type": "string"
+        },
+        "schema": {
+          "type": "string"
+        },
+        "source": {
+          "type": "string"
+        },
+        "epoch": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "analysis": {
+          "enum": [
+            "noGain",
+            "branchGain",
+            "jointGain"
+          ]
+        },
+        "evidence": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "version",
+        "before_root",
+        "after_root",
+        "before",
+        "after",
+        "schema",
+        "source",
+        "epoch",
+        "analysis",
+        "evidence"
+      ],
+      "additionalProperties": false
+    },
+    "gain_approval": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "$ref": "#/$defs/version"
+        },
+        "review": {
+          "type": "string"
+        },
+        "epoch": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        }
+      },
+      "required": [
+        "version",
+        "review",
+        "epoch"
+      ],
+      "additionalProperties": false
+    },
+    "publication_record": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "$ref": "#/$defs/version"
+        },
+        "review": {
+          "$ref": "#/$defs/signed"
+        },
+        "approval": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/signed"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "previous": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "epoch": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "world": {
+          "type": "string"
+        },
+        "policies": {
+          "type": "object",
+          "description": "Compiled Cedar policy JSON; the Cedar SDK owns strict semantic validation."
+        }
+      },
+      "required": [
+        "version",
+        "review",
+        "approval",
+        "previous",
+        "epoch",
+        "world",
+        "policies"
+      ],
+      "additionalProperties": false
+    },
+    "release_identity": {
+      "type": "object",
+      "properties": {
+        "root": {
+          "type": "string"
+        },
+        "source": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "root",
+        "source"
+      ],
+      "additionalProperties": false
+    },
+    "factStatement": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "$ref": "#/$defs/version"
+        },
+        "facts": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/fact"
+          }
+        }
+      },
+      "required": [
+        "version",
+        "facts"
+      ],
+      "additionalProperties": false
+    },
+    "sourcePayload": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/fact"
+        },
+        {
+          "$ref": "#/$defs/factStatement"
+        }
+      ]
+    }
+  }
+}

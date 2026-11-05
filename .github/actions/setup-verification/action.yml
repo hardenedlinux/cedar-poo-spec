@@ -1,0 +1,52 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: Apache-2.0
+
+name: Verification toolchains
+description: Install declared Lean and optional Rust tools, then restore compatible owner-scoped caches.
+inputs:
+  rust:
+    description: Install Rust and restore Cargo outputs
+    default: 'false'
+  cvc5:
+    description: Install the pinned solver for modules that execute Delta analysis
+    default: 'false'
+runs:
+  using: composite
+  steps:
+  - uses: leanprover/lean-action@50fcf42d2e460296f1a34b402e990d1b24f8b596
+    with:
+      auto-config: false
+      use-github-cache: false
+      build: false
+      test: false
+      lint: false
+  - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87
+    with:
+      components: rustfmt, clippy
+    if: ${{ inputs.rust == 'true' }}
+  - uses: taiki-e/install-action@b6a061addd82b81aaeca51bdf2c53cd707996e5a
+  - name: Install recipe search dependency
+    shell: bash
+    run: |-
+      sudo apt-get update
+      sudo apt-get install --yes --no-install-recommends ripgrep
+  - name: Restore compatible Lean artifacts
+    uses: ./.github/actions/lean-cache
+  - name: Restore Cargo cache
+    uses: Swatinem/rust-cache@49a0bdc70d2e1b713ca9e2869b211fcce03d3c1c
+    with:
+      workspaces: . -> rust/target
+    if: ${{ inputs.rust == 'true' }}
+  - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4
+    with:
+      version: 0.11.3
+  - name: Install pinned CVC5
+    run: |
+      curl --fail --location --retry 3 --silent --show-error \
+        https://github.com/cvc5/cvc5/releases/download/cvc5-1.4.0/cvc5-Linux-x86_64-static.zip \
+        --output "$RUNNER_TEMP/cvc5.zip"
+      echo "61d13483ec9c4e8d05c7f3d532225255b2183a0c03b161d37d942d1ba089ec6d  $RUNNER_TEMP/cvc5.zip" | sha256sum --check
+      unzip -q "$RUNNER_TEMP/cvc5.zip" -d "$RUNNER_TEMP"
+      echo "CVC5=$RUNNER_TEMP/cvc5-Linux-x86_64-static/bin/cvc5" >> "$GITHUB_ENV"
+    if: ${{ inputs.cvc5 == 'true' }}
+    shell: bash

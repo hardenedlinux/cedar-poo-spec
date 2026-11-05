@@ -1,0 +1,1635 @@
+#+TITLE: Source-Bound Gateway Effect Protocol 1.0
+#+LANGUAGE: en
+#+OPTIONS: toc:2
+
+* Scope and owners
+
+The [[file:gateway-effect-v1.schema.json][versioned schema]] defines the boundary representation. Native serde types
+and admission checks reject unknown/duplicate security fields and unsupported
+major/minor versions. Schema validity alone grants no authority. Facts use
+per-field source policy, not caller-selected provenance labels.
+
+[[file:../../CedarPooSpec/ZeroTrust/Evidence.lean][Generic fact evidence]] carries issuer, subject, audience, source, field,
+value commitment, source generation, origin and validity interval. The
+independent authority supplies expected bindings, required inventory and the
+verification interpretation. Claimed, unverified, omitted, duplicate, extra,
+expired and substituted fields refuse. The general theorems retain each exact
+current binding and the complete required inventory.
+
+[[file:../../CedarPooSpec/Gateway/EffectProtocol.lean][The shared effect Contract]] additionally binds protocol version, exact
+operation/object generation, request payload, action schema, audience and the
+registered review's before/after policies, schema, source, epoch and report.
+It requires enforcing mode, a mapped operation, no revocation, original
+consumption and no unresolved exposure. The native simulation consumes an
+exact-effect grant through the existing =authority_consumption::AuthorityLedger=
+owner before preparation; an envelope cannot supply its consumed count. The POO requirement strengthens the
+independently selected original; existing Contract/Session constructors remain
+the owner. The typed Cedar receipt composition retains actual error-free Allow.
+A source or review label is never a send capability.
+
+* Native module ownership
+
+The optional runtime owner remains =cedar_poo_runtime::gateway=. Its
+[[file:../../rust/runtime/src/gateway/mod.rs][public boundary]] exports typed protocol values, source authority, witness,
+audit and simulation APIs. Separate files own wire verification, immutable
+source preparation, witness history, provider observations, reconciliation,
+serialized simulation and indexed lineage. Recovery evidence and borrowed
+execution channels have explicit types. The default runtime and bridge do not
+acquire the optional P-256 dependency; isolated feature checks enforce this.
+
+* Native representation and cryptographic boundary
+
+The optional Rust =gateway= feature uses existing workspace P-256/ES256 and
+unpadded base64url. Signed payloads are exact UTF-8 JSON bytes of typed records;
+verification checks those original bytes before accepting their meaning. Operation
+IDs hash the versioned typed tuple of revision and Case name; delimiter-joined
+identifiers are not used. A native regression checks current slash refusal,
+typed tuple encoding and cross-operation refusal separately. Current revision
+validation already excludes slash aliases; this is not an exploit claim. Field
+separators, caller public keys and self-declared verification flags are not
+accepted as authentication. Fact authorities select keys from independent
+issuer policy and require exact expected source/meaning/value/lease bindings.
+The prototype uses separate binding/context/entity source keys, a gateway key
+and a witness key. Its fixed simulation scalars are public test material and
+must never become deployed trust roots.
+
+A prepared source authority retains verified immutable bytes/signatures and
+source bindings. Inventory, exact candidate bytes, source generation and time
+are still checked at every use; changed material takes the signature verifier
+again. This preparation is not a cached authorization decision. New issuer
+policy needs new preparation. A different schema or world does not acquire an
+old Cedar decision. Native word counters refuse exhaustion before mutation. Signers and public
+verifiers share the same 1 MiB payload limit, tested at the exact byte boundary.
+A post-send outcome-signing failure retains unknown exposure and issues no
+complete receipt.
+
+Nonidentity activation now uses the existing =Authorization.Delta.Release=
+and =Gateway.PublicationReview= owners in the same shared simulation as current
+effects. [[file:../../CedarPooSpec/Gateway/ReviewedEffect.lean][The reviewed-publication POO Contract]] checks the exact =advanceReviewed=
+successor. Its kernel laws join that successor, the actual installed policies
+and the current typed Cedar receipt. A separate theorem retains the existing
+=PublicationReview.Final= original Contract, registration and Zero Trust
+premises. These are conditional composition laws: authenticated Host facts and
+solver completeness do not follow from them.
+
+Each real Case retains its proof-bound original C4 model/root. =SchemaSource=
+retains the native Schema with an encoding equality proof. These semantic fields
+do not alter the existing wire representation. The Production workload appends
+a fresh C4 diamond that adds an unconditional forbid, then a second diamond
+that removes it on one branch. Original declarations, parent order, edits and
+policy IDs remain intact. The ordinary =Delta.analyzeAndCapture= analyzes both
+legs against the real Schema; the Rust SDK independently replays gain witnesses.
+The simulation's review authority signs this exact analyzer output. A distinct
+mock authority approves expansions, binding the complete signed review and its
+epoch. A caller-supplied classification, approval bit or MCP argument cannot
+supply either authority. This does not turn a solver report into ExactCoverage
+or implement a new policy analyzer.
+
+Registration authenticates the original C4 source, current root/policies,
+Schema, world and epoch, then prepares the actual candidate with the SDK.
+A private owner/generation ticket binds publication to that registration.
+Publication installs the candidate Case and its SDK receipt under the same
+mutex used for current effects, advances the policy epoch, and invalidates old
+prepared handles. The original =AuthorityLedger= consumption is retained.
+Restoring equal policy bytes does not reactivate an old review: the C4 root and
+epoch have advanced. The fixed mock keys are independently assigned to facts,
+review, gain approval, gateway and witness; none are deployment credentials.
+
+* Order, recovery and independent reconciliation
+
+Native preparation produces a private, owner-bound, by-value effect handle.
+Every model writer advances its non-reused generation. Final use checks the
+handle and current source/policy/object image under the same deciding mutex.
+The independent witness accepts a signed precommit before the provider journal
+records the simulated effect. A log failure prevents sending. A crash after
+send retains the burn and unknown exposure, with no outcome receipt. A complete
+receipt carries the signed precommit, source evidence, signed publication prefix
+and provider observation. The witness commits the publication digests before
+the effect. The public auditor checks each review, independent expansion
+approval, successor policies and contiguous publication epoch/prefix; it refuses
+missing review trust and nonidentity receipts without their publication history.
+Recovery requires independent witness and outcome/provider records; it cannot
+restart the original operation or convert a missing outcome into success.
+Publication reply loss and effect outcome loss are separate exposures. A lost
+publication reply leaves the actual successor installed and blocks further use;
+only an exact authenticated prefix read clears that publication exposure. It
+cannot clear an unresolved effect. The single =Simulator::recover= entrypoint
+requires the surviving trusted current authority, exact publication prefix and
+independently configured historical audit window. It never reconstructs live
+authority from Case bytes or historical receipts. Recovery preserves the actual
+policy epoch, source inventory/generation/clock, revocation, mode, consumption
+and publication exposure, then reconciles effect uncertainty. Replacing the
+mediator invalidates old handles and fences all writers of the retired owner. This is an in-memory simulation, not crash-durable storage
+qualification.
+
+The public auditor needs no private signer. It receives a signed checkpoint,
+public log entries, gateway receipts and independent provider observations.
+Trusted gateway/log/source keys, expected historical field bindings, observation
+time and a minimum checkpoint size come from its own configuration. The
+=minimum_size= floor must be retained or independently fetched; an old signed
+checkpoint is not proof of currentness. The verifier checks chain continuity,
+checkpoint size/root, source signatures/inventory and exact precommit/outcome
+bindings, then reports unresolved precommits, missing receipts, orphan receipts, changed effects,
+duplicates, invalid receipts and an invalid log separately.
+
+Provider enumeration completeness, real fact truth, trustworthy clock readings,
+key custody, physical durability, nonrollback storage and external IO mediation
+remain adapter obligations. A signed observation does not become a provider
+attestation. Simulation forks create disjoint test worlds; they are not live
+ledger rollback APIs. Independent reconciliation is bounded by the supplied
+provider window and independently pinned checkpoint.
+
+* MCP boundary
+
+=cedar-poo-bridge gateway-stdio MANIFEST --enforce= or =--shadow= runs a fixed
+schema-qualified simulation profile using the same native admission owner.
+The manifest and source adapter are independently configured; request
+=clientInfo= and caller provenance labels establish no identity. Arguments must
+match the profile's actual projected request. A supplied envelope is checked;
+otherwise the independent simulated source adapter supplies its own evidence.
+Unmapped tools refuse. Shadow reports =would_deny= and issues neither an
+enforcing receipt nor an effect. Mode is explicit at process startup.
+
+=gateway-reviewed-stdio BUNDLE GROUP_INDEX --enforce|--shadow= loads trusted
+Lean analysis at startup, publishes both real nonidentity revisions, and serves
+the same MCP admission owner with the installed successor. Startup fixtures are
+an administrative input, never =tools/call= arguments. Enforce and shadow child
+processes verify the two-publication receipt and read-only shadow behavior.
+
+The implemented binding follows the official [[https://modelcontextprotocol.io/specification/2026-07-28/basic/transports/stdio][2026-07-28 stdio specification]]:
+newline-delimited JSON-RPC, per-request version/client metadata,
+=server/discover= and typed =tools/call=. It supports =tools/list= and =ping=;
+legacy initialize negotiation is not advertised. Discovery/client metadata is
+not authentication. Security-bearing envelopes are decoded directly from the
+original frame to retain duplicate-field rejection. Frames are bounded to
+1 MiB, stdout contains only protocol messages and EOF terminates the process.
+The endpoint forwards no external traffic and implements no OS sandbox.
+
+* Whole-domain qualification and lifecycle
+
+=Productions.Gateway.EffectProtocol= owns one shared oracle, importing neither
+Examples nor Tests. It exports 64 complete effect outcomes and eleven independent
+reconciliation controls. Native catalogue qualification retains all 51 original
+entries and their original replay/cross-artifact checks. All 47 case manifests
+and both schema-evolution sides exercise the shared protocol. Raw evaluation
+without schema is retained as a refusal control. The three data/artifact entries
+keep their original validation and are explicitly classified, not granted fake
+effect credentials.
+
+=just check-effect-protocol= executes the existing canonical catalogue,
+Production oracle, native signature/handle/recovery tests and real stdio/auditor
+child processes. Rust compares complete outcomes and independent audit reports
+with Lean, preserving all faults and refusals. Native catalogue results stream
+rather than retaining a second full JSON matrix. The original 120-second process
+limit, heap/heartbeat limits and default build parallelism remain.
+
+The first debug prototype exceeded 120 seconds due to repeated signature work.
+That non-win is retained in the development observations. Prepared immutable
+source material and the optimized native executable are qualified separately;
+passing the gate is not a stable whole-application speedup claim. Existing
+Lean/Rust native benchmarks and original negative controls still run.
+
+* P2 lineage and optional transport/data integration
+
+Source-to-operation edges are built from verified precommits and independent
+provider observations. A reverse index answers affected-source queries; the
+Lean affected-set law defines exact membership. Precommitted-only and
+provider-observed edges remain distinct, including missing-outcome cases.
+The versioned graph-neutral export is an input to a consumer-owned GraphAr/Arrow
+adapter, not the GraphAr storage format or an authorization result.
+
+GraphAr remains the strategic graph storage/index layer. Optional DuckDB/Arrow,
+HTTP interception and SQL wire adapters belong to concrete consumers and share
+the existing Backend's commit/recovery contract. No new SQL backend, per-provider
+Backend or Cedar-to-MRR dependency is introduced. Physical GraphAr/Arrow IO and
+arbitrary external MCP/HTTP proxying are not implemented by this simulation.
+
+* Qualification receipt
+
+Local integrated qualification on 2026-11-03 retained all 51 canonical entries:
+48 protocol-applicable entries and three data/artifact entries with their
+original checks. The shared matrix compared 41,344 complete effect outcomes
+(1,292 real Case instances, including schema-evolution sides, times 32 faults)
+and 275 full audit reports (eleven controls for each of 25 enforcing-eligible
+manifest sides). This is 41,619 compared rows. Raw, unschematized evaluation is
+an explicit refusal control; it is not an enforcing effect profile.
+
+Ten native source/handle/recovery/audit tests and two real child-process
+integration tests cover trusted-key selection, source lease changes, foreign
+and stale handles, concurrent use, resource replacement, damaged witness
+history, old checkpoints, wire duplication/version failures, shadow/enforce
+separation and a public-key-only audit process. One additional wire test checks signer/verifier
+limits at the exact byte boundary; a large valid SDK resource tests post-send
+receipt-budget failure, retained unknown exposure and independent reconciliation.
+The original 384 review Cases,
+4,116 publication steps, 12,528 CAS steps and 4,064 registration steps remain
+unchanged. Whole-library proof/import, native SDK conformance and rendering
+checks retain their existing owners.
+
+The unoptimized diagnostic matrix exceeded the original process limit; its
+logs remain non-winning observations. Optimized whole-matrix runs completed
+inside 120 seconds. These are qualification observations, not a stable
+end-to-end speedup, an RSS bound or cold deployment evidence. Raw matrices,
+resource receipts and stderr stay outside Git under the ignored build tree or
+local evidence directory. No CSV or archive is committed.
+
+* Nonidentity qualification
+
+=just check-reviewed-effects= is a separate job in the Zero Trust workflow.
+It keeps all 51 canonical entries and all 1,292 Case instances accounted for.
+The current strict adapter produces 211 actual C4 review groups: 1,253 qualified
+Cases complete 2,506 nonidentity publications, including 208 gain reports.
+There are 39 explicit refusals, including compile-only sources without a
+Schema and malformed strict requests. Raw fixtures with a retained native
+Schema can participate through the new explicit schema-qualified representation;
+the original raw manifests remain unchanged refusal controls. The three
+non-Case data/artifact entries retain their original validation.
+
+For every qualified Case Rust compares publication eligibility without/with
+approval and the complete post-publication effect with the actual Lean result.
+It checks the held deny, stale preparation, wrong-review approval and retired
+review, then independently reconciles the current effect. Native tests add
+signature/source substitutions, foreign/replaced tickets, reply loss, reviewed
+recovery and retained effect exposure. A real stdio child checks that the
+executed receipt is at epoch 9 and includes both publications. The original
+identity protocol matrix and publication/registration corpora remain required.
+No success is inferred from a count alone.
+
+Generation retains each failed entry and refuses the gate; no Case is removed
+to meet the original per-process 120-second bound. Lean owns workload creation,
+Contract evaluation and proof checks; Rust owns typed SDK replay, signature and
+admission assertions. Python only observes the external process and resources.
+Evidence stays in ignored build outputs and CI logs; no raw bundle is committed.
+
+Local complete native observation on 2026-11-03 (Darwin arm64) completed naturally
+in 33.258 seconds, with 31.49 seconds user CPU and 84,246,528 bytes process peak
+RSS. All 1,253 qualified outcomes and 39 refusals were retained, and every
+canonical Case identity was checked for omission, duplication and substitution.
+The 120-second process bound was unchanged. This is one full-chain qualification
+observation, not evidence of a stable performance improvement. Resource output,
+full streamed results, producer stderr and earlier failed controls remain in
+ignored local build outputs. Six native review/recovery/coverage tests and the
+reviewed stdio child complement the original protocol tests.
+
+The retained original 41,619-row protocol run also passed unchanged. Its local
+observation was 102.097 seconds wall, 42.93 seconds user CPU and 28,360,704 bytes
+peak RSS while rendering and other qualification work overlapped. This slower
+wall sample is retained; the observation does not establish which competing
+work caused the wait, or support a speedup claim. It still completed naturally
+inside the unchanged 120-second process boundary.
+
+* Continuous authorization boundary audit
+
+This revision closes current-state gaps left by the initial reviewed-effect
+integration. The implementation follows the input boundary of the official
+[[https://docs.cedarpolicy.com/auth/authorization.html][Cedar authorizer]]: a decision uses the request, policies and entity data supplied
+for that evaluation. Their authenticity and freshness remain application duties.
+[[https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-207.pdf][NIST SP 800-207]] assigns monitoring and connection termination to enforcement
+components. The modeled boundary here is each discrete mediated effect, not
+arbitrary network streams or complete NIST/UCON certification.
+
+| Boundary | Finding and implemented check | Remaining interpretation |
+|----------+-------------------------------+--------------------------|
+| Source renewal | Stored source preparation had no authoritative update path. The trusted simulated adapter now signs a new exact field inventory, lease, world commitment and strictly newer fact generation, then runs the SDK on the candidate entity world. A valid update starts by closing source readiness; failure leaves old cached material unusable. Only actual successful SDK/source preparation reopens it. Every writer invalidates old handles and registrations. | Source truth, trusted clock observations and real issuer custody still come from adapters. No renewal API is exposed through MCP caller metadata. |
+| World binding | Independent field authenticity alone did not connect each fact's source to the SDK world. Admission and independent audit now require every accepted fact source to equal the explicit =current_world= committed by the envelope/witness. | =ReviewRecord.source= binds C4 declarations; =ReviewBinding.source= retains the pinned publication world; =current_world= and fact sources bind the fresh SDK request/entity world. These are distinct identities. |
+| Policy publication | A fresh fact world must not be spliced into a pinned publication history. The original equality of publication worlds remains enforced; registration and publication now refuse a mismatching current world or expired facts. | A different-world policy publication needs a separately bound release-chain protocol. It is deliberately refused here. Restoring identical world bytes still requires new fact generations and a fresh current registration. |
+| Revocation | A Case/history-only recovery could recreate unrevoked defaults. Revocation is now terminal for the original operation and survives source refresh, publication confirmation and recovery. | It cannot retract an already observed external effect. Real streaming/buffered transports must mediate each consequential drain or provide their own fencing refinement. |
+| Recovery | Replaying authentic history did not establish current authority. Recovery now reads and updates the surviving authoritative state under the deciding mutex; exact history and audit trust can reconcile an outcome but cannot reset current controls or remint the original grant. | The trusted in-memory authority must survive the modeled mediator failure. Physical nonrollback storage and cold-host restart remain Backend obligations. |
+| Mediator ownership | Generation alone did not retire an old facade that could prepare again. Recovery now rotates the authoritative owner under the deciding lock; old facades cannot refresh, revoke, confirm, publish or use. | Production distributed ownership needs a real external fencing implementation. A process mutex does not supply one. |
+| Historical audit | Current source bindings must not be retroactively substituted for a completed effect's historical window. Recovery takes explicit independent audit trust and preserves the current source image. | A historical receipt can resolve that outcome; it grants no authority for a new effect or a new world. Missing outcomes retain unknown exposure and the burn. |
+| Request changes | Request context may contain business parameters as well as authorization data. Fact refresh preserves the complete original request, policies and Schema and changes entity evidence only. | A changed request/context requires a newly authorized logical operation; the current implementation does not silently reinterpret the original effect payload. |
+
+[[file:../../CedarPooSpec/Gateway/Lifecycle.lean][Lifecycle]] uses the public POO =Contract.withMeaning= operation to strengthen
+the existing exact-successor publication Contract with current evidence, matching
+policy epoch and the pinned world. Its use Contract returns the exact current
+outcome. Kernel laws retain the original reviewed successor, reject changed-world
+publication, invalidate old handles, preserve the clock and consumption across
+renewal, and preserve revocation and burn across recovery. The fresh-use theorem
+still requires the actual current typed Gateway/Cedar receipt; it does not infer
+Allow from an old review or a signed fact label.
+
+The shared Production workload adds a genuine C4 tightening diamond inheriting
+from the installed restored root. Its ordinary analyzer captures a fresh epoch-9
+no-gain review; branch/base topology is checked by the existing Delta owner.
+One Program prepares all roots and projects current and empty-entity worlds.
+Each applicable Case exercises expiry, renewal, entity change, pinned-world
+publication refusal, equal-value world restoration, fresh policy tightening,
+revocation and both complete/uncertain recovery. The current-world probe performs
+a real native simulated send and public reconciliation in a separate test world;
+a successful prepare is never reported as a completed send by itself.
+
+=just check-reviewed-effects= retains all original reviewed Cases and adds
+=gateway-lifecycle-catalog= using the same source fixtures, signatures, SDK,
+publication owner and admission lock. Each native process keeps the existing
+120-second limit. Lean owns the actual Case construction, POO Contract outcomes
+and proof laws; Rust compares complete outcomes and current controls. Python
+remains an external process/resource observer. Experimental topology failures
+and failed local observations remain local evidence, not successful samples.
+
+A failed source refresh is a distinct state from an unresolved provider effect.
+The simulator closes source readiness before evaluating an eligible update;
+a parser/Schema/lease failure leaves live use and publication closed even when
+the previous signatures and lease still verify. Recovery preserves that state.
+A successful fresh source preparation can repair it, while preserving revocation,
+original consumption, spent status and unresolved provider exposure. A request
+or policy substitution is refused before it is treated as a source update.
+Publication also requires the exact consumed original and an unspent operation.
+
+The full current-state matrix has thirteen complete outcomes per qualified Case,
+including failed refresh, failed-source recovery and repair. Current and
+historical source windows remain separate: a current verifier cannot silently
+stand in for historical source configuration, and a historical audit result
+cannot reopen current authorization.
+
+The draft version-1 envelope and witness precommit now require an explicit
+=current_world=. It is distinct from the pinned publication world's
+=ReviewBinding.source=. Both original publication checks remain: consecutive
+publication worlds are equal and the effect's review source matches the last
+publication world. Fresh use adds its own world/evidence equality without
+removing either check. Missing, duplicate or substituted =current_world= refuses.
+This unmerged draft representation is intentionally strict; no fallback silently
+upgrades older envelopes or log records. Read-only lifecycle observations are
+not deserializable recovery authority.
+
+Review artifacts remain reusable only within their exact C4 source, Schema,
+root/policy and epoch scope. A new source generation invalidates registration
+and prepared-use capabilities; it does not pretend that a global same-Schema
+Delta analysis became a new physical fact observation. Re-registration still
+checks the current source lease, pinned publication world, original consumed
+unspent authority and the SDK-prepared candidate. A policy-epoch change rejects
+the old review artifact itself.
+
+* Runtime latency and regression wall time
+
+The 109.68-second local observation above is the complete regression executable:
+51 entries, 1,253 qualified Cases, 16,289 state outcomes, source renewals,
+publications, native simulated sends, independent audits and recovery controls.
+It excludes compilation and Lean/CVC5 fixture generation. It is not a
+single-request Runtime latency and cannot be divided by Case count to obtain one.
+
+=just bench-gateway-runtime= measures the native API separately, using every
+qualified Case and retaining all refusals. It emits native =measurement:= lines
+and JSON distributions with sample counts and p50/p95/p99/max, rather than CSV.
+
+| Phase | Timed operation | Interpretation |
+|-------+-----------------+----------------|
+| =sdk.prepare= | Strict policy/Schema/entity preparation and one SDK replay | Process is already running; sources for this call are not pre-prepared. |
+| =operation.construct= | SDK preparation, simulated source signing/verification and original grant consumption | Includes mock issuer work; excludes source-network IO. |
+| =review.publish.two= | Actual no-gain/gain registration and both bound publications | Analyzer output is already supplied by Lean. |
+| =prepare.allowed/blocked= | One bound-image handle preparation, including current controls and source checks | Fixed decoded envelope; no network or fresh Cedar-world evaluation. Samples include every Case, with allowed/blocked populations separate. |
+| =prepare.concurrent.*= | Four workers, eight preparations each against the same current authority | Same-image contention, not production request throughput. |
+| =sources.renew= | Real SDK/source re-preparation with a new source generation | Retains the original request/policies; no cached authorization is substituted. |
+| =execute.empty-log= | Prepare, signed precommit, simulated provider send and signed receipt | One independent operation, with no prior witness entries. |
+| =execute.log-*= | Independent operations against a growing shared witness/provider journal | Prefix bands 0--15, 16--63, 64--255 and 256--1023; every operation has its own consumed grant. |
+
+The append owner previously re-verified the entire witness prefix on every send,
+creating growing hot-path work. Witness entries are now privately owned and
+borrowed read-only. Untrusted =LogSnapshot= import uses =Witness::restore= and
+full signature/chain/floor verification before ownership. Ordinary append
+extends that validated immutable prefix and signs its new record/checkpoint;
+independent audit and explicit recovery still verify complete supplied history.
+Corruption/truncation controls operate on untrusted snapshots and cannot create
+a usable witness owner. This is an in-memory ownership guarantee, not evidence
+that external storage is physically immutable or nonrollback.
+
+The first lifecycle executable exceeded its unchanged 120-second watchdog after
+1,238 complete rows. That run remains failed evidence. Preparing immutable public
+publication material once removes redundant signature work only for identical
+complete bytes and identical gateway/review/approval roots. Changed keys, bytes,
+signatures and prefixes take full verification again; current binding, facts,
+witness, revocation and Cedar admission still check on each use. The subsequent
+full corpus completed naturally in 109.678 seconds with 106,725,376 bytes peak
+RSS. No workload or deadline was reduced to obtain that result.
+
+API percentile observations are mixed-workload measurements on the stated host.
+They do not include transport, real issuers/providers, deployed concurrency or a
+production SLO. Whole-regression wall time, API latency and whole-process resource
+observations remain separately labeled; all slower samples are retained.
+
+** Local native API observation
+
+The release API run completed all 51 entries, 1,253 qualified Cases and 39
+canonical refusals. These are decoded, in-process inputs on this host with mock
+issuers/providers. SDK preparation is cold for the call, not a cold process.
+
+| Native operation | Samples | p50 | p95 | p99 |
+|------------------+---------+-----+-----+-----|
+| SDK preparation and replay | 1,253 | 0.795 ms | 2.111 ms | 7.654 ms |
+| Operation construction, including simulated issuers | 1,253 | 12.293 ms | 44.154 ms | 102.495 ms |
+| Both review publications | 1,253 | 3.954 ms | 7.520 ms | 17.472 ms |
+| Prepared-image admission, allowed | 10,160 | 7.917 us | 21.166 us | 33.917 us |
+| Prepared-image admission, allowed, four workers | 20,320 | 12.209 us | 216.000 us | 576.542 us |
+| Source renewal and SDK replay | 1,253 | 12.090 ms | 43.726 ms | 104.491 ms |
+| Prepare and signed simulated send, empty witness | 635 | 0.700 ms | 1.332 ms | 3.719 ms |
+
+The source-renewal and operation-construction tails remain material non-wins.
+The allowed warm-path maximum was 9.890 ms; the empty-log send maximum was
+34.910 ms. Percentiles do not remove these samples or establish a production
+latency guarantee. Native JSON retains separate blocked populations and maxima.
+
+An initial combined API/append-scale run exceeded its unchanged 120-second
+watchdog and remains failed evidence. The acceptance entrypoint now runs the
+complete all-domain API population and the distinct 1,024-operation growing-log
+population as two explicitly separate processes, each retaining its own
+120-second deadline. No samples or scale operations were removed.
+
+The existing verified fact preparation also recognizes an exact complete batch
+of immutable signed bytes without decoding its JSON again. Current inventory,
+origin and lease checks still run; a changed authority has its own preparation,
+and changed, missing, reordered or altered bytes take the checked fallback.
+This reuses source preparation, never an authorization decision after renewal.
+
+* Issuer-bound source preparation
+
+The native CPU sample identified per-field P-256 signing and verification in
+=prepare_facts= as material construction/renewal work. The signed payload algebra
+now explicitly admits either one =FactBinding= or a version-1 =FactStatement=
+containing a nonempty list of complete bindings. The simulation publishes one
+statement per independent issuer. This is not an ECDSA batch-verification scheme.
+
+For F fields, I independent issuers and B payload bytes, the old path needed F
+signatures and F verifications; statement preparation needs I of each, while
+retaining all F field checks and hashing/encoding B bytes. Issuer grouping never
+combines trust roots. The verifier selects its key from the independently retained
+expected field inventory, rejects mixed issuers, checks every complete binding,
+and requires exact duplicate-free coverage across all statements. Unknown
+versions, empty statements, foreign keys, altered signatures, omitted/extra fields,
+claimed facts and expired leases refuse. The original single-field form remains
+an explicitly supported wire alternative, not a failed-verification fallback.
+Both forms retain the 64-KiB decoded-field bound; complete signed statements retain
+the existing 1-MiB payload bound. Exact known bytes may reuse signature preparation,
+but current inventory, world, lease and sticky controls still check on every use.
+
+=FactStatement= is also a typed Lean source projection. Kernel theorems establish
+that accepted statements are independently verified, do not mix issuers, and
+preserve =FactAuthority.acceptsAll= over the complete flattened inventory.
+The shared Production renewal oracle now invokes =Lifecycle.sourceContract=;
+its invocation theorem binds returned fields to the original field admission.
+These are refinement proofs under the stated Host verifier interpretation,
+not a Lean proof of P-256 or of physical source truth. Rust tests exercise actual
+signatures, separate keys, tampering, duplicate/omitted fields, stale leases,
+changed generations and exact single-field/statement result parity.
+
+Renewal now captures only schema ownership, clock, payload and generation metadata
+under the deciding lock. It no longer clones the complete Case, signed facts,
+publication history and original ledger merely to prepare a successor. Request
+fields and policy source identities compare directly using the existing public
+complete-source equality, including signed-zero distinctions. No digest-only
+comparison or decision cache replaces those checks. Sources close before SDK
+work and reopen only after fresh SDK interpretation and an exact-generation
+install; concurrent writers, revoked/burned state and failed preparation retain
+their existing refusal behavior. Construction also reuses the already computed
+world/policy identities rather than serializing those sources twice.
+
+The first statement run covered the same 51 entries, 1,253 Cases, 39 refusals
+and 635/618 allowed/blocked populations. Construction p95 was 22.482 ms and
+renewal p95 17.737 ms, versus the earlier 44.154/43.726 ms observations. Process
+CPU was 22.390 versus 50.090 seconds. Several SDK, warm-admission, publication
+and send percentiles worsened; all remain non-wins. The new per-Case sample
+retention also changes benchmark-buffer lifetime, so its 119,291,904-byte RSS
+cannot establish request-memory improvement against the older observer layout.
+A single run does not establish stable whole-process acceleration or an SLO.
+
+Native output retains every Case's individual timings, identity, population,
+field count and evidence-unit count. It also retains every growing-log timing
+in operation order. Console summaries and per-Case sample lines are separate; CI logs retain all
+timing samples, including non-wins, without publishing signed protocol payloads.
+The native generated JSON also retains the complete observations. No CSV, archive, HTML or vendor
+output is committed as performance evidence.
+
+** Complete validation of the source and lifecycle implementation
+
+The 2026-11-03 rerun completed all 51 producers and the unchanged canonical
+byte checks. The reviewed chain passed 1,253 qualified Cases, 39 refusals and
+2,506 publications; its continuous-use extension passed 16,289 complete state
+outcomes and 3,759 publications. The original 41,619 effect/audit rows, 384
+review combinations, 4,116 publication steps, 12,528 CAS steps and 4,064
+registration steps passed. Native stdio processes, workspace/package-isolation
+checks and strict Clippy passed. All ten engineering views were regenerated;
+52 view tests and 321 assertions passed.
+
+The first original-matrix rerun found a fixture regression: its unanchored-receipt
+control supplied an independent empty snapshot but retained the nonempty original
+witness's minimum checkpoint. The control now uses a genuinely independent empty
+witness and its own floor, preserving the original expected distinction between
+an unanchored receipt and rollback. Trusted-floor rejection remains unchanged
+and tested. The failed run remains retained separately from the successful rerun.
+
+The final local lifecycle process completed naturally in 44.693 seconds with
+107,806,720 bytes peak RSS and the unchanged 120-second deadline. This is a full
+regression process, not request latency. Its RSS does not establish a reduction
+against the historical observation. The native API population and the distinct
+1,024-operation append population also completed under their separate unchanged
+120-second watchdogs; per-Case observations and non-winning samples remain in
+native JSON and timing-only logs. Exact-head remote CI is required separately.
+
+* SDK preparation reuse and provider lifetime
+
+The native runtime now retains a =ValidatedProgram= bound to the complete
+Schema/Policy pair. Source preparation uses the original strict validation,
+independent rendered-policy parse and first Case evaluation. Successful source
+validation is reusable because these exact sources are immutable; request/world
+admission is still computed on every use. Replays reject a different policy
+source, parse Entities and current request/context again, check expected policy
+IDs/diagnostics and execute both authorizers. Changed policies require fresh
+validation against the owned Schema. A different Schema requires a new owner.
+Neither a revision label nor a digest alone selects a prepared policy hit.
+
+The same sealed owner is installed with a reviewed publication and captured by
+a source refresh. Publication/refresh generation checks, pinned-world checks,
+retired-owner fencing, consumed/burned authority and unresolved exposure remain
+unchanged. The previous redundant Schema field is removed from current simulator
+state; its source owner supplies the authoritative Schema. Snapshot copies share
+only immutable source data. Old parsed policies retire after the last current,
+pending or in-flight owner releases them, as verified by native Weak references.
+
+The existing typed Lean =Functional.Ready= already carries validation for its
+actual Schema and policies. Its new =reuse_at_current_worlds= theorem states both
+that validation witness and fresh Cedar responses for two independently supplied
+requests/worlds. Existing POO source/current-use Contracts and C4 compilation
+proofs remain in force. These are Lean model laws plus independent native
+conformance evidence, not a proof of the Rust implementation or of cached Allow.
+
+Provider reuse is confined to the existing fixed simulation credentials and
+source-key inventory. Every operation still issues and independently verifies its
+own facts, lease and generation; per-witness availability is not shared. The
+public program/operation constructors expose source ownership rather than a new
+global cache manager. The original finite catalog planner remains separate.
+
+The native API benchmark separately records fresh setup, shared-program replay,
+fresh/shared operation construction and source renewal over all applicable
+Cases. All program setup and per-Case observations, maxima and non-wins are
+retained. It performs extra cold/shared controls, so its process total is not
+comparable to the earlier API workload. Matched complete-lifecycle runs retain
+the same command, inputs, 1,253 Cases, 16,289 outcomes, complete output bytes and
+120-second deadlines to assess whole-process CPU/RSS separately from Runtime
+latency. Intrusive CPU/launch diagnostics remain separate observations.
+
+** Matched complete-process and Runtime observations
+
+All three pairs use the preserved 84b5b6e ordinary executable and the new ordinary
+executable, the same complete catalog/sidecars, the same 120-second deadlines and
+the same native lifecycle command. Every before/after output was byte-identical,
+including all 51 entries, 1,253 Cases, 39 refusals, 16,289 state outcomes and 3,759
+publications. Every run exited naturally with complete resource observation.
+These are ordinary process observations, not sampled/instrumented CPU profiles.
+
+| Pair | Before wall s | After wall s | Before user CPU s | After user CPU s | Before peak RSS MiB | After peak RSS MiB |
+|------+---------------+--------------+-------------------+------------------+---------------------+--------------------|
+| 1 | 42.439 | 35.783 | 41.05 | 34.86 | 105.469 | 103.078 |
+| 2 | 43.636 | 45.335 | 42.53 | 36.88 | 105.078 | 104.516 |
+| 3 | 49.191 | 35.788 | 43.20 | 35.22 | 105.516 | 103.516 |
+
+Pair 2 is a retained wall-time non-win despite lower CPU and RSS. Its OS elapsed
+is 45.270 seconds, versus 45.335 externally observed, and its user+system CPU is
+37.180 seconds. Therefore the roughly eight-second non-CPU interval is inside
+the measured process interval rather than an eight-second Python observer delay.
+It has no major page faults and 34,393 involuntary context switches; those counters
+do not identify a particular scheduling, IO or kernel waiting cause. The third
+baseline also has a material non-CPU interval. Neither is discarded, repaired
+by a tolerance, or assigned wholesale to pre-main without matched OS evidence.
+The three lower peak-RSS observations support this workload's bounded-owner
+implementation, not a universal retained-heap bound or a production memory SLO.
+
+The final native API run retains 211 explicit program bootstrap samples and all
+1,253 Case observations. Fresh setup is separate from shared-owner invocation.
+
+| In-process operation | Samples | p50 ms | p95 ms | p99 ms | max ms |
+|----------------------+---------+--------+--------+--------+--------|
+| Fresh operation construction | 1,253 | 1.659 | 2.943 | 3.559 | 7.862 |
+| Shared-program operation construction | 1,253 | 1.296 | 1.856 | 1.968 | 3.304 |
+| Source renewal with fresh world evaluation | 1,253 | 1.353 | 1.896 | 2.152 | 5.919 |
+
+The expanded API process also measures the extra cold/shared control paths, so
+its elapsed time is not a matched comparison against the earlier API command.
+Warm admission, blocked paths, concurrent paths, bootstrap, SDK replay and send
+samples remain in the native output, including all slower maxima. These are
+local native simulation measurements with decoded inputs, not deployed RPC or
+real-provider latency. Intrusive cold-launch/CPU diagnostics remain separate.
+
+* Exact-intent reconciliation and conservative recovery
+
+A signed outcome must identify one exact signed precommit. Operation identity
+alone is insufficient: a valid later receipt previously resolved every logged
+intent carrying that operation name, even when an earlier intent had no outcome.
+The failing native regression used real gateway/log signatures, an authentic
+append-only history and an independently observed provider window. It exposed a
+false complete recovery, rather than a signature-verification failure.
+
+The auditor now binds each verified outcome to its exact signed precommit
+and full provider action. Resolution requires equality of the complete signed
+payload and signature with the particular history entry, equality of its effect,
+and an independently observed full provider action. Repeated operation names in
+precommit history are reported as duplicates. Earlier-only and later-only
+receipt controls both retain the other unresolved intent. These intentionally
+ambiguous observation windows are qualification controls; the live provider's
+single-operation guard remains in force.
+
+The shared Lean model distinguishes =CommitRef=, =AuditReceipt= and provider
+=AuditRecord=. =resolved_commit_is_exact= proves exact identity and independent
+observation for the actual resolution predicate.
+=another_receipt_cannot_hide_precommit= and =duplicate_precommit_is_reported=
+bind those properties to the actual reconciliation report. The typed
+=recoverAudited= composition follows native recovery: a complete independent
+audit and exact observed effect are required before uncertainty may clear.
+=unclean_audit_retains_unknown= and =audited_recovery_preserves_burn= establish
+conservative uncertainty and consumption. Existing POO current-use and
+publication Contracts still require fresh authorization and retain their
+original meaning; historical completion cannot mint a new capability.
+
+This is a refinement of the existing Zero Trust / authorization Delta / Gateway
+boundary. It does not prove signature unforgeability, authentic external IO,
+provider availability or eventual recovery. The native verifier and surviving
+trusted state remain explicit premises. A verified historical receipt remains
+historical evidence, not current Cedar Allow.
+
+Borrowed ordered indexes replace repeated full log-anchor and provider scans.
+Complete signed-byte equality selects a canonical position in the immutable
+verified log; outcomes retain that position instead of another payload copy.
+The indexes retain no process-global cache and preserve
+all signature, source, publication and log-floor checks. Index construction and
+full-byte comparison have a cost; this change is not evidence of a stable
+whole-process latency win. Original controls remain unchanged, with two shared
+ambiguity controls added across every enforcing-eligible catalog domain.
+
+* Runtime waiting evidence, separate from pre-main scanning
+
+The retained ordinary lifecycle non-win contains about 8.09 seconds of elapsed
+non-CPU time. That difference is an aggregate accounting gap, not proof of one
+continuous eight-second wait. Existing pre-main path/PID/scan/wake observations
+remain separate from this runtime question.
+
+A subsequent System Trace attached to the unchanged native lifecycle executable.
+The full command exited naturally and its complete protocol output matched the
+ordinary run byte for byte. The retained recorder metadata declares Windowed
+(5 seconds), rather than complete process-history retention. The exported target
+thread has a 7.124-second Unknown prefix; its origin cannot be assigned to
+recorder startup or target blocking from that label. Its observable scheduler portion contains about 2.813 seconds
+Running, 45.848 ms Preempted, 13.778 ms Interrupted, 2.388 ms Blocked and 0.044 ms
+Runnable. The longest observed Blocked interval is about 1.151 ms; the longest
+Preempted interval is about 2.190 ms. Context-switch narratives identify competing
+threads for some preemptions, which are not blocking objects or wake senders.
+
+This partial intrusive observation neither reproduces nor attributes the
+original non-CPU tail. It does not identify that sample's wait object or waker,
+and does not justify assigning its missing time to XProtect, allocation or any
+one competing process. Raw scheduler captures and complete native outputs stay
+in the ignored local build tree. No baseline sample is discarded, no deadline
+is increased, and no system security setting is changed. Further attribution
+requires scheduler coverage of the actual slow interval, including a matching
+block/unblock or runnable/preempted interval; these boundaries must remain
+separate from the already matched pre-main scan records.
+
+** Qualification and ordinary-process follow-up
+
+All 51 canonical producers retain their original bytes. The complete catalog
+still has 211 preparation groups, 1,253 Cases and 39 refusals. Continuous use
+retains 16,289 state outcomes and 3,759 publications. All original 41,619
+effect/audit rows and the original 64 effect / 11 audit oracle controls compare
+identically; the two new controls add 50 rows across the 25 enforcing-eligible
+domains, for 41,669 total. The complete workspace/package isolation, strict
+Clippy, formatting and tests pass, including 94 Runtime tests; ignored corpus
+controls are executed by the standard full-domain gates.
+
+Lean compiled profile/reuse/root-scale and nine object-family workloads pass.
+Rust retains 211 bootstrap and 1,253 per-Case samples plus all 1,024 append-scale
+samples. Shared-construction p95/p99 is 1.838/1.997 ms; prepared SDK replay is
+0.293/0.337 ms. Shared-construction p99 and maximum (3.841 ms) are higher than the
+preceding observation (1.968/3.304 ms). The largest append bucket retains a
+17.849 ms maximum. These non-wins remain in the native samples; no population
+or slower observation is removed.
+
+One new ordinary matched full-lifecycle pair compares the preserved 93863f9
+release executable with the exact-intent refinement. Complete protocol bytes
+match each other and the earlier lifecycle output. Both exit naturally under
+the same 120-second watchdog with complete OS resource observations.
+
+| Observation | Before | After |
+|-------------+--------+-------|
+| Whole-process wall seconds | 37.020 | 36.112 |
+| User CPU seconds | 35.850 | 35.450 |
+| System CPU seconds | 0.270 | 0.160 |
+| Peak RSS MiB | 102.422 | 105.484 |
+
+The RSS increase is a retained non-win. This single pair does not establish
+allocator attribution, stable wall-time improvement or a memory bound. The
+borrowed audit indexes exist only during reconciliation; that lifetime alone
+does not establish a lower OS high-water RSS. No eight-second non-CPU interval
+was reproduced in this pair. Earlier slow samples and launch evidence remain
+intact and are not substituted by the new observations.
+
+A subsequent launch-mode System Trace attempted to establish collection before
+starting the same ordinary native executable with the complete catalog input.
+It reached its 90-second recording window with no protocol output and exited
+with recorder status 54. The retained export contains no scheduler intervals
+for the launched target PID. Its output therefore fails complete-byte acceptance
+and is a failed intrusive diagnostic, not a native workload pass or a reproduction
+of the ordinary eight-second gap. No limit was widened and no replacement
+successful sample conceals this failure. Identifying the original waiting object
+and waker remains open; a working capture must first demonstrate target coverage.
+
+** Recorder coverage correction
+
+The System Trace template's declared recording mode is Windowed (5 seconds).
+A successful target exit and complete protocol output do not establish complete
+scheduler retention. A launch-mode run using ordinary file descriptors completed
+with exit(0) and identical full output, but retained the same five-second rolling
+configuration. Its exported scheduler slice spans 2.789 seconds, with about
+2.440 seconds Running and 332.439 ms Preempted; the largest observed preemption
+is 34.716 ms. It provides no eight-second blocking interval or original waker.
+The prior Unknown prefix must not be interpreted as measured recorder setup.
+
+A final bounded diagnostic explicitly requests a 90-second retention horizon
+for its existing 90-second recording window, within the unchanged 120-second
+outer watchdog. This corrects trace retention rather than increasing the native
+workload's budget. The earlier failed launch and partial traces remain retained.
+
+The final recorder log reports target exit and the complete output compares
+byte-identically with the ordinary lifecycle. However, the recorder did not
+finish saving before the unchanged 120-second outer watchdog and ended with
+status 124. No completed scheduler export was admitted. This is a retained
+collection failure, not a native timeout, a complete trace or wait attribution.
+Further recording attempts and budget increases are not part of this result.
+
+* Recovery binds the surviving authority's retained intent
+
+An independently clean signed history does not establish which intent belongs
+to the surviving authority. A native regression demonstrates this distinction:
+one operation renews its source lease, logs an intent and loses its outcome;
+a disjoint observation logs and completes the same effect under another source
+window. The latter history has genuine signatures and a clean independent audit,
+but its signed precommit differs. Previously, operation-name matching allowed
+that history to clear the first operation's uncertainty.
+
+The deciding writer now retains the exact signed precommit and witness public
+key atomically with consumption and unknown exposure, before the provider call.
+Recovery requires that exact record in the verified history under that key.
+Missing/substituted history is refused before owner rotation. If the surviving
+state has no recorded intent, an externally supplied same-operation intent is
+also refused. A clean audit and the exact retained historical effect are still required
+for completion; the retained anchor does not replace those checks.
+
+The retained record uses one immutable shared owner per operation. State
+snapshots share that owner; source renewal and publication never overwrite it.
+This intentionally retains public signed evidence for the consumed operation's
+lifetime and is not a claim of lower RSS or globally bounded storage.
+
+The shared Lean lifecycle owns typed =RetainedIntent=, =RecoveryEvidence=,
+=RecoveryInput= and =RecoveryStatus=. =recoveryContract= specifies the actual
+=checkRecovery= result, and Production recovery uses its actual Invocation via
+=recoverChecked=. =recovery_invocation_is_bound= binds the result to that checker;
+=retained_recovery_requires_exact_history= establishes the retained key and
+record membership. Missing-record and foreign-key refusal laws accompany the
+existing sticky revocation, original consumption and generation-fencing laws.
+Renewal/recovery preservation laws retain the original anchor.
+
+| Boundary | Shared implementation and qualification | Remaining premise |
+|----------+-----------------------------------------+-------------------|
+| Continuous authorization | Fresh source generation, lease, SDK world and current policy admission remain required. Renewal cannot replace the retained intent. | Source authenticity and physical clock interpretation belong to configured trusted readers. |
+| Revocation | Revocation is sticky across renewal, publication and recovery; serialized deciding writes invalidate prepared handles. | This models admission for one effect. It does not interrupt already committed external IO or mechanize streaming-use obligations. |
+| Recovery identity | Exact retained signed record and witness key, independent clean audit and exact observed effect are required. | Identical signed bytes denote one protocol identity. Unique original operations and nonforking trusted authority remain explicit premises. |
+| Failed recovery | Substituted, truncated and unrecorded same-operation histories are refused without changing the surviving owner or controls. | The in-memory authoritative state, including its retained intent, survives the modeled mediator failure. |
+| Concurrency | Recovery preparation is checked against the surviving generation again under the deciding mutex before attachment. | Distributed fencing and physical atomic storage are Backend obligations. |
+| Publication exposure | Exact publication history and release roots remain required; source refresh and recovery do not clear unresolved publication delivery. | Durable publication acknowledgement and physical IO authenticity are not proved by a signed observation. |
+| Historical trust | Historical source evidence remains separate from the current source window; it cannot create current permission. | Signer custody/rotation, cold-host recovery and nonrollback persistence are outside the simulator's theorem claims. |
+| Lost outcome | Gateway-only missing outcomes retain uncertainty. Explicit provider mode can settle an exact retained intent using independently signed provider evidence and matching observations. | Provider record availability, truthful physical execution, crash-safe retention and eventual delivery remain premises. Compensation and general liveness are not proved. |
+
+The real nonidentity review/publication/current-use catalog adds substituted,
+truncated and unbound-history controls for every executable Case. Negative Cases
+and explicit qualification refusals remain unchanged. Original lifecycle rows
+are retained; summary counts come from actual compared rows rather than a fixed
+thirteen-row assumption. The expanded full regression performs additional
+operations and is not a matched speedup comparison with the earlier workload.
+Lean/Rust native benchmarks retain their original populations and all non-wins.
+
+The earlier eight-second ordinary non-CPU accounting gap remains a separate
+investigation. Default five-second rolling trace retention, failed launch input
+collection and full-window recorder finalization timeout remain retained as
+diagnostic limits. None supplies an identified waiting object or waker for the
+original slow sample. This security refinement does not claim to resolve that
+tail or establish stable whole-process acceleration.
+
+** Full-domain qualification
+
+All 51 canonical producers, 211 preparation groups, 1,253 qualified Cases and
+39 explicit refusals pass. All original 16,289 lifecycle states compare
+identically after projecting only the three newly named controls; the 1,905
+additional states bring the actual total to 18,194. All original 41,669
+effect/audit rows compare identically. The genuine alternate-history regression
+also checks every renewal/revocation combination, and all 95 Runtime tests pass
+alongside complete Rust feature/package isolation, strict Clippy and formatting.
+
+The expanded complete lifecycle exits naturally in 41.093 seconds under the
+unchanged 120-second watchdog, with complete resource observation and about
+105.328 MiB peak RSS. This is a full regression over all domains, not single-call
+Runtime latency. Additional control operations and expected lifecycle rows change
+the complete process workload and input size; those totals must not be presented
+as a matched speedup or an isolated measurement of retained-anchor memory.
+
+Independent offline inspection of the earlier failed full-window capture cannot
+recover a complete archive: the official exporter returns status 10 with
+=Document Missing Template Error=. The raw attachment is retained, but no
+completed scheduler metadata or wait-object/waker attribution is admitted from
+it. This failed export and all earlier non-wins remain separate from the native
+security and performance qualification.
+
+** Native benchmark observations after retained-intent binding
+
+Lean compiled profile/reuse/root-scale and all nine object-family workloads
+pass. Rust retains all 211 bootstrap, 1,253 Case and 1,024 append observations,
+including allowed, blocked and concurrent populations. The table records
+separate local runs over the same per-phase Case populations; it is not a
+statistical paired speedup experiment. The expanded oracle inputs also prevent
+isolating retained-anchor memory from complete-process RSS alone.
+
+| Native phase | Samples | Prior p95 ms | Current p95 ms | Prior p99 ms | Current p99 ms |
+|--------------+---------+--------------+----------------+--------------+----------------|
+| =execute.empty-log= | 635 | 0.829375 | 0.797375 | 1.078792 | 1.037792 |
+| =operation.construct= | 1253 | 2.781791 | 2.714625 | 3.604750 | 3.459750 |
+| =operation.construct.shared-program= | 1253 | 1.838000 | 1.828625 | 1.996958 | 1.907875 |
+| =prepare.allowed= | 10160 | 0.018625 | 0.018500 | 0.029250 | 0.028791 |
+| =prepare.blocked= | 9888 | 0.000250 | 0.000167 | 0.000333 | 0.000250 |
+| =prepare.concurrent.allowed= | 20320 | 0.167750 | 0.171041 | 0.382625 | 0.401584 |
+| =prepare.concurrent.blocked= | 19776 | 0.007333 | 0.004917 | 0.014875 | 0.016959 |
+| =program.prepare= | 211 | 1.225375 | 1.227166 | 1.974917 | 1.674666 |
+| =review.publish.two= | 1253 | 5.017041 | 4.778625 | 6.862208 | 6.468750 |
+| =sdk.prepare= | 1253 | 1.368625 | 1.201084 | 1.993625 | 1.888833 |
+| =sdk.replay.prepared= | 1253 | 0.292791 | 0.286083 | 0.337167 | 0.311167 |
+| =sources.renew= | 1253 | 1.888917 | 1.842834 | 2.115333 | 2.319917 |
+
+The concurrent allowed/blocked p99 and renewal p99 increases are retained
+non-wins. Shared construction's maximum is 5.234 ms versus 3.841 ms previously,
+even with a lower p99. All per-Case maxima and slower observations remain in the
+native output and timing-only CI logs. The largest append bucket retains all
+768 samples, with p99 0.814 ms and maximum 1.523 ms. These local observations
+establish neither stable whole-process acceleration nor a production latency,
+retained-heap or RSS bound. All existing watchdog and heap limits remain.
+
+* Independent provider evidence after a lost Gateway receipt
+
+The shared simulator now distinguishes a missing Gateway signature from missing
+completion evidence altogether. A provider-owned result is signed under its
+own configured root and the =cedar-poo/provider-outcome= domain, version 1.0.
+The unsigned outcome projection carries the exact witness-signed precommit,
+full action/result, original signed source statements and publication evidence.
+The provider signature covers that complete projection and the witness public
+key. It is not a reconstructed Gateway signature.
+
+| Stage | Owner and evidence | Resulting state |
+|-------+--------------------+-----------------|
+| Original use | Gateway checks current authorization and records the exact witnessed intent before provider use. | Original consumption is burned; outcome is initially unknown. |
+| Provider completion | The live provider verifies the witnessed request, performs the simulated effect, and retains its own signed outcome. | Its private operation ledger prevents a second send. |
+| Lost Gateway receipt | The mediator fails after provider use. The independent reader obtains provider evidence and a journal observation. | Plain journal entries alone keep the effect unknown. |
+| Independent audit | A configured provider root verifies domain, version, witness, source, publication and exact action/intent identity through the shared auditor. | Missing, invalid, duplicate or mismatching evidence does not establish completion. |
+| Recovery | The surviving authority matches its exact retained intent and rechecks generation before changing ownership. | A complete historical outcome clears unknown; consumption and current resource, time, revocation and publication controls survive. |
+
+=ProviderJournal::signed_outcomes= exposes immutable detached evidence created
+at the actual send boundary. Its private operation index is authoritative even
+if the public observation vector is damaged; an unavailable signature retains
+the operation tombstone. Ordinary journal serialization exports observations,
+not the live provider ledger or signing capability. A deserialized observation
+cannot execute effects or manufacture signed outcomes. This is an in-memory
+provider model, not a claim of cold-provider restart or durable storage.
+
+=ProviderAuditTrust= combines the original independently configured audit roots
+with a separate provider root. =reconcile_provider_outcomes= uses the same
+full-byte intent indexes, historical source checks, publication verification and
+independent observation comparisons as Gateway-receipt reconciliation. The
+original Gateway path does not infer completion from provider journal labels.
+=Simulator::recover_with_provider_outcomes= is an explicit completion channel;
+nonempty Gateway receipts in that call are refused rather than ignored.
+
+The existing public =gateway-reconcile= command accepts provider mode only when
+its trusted configuration supplies =provider_key= and the input supplies
+=provider_outcomes= with an empty =receipts= list. The trusted file selects the
+mode. Incoming evidence cannot select a different root or downgrade the mode.
+Both verification modes require only public input material. A real child-process
+regression checks genuine lost-receipt evidence, a wrong configured root and
+a refused downgrade from configured provider mode.
+
+** Historical settlement preserves a replaced current image
+
+A second genuine regression found that recovery compared provider observations
+with the current resource incarnation even when the retained intent named the
+original incarnation. This kept an authentic original completion unresolved
+following resource replacement. Recovery now extracts the historical effect
+from the verified record selected by exact retained signed bytes. It settles
+that effect while preserving the replacement, mapping guard, revocation, clock,
+source state and original consumption. The same correction applies to both
+Gateway and provider evidence. A single retained snapshot is verified and reused;
+its first parsed history is released before independent reconciliation.
+
+The shared Production control changes resource incarnation, advances the clock
+to expiry and revokes the operation before provider settlement. Successful
+settlement never restores the old resource or dispatches again.
+
+** Typed model, Contract and proof scope
+
+The Lean provider verification interpretation is supplied by trusted setup and
+receives the configured provider key. It is not a candidate's verified flag.
+=accepted_provider_is_bound_to_configured_trust= establishes the actual
+verification premise, supported version, signed domain and witness identity.
+=provider_without_outcomes_remains_unresolved= retains pending intents even
+when ordinary provider actions are present.
+
+=providerRecoveryContract= drives actual Production Invocations through
+=recoverFromProviderChecked=. Its laws bind the computed recovery result to the
+original retained-history checker, preserve the current resource/mapping,
+revocation and source authority, and forbid reminting a consumed execution.
+The finite Lean signature interpretation is a simulator input, not a theorem of
+P-256 or external IO. Native controls use real signatures and public-key-only
+audit, and compare actual outcomes against the shared typed model.
+
+All original scenarios remain. Six additional provider controls cover every
+executable Case: absent evidence, invalid signature, missing corroborating
+observation, completion, repeated completion, and completion after current
+resource/revocation/time changes. Repeated recovery reads retained evidence;
+it never calls the effect writer again. Proof unavailability retains unknown
+exposure. Eventual provider availability, truthful physical actions, durable
+nonrollback retention, distributed fencing, credential custody/rotation and
+compensation remain explicit Backend/Host obligations.
+
+The eight-second non-CPU gap remains independent. The installed tool inventory
+confirms separate =Thread State Trace= and =System Call Trace= instruments, which
+permit investigating a smaller collector than the previous multi-instrument
+System Trace template. Inventory discovery is not wait-object or waker evidence.
+Earlier failed/partial captures and every non-winning sample remain retained.
+
+** Qualification and producer startup cost
+
+The complete shared replay covers 51 entries, 211 groups, 1,253 Cases and 39
+refusals, with 3,759 publications. The six provider controls add 3,810 states
+across all 635 executable Cases, for 22,004 actual lifecycle outcomes. Removing
+only those six new labels reproduces every original 18,194-state output byte;
+the entire 41,669-row effect/audit output also remains byte-identical. All 99
+Runtime tests pass, with the original five fixture-dependent tests still
+explicitly ignored by the ordinary unit command and exercised by their owners.
+
+A five-to-six-minute test complaint was traced to the producer loop, separately
+from single-call Runtime latency and the unresolved mid-process non-CPU gap.
+The 51 interpreted producers' first-to-last output modification span was
+330.483 seconds, excluding the first producer's own duration. Two separately
+observed interpreted entries took 4.164 seconds (metadata-only handoff) and
+9.356 seconds (validated payment), each peaking at approximately 1.08 GiB. This is repeated
+frontend/environment loading, not an authorization operation taking minutes.
+
+The existing producer now has a standard Lake native executable target,
+=reviewedEffectsNative=. Its main algorithm, all Case construction, solver
+queries and output encoding are unchanged. All 51 native outputs compare
+byte-for-byte against the interpreted oracle. The observed native process
+elapsed sum is 47.465 seconds, including child solvers; the maximum per-process
+RSS is 52,314,112 bytes (49.891 MiB). The handoff and payment observations are
+0.077 and 1.633 seconds respectively. These are local sequential observations,
+not paired cold-start percentiles or a universal speedup claim. The span and
+sum have different endpoints; neither is total workflow wall time.
+
+The unchanged 120-second per-producer watchdog still applies. The first import
+sets the exact Lean 4.35 runtime equivalents of =-M 2048= and =-T 10000000=
+before catalog initialization. Only that small FFI budget module is precompiled
+as a shared library; the Examples library is not globally precompiled. Generated
+C confirms the budget initializer precedes the manifest catalog initializer.
+The compiled Lean workload owns computation; Python observes external process
+and resource accounting only.
+
+Earlier native-build attempts are retained as failures: importing private Shell
+APIs, importing an unloaded FFI implementation, and globally precompiling
+Examples (dependency cycles and watchdog termination). The scoped standard Lake
+build succeeds. This does not retroactively turn the failed cold build into an
+accepted cold-build result or justify widening any deadline. All raw outputs,
+resource receipts and failures remain ignored local build artifacts, not Git
+CSV files or archive deliverables.
+
+The standard combined local command =just check-reviewed-effects
+check-effect-protocol check-gateway-delta= completes successfully in 220.20
+seconds wall time (173.31 user / 33.22 system seconds), including catalog
+preparation, all producers, unit/child-process controls and full native replays.
+The expanded 22,004-state lifecycle replay takes 55.833 seconds, consumes 53.54
+CPU seconds and peaks at 107.703 MiB. These are complete regression processes,
+not single-call API response times. The original 330.483-second producer span
+is not a matched measurement of this combined command. The residual non-CPU
+interval and the previous RSS/tail non-wins are not erased by producer savings.
+
+The follow-up native API observation retains all 211 program, 1,253 Case and
+1,024 append samples. Execution now also signs independent provider evidence;
+it is not the old receipt-only workload. Current empty-log execution p95/p99
+is 1.902/2.428 ms, shared construction 1.982/3.025 ms, prepared SDK replay
+0.328/0.504 ms and source renewal 2.344/3.619 ms. These observations are slower
+than the preceding receipt-only sample and remain non-wins. Unchanged preparation
+phases also vary, so this run does not isolate signer cost from environmental
+tails. Shared construction reaches 29.101 ms, two-publication review 61.569 ms,
+and the largest append bucket 39.371 ms. No observations are removed or rerun
+selectively to obtain a win. The complete API benchmark process is 18.412 s
+with 121.031 MiB peak RSS; its process time and memory are not per-request bounds.
+All compiled Lean profile/reuse/root-scale and nine family workloads pass.
+
+** Retained historical source authority
+
+After exact-head CI qualification of =53c3d7f= (all 16 checks successful), a new
+native regression reproduced four failures: both Gateway and provider completion
+channels rejected authentic historical completion after expiry or renewal when
+supplied the current audit view. The original signed intent was present, but
+recovery interpreted its source statements using the later source window. This
+could keep a lost receipt unresolved or regress an already completed effect to
+unknown. The failed test and all four combinations remain retained.
+
+The deciding writer now retains the original immutable =FactAuthority= together
+with its exact witness-signed intent, witness key, burn and unknown status.
+The retained authority shares existing immutable field, issuer and prepared
+statement owners; it does not retain a Cedar SDK Program or cache an Allow.
+Recovery selects this owned historical source interpretation for both completion
+channels. Supplied source issuer roots must match; substitution is refused before
+ownership changes. The incoming current audit view cannot select a different
+historical inventory, lease time or issuer configuration.
+
+| Boundary | Historical evidence used | Current state preserved |
+|----------+--------------------------+-------------------------|
+| Source expiry | The retained original source window validates the original signed statements. | Clock stays expired; source generation does not move backward. |
+| Successful renewal | Completion still names the original witnessed facts. | Fresh source window and generation survive; consumption remains burned. |
+| Failed renewal | Original completion can settle independently of current source health. | Failed-source quarantine stays closed. |
+| Source repair | The original intent is settled exactly once. | Repaired current source owner is retained. |
+| Entity-world change | The historical world remains bound to the intent. | The newly evaluated SDK world and current Cedar result survive. |
+| Issuer-root substitution | Recovery refuses the new source registry. | Generation, owner, uncertainty and current controls remain unchanged. |
+
+The Lean source verification interpretation now receives the explicitly retained
+source authority. =retainIntent= captures that authority at the precommit write;
+=providerRecoveryContract= refuses a missing retained source. Kernel laws bind
+the original capture, renewal preservation, independence from later current
+authority, and preservation of both retained and current source views. These
+are laws of the typed model and actual Contract result, not a proof of Rust,
+cryptographic primitives or truthful physical observations.
+
+Five additional shared controls exercise expiry, renewal, quarantine, repair and
+entity-world change with a freshly obtained current audit view across every
+executable Case. Existing controls are preserved. Native unit controls cover
+both Gateway and provider channels, including refusal without owner rotation
+when the source issuer configuration is substituted. External public-key-only
+=gateway-reconcile= remains an independent audit: its configured historical
+source view must still be supplied by a trusted reader. It does not acquire
+private simulator retention or an execution capability.
+
+The eight-second investigation remains separate. Two prior ordinary observations
+have the same executable SHA-256 and command arguments but elapsed-minus-accounted
+CPU totals of 30.573 and 1.052 seconds. This is not proof of one wait, and the
+historical argument-file paths alone do not establish immutable input hashes.
+Both complete oracle outputs were checked; all timing/resource observations are
+retained. The reduced scheduler collector also exited its target with complete
+byte-identical output but timed out in recorder finalization at the unchanged
+120-second outer limit. No complete scheduler archive, waiting object or waker
+is admitted. No security setting, workload, deadline or negative control changes.
+
+Qualification covers all 51 entries / 211 groups / 1,253 Cases / 39 refusals and
+3,759 publications. Five new controls across 635 executable Cases add 3,175
+states, for 25,179 counted lifecycle outcomes. Removing exactly those five labels
+reproduces every original 22,004-state output byte; all 41,669 effect/audit rows
+also compare byte-for-byte. Runtime qualification is 101 passed / the original
+five explicitly ignored. The standard combined gate completes in 237.74 seconds;
+the expanded lifecycle process is 62.385 seconds with 109.484 MiB peak RSS.
+The prior expanded lifecycle was 55.833 seconds / 107.703 MiB. Additional controls
+and retained source ownership change the workload and lifetime; the time/RSS
+increase is retained, not presented as an isolated allocation measurement.
+
+| Audited boundary | Executable or formal evidence | Remaining assumption |
+|------------------+-------------------------------+----------------------|
+| Historical completion versus fresh authorization | Actual recovery Contract; retained source and current-image laws; both native receipt channels; all-Case source matrix. | Trusted source interpretations certify statements, not physical truth. |
+| Same-operation history substitution | Exact retained signed bytes and witness root; clean alternate-history refusal controls remain. | Retained deciding authority is not rolled back externally. |
+| Configured-root and evidence-channel substitution | Provider domain/version/witness checks, explicit audit mode and source-root refusal without owner rotation. | Immutable mock roots; production rotation/compromise-time policy is not modeled. |
+| Missing, corrupt, duplicate or uncorroborated outcomes | Independent public auditor and retained existing negative controls; uncertainty stays closed. | An independent reader eventually obtaining evidence is not guaranteed. |
+| Source expiry, renewal, failure, repair and world change | Five additional controls for every executable Case; current clock/source/SDK state preserved. | Source writers and recovery ownership changes obey the deciding lock. |
+| Revocation, resource replacement and replay | Existing all-Case controls, preserved burn, old-owner rejection and provider operation tombstones. | In-memory provider retention is not durable restart recovery. |
+| Concurrent deciding writers | Existing owner/generation validation before recovery attachment and current-use commit. | Cross-host fencing and nonrollback persistence need a Backend realization. |
+| Runtime non-CPU tails | Complete native outputs and resources, source-bound executable accounting, retained failed scheduler captures. | The original wait object and waker remain unidentified. |
+
+Follow-up compiled Lean profile/reuse/root-scale and all nine family workloads
+pass. Native Runtime retains all 211 Program / 1,253 Case / 1,024 append samples.
+Current empty-log execution p95/p99 is 1.857/2.073 ms, shared construction
+1.894/2.043 ms and prepared SDK replay 0.304/0.344 ms. The largest append bucket
+retains all 768 samples (p99 1.589 ms, maximum 2.628 ms). The complete API process
+is 16.880 seconds with 123.656 MiB peak RSS, versus the preceding 18.412 seconds /
+121.031 MiB. The higher RSS remains a non-win, as does =prepare.allowed='s maximum
+of 0.475 ms versus 0.186 ms. The expanded source/oracle input and retained-source
+lifetime differ; these observations do not isolate the retained snapshot's heap
+cost or establish stable whole-process improvement. All raw per-Case samples,
+including the earlier slower tails, remain retained. The new ordinary effect
+replay's elapsed-minus-accounted-CPU total is 0.599 seconds; it does not reproduce
+or explain the original eight-second interval. No further scheduler-recording
+retry substitutes for the missing wait-object and waker evidence.
+
+** Exact-intent recovery over a shared witness and provider
+
+Starting qualification confirms all 16 CI checks for =f6bde50=. A genuine native
+regression then showed that an independent operation's pending precommit kept
+an authentic completion quarantined. Both operations shared the same witness;
+the old recovery path required the entire journal report to be empty. That
+coupled one operation's progress to the completion of unrelated operations.
+
+=IntentAuditTrust= now carries an independently expected complete signed intent,
+its original audit authority and an explicit optional provider root. The public
+=reconcile_intent= function reuses the existing auditor. It verifies the complete
+checkpoint and log prefix, derives the operation from the exact signed bytes at
+the canonical log position, and authenticates every supplied outcome envelope
+before selecting the operation. Canonical indices are retained after selection.
+A missing expected anchor makes the scoped log incompatible; it cannot select a
+wildcard or silently fall back to a global result.
+
+Only the selected operation's historical source/publication interpretation is
+applied to its outcomes. A valid unrelated envelope is not evidence that its
+foreign facts or publications passed this operation's authority. Ordinary global
+reconciliation keeps its complete findings. A clean scoped result certifies no
+completion for the rest of the shared journal and clears no foreign uncertainty.
+
+The existing public-key-only =gateway-reconcile= command accepts =intent= only
+in trusted configuration. Request evidence cannot choose its own scope. Scoped
+output includes =scope.kind= set to =retained-intent= and the expected complete commit's
+canonical SHA-256. This digest identifies report context; admission still matches
+complete signed bytes. No intent configuration preserves the original global
+wire result. Real child-process controls use the actual healthcare and financial
+Profiles with different Schemas, a shared witness/provider, and public material
+only; incoming scope injection is refused.
+
+| Shared-log boundary | Required behavior |
+|---------------------+-------------------|
+| Valid unrelated pending prefix | Global audit retains it; exact-intent completion can settle. |
+| Valid unrelated completed prefix or tail | Authenticate its envelope and anchor; select the target's historical source independently. |
+| Same-operation second precommit | Retain every same-operation record and report ambiguity; do not filter down to the preferred signed entry. |
+| Unanchored foreign outcome | Keep the integrity error even when its operation name differs. |
+| Corrupt foreign signature | Refuse to classify an unverified label as harmless unrelated evidence. |
+| Invalid prefix or checkpoint | Fail the full log premise even if the target's own signature remains valid. |
+| Missing exact expected anchor | Refuse the scoped result; preserve the deciding owner on recovery refusal. |
+| Revoked, expired and quarantined target | Completion preserves revocation, clock, source quarantine and original consumption. |
+
+The pure =reconcileOperation= algorithm selects already authenticated projections
+without filtering the invalid-evidence count or the full-log-validity premise.
+=unrelated_precommit_preserves_operation_report= proves that adding an unrelated
+pending precommit cannot change that operation report when those premises remain
+fixed. Provider envelope authentication and source verification are separate
+trusted interpretations. Kernel laws additionally retain invalid prefixes,
+missing anchors, corrupt envelopes and same-operation duplicates. The actual
+=recoveryContract= / =providerRecoveryContract= and native writer remain bound to
+the exact original intent and retained source authority; this is not a proof of
+Rust or cryptographic primitives.
+
+Six new shared controls run for every executable Case. Recovery occurs after
+revocation, clock advancement and failed-source renewal. The first full gate
+covers all 51 entries / 211 groups / 1,253 Cases / 39 refusals, 3,759 publications
+and 28,989 counted lifecycle states. It retains every prior 25,179-state byte and
+all 41,669 effect/audit rows; the new 3,810 states match the typed Lean oracle.
+The first full command completes in 316.57 seconds, including the expanded
+99.735-second lifecycle process. These are regression processes, not request
+latency or a matched comparison against a smaller prior workload.
+
+*** Remove redundant full-prefix preparation
+
+For a surviving exact intent, recovery previously decoded/verified the entire
+history before the independent auditor repeated that work. It now verifies the
+single retained record and lets the independent auditor verify the complete
+prefix and outcome envelopes. The effective checkpoint floor is the maximum of
+the owned witness floor and the independently supplied audit floor. An authority
+without a retained intent still needs a full verified absence check and cannot
+adopt an unrecorded intent. No source, publication, signature, same-operation
+ambiguity or ownership/generation check is dropped.
+
+The native append Benchmark preserves all original 1,024 append samples and
+their full independent global audit. It then adds one unrelated pending intent
+and one genuine lost-receipt intent: 1,026 log records and 1,025 provider actions.
+Three public independent intent audits and three provider recovery samples use
+that complete prefix. Recovery retains revocation, time 100, failed-source
+quarantine, original consumption and the foreign uncertainty, with no resend.
+This large-log recovery/audit time is not an ordinary single-operation dispatch
+latency. Workload and assertions belong to Rust; Python only observes external
+process/resources.
+
+The source-bound local pre/post-prefix variants use identical benchmark code,
+all 51 frozen producer inputs and an A-B-B-A schedule. Full source patches,
+executable/input hashes, outputs and every raw sample are retained as ignored
+local artifacts. The pre-optimization control is a local source snapshot based
+on =f6bde50=, not a claim that the committed =f6bde50= already had this workload.
+
+| Sample | Recovery median, seconds (3 samples) | Process elapsed, seconds | Accounted CPU, seconds | Peak RSS, MiB |
+|--------+-------------------------------------+--------------------------+------------------------+---------------|
+| A1: before prefix reuse | 8.049 | 69.091 | 14.270 | 173.313 |
+| B1: after prefix reuse | 0.892 | 10.978 | 10.040 | 196.234 |
+| B2: after prefix reuse | 0.905 | 10.484 | 10.100 | 196.422 |
+| A2: before prefix reuse | 1.270 | 11.666 | 11.150 | 195.766 |
+
+All 12 recovery observations, 12 independent audits and every original append
+sample are retained. A1 is not discarded: its elapsed-minus-accounted-CPU total
+is 54.821 seconds and many unchanged append observations also slow down. A
+read-only host query after A1 shows load averages 27.96/34.09/24.64 for 12 logical
+CPUs; before B1 the one-minute value is 11.19. No thermal warning is reported.
+These are load/context observations, not a time-aligned waiting-object/waker
+trace or proof that CPU contention explains the original eight-second sample.
+No other process, scheduler priority or security setting is changed. Neither
+an eight-fold speedup nor an RSS win follows from this set; B1/B2 RSS exceeds A2.
+
+*** Separate metadata volume and retained byte-buffer lifetime
+
+A second independent A-B-B-A probe uses one unchanged executable and canonical
+catalog. All 51 sidecars compare completely after removing only the six new
+oracle controls; all actual Schema/Policy/Entities/request/review and 1,253 API
+Cases remain unchanged. The API Benchmark currently eagerly decodes its
+=lifecycle: Vec<Value>= oracle field even though its timed API operations do not
+consume those lifecycle states.
+
+| Oracle metadata | Elapsed, seconds | Peak RSS, MiB |
+|-----------------+------------------+---------------|
+| Prior metadata, first | 17.024 | 122.594 |
+| Expanded metadata, first | 18.229 | 122.859 |
+| Expanded metadata, second | 18.380 | 126.625 |
+| Prior metadata, second | 20.394 | 125.063 |
+
+The overlapping RSS ranges do not isolate an allocator leak or quantify the
+retained fact snapshot's memory cost. In particular, changing oracle volume and
+using a different binary cannot be treated as an isolated snapshot allocation
+comparison. All four processes and per-Case timings remain retained.
+
+The large-log recovery workload also held the 1,024 Gateway receipt buffers after
+the original global audit had finished, beside the provider's live and detached
+signed records. Their last use is now explicit: release those Gateway buffers
+before independent provider recovery. Native =buffer_capacity_bytes= observations
+record retired Gateway, live/detached provider and live/snapshot witness buffers.
+These are owned serialized Vec capacities, excluding containers and allocator
+overhead, not retained-heap or RSS bounds. The process includes both simulated
+provider retention and its independent reader, not just a single request.
+
+The final standard combined gate completes naturally in 368.26 seconds, with
+28,989 lifecycle states and all original effect/audit rows. The complete
+28,989-state native output compares byte-for-byte with the pre-prefix version,
+not just the prior-state projection. The lifecycle process is 94.113 seconds /
+108.375 MiB versus 99.735 seconds / 109.781 MiB before prefix reuse. Despite this
+local reduction, total workflow wall time increases from 316.57 to 368.26 seconds;
+that non-win remains. Changed host scheduling and build/cache activity prevent
+attributing whole-workflow timing to the recovery algorithm.
+
+All compiled Lean profile/reuse/root-scale and nine family workloads pass. The
+final native API process takes 50.113 seconds with 21.520 accounted CPU seconds
+and 124.000 MiB peak RSS. Execution p95/p99 is 8.239/36.876 ms and prepared SDK
+replay is 0.715/11.065 ms. These slower tails and the 28.593-second elapsed-minus-CPU
+interval are retained; they neither reproduce the original eight-second wait
+nor identify an object/waker. Complete CPU and per-Case timing observations are
+kept, including unchanged preparation/publication phases with large tails.
+
+The post-lifetime recovery probe completes in 11.366 seconds / 10.720 accounted
+CPU seconds / 169.266 MiB, preserving all original 1,024 append observations and
+all six added large-log audit/recovery samples. The retired Gateway byte-buffer
+capacity is 70,719,020 bytes (67.443 MiB). Live provider buffers are 71,452,288 bytes,
+detached reader buffers 35,886,044 bytes, and each live/snapshot witness buffer set
+5,171,918 bytes. The actual provider data and the independent reader coexist in
+this simulation process. These capacities expose concrete owners; they do not
+prove that allocator pages or total RSS fall by the same amount.
+
+This single lifetime probe peaks below the earlier approximately 196-MiB warm
+prefix controls, but its recovery median increases to 1.064 seconds versus
+0.892/0.905 seconds in B1/B2; its largest append bucket also retains a 37.589-ms
+maximum. Both are non-wins. Prefix reuse, buffer lifetime and allocator/OS effects
+must not be collapsed into one claimed stable speedup or memory bound.
+
+Before verified-metadata reuse, Runtime qualification is 103 passed / the unchanged five explicitly
+ignored tests, with fixture-owning child-process gates separate. The strict
+quality gate initially found an extra membership scan in the small fault-injection
+builder. That scan is now fused into the existing clone traversal, and the builder
+checks that exactly one foreign proof is corrupted. No rule, assertion, workload,
+heap limit, process watchdog or missing/invalid-evidence control is weakened.
+
+*** Reuse the authenticated prefix metadata, not just its position
+
+The same complete-byte index now selects the typed =Commit= already produced by
+full-prefix verification. Previously each outcome reverified and reparsed its
+embedded precommit before looking up its canonical position. A successful lookup
+requires the exact =(payload, signature)= pair from that fully verified prefix;
+there is no payload-only, signature-only, operation-only or digest-only fallback.
+Every outer completion signature, full checkpoint/chain/floor, selected historical
+fact/publication check and same-operation ambiguity check remains. This removes
+redundant signature/deserialization work and short-lived duplicate Commit objects,
+not signature obligations or fresh authorization checks.
+
+The new native attack control signs a valid provider envelope around an altered
+inner payload or altered inner signature. Both global and exact-intent audit
+must reject either mismatch with a valid surrounding log. The existing Lean
+=different_commit_cannot_resolve= law and full =CommitRef= identity remain the
+model boundary; native interpretation supplies the actual signature checks.
+
+All 28,989 native lifecycle results and all 41,669 effect/audit results compare
+byte-for-byte after this final reuse change. The frozen-input lifecycle process
+is 78.195 seconds, with 76.030 accounted CPU seconds and 110.547 MiB peak RSS.
+The preceding leaf replay was 102.777 seconds / 97.490 CPU seconds / 110.156 MiB.
+The new RSS increase remains a non-win; these observations do not establish a
+stable RSS reduction or attribute the original eight-second interval.
+
+The final 1,026-record workload retains all original append samples, three
+independent audits and three recoveries. Audit/recovery medians are 0.621/0.635
+seconds; the whole process is 8.396 seconds / 8.160 accounted CPU seconds /
+172.156 MiB. The earlier lifetime probe was 11.366 seconds / 169.266 MiB: CPU/time
+improves in this local set while peak RSS rises. Owned serialized buffer-capacity
+observations are unchanged. All prior A-B-B-A observations and slower maxima
+remain retained; no sample is replaced by this result.
+
+The complete native API observation is 17.465 seconds / 16.740 CPU seconds /
+126.375 MiB. Execution p95/p99 is 1.872/2.368 ms; prepared SDK replay is
+0.309/0.351 ms; source renewal is 2.216/3.042 ms. Source renewal and prepared replay
+tails remain above the earlier historical-source sample, and API RSS exceeds the
+preceding 124.000 MiB. The prior high-load 50.113-second process and all slower
+per-Case observations remain retained. No universal latency, allocator-causality
+or production memory bound is claimed.
+
+Final quality qualification passes 104 Runtime tests with the original five
+explicit ignores, all strict Rust feature/package gates, 355-module Lean import
+isolation and English Org parsing. Four real Gateway child-process tests pass,
+including healthcare/financial shared-history audit and scope-injection refusal.
+All ten views regenerate, with 52 tests / 321 assertions. Raw observations,
+source patches, frozen inputs and failed/non-winning probes stay outside Git.
+The original eight-second wait object/waker and the allocator-level explanation
+of fluctuating RSS remain open; no aggregate timer or buffer-capacity counter is
+presented as a substitute for that evidence.
+
+** Retaining authenticated shared-log progress across recovery
+
+The exact-intent scope prevents unrelated pending work from blocking local
+completion. It does not, by itself, preserve the largest shared prefix already
+observed by the surviving authority. A real signed regression demonstrated a
+second recovery accepting an older valid checkpoint containing the same own
+intent, after an earlier recovery had authenticated an additional foreign tail.
+The old caller-supplied minimum size did not retain this progress across owners.
+
+The shared simulation authority now retains a compact witness frontier: the
+independently pinned witness key, entry count and canonical digest of the complete
+signed boundary entry. It records the initial deciding precommit and every
+accepted recovery, including a verified but unresolved outcome. A recovery must
+present at least this many entries and the identical boundary digest under the
+same key. The complete checkpoint, signatures and chain are still verified by
+the independent auditor; matching a boundary alone cannot authenticate a log.
+The digest assumes collision resistance. Historical fact preparation and
+publication metadata never select or reset this frontier.
+
+The frontier is installed in the existing generation-checked owner rotation,
+alongside the outcome update. Refused recovery changes neither progress nor
+ownership. A mediator recovered before its own intent also pins observed shared
+history: its later send refuses a shorter or different witness before appending,
+burning the original operation or calling the provider. Honest continuation and
+repeated recovery remain supported. This adds no persisted log copy or global
+cache; the authority retains one bounded root and count.
+
+| Boundary | Required behavior |
+|----------+-------------------|
+| Older valid signed checkpoint containing the own intent | Refuse without rotating the owner |
+| Equal-size validly signed fork | Refuse the changed boundary |
+| Longer log changing the retained prefix | Refuse before outcome settlement |
+| Honest extension of the retained prefix | Fully verify and advance progress |
+| Invalid complete history or source/outcome evidence | Never manufacture completion |
+| Historical completion after revocation, expiry or source quarantine | Preserve current controls and consumption |
+| Pre-intent recovery followed by a stale-witness send | Refuse without appending or sending |
+
+Lean's =historyContract= is actually invoked before both Gateway and provider
+recovery Contracts. Its result binds the observed frontier to the verified
+history interpretation. Kernel-checked laws reject shorter histories, changed
+boundaries and changed witness keys. The executable model uses exact signed
+boundary bytes; the native realization uses their canonical digest and the full
+verified hash chain. Every applicable Production Case checks repeated shared-tail
+recovery, rollback and a same-height fork in the Lean producer; native replay
+checks rollback for the same real Case, in addition to signed cross-channel unit
+controls for forks and future sends. Original lifecycle projections are retained.
+
+This is per-authority continuity, not a transparency consensus protocol. A
+stateless auditor still needs an independently retained checkpoint floor. A crash
+that loses the surviving authority needs a durable trusted frontier; unsigned
+backup metadata cannot recreate one. Different independent witnesses can still
+equivocate unless a separately specified consistency or gossip mechanism detects
+it. This change claims neither global linearizability nor kernel scheduling
+attribution.
+
+*** Native resource attribution and retained non-wins
+
+The complete original lifecycle projection remains byte-identical: 51 entries,
+211 groups, 1,253 Cases, 39 refusals, 3,759 publications and 28,989 lifecycle
+states. The full effect/audit output also retains all 41,669 results. In this
+local cohort, the complete lifecycle process took 84.285 seconds, 79.560 CPU
+seconds and 111.141 MiB peak RSS. The preceding metadata-reuse cohort took
+78.195 seconds and 110.547 MiB. These are retained non-winning observations,
+not a paired speed claim or a single-effect latency measurement. The original
+120-second process watchdog remains unchanged.
+
+The existing native append Benchmark now reuses the existing optional Rust
+allocation observer at four lifetime boundaries: append plus full global audit,
+release of retired Gateway receipts, detached provider/witness copies, and the
+independent audit/recovery cycle. =memory_phases= is empty without the
+=allocation-observation= feature. With that feature, each phase records actual
+live requested bytes before/after, the absolute live-byte peak, allocation calls,
+requested bytes and platform process RSS/allocator statistics. These are native
+observations; Python only supervises the external process and resource receipt.
+The four memory windows do not overlap or omit original append samples and
+refusal controls. Instrumented times remain diagnostic and are never substituted
+for ordinary latency samples.
+
+A decrease in live requested bytes after =drop= does not imply that malloc
+returns all of its reserved pages to the OS. Conversely, a high RSS by itself
+does not identify an allocator leak. Buffer capacities exclude container and
+allocator overhead; platform heap statistics have a different accounting scope
+from Rust requested bytes. The independent-audit window includes the complete
+verified prefix and detached outcomes; its peak is not a single-request bound.
+The original approximately eight-second runtime wait object and its waker
+remain unidentified. The elapsed-minus-CPU interval is retained separately from
+fresh-file startup and thread-state samples; it cannot name a wait primitive.
+
+The fixed ordinary native runtime cohort covered all 1,253 API Cases and 635
+executable effects in 17.336 process seconds (16.430 CPU seconds, 123.953 MiB
+RSS). Effect execution p95/p99 was 1.903/2.361 ms; prepared SDK replay was
+0.319/0.385 ms; source renewal was 2.026/3.611 ms. The unchanged 1,024-operation
+append workload plus independent 1,026-record recovery took 8.678 process
+seconds (8.270 CPU seconds, 174.438 MiB RSS). Three full-prefix independent
+audits and three recoveries had medians 0.635/0.650 seconds. The earlier
+metadata-reuse cohort recorded 0.621/0.635 seconds and 172.156 MiB RSS: these
+slower recovery and higher RSS samples remain non-wins. Whole-process durations
+include all iterations; they are not individual effect latencies.
+
+A separate allocation-observed process, using the same complete append workload,
+produced these native observations. Each value is MiB except the final count.
+The observed process itself took 9.340 seconds and peaked at 170.891 MiB RSS;
+it does not replace the ordinary 8.678-second sample.
+
+| Native phase | Live requested before | Live requested after | Absolute phase peak | RSS at end | Allocator reserved | Allocation calls |
+|--------------+-----------------------+----------------------+---------------------+------------+--------------------+------------------|
+| Append and full global audit | 12.487 | 153.589 | 165.623 | 140.797 | 220 | 10,745,636 |
+| Release retired Gateway receipts | 153.590 | 86.100 | 153.590 | 140.844 | 220 | 0 |
+| Detach provider outcomes and witness | 86.680 | 125.977 | 125.977 | 164.875 | 244 | 4,115 |
+| Three independent audits and recoveries | 125.977 | 125.977 | 137.400 | 170.844 | 248 | 750,953 |
+
+The release phase removes exactly 70,768,172 requested bytes: 70,719,020 bytes
+of signed buffer capacities and 49,152 bytes of receipt-vector storage. This
+specific lifetime reduction is real, while RSS does not fall and allocator
+reservation remains 220 MiB. The detached views then add about 39.297 MiB of
+live requested bytes. The audit/recovery window peaks about 11.423 MiB above
+its initial live bytes and finishes only 128 bytes above them, including timing
+sample storage. These observations identify allocator retention and explicitly
+owned copies in this cohort; they do not establish the cause of every RSS
+increase, a production memory bound or absence of leaks across arbitrary runs.
+All raw native samples and resource receipts remain ignored local build evidence.
+
+** Controlling Ubuntu history-regression attribution
+
+The 59.451 to 88.987 second lifecycle change is predominantly accounted CPU:
+59.410 versus 88.910 CPU seconds. Its elapsed-minus-CPU intervals are only
+0.041 and 0.077 seconds. This Ubuntu observation does not reproduce the separate
+multi-second Darwin accounting gap. Other processes in the same two CI jobs
+changed by similar factors:
+
+| Complete native process | 3d75c77 wall seconds | 4f8a4a3 wall seconds | 3d75c77 CPU seconds | 4f8a4a3 CPU seconds |
+|-------------------------+---------------------+---------------------+--------------------+--------------------|
+| Reviewed catalog | 11.689 | 17.065 | 11.560 | 17.020 |
+| Full lifecycle | 59.451 | 88.987 | 59.410 | 88.910 |
+| All-Case runtime API Benchmark | 14.385 | 20.197 | 14.580 | 20.480 |
+| Shared append and recovery Benchmark | 5.720 | 8.526 | 5.690 | 8.500 |
+
+Both jobs report Ubuntu 26.04.1, but their actual runner images/provisioners and
+regions differ: the earlier reviewed-effects job used centralus and image
+20261101.186.1; the later job used westus3 and image 20261025.179.1. The common
+slowdown supports an environment contribution; it does not prove its precise
+fraction or make added frontier work free. Normalizing lifecycle CPU by the
+reviewed-catalog control leaves about a 1.7 percent increase, but this ratio is
+not an isolated algorithm-cost measurement.
+
+A dedicated =history-comparison= diagnostic job in the existing Zero Trust
+workflow is explicitly selected with =workflow_dispatch.history_comparison=.
+It consumes this revision's complete validated inputs from =reviewed-effects= and
+executes =bench-gateway-history=: fixed
+=A1 B1 C1 C2 B2 A2= order on one runner, using exact committed sources for
+=A= (3d75c77), =B= (4f8a4a3) and the current verified-view implementation =C=.
+All binaries use the same Cargo lockfile, compiler, release settings and complete
+current Lean-produced inputs. Historical workspace builds use a private target
+seeded with compatible dependencies, with explicit source rebuild admission. Each process must exit naturally under the original
+120-second watchdog, retain all 28,989 states and compare every output byte with
+the full current replay. A changed source, incomplete output or failed process
+cannot be admitted by timing. All six raw outputs, hashes, CPU/RSS receipts and
+host/CPU-quota metadata are CI artifacts; no raw Benchmark dataset is committed.
+The original job deadline is unchanged, and no timing threshold selects samples.
+
+*** Borrowed log verification and authenticated metadata reuse
+
+Recovery now borrows the owned witness's immutable checkpoint and signed-entry
+slice. One complete public verification produces a private immutable typed view
+bound to the original verifying key and original bytes. The view owns parsed
+Commit records and the authenticated head; it cannot be deserialized from caller
+claims or modified through its read-only accessors. The independent reconciler
+reuses this view and rechecks its key and the current independently supplied
+checkpoint floor. Wrong-key and increased-floor regressions refuse even an
+otherwise authentic prepared empty log.
+
+Exact retained-intent lookup compares both payload and signature before reading
+the already verified Commit's effect. It no longer performs a second signature
+verification/parse. No-intent absence also uses this same complete verified
+history. Every supplied outcome envelope, source/publication binding, operation
+ambiguity and observed effect still passes the existing independent auditor.
+The generation-checked deciding update and current authorization checks remain.
+
+For a retained boundary inside a longer fully verified chain, the next Commit's
+verified =previous= field already names that boundary. For an equal-size prefix,
+the authenticated head contains its root. Recovery reuses these fields instead
+of re-encoding and hashing the same signed entry. The owned witness likewise
+retains its typed authenticated head at construction, verified restore and
+append, reusing the root for the next append and frontier. It retains one head,
+not another per-entry digest cache. Public untrusted snapshots still receive
+complete signature, sequence, chain, version and head verification.
+
+Lean's actual history Contract now reads its range-checked boundary directly
+instead of constructing a copied List prefix. The kernel theorem
+=indexed_boundary_matches_verified_prefix= proves equality with the previous
+prefix interpretation for every admitted size. Existing key, rollback, fork,
+revocation, source and consumption laws remain in use. Native cryptographic
+root/chain interpretation and hash collision resistance remain explicit Host
+assumptions; this optimization does not claim a Lean proof of ECDSA or SHA-256.
+
+The local complete lifecycle sample for this verified-view change exits naturally
+in 87.591 seconds (83.540 accounted CPU seconds), with 111.375 MiB peak RSS;
+all 28,989 state bytes and the 41,669 effect/audit results match the prior output.
+The preceding retained-frontier sample was 84.285 seconds / 111.141 MiB. This
+slower/higher-RSS observation remains a non-win. Cross-run local timings do not
+replace the fixed same-job Ubuntu experiment. Runtime qualification retains 107
+passing tests and the unchanged five fixture-owned ignored tests, plus the full
+source/Delta/Contract/replay gates. Current metadata reuse is never an Allow.
+
+The fixed historical experiment is an explicit diagnostic, not a permanent
+schema gate over future Case additions. Default push/PR verification keeps its
+original semantic/native workloads. A selected diagnostic still runs all six
+samples and every byte/count/watchdog control; the switch does not permit a
+shortened cohort. Its separate job consumes same-revision validated fixtures
+and preserves the existing 20-minute job and 120-second process limits.
+
+*** Rejecting stale historical build artifacts
+
+The first six-process diagnostic (run 41776812606) completed every runtime and
+wire control, but independent artifact review found identical A/B/C executable
+SHA-256 values. Historical A/B builds reported completion in 0.07/0.06 seconds
+without recompiling the workspace sources. This is rejected as a historical
+version comparison. Its complete six outputs/resources remain retained; they
+cannot support a revision speedup or frontier-cost estimate. The same-byte
+cross-runner observation is a separate valid environment control.
+
+The source archive retains commit-time file mtimes, while Cargo target artifacts
+are relocatable and source freshness is mtime-sensitive. Reusing a newer shared
+target without a rebuild allowed the current artifact to appear under historical
+labels. The diagnostic now archives the exact recorded Git tree: Git's documented tree
+mode gives extracted files current mtimes while preserving their source bytes.
+It requires Cargo's structured compiler-artifact messages to bind the exact
+archived manifest and report actual recompilation of core/runtime/bridge, and
+copies the executable path emitted by Cargo. All three known-different versions
+must have distinct executable digests before any timed process is admitted.
+The experiment seeds a private temporary target with compatible dependencies,
+then rebuilds the archived workspace sources there, leaving the normal target
+untouched. Dependency artifacts may still be shared; no cache-version fallback, workload
+reduction, environment tuning or timeout widening substitutes for source custody.
+The entire fixed six-sample cohort is rerun after this admission correction.
+
+Primary build-system references: [[https://git-scm.com/docs/git-archive][Git archive documentation]] distinguishes
+commit-time and current-time tree archives; [[https://doc.rust-lang.org/stable/nightly-rustc/cargo/compiler/fingerprint/index.html][Cargo fingerprint documentation]]
+describes mtime-based path-source freshness. Recorded commit/tree identities,
+actual compilation messages and distinct output hashes jointly govern admission.
+
+Local admission preflight rebuilt all three workspace packages for each archive
+and produced distinct known-source products: A =f2aa1c00...=, B =63bf5ac7...=,
+and C =a5e13722...=. The tree-mode preflight repeats this result without manual
+source timestamp edits. These are build/admission observations, not timed runtime
+samples. The normal target is preserved and no dependency or compiler flag changes.
+
+*** Streaming signed identities and bounded recovery observations
+
+The next shared optimization targets repeated representation work rather than
+relaxing verification. =Signed.source_sha256= emits the exact canonical JSON
+identity directly into the buffered SHA-256 writer. Unpadded URL-safe base64
+streams from the original payload and signature slices; no intermediate JSON
+Value, encoded String or full canonical buffer is constructed. This identity
+alone grants no authority. Issuer, witness, review and provider signatures still
+require their independently selected verification keys. The generic canonical
+hash remains an independent reference and serves unordered/general objects.
+
+Native boundary controls compare both algorithms for every byte class, base64
+triplet tails, empty signatures, SHA buffer boundaries and the public payload
+limit. Both payload-only and signature-only substitutions change the identity.
+Review, publication, append, full-log verification, provider projections and
+independent audits use the same byte-compatible implementation.
+
+Recovery captures only generation, review/release identity, the shared policy
+source, operation identity, original retained intent/fact authority and frontier
+under the surviving owner's lock. It no longer clones the full Case, decoded
+request context, SDK receipt, raw facts, pending review or publication history.
+The supplied publication prefix must equal the retained ordered payload and
+signature bytes, including its length, before the lock is released. Full
+publication authentication follows outside the lock; the final generation and
+owner checks still reject a stale observation. Historical source interpretation,
+current revocation/expiration, consumption and quarantine remain authoritative.
+Controls reject truncated, reordered, duplicated and independently tampered
+payload/signature histories without resetting state or resending an effect.
+
+The optional existing Rust allocation-observation benchmark compares canonical
+reference/stream/stream/reference identities on the actual 1026-entry scale log.
+All four time/resource samples are retained after the normal append/recovery
+memory windows. This diagnostic is excluded from ordinary process comparisons.
+The complete same-host A-B-C-C-B-A experiment retains A=3d75c77 and uses the
+immediate pre-change c0b6841 as B; C is the new source-bound executable. Its
+original workload, output-byte checks, 120-second watchdog and artifact custody
+checks remain unchanged. Every non-win remains reportable.
+
+A removed allocation is not evidence of a removed CPU bottleneck: recovery still
+authenticates the complete independent log and reconciles signed outcomes.
+The prior accepted same-host comparison reported a 0.48% whole-process non-win;
+this change requires a fresh complete comparison before any speedup claim.
+The aggregate wall/CPU difference is not a named eight-second wait. Kernel wait
+objects/wakers, pre-main startup and RSS remain independent open investigations;
+neither a smaller native allocation count nor a faster digest resolves them.

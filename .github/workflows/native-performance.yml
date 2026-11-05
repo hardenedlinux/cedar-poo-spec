@@ -1,0 +1,117 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: Apache-2.0
+
+name: Cedar native performance and resources
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+defaults:
+  run:
+    shell: bash
+jobs:
+  native-lean:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      with:
+        persist-credentials: false
+    - uses: ./.github/actions/setup-verification
+      with:
+        rust: 'false'
+    - name: Process and resource observer controls
+      run: uv run --project python --package cedar-poo-py-test --locked python -m unittest discover -s python/tests
+        -v
+    - run: |
+        mkdir -p .lake/build/resources
+        just bench-policy-reuse | tee .lake/build/resources/policy-reuse.log
+    - run: |
+        just bench-functional-reuse | tee .lake/build/resources/functional-reuse.log
+    - run: just bench-functional-native | tee .lake/build/resources/functional-native.log
+    - run: just bench-catalog-preparation | tee .lake/build/resources/catalog-preparation.log
+    - run: just bench-catalog-stages | tee .lake/build/resources/catalog-stages.log
+    - run: just bench-catalog-authorization | tee .lake/build/resources/catalog-authorization.log
+    - name: Verify native recovery with the declared toolchain and official cache
+      run: |
+        lake build caseManifestsNative objectProfilesNative functionalReuseNative manifestLifecycleNative
+        just bench-project-native-cold "$RUNNER_TEMP/project-native-cold"
+    - name: Preserve native recovery receipts
+      if: ${{ always() }}
+      run: |
+        mkdir -p .lake/build/resources/native-cold
+        for name in toolchain.txt toolchain.json resource.json resource.stderr.txt build.log exit-status identities.json; do
+          if test -f "$RUNNER_TEMP/project-native-cold/$name"; then
+            cp "$RUNNER_TEMP/project-native-cold/$name" .lake/build/resources/native-cold/
+          fi
+        done
+    - name: Check benchmark source tree is clean
+      run: |
+        git diff --exit-code
+        test -z "$(git ls-files --others --exclude-standard)"
+    - name: Record observation provenance
+      if: ${{ always() }}
+      run: |
+        mkdir -p .lake/build/resources
+        {
+          echo "commit=$GITHUB_SHA run=$GITHUB_RUN_ID attempt=$GITHUB_RUN_ATTEMPT job=$GITHUB_JOB"
+          sha256sum lean-toolchain lakefile.toml lake-manifest.json
+        } > .lake/build/resources/provenance.txt
+    - name: Upload native observations
+      if: ${{ always() }}
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      with:
+        name: native-evidence-${{ github.job }}
+        include-hidden-files: true
+        if-no-files-found: error
+        path: .lake/build/resources/
+  catalog-resources:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      with:
+        persist-credentials: false
+    - uses: ./.github/actions/setup-verification
+      with:
+        rust: 'true'
+    - run: just bench-functional-allocation
+    - run: just probe-native-launch "$RUNNER_TEMP/launch-probe"
+    - name: Observe real catalog startup and transport phases
+      run: |
+        just --no-deps bench-catalog-launch "$RUNNER_TEMP/catalog-launch"
+        just bench-catalog-inode "$RUNNER_TEMP/catalog-inode"
+    - name: Check benchmark source tree is clean
+      run: |
+        git diff --exit-code
+        test -z "$(git ls-files --others --exclude-standard)"
+    - name: Record observation provenance
+      if: ${{ always() }}
+      run: |
+        mkdir -p .lake/build/resources
+        {
+          echo "commit=$GITHUB_SHA run=$GITHUB_RUN_ID attempt=$GITHUB_RUN_ATTEMPT job=$GITHUB_JOB"
+          sha256sum lean-toolchain lakefile.toml lake-manifest.json
+        } > .lake/build/resources/provenance.txt
+    - name: Upload native observations
+      if: ${{ always() }}
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      with:
+        name: native-evidence-${{ github.job }}
+        include-hidden-files: true
+        if-no-files-found: error
+        path: |
+          .lake/build/resources/
+          .lake/build/*.json
+          ${{ runner.temp }}/launch-probe/
+          ${{ runner.temp }}/catalog-launch/
+          ${{ runner.temp }}/catalog-inode/
+'on':
+  push:
+    branches:
+    - main
+  pull_request:
+    branches:
+    - main
+  workflow_dispatch: null

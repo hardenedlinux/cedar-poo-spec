@@ -62,3 +62,18 @@ clerk other than the payment's recorded =preparedBy=.
 just example enterprise payment release
 just check-cedar-language
 #+end_src
+
+* Wallet signing after endpoint and deployment compromise
+
+[[file:../../Scenarios/FinancialServices/Wallet/README.org][The financial wallet-signing case]] audits the initial Binance attack
+chain against existing payment/Gateway contracts, then composes actual C4 Cedar
+decisions with current payment assessment, exact typed signing transactions,
+authenticated workload/evidence sources, and the existing payment ledger.
+Negative controls retain transaction substitution, stale authorization, replay,
+and outstanding on-chain delegation after a local pause. The adjacent audit
+separates model guarantees from Host identity, byte decoding, complete mediation,
+durability and chain-finality assumptions.
+
+#+begin_src sh
+just example scenarios financial-services wallet binance
+#+end_src

@@ -14,5 +14,5 @@ permit(
   action == Action::"proceed",
   resource
 ) when {
-  (context.routeApproved) && (context.successorPlatformSafe)
+  context.routeApproved && context.successorPlatformSafe
 };

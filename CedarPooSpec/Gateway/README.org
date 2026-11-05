@@ -5,7 +5,8 @@
 =CedarPooSpec.Gateway= is a platform-neutral Lean library. It composes existing
 Admission, Functional compilation, PolicyModules and exact operational
 Authorization Delta capabilities. It adds no Cedar evaluator, solver semantics,
-transport service, persistence engine or Gateway Rust runtime. The AWS AgentCore
+transport service or persistence engine. The optional Rust =gateway= feature
+implements an explicitly simulated protocol adapter, not a deployed Host. The AWS AgentCore
 Gateway projection remains under =Platform/AWS/AgentCore=.
 
 Weaver owns scenario-specific Rust execution, authenticated Host adapters,
@@ -30,6 +31,9 @@ the framework's transitive import closure must not contain Gateway. See
 | Admission | Validate actual operation, schema, current source and error-free Cedar allow | BoundOperation, PolicySnapshot, Functional compilation, upstream validators |
 | Consumption | Compose original-operation admission and effect-bound grant consumption | OperationLedger and AuthorityLedger |
 | AuthorizationDelta | Prepare source-bound C4 revision, analyze gains/losses, compose conditional proofs | Exact operational Delta, policy/provenance changes, proof footprint |
+| PublicationReview | Resolve the reviewed artifact and bind the actual next release state at commit | Original EvidenceBinding Contract, durable registration, fencing and Delta Release transition |
+| EffectProtocol | Bind trusted field evidence, versioned review/effect identity and independent reconciliation | Existing typed Cedar receipt, POO requirement strengthening, optional Rust simulation |
+| ZeroTrust | Bind current Cedar admission and retain original consumption during ongoing use | Generic requirements, actual typed Receipts, profile refinement and committed history prefix |
 
 Authorization uses flat =Except= composition. Each validation step returns either
 a specific failure or evidence retained by the resulting =Receipt=. Transparent
@@ -232,3 +236,108 @@ validation combinators; no axiom, timeout or validator was weakened. Axiom audit
 prints inherited Cedar native-decide dependencies separately from ordinary Lean
 logical axioms. Full-repository CI and Weaver runtime admission are distinct
 receipts and must not be inferred from these focused tests.
+
+* Reviewed publication and current use
+
+=Host.withDeltaReview= strengthens the existing commit relation: the artifact
+selected by the actual deciding view must resolve to a =ReviewedInteraction=,
+and its checked advance must produce the actual committed post-state. Its required
+=frontierAt= reader binds the pre-epoch and the installed post-frontier. The
+original Contract and all registration/current-use requirements remain intact.
+=advanceReviewed= separates governed gains from the unchanged =advanceNoGain=
+path; gain approval receives the exact review and active state and cannot bypass
+parent, source, schema, epoch or enforcement checks. Approval authority and the
+Host readers remain premises. The current four-root review classifies Cedar
+decisions; it is not an exact error-free execution coverage certificate. Actual
+use retains error-free admission, and an external UNSAT report is not =ExactCoverage=.
+
+=ZeroTrust.currentAdmission= requires an actual current request/state/entity
+receipt and refinement of the required profile. The error-free-current-use law
+applies also to independently approved gains. The ongoing Delta law additionally
+requires the exact same-world binding and coverage; it retains original
+consumption and unknown holds without reusing the initial receipt.
+
+=just check-gateway-delta= runs actual solver reviews, 384 finite release
+properties, 1,372 simulated three-command histories (4,116 steps), ten actual
+Cedar policy/fact replay cases and an independent Rust history interpreter.
+The histories exercise lost replies, recovery, live-image rollback, enforcement
+modes and repeated commits. Rolling back the independent epoch floor as well
+as the image admits a second commit in the deliberate negative control. These
+are bounded simulated-store checks, not deployed persistence or anti-rollback
+evidence. The full 51-entry catalog remains a separate acceptance requirement.
+
+The general =advanceReviewed_postcondition= and
+=returned_state_rejects_republication= laws now prove exact installation and
+review retirement under arbitrary later approval/model/schema choices.
+=delta_final_retires_resolved_review= carries those consequences through the
+actual Final receipt. The existing simulator also has an inductive at-most-one
+commit and unknown-retention proof for arbitrary finite histories of one fixed
+review. Its independent authority floor remains preserved; the native Rust
+correspondence remains the explicitly bounded corpus above.
+
+The observation-cut layer now separates preparation from current commit. The
+existing Gateway acceptance also compares 2,528 staged histories / 12,528 steps
+with a test-owned native shared authority and actual observer counts. Real
+thread races, a competing control writer, ABA, foreign tickets and finite-counter
+exhaustion have explicit controls. Whole-authority rollback remains a retained
+counterexample. These tests add native arbitration evidence without introducing
+a production Gateway backend or claiming physical durability.
+
+Kernel induction now covers the actual staged scheduler over arbitrary finite
+command lists, with one fixed review: at-most-one commit, unknown retention,
+monotone observation generations and persistent refusal of retired cuts.
+The 2,528 native histories separately check these invariants against the actual
+authority and preserve complete Lean/Rust state equality. Finite conformance
+does not replace the induction or establish physical anti-rollback.
+
+The same native authority now serializes reviewed-artifact replacement with
+publication/control writers. A companion 800-history / 4,064-step replay and six
+new-root SDK Cases cover registration ABA and consecutive publications; the
+earlier corpora remain byte-identical. The public
+=delta_final_rejects_resolved_review_after_run= law carries actual Final review
+retirement through later runs with an explicit preserved frontier and fresh
+epoch binding. Registration-scheduler induction proves frontier/unknown
+retention. An unfenced replacement counterexample retains the requirement that
+every relevant writer advance the cut; these tests do not supply production
+registration credentials or physical durability.
+
+The actual Delta Final retains both frontier bindings and advances the frontier
+exactly once. =successive_delta_finals_advance_review_epoch= relates two actual
+Finals across a run: resolved review epochs strictly increase when every writer
+preserves the same independent frontier. Valid analysis cannot bypass a wrong
+pre-frontier or omitted installation. Callers must supply the required reader;
+there is no default epoch. The whole-reader rollback counterexample retains the
+Host authenticity and nonrollback premises.
+
+* Versioned evidence and effect simulation
+
+The [[file:../../docs/protocol/gateway-effect.org][shared protocol guide]] documents typed field authorities,
+exact effect handles, signed precommits and public reconciliation. The adjacent
+[[file:../../docs/protocol/gateway-effect-v1.schema.json][version 1.0 schema]] describes the wire representation. Run
+=just check-effect-protocol= for the complete applicable-domain matrix,
+cryptographic controls and native MCP/auditor child-process tests.
+
+* Reviewed release to current effect
+
+[[file:ReviewedEffect.lean][ReviewedEffect]] defines the POO Contract around the existing exact
+=ReviewedInteraction.advanceReviewed= successor. Kernel composition laws retain
+its installed policies, actual current Cedar receipt, and the existing
+=PublicationReview.Final= original Contract and Zero Trust premises. They do not
+certify external fact truth or symbolic solver completeness.
+
+The shared [[file:../../Productions/Gateway/ReviewedEffects.lean][Production workload]] preserves original C4 declarations and native Schema.
+It adds a real deny/restore diamond, analyzes each leg, and compares the same
+review/publication/current-effect chain in Rust. Run =just check-reviewed-effects=
+for all-domain replay, independent approval, stale-use refusal, public audit,
+reviewed recovery and actual MCP child processes. See the
+[[file:../../docs/protocol/gateway-effect.org][protocol guide]] for exact authority and physical durability boundaries.
+
+* Current-use lifecycle
+
+[[file:Lifecycle.lean][Lifecycle]] strengthens the existing publication Contract with current field
+evidence, the same policy epoch and a pinned release world through POO
+=Contract.withMeaning=. Its current-use Contract, handle-generation laws and
+recovery/renewal laws retain original consumption, revocation and current Cedar
+admission. No theorem turns a historical review into a fresh-world receipt.
+The [[file:../../docs/protocol/gateway-effect.org][protocol audit]] maps these laws to native source writers, mediator fencing,
+independent historical audit and the explicit cross-world publication refusal.

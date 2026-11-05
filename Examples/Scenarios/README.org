@@ -1,6 +1,21 @@
 #+TITLE: Cedar Authorization Scenarios
 #+OPTIONS: toc:nil
 
+* Source-bound scenario family
+
+[[file:../../CedarPooSpec/Scenarios/README.org][The shared functional Scenarios layer]] requires typed metadata and retains
+actual parent provenance when binding a derived model. The
+[[file:FinancialServices/Wallet/Base.lean][synthetic wallet signing scenario]] is reused by the
+[[file:FinancialServices/Wallet/Binance2026.lean][Binance 2026 incident scenario]]. Its
+[[file:FinancialServices/Wallet/README.org][audit]] separates reported dates and preliminary source claims from modeled
+security properties and Host assumptions. More incidents can specialize these
+existing owners without copying the wallet or Attackers implementation.
+
+#+begin_src sh
+just example scenarios financial-services wallet binance
+just example scenarios financial-services wallet binance-threat-model
+#+end_src
+
 * Tenant document access during policy migration
 
 [[file:TenantDevicePolicyEvolution.lean][TenantDevicePolicyEvolution.lean]] is an executable Cedar scenario, not a
@@ -93,3 +108,29 @@ multiple owners, proof reuse, and localized emergency changes.
 [[file:../Language/README.org][Language examples]] check Cedar syntax and export
 coverage. They are adapter conformance cases, not industry composition
 scenarios.
+
+* Scenario-local figures
+
+Every maintained scenario has an adjacent D2 declaration and generated SVG:
+=FinancialServices/Wallet/Base.d2= and =Base.svg= describe the reusable parent;
+=FinancialServices/Wallet/Binance2026.d2= and =Binance2026.svg= describe the
+reported incident; =TenantDevicePolicyEvolution.d2= and its SVG describe the
+synthetic tenant/device example. This family classification keeps each reported
+incident beside its reusable domain parent rather than in a parallel attack tree.
+
+The top-level =Project.sysml= declares the scenario figure inventory. Typed view
+models remain under =dev/sysml= and the existing =dev/ts= renderer produces
+adjacent SVG and PNG, with ignored build receipts. Run =just -f dev/Justfile render= from the
+repository root, then =just -f dev/Justfile test=. Receipts bind exact D2, SysML,
+Lean and renderer inputs; the existing 12px readability gate also applies here.
+These are source-bound assurance maps, not evidence of a live incident replay.
+
+The Binance incident also provides a separate =Binance2026Assurance.d2/svg=
+appendix. The primary incident picture favors the reported story and a refusal
+flow; detailed declaration cards remain available in that optional figure.
+
+* Tenant and device example
+
+#+CAPTION: The existing synthetic tenant/device scenario uses the shared metadata and derivation contract.
+#+ATTR_ORG: :width 1000
+[[file:TenantDevicePolicyEvolution.png]]

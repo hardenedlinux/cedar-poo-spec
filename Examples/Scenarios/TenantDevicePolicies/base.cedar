@@ -12,5 +12,5 @@ permit(
   action == Action::"read",
   resource
 ) when {
-  (principal.tenant) == (resource.tenant)
+  principal.tenant == resource.tenant
 };

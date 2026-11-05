@@ -1,0 +1,110 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: Apache-2.0
+
+vars: {d2-config: {data: {figure: |json
+{
+  "purpose": "architecture",
+  "component": {"kind": "payment", "variant": "base"},
+  "language": "en",
+  "width": 1700,
+  "primary": "purpose",
+  "themes": [
+    "editorial",
+    "comfortable"
+  ],
+  "icons": [
+    "engineering",
+    "cedar"
+  ],
+  "basis": {
+    "captureRef": "development-source-observation",
+    "modelRefs": [],
+    "obligationRefs": [],
+    "evidenceRefs": []
+  },
+  "title": "Wallet signing: reusable acceptance boundary",
+  "kind": "proof-reading-map",
+  "questions": [
+    {
+      "ref": "purpose",
+      "text": "Which declarations support this scenario, and where does the Host remain trusted?",
+      "focusRefs": [
+        "sysml"
+      ]
+    }
+  ],
+  "references": {
+    "source": "Examples/Scenarios/FinancialServices/Wallet/Base.d2",
+    "sysml": "dev/sysml/attackers.sysml",
+    "scenarioSource": "Examples/Scenarios/FinancialServices/Wallet/Base.lean",
+    "exactPaymentSource": "CedarPooSpec/Vertical/FinancialServices/PaymentSigning.lean",
+    "currentGatewaySource": "CedarPooSpec/Vertical/FinancialServices/PaymentSigning.lean",
+    "revokedSource": "CedarPooSpec/Vertical/FinancialServices/PaymentSigning.lean",
+    "hostSource": "CedarPooSpec/Vertical/FinancialServices/PaymentSigning.lean"
+  },
+  "copy": {
+    "description": "The synthetic parent scenario supplies typed wallet inputs. Cards link to exact Lean declarations.",
+    "status": "Kernel laws assume the modeled current state. Signer mediation, authentic bytes and durable execution remain Host obligations."
+  },
+  "presentation": {
+    "notation": "assurance",
+    "columns": 1,
+    "groups": [
+      {
+        "title": "Scenario and exact authorization",
+        "icon": "registrar",
+        "subjects": [
+          "scenario",
+          "exactPayment",
+          "currentGateway"
+        ],
+        "columns": 3
+      },
+      {
+        "title": "Refusal and trust boundary",
+        "icon": "registrar",
+        "subjects": [
+          "revoked",
+          "host"
+        ],
+        "columns": 2
+      }
+    ]
+  },
+  "sysml": {
+    "source": "dev/sysml/attackers.sysml",
+    "view": "WalletSigningProofs::assurance",
+    "bindings": {
+      "scenario": {
+        "name": "WalletSigningProofs::scenario",
+        "icon": "registrar"
+      },
+      "exactPayment": {
+        "name": "WalletSigningProofs::exactPayment",
+        "icon": "rules"
+      },
+      "currentGateway": {
+        "name": "WalletSigningProofs::currentGateway",
+        "icon": "gate"
+      },
+      "revoked": {
+        "name": "WalletSigningProofs::revoked",
+        "icon": "warning"
+      },
+      "host": {
+        "name": "WalletSigningProofs::host",
+        "icon": "current"
+      }
+    }
+  },
+  "proofs": {
+    "namespace": "WalletSigningProofs"
+  }
+}
+|
+}}}
+scenario: "Synthetic wallet scenario\nTyped current state + exact request"
+exactPayment: "Bind the exact transaction\nRelease retains approved terms"
+currentGateway: "Check the current gateway\nRelease retains mediated effect"
+revoked: "Refuse revoked authority\nA revoked request cannot release"
+host: "Host supplies authentic inputs\nReal signer + bytes + durable state"

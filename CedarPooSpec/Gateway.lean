@@ -6,3 +6,17 @@ import CedarPooSpec.Gateway.Consumption
 import CedarPooSpec.Gateway.AuthorizationDelta
 import CedarPooSpec.Gateway.ZeroTrust
 import CedarPooSpec.Gateway.PublicationReview
+import CedarPooSpec.Gateway.EffectProtocol
+import CedarPooSpec.Gateway.ReviewedEffect
+import CedarPooSpec.Gateway.Lifecycle
+import CedarPooSpec.Gateway.OAuth
+import CedarPooSpec.Gateway.OAuthCode
+import CedarPooSpec.Gateway.OAuthPAR
+import CedarPooSpec.Gateway.OAuthRefresh
+import CedarPooSpec.Gateway.OAuthRevocation
+import CedarPooSpec.Gateway.OAuthRevocationRecovery
+import CedarPooSpec.Gateway.OAuthRevocationCrash
+import CedarPooSpec.Gateway.OAuthReceiver
+import CedarPooSpec.Gateway.OAuthReceiptIdentity
+import CedarPooSpec.Gateway.OAuthReceiptRecovery
+import CedarPooSpec.Gateway.OAuthReceiptBatch

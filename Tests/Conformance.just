@@ -33,10 +33,20 @@ check-google-table-batch-v1:
 check-delta: check-gateway-delta check-authorization-delta check-authorization-delta-operational check-authorization-delta-reasons check-authorization-delta-effective-reasons check-payment-delta check-payment-interaction check-agent-trace-delta check-health-authorization-impact
 
 check-gateway:
-    lake build CedarPooSpec.Gateway Tests.Gateway.Contracts Tests.Gateway.Counterexamples Tests.Gateway.Objects Tests.Gateway.Publication Tests.Gateway.Delta Tests.Gateway.ZeroTrust
+    lake build CedarPooSpec.Gateway Tests.Gateway.Contracts Tests.Gateway.OAuth Tests.Gateway.OAuthCode Tests.Gateway.OAuthPAR Tests.Gateway.OAuthRefresh Tests.Gateway.RecoveryTraceMain Tests.Gateway.Counterexamples Tests.Gateway.Objects Tests.Gateway.Publication Tests.Gateway.Delta Tests.Gateway.ZeroTrust Tests.Gateway.PublicationReview Tests.ZeroTrust.UsageControl Tests.ZeroTrust.ImportBoundary Tests.ZeroTrust.Functional
+    cargo test --locked -p cedar-poo-runtime --features gateway --lib gateway::oauth
+    timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 --run Tests/Gateway/RecoveryTraceMain.lean > .lake/build/gateway-recovery-plan.json
+    timeout --signal=TERM --kill-after=3s 120s cargo test --locked -p cedar-poo-runtime --features gateway --lib gateway::oauth_refresh::tests::settlement::late_batch::trace:: -- --ignored --nocapture
+    timeout --signal=TERM --kill-after=3s 120s cargo test --locked -p cedar-poo-runtime --features gateway --lib gateway::oauth_refresh::tests::settlement::late_batch::settled_mapping:: -- --ignored --nocapture
+    timeout --signal=TERM --kill-after=3s 120s cargo test --locked -p cedar-poo-runtime --features gateway --lib gateway::oauth_refresh::tests::settlement::late_batch::settled_batch:: -- --ignored --nocapture
 
 check-gateway-delta: check-gateway
-    lake env lean --run Tests/Gateway/Delta.lean
+    lake build Productions.Gateway.CurrentUseMain
+    timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 --run Productions/Gateway/CurrentUseMain.lean
+    timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 --run Tests/Gateway/Delta.lean
+    cargo run --locked -p cedar-poo-bridge --manifest-path Cargo.toml -- replay-receipts < .lake/build/gateway-current-review-manifest.json > .lake/build/gateway-current-review-receipts.json
+    jq -e 'length == 10' .lake/build/gateway-current-review-receipts.json > /dev/null
+    cargo test --locked -p cedar-poo-runtime --lib publication_review -- --include-ignored
 
 check-replay-receipts: prepare-agent-payment-manifest
     cargo run --locked --quiet -p cedar-poo-bridge --manifest-path Cargo.toml -- replay-receipts < .lake/build/agent-payment-manifest.json > .lake/build/agent-payment-replay-receipts.json
@@ -164,11 +174,96 @@ check-functional-catalog: check-native-catalog
 
 # Consumer migration is an enforced boundary; primitives retain compatibility APIs.
 check-functional-consumers:
-    if rg -U -n 'def (policy\?|owner\?|control\?|channel\?|boundary\?|intent\?|scope\?|artifact\?)[^\n]*\n[ \t]+profile\.read' CedarPooSpec --glob '*.lean'; then exit 1; fi
-    if rg -n 'PolicyJson\.(authorizationCase|publish|compiled)\b|CompoundAuthorization\.authorize(All|Layers)\b' Examples Productions --glob '*.lean'; then exit 1; fi
-    if rg -n 'PolicyJson\.authorizationCase\b|CompoundAuthorization\.authorize(All|Layers)\b' CedarPooSpec --glob '*.lean' --glob '!Compilation.lean' --glob '!CompilationJson.lean'; then exit 1; fi
+    status=0; rg -U -n 'def (policy\?|owner\?|control\?|channel\?|boundary\?|intent\?|scope\?|artifact\?)[^\n]*\n[ \t]+profile\.read' CedarPooSpec --glob '*.lean' || status=$?; test "$status" -eq 1
+    status=0; rg -n 'PolicyJson\.(authorizationCase|publish|compiled)\b|CompoundAuthorization\.authorize(All|Layers)\b' Examples Productions --glob '*.lean' || status=$?; test "$status" -eq 1
+    status=0; rg -n 'PolicyJson\.authorizationCase\b|CompoundAuthorization\.authorize(All|Layers)\b' CedarPooSpec --glob '*.lean' --glob '!Compilation.lean' --glob '!CompilationJson.lean' || status=$?; test "$status" -eq 1
 
 check-claim-settlement-replay: build-examples
     timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 --run Examples/Manifests.lean catalog claim-settlement-claims claim-settlement-banking claim-settlement-handoff > .lake/build/claim-settlement-catalog.json
     cargo run --locked --quiet -p cedar-poo-bridge --manifest-path Cargo.toml -- replay-catalog < .lake/build/claim-settlement-catalog.json > .lake/build/claim-settlement-receipts.json
     jq -e 'length == 3 and (."claim-settlement-handoff".scenarios | length) == 14 and ([."claim-settlement-handoff".scenarios[] | select(.admitted) | .name] == ["ready"])' .lake/build/claim-settlement-receipts.json > /dev/null
+
+# Build one native wheel, install it in isolated interpreters, and compare actual
+# extension receipts with the existing Rust CLI for every applicable Lean entry.
+[script("bash")]
+check-python-bindings versions="3.11 3.14":
+    set -euo pipefail
+    lake build caseManifestsNative
+    .lake/build/bin/caseManifestsNative all
+    .lake/build/bin/caseManifestsNative catalog > .lake/build/functional-catalog.json
+    cargo build --locked -p cedar-poo-bridge
+    mkdir -p .lake/build/python-bindings
+    evidence=$(mktemp -d .lake/build/python-bindings/run.XXXXXX)
+    evidence=$(cd "$evidence" && pwd)
+    { git rev-parse HEAD; git status --porcelain=v1; sha256sum Cargo.lock python/uv.lock python/packages/bridge/pyproject.toml rust/python/Cargo.toml rust/python/src/lib.rs rust/python/src/bindings.rs; } > "$evidence/provenance.txt"
+    uv build --project python/packages/bridge --wheel --out-dir "$evidence/wheels"
+    wheels=("$evidence"/wheels/*.whl)
+    test "${#wheels[@]}" -eq 1
+    sha256sum "${wheels[0]}" > "$evidence/wheel.sha256"
+    native_venvs=$(mktemp -d)
+    trap 'rm -rf "$native_venvs"' EXIT
+    read -r -a requested_versions <<< {{quote(versions)}}
+    for version in "${requested_versions[@]}"; do
+        uv venv --python "$version" "$native_venvs/python$version"
+        interpreter="$native_venvs/python$version/bin/python"
+        uv pip install --python "$interpreter" "${wheels[0]}"
+        uv run --project python --package cedar-poo-py-test --locked python -m cedar_poo_py_test.resources --timeout-seconds 120 --output "$evidence/python$version.resource.json" "$interpreter" -I python/native_tests/test_bindings.py 2>&1 | tee "$evidence/python$version.log"
+        jq -e ' .returncode == 0 and .termination_reason == null and .owned_group_quiesced and .resource_observation_complete and .timeout_seconds == 120 ' "$evidence/python$version.resource.json" > /dev/null
+    done
+
+# Shared model, native effects and independent public audit across every case domain.
+check-effect-protocol: check-functional-catalog
+    lake build Tests.Gateway.EffectProtocol Productions.Gateway.EffectProtocolMain Productions.Gateway.CurrentUseMain
+    timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 --run Productions/Gateway/EffectProtocolMain.lean
+    timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 --run Productions/Gateway/CurrentUseMain.lean
+    cargo test --locked -p cedar-poo-runtime --features gateway --lib gateway::
+    timeout --signal=TERM --kill-after=3s 120s cargo test --locked -p cedar-poo-bridge --features gateway --test gateway gateway:: -- --include-ignored
+    cargo build --locked --release -p cedar-poo-bridge --features gateway
+    mkdir -p .lake/build/resources
+    timeout --signal=TERM --kill-after=3s 120s uv run --project python --package cedar-poo-py-test --locked python -m cedar_poo_py_test.resources --timeout-seconds 120 --output .lake/build/resources/gateway-effect.json rust/target/release/cedar-poo-bridge gateway-replay-catalog .lake/build/gateway-effect-protocol.json < .lake/build/functional-catalog.json > .lake/build/gateway-effect-results.json
+    jq -e '.returncode == 0 and .termination_reason == null and .owned_group_quiesced and .resource_observation_complete and .timeout_seconds == 120' .lake/build/resources/gateway-effect.json > /dev/null
+    jq -c '{format_version,catalogue_entries,outcome_count,applicable_entries:(.covered_entries|length),data_or_artifact_entries}' .lake/build/gateway-effect-results.json
+
+# Actual C4 nonidentity review -> publication -> current SDK effect, all domains.
+[script("bash")]
+check-reviewed-effects: check-functional-catalog
+    set -euo pipefail
+    lake build Tests.Gateway.ReviewedEffect Tests.Gateway.Lifecycle reviewedEffectsNative
+    mkdir -p .lake/build/reviewed-effects .lake/build/resources
+    jq -r '.entries | keys[]' .lake/build/functional-catalog.json > .lake/build/reviewed-effects/entries.txt
+    status=0
+    while IFS= read -r entry; do
+        if timeout --signal=TERM --kill-after=3s 120s .lake/build/bin/reviewedEffectsNative "$entry" > ".lake/build/reviewed-effects/$entry.json" 2> ".lake/build/reviewed-effects/$entry.log"; then
+            echo "REVIEWED-PRODUCER-OK: $entry"
+        else
+            code=$?
+            echo "REVIEWED-PRODUCER-FAILED: $entry; status=$code" >&2
+            cat ".lake/build/reviewed-effects/$entry.log" >&2
+            status=1
+        fi
+    done < .lake/build/reviewed-effects/entries.txt
+    test "$status" -eq 0
+    cargo test --locked -p cedar-poo-bridge --features gateway --lib reviewed -- --include-ignored
+    timeout --signal=TERM --kill-after=3s 120s cargo test --locked -p cedar-poo-bridge --features gateway --test gateway reviewed:: -- --include-ignored
+    cargo build --locked --release -p cedar-poo-bridge --features gateway
+    # The resource supervisor owns the 120-second deadline and the 3-second drain.
+    uv run --project python --package cedar-poo-py-test --locked python -m cedar_poo_py_test.resources --timeout-seconds 120 --output .lake/build/resources/gateway-reviewed-effects.json rust/target/release/cedar-poo-bridge gateway-reviewed-catalog .lake/build/reviewed-effects < .lake/build/functional-catalog.json > .lake/build/gateway-reviewed-effects.jsonl
+    jq -e '.returncode == 0 and .termination_reason == null and .owned_group_quiesced and .resource_observation_complete and .timeout_seconds == 120' .lake/build/resources/gateway-reviewed-effects.json > /dev/null
+    tail -n 1 .lake/build/gateway-reviewed-effects.jsonl | jq -c .
+    uv run --project python --package cedar-poo-py-test --locked python -m cedar_poo_py_test.resources --timeout-seconds 120 --output .lake/build/resources/gateway-lifecycle.json rust/target/release/cedar-poo-bridge gateway-lifecycle-catalog .lake/build/reviewed-effects < .lake/build/functional-catalog.json > .lake/build/gateway-lifecycle.jsonl
+    jq -e '.returncode == 0 and .termination_reason == null and .owned_group_quiesced and .resource_observation_complete and .timeout_seconds == 120' .lake/build/resources/gateway-lifecycle.json > /dev/null
+    tail -n 1 .lake/build/gateway-lifecycle.jsonl | jq -c .
+
+# Native API percentiles are distinct from complete regression process wall time.
+bench-gateway-runtime:
+    cargo build --locked --release -p cedar-poo-bridge --features gateway
+    timeout --signal=TERM --kill-after=3s 120s uv run --project python --package cedar-poo-py-test --locked python -m cedar_poo_py_test.resources --timeout-seconds 120 --output .lake/build/resources/gateway-runtime-api.json rust/target/release/cedar-poo-bridge benchmark-gateway-runtime .lake/build/reviewed-effects < .lake/build/functional-catalog.json > .lake/build/gateway-runtime-api.jsonl
+    jq -e '.returncode == 0 and .termination_reason == null and .owned_group_quiesced and .resource_observation_complete and .timeout_seconds == 120' .lake/build/resources/gateway-runtime-api.json > /dev/null
+    tail -n 1 .lake/build/gateway-runtime-api.jsonl > .lake/build/gateway-runtime-api.json
+    jq -c 'del(.samples,.program_samples)' .lake/build/gateway-runtime-api.json
+    jq -c '.program_samples[] | {kind:"native-program-setup", observation:.}' .lake/build/gateway-runtime-api.json
+    jq -c '.samples[] | {kind:"native-api-samples", observation:.}' .lake/build/gateway-runtime-api.json
+    timeout --signal=TERM --kill-after=3s 120s uv run --project python --package cedar-poo-py-test --locked python -m cedar_poo_py_test.resources --timeout-seconds 120 --output .lake/build/resources/gateway-append-scale.json rust/target/release/cedar-poo-bridge benchmark-gateway-append .lake/build/reviewed-effects < .lake/build/functional-catalog.json > .lake/build/gateway-append-scale.json
+    jq -e '.returncode == 0 and .termination_reason == null and .owned_group_quiesced and .resource_observation_complete and .timeout_seconds == 120' .lake/build/resources/gateway-append-scale.json > /dev/null
+    jq -c 'del(.samples_ns)' .lake/build/gateway-append-scale.json
+    jq -c '.samples_ns | to_entries[] | {kind:"native-append-samples",phase:.key,samples_ns:.value}' .lake/build/gateway-append-scale.json

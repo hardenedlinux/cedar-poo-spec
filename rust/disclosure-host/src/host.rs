@@ -10,7 +10,10 @@ use cedar_poo_core::operation_identity::{OperationId, OperationLedger};
 use cedar_poo_runtime::{
     ValidatedManifest, load_policy_set, render_validated_policy_sources, replay_validated_manifest,
 };
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
+#[cfg(unix)]
+#[path = "persistent.rs"]
+pub mod persistent;
 use serde_json::json;
 use std::collections::HashSet;
 use std::str::FromStr;
@@ -18,7 +21,7 @@ use std::sync::{Arc, Mutex};
 
 /// Proposed disclosure bound to its source lineage, recipient, purpose, output,
 /// channel, and cohort evidence. The Host must verify these values independently.
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct Effect {
     pub operation_id: OperationId,
     pub sources: Vec<String>,
@@ -32,7 +35,7 @@ pub struct Effect {
 }
 
 /// A scoped approval or delegation asserted by an authenticated authority.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Grant {
     pub issuer: String,
     pub grantee: String,
@@ -45,7 +48,7 @@ pub struct Grant {
 }
 
 /// Authenticated source-specific permission for one final recipient.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct RecipientGrant {
     pub source: String,
     pub recipient: String,
@@ -76,7 +79,7 @@ impl Grant {
 /// approval stores, the live sink ACL, and an audit-capable transaction in a
 /// real deployment. `audience_revision` must cover membership and recipient
 /// grant changes together.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Evidence {
     pub epoch: u64,
     pub policy_revision: u64,
@@ -128,6 +131,8 @@ impl Evidence {
 }
 
 struct PolicyBundle {
+    #[cfg(unix)]
+    identity: String,
     schema: Schema,
     entities: Entities,
     policies: PolicySet,
@@ -164,6 +169,14 @@ impl PolicyBundle {
             .map_err(|error| format!("Cedar entities: {error}"))?;
         let policies = load_policy_set(&case.policies)?;
         Ok(Self {
+            #[cfg(unix)]
+            identity: cedar_poo_runtime::gateway_source_sha256(&(
+                &*manifest.schema,
+                &*case.entities,
+                &*case.policies,
+                &case.request.principal,
+                &case.request.action,
+            ))?,
             schema,
             entities,
             policies,
@@ -256,8 +269,9 @@ impl PolicyBundle {
 }
 
 /// Prepared authority for one exact effect at specific Host state revisions.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Ticket {
+    scope: Arc<()>,
     effect: Effect,
     authority_id: AuthorityId,
     epoch: u64,
@@ -268,7 +282,7 @@ pub struct Ticket {
 }
 
 /// Process-local audit record emitted after a successful state commit.
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CommitReceipt {
     pub epoch: u64,
@@ -288,6 +302,13 @@ pub struct CommitReceipt {
     pub remaining_budget: u64,
     pub remaining_candidates: usize,
     pub selection_mutation: bool,
+}
+
+/// An attempted send is charged even when its outcome is unknown.
+#[derive(Debug)]
+pub enum DispatchOutcome {
+    Confirmed(CommitReceipt),
+    Unknown(CommitReceipt),
 }
 
 struct Inner {
@@ -324,8 +345,16 @@ fn admission_receipt(
         .used(&ticket.authority_id)
         .map_err(|error| format!("authority changed during commit: {error:?}"))?
         + 1;
+    let epoch = state
+        .epoch
+        .checked_add(1)
+        .ok_or("disclosure revision exhausted")?;
+    let remaining_budget = state
+        .budget
+        .checked_sub(1)
+        .ok_or("disclosure budget exhausted")?;
     let receipt = CommitReceipt {
-        epoch: state.epoch + 1,
+        epoch,
         operation_id: actual.operation_id.0.clone(),
         authority_id: ticket.authority_id.0.clone(),
         authority_used,
@@ -339,7 +368,7 @@ fn admission_receipt(
         approval_revision: state.approval_revision,
         delegation_revision: state.delegation_revision,
         audience_revision: state.audience_revision,
-        remaining_budget: state.budget - 1,
+        remaining_budget,
         remaining_candidates: if update_cohort {
             narrowed.len()
         } else {
@@ -369,8 +398,8 @@ fn commit_admitted(
     if update_cohort {
         inner.evidence.possible_ids = narrowed;
     }
-    inner.evidence.budget -= 1;
-    inner.evidence.epoch += 1;
+    inner.evidence.budget = receipt.remaining_budget;
+    inner.evidence.epoch = receipt.epoch;
     inner.audit.push(receipt.clone());
     Ok(receipt)
 }
@@ -379,6 +408,7 @@ fn commit_admitted(
 /// approval consumption, budget debit, cohort update, and the audit entry
 /// under one mutex.
 pub struct InMemoryDisclosureHost {
+    scope: Arc<()>,
     inner: Mutex<Inner>,
 }
 
@@ -389,6 +419,7 @@ impl InMemoryDisclosureHost {
         authority: AuthorityLedger<Effect>,
     ) -> Self {
         Self {
+            scope: Arc::new(()),
             inner: Mutex::new(Inner {
                 policies: Arc::clone(&policy.0),
                 evidence,
@@ -416,6 +447,7 @@ impl InMemoryDisclosureHost {
         }
         let state = &inner.evidence;
         Ok(Some(Ticket {
+            scope: Arc::clone(&self.scope),
             effect,
             authority_id,
             epoch: state.epoch,
@@ -430,10 +462,28 @@ impl InMemoryDisclosureHost {
     /// Durable stores must implement an equivalent single transaction.
     pub fn commit(&self, ticket: Ticket, actual: &Effect) -> Result<Option<CommitReceipt>, String> {
         let mut inner = self.inner.lock().map_err(|_| "Host lock poisoned")?;
-        if !ticket_current(&inner, &ticket, actual)? {
+        if !Arc::ptr_eq(&self.scope, &ticket.scope) || !ticket_current(&inner, &ticket, actual)? {
             return Ok(None);
         }
         commit_admitted(&mut inner, &ticket, actual).map(Some)
+    }
+
+    /// The trusted adapter receives the exact admitted effect once. A failed
+    /// call is ambiguous, so the charge and operation admission remain.
+    /// The process-local ledger provides no restart durability.
+    pub fn commit_and_dispatch(
+        &self,
+        ticket: Ticket,
+        actual: &Effect,
+        send: impl FnOnce(&Effect) -> Result<(), String>,
+    ) -> Result<Option<DispatchOutcome>, String> {
+        let Some(receipt) = self.commit(ticket, actual)? else {
+            return Ok(None);
+        };
+        Ok(Some(match send(actual) {
+            Ok(()) => DispatchOutcome::Confirmed(receipt),
+            Err(_) => DispatchOutcome::Unknown(receipt),
+        }))
     }
 
     pub fn observe_output(&self, digest: String, candidate_ids: Vec<String>) -> Result<(), String> {

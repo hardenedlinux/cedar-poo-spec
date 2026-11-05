@@ -1,0 +1,47 @@
+#+TITLE: Quint Threat Models
+#+LANGUAGE: en
+#+OPTIONS: toc:2
+
+* Location and source of truth
+
+Maintain hand-written Quint models under =dev/qnt/=. The shared
+[[file:attackers/Capabilities.qnt][capability projection]] has no industry-specific compromise graph.
+The [[file:financial/WalletSigning.qnt][financial model]] declares typed constants and imports only maintained source.
+A generated model-checking entry instantiates those constants from the actual
+checked LeanPoo attacker object. The producer is
+[[file:../../Examples/Scenarios/FinancialServices/Wallet/Binance2026Export.lean][Binance2026Export.lean]]. Generated entries import the maintained model, never the reverse. Generated
+input and verification receipts live
+under ignored =.lake/build/=; they are not a second maintained model.
+
+The existing =dev/package.json= and =dev/bun.lock= pin Quint 0.33.0. Apalache is
+explicitly pinned to 0.62.1 by the checker. Java and GNU timeout are prerequisites;
+Quint manages the pinned solver distribution through its normal tool cache.
+
+#+begin_src sh
+cd dev
+bun install --frozen-lockfile --ignore-scripts
+cd ..
+just example scenarios financial-services wallet binance-threat-model
+#+end_src
+
+* Separate evidence classes
+
+[[file:check.py][check.py]] typechecks maintained source in an isolated directory without any
+build products, typechecks the generated instance, runs all nine deterministic tests with seed 7,
+checks the hardened safety conjunction to depth 12, and requires an actual
+unsafe-signature ITF counterexample from the deliberately stale boundary to
+depth 4. Each command keeps a 120-second wall deadline and three-second kill
+grace. A timeout, backend error or missing/wrong counterexample fails the gate.
+
+The checker overwrites the current receipt before running and retains command
+arguments, expected/actual exits, tool versions, seed and source/input hashes in
+=.lake/build/wallet-threat/receipt.json=. Logs and the negative ITF trace are
+adjacent. An expected counterexample is a passing negative control; it is not a
+pass of the deliberately broken model's safety property.
+
+The [[https://quint.sh/docs/model-checkers][Quint documentation]] distinguishes randomized simulation, bounded Apalache
+checking and other backend capabilities. This gate uses deterministic tests and
+bounded Apalache verification, not =quint run= or unbounded temporal/liveness
+verification. The finite domains and corresponding Lean laws are described in
+the [[file:../../Examples/Scenarios/FinancialServices/Wallet/README.org][financial audit]]. No deployed Host behavior, cryptographic protocol,
+consensus guarantee or Lean/Quint transition-refinement theorem is established.

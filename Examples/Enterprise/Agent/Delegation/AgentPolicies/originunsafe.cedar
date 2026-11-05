@@ -5,7 +5,7 @@ forbid(
   action == Action::"verify-origin",
   resource == Tool::"delete-records"
 ) when {
-  !((context.origin) in Role::"Admin")
+  !(context.origin in Role::"Admin")
 };
 
 // POO policy ID: origin-user

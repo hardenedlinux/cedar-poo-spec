@@ -1,0 +1,60 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: Apache-2.0
+
+name: Cedar native Python bindings
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+jobs:
+  python-bindings:
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+        - ubuntu-latest
+        - macos-latest
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      with:
+        persist-credentials: false
+    - uses: leanprover/lean-action@50fcf42d2e460296f1a34b402e990d1b24f8b596
+      with:
+        auto-config: false
+        use-github-cache: false
+        build: false
+        test: false
+        lint: false
+    - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87
+      with:
+        components: rustfmt, clippy
+    - uses: taiki-e/install-action@b6a061addd82b81aaeca51bdf2c53cd707996e5a
+    - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4
+      with:
+        version: 0.11.3
+    - uses: ./.github/actions/lean-cache
+    - name: Restore Cargo cache
+      uses: Swatinem/rust-cache@49a0bdc70d2e1b713ca9e2869b211fcce03d3c1c
+      with:
+        workspaces: . -> rust/target
+    - name: Build native wheel; install and replay on CPython 3.11 and 3.14
+      run: just check-python-bindings
+    - name: Preserve wheel and original native binding evidence
+      if: ${{ always() }}
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      with:
+        name: python-native-${{ matrix.os }}
+        include-hidden-files: true
+        if-no-files-found: error
+        path: .lake/build/python-bindings/
+'on':
+  push:
+    branches:
+    - main
+  pull_request:
+    branches:
+    - main
+  workflow_dispatch: null

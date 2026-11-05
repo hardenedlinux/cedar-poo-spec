@@ -12,7 +12,7 @@ permit(
   action == Action::"read",
   resource
 ) when {
-  ((principal.tenant) == (resource.tenant)) && (context.deviceTrusted)
+  (principal.tenant == resource.tenant) && context.deviceTrusted
 };
 
 // POO policy ID: untrusted-device
@@ -21,5 +21,5 @@ forbid(
   action == Action::"read",
   resource
 ) when {
-  !(context.deviceTrusted)
+  !context.deviceTrusted
 };

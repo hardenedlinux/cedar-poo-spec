@@ -8,6 +8,7 @@ use crate::syntax::CheckedRevision;
 
 use cedar_policy::{
     AuthorizationError, Authorizer, Context, Decision, EntityUid, PolicySet, Request,
+    RestrictedExpression,
 };
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
@@ -132,6 +133,56 @@ fn diagnostic_body_counts(
     Ok(counts)
 }
 
+// This subset has no schema-directed entity/extension interpretation. Unknown
+// forms delegate to the original parser, including its exact diagnostics.
+fn literal_expression(value: &serde_json::Value) -> Option<RestrictedExpression> {
+    use serde_json::Value;
+    match value {
+        Value::Bool(v) => Some(RestrictedExpression::new_bool(*v)),
+        Value::Number(v) => v.as_i64().map(RestrictedExpression::new_long),
+        Value::String(v) => Some(RestrictedExpression::new_string(v.clone())),
+        Value::Array(values) => Some(RestrictedExpression::new_set(
+            values
+                .iter()
+                .map(literal_expression)
+                .collect::<Option<Vec<_>>>()?,
+        )),
+        Value::Object(values) => {
+            if values
+                .keys()
+                .any(|k| matches!(k.as_str(), "__expr" | "__entity" | "__extn"))
+            {
+                return None;
+            }
+            let fields = values
+                .iter()
+                .map(|(k, v)| Some((k.clone(), literal_expression(v)?)))
+                .collect::<Option<Vec<_>>>()?;
+            RestrictedExpression::new_record(fields).ok()
+        }
+        Value::Null => None,
+    }
+}
+fn literal_context(value: &serde_json::Value) -> Option<Context> {
+    let fields = value.as_object()?;
+    if fields
+        .keys()
+        .any(|k| matches!(k.as_str(), "__expr" | "__entity" | "__extn"))
+    {
+        return None;
+    }
+    if fields.is_empty() {
+        return Some(Context::empty());
+    }
+    Context::from_pairs(
+        fields
+            .iter()
+            .map(|(k, v)| Some((k.clone(), literal_expression(v)?)))
+            .collect::<Option<Vec<_>>>()?,
+    )
+    .ok()
+}
+
 pub(crate) struct ObservedDecision {
     pub(crate) decision: String,
     pub(crate) reasons: Vec<String>,
@@ -174,11 +225,21 @@ pub(crate) fn check_case<'input>(
         &mut preparation,
         metrics.as_deref_mut(),
     )?;
-    let context = Context::from_json_value(
-        case.request.context.clone(),
-        schema.map(|checked| (checked, &action)),
-    )
-    .map_err(|error| format!("Cedar schema context: {error}"))?;
+    // Keep schema-directed parsing and the independent uncached workflow as the
+    // oracle. Successful literal construction is fresh, never a context cache.
+    let context = if schema.is_none() && preparation.is_some() {
+        literal_context(&case.request.context)
+    } else {
+        None
+    };
+    let context = match context {
+        Some(context) => context,
+        None => Context::from_json_value(
+            case.request.context.clone(),
+            schema.map(|checked| (checked, &action)),
+        )
+        .map_err(|error| format!("Cedar schema context: {error}"))?,
+    };
     let request = Request::new(
         request_uid(
             &case.request.principal,

@@ -5,14 +5,15 @@ vars: {d2-config: {data: {figure: |json
 {
   "purpose": "architecture",
   "language": "en",
-  "width": 1280,
+  "width": 1700,
   "primary": "purpose",
   "themes": [
-    "sketchbook",
-    "compact"
+    "editorial",
+    "comfortable"
   ],
   "icons": [
-    "engineering"
+    "engineering",
+    "cedar"
   ],
   "basis": {
     "captureRef": "development-source-observation",
@@ -20,12 +21,12 @@ vars: {d2-config: {data: {figure: |json
     "obligationRefs": [],
     "evidenceRefs": []
   },
-  "title": "Zero Trust: objects, retained requirements and use",
+  "title": "Keep the parent rule; retire the old publication",
   "kind": "proof-reading-map",
   "questions": [
     {
       "ref": "purpose",
-      "text": "Why is root preservation insufficient, and what does composition prove?",
+      "text": "What prevents weaker children, duplicate use and reused reviews?",
       "focusRefs": [
         "sysml",
         "core"
@@ -42,19 +43,53 @@ vars: {d2-config: {data: {figure: |json
     "joinedSource": "CedarPooSpec/ZeroTrust/ProfileObject.lean",
     "preservedSource": "CedarPooSpec/ZeroTrust/ProfileObject.lean",
     "prefixSource": "CedarPooSpec/Gateway/ZeroTrust.lean",
-    "continuingSource": "CedarPooSpec/Gateway/ZeroTrust.lean"
+    "continuingSource": "CedarPooSpec/Gateway/ZeroTrust.lean",
+    "deltaHostSource": "CedarPooSpec/Gateway/PublicationReview.lean",
+    "frontierSource": "CedarPooSpec/Gateway/PublicationReview.lean",
+    "successiveSource": "CedarPooSpec/Gateway/PublicationReview.lean",
+    "finalRollbackSource": "Tests/Gateway/PublicationReview.lean"
   },
   "copy": {
-    "description": "Definitions, premises, kernel laws and counterexamples are distinct. Each card names its actual Lean declaration.",
-    "status": "Authored proof-reading map. Arrows label premises or lemma use; a conditional theorem is not native Host enforcement."
+    "description": "Three arguments: inherited rules, ongoing consumption, and publication epochs.",
+    "status": "PROOF marks a checked lemma dependency; CONTEXT explains the model. Authentic readers and every-writer ordering remain premises."
   },
   "presentation": {
-    "options": {
-      "elk.direction": "DOWN",
-      "elk.layered.spacing.nodeNodeBetweenLayers": "48"
-    },
-    "edgeLabels": true,
-    "legend": true
+    "notation": "assurance",
+    "columns": 1,
+    "groups": [
+      {
+        "title": "Retain both object rules",
+        "icon": "branch",
+        "subjects": [
+          "profile",
+          "session",
+          "counter",
+          "joined",
+          "preserved"
+        ],
+        "columns": 5
+      },
+      {
+        "title": "Do not consume twice",
+        "icon": "registry",
+        "subjects": [
+          "prefix",
+          "continuing"
+        ],
+        "columns": 2
+      },
+      {
+        "title": "Advance the publication frontier",
+        "icon": "gate",
+        "subjects": [
+          "deltaHost",
+          "frontier",
+          "finalRollback",
+          "successive"
+        ],
+        "columns": 4
+      }
+    ]
   },
   "sysml": {
     "source": "dev/sysml/zero-trust-proofs.sysml",
@@ -62,19 +97,19 @@ vars: {d2-config: {data: {figure: |json
     "bindings": {
       "profile": {
         "name": "ZeroTrustProofs::profile",
-        "icon": "library"
+        "icon": "puzzle"
       },
       "session": {
         "name": "ZeroTrustProofs::session",
-        "icon": "library"
+        "icon": "request"
       },
       "counter": {
         "name": "ZeroTrustProofs::counter",
-        "icon": "decision"
+        "icon": "warning"
       },
       "joined": {
         "name": "ZeroTrustProofs::joined",
-        "icon": "library"
+        "icon": "branch"
       },
       "preserved": {
         "name": "ZeroTrustProofs::preserved",
@@ -82,11 +117,27 @@ vars: {d2-config: {data: {figure: |json
       },
       "prefix": {
         "name": "ZeroTrustProofs::prefix",
-        "icon": "obligation"
+        "icon": "registry"
       },
       "continuing": {
         "name": "ZeroTrustProofs::continuing",
+        "icon": "current"
+      },
+      "deltaHost": {
+        "name": "ZeroTrustProofs::deltaHost",
+        "icon": "gate"
+      },
+      "frontier": {
+        "name": "ZeroTrustProofs::frontier",
+        "icon": "pending"
+      },
+      "successive": {
+        "name": "ZeroTrustProofs::successive",
         "icon": "evidence"
+      },
+      "finalRollback": {
+        "name": "ZeroTrustProofs::finalRollback",
+        "icon": "warning"
       }
     }
   },
@@ -96,17 +147,25 @@ vars: {d2-config: {data: {figure: |json
 }
 |
 }}}
-profile: "Type-indexed Profile [definition]\noriginal requirement is an index\nrefines : selected implies original"
-session: "Session / Contract [definition]\nactual source-bound object reads\nshape checks do not select authority"
-counter: "Root-only is insufficient [proved]\nroot <= 10; parent <= 5\nraw override accepts value 8\nthe stricter parent can be lost"
-joined: "Composed acceptance [premise]\nrequired-parent AND selected\nat the actual effect and view"
-preserved: "Composition [kernel law]\ncomposed_preserves_actual_\nparent_and_original\ngiven: composed requirement holds\nthen: both actual reads + both rules\nand the original requirement"
-prefix: "Ongoing evidence [premises]\ncurrent continuing acceptance\ninstalled CommittedPrefix\nauthentic required-parent selection"
-continuing: "Continuing use [kernel law]\ncontinuing_objects_preserve_\nparent_and_consumption\ngiven: composition accepted\nthen: parent + current + prefix\noriginal operation cannot reconsume"
-profile -> session: "Typed projection and actual source reads"
-profile -> counter: "Counterexample to parent preservation inference"
-session -> joined: "Retain independent parent and selected Sessions"
-counter -> joined: "Design motivation; not a proof-term dependency"
-joined -> preserved: "Accepted conjunction is a theorem premise"
-preserved -> continuing: "Actual lemma used by Gateway proof"
-prefix -> continuing: "Additional continuing framework premises"
+profile: "Profile\nSelected rule implies original"
+session: "Session / Contract\nRead the actual source object"
+counter: "Root-only check loses a rule\nRoot ≤ 10; parent ≤ 5\nValue 8 passes root, fails parent"
+joined: "Require both rules\nParent AND selected\nAt the same effect and view"
+preserved: "Composition keeps both\nIf: composed acceptance holds\nThen: actual reads + both rules"
+prefix: "Retain the consumed prefix\nAssume: current acceptance\nAnd: authentic parent + history"
+continuing: "Continue without reconsuming\nIf: composed use is accepted\nThen: current + prefix + parent\nRepeat consumption is refused"
+profile -> session: "Typed reads"
+profile -> counter: "Parent-loss counterexample"
+session -> joined: "Retain both Sessions"
+counter -> joined: "Motivates conjunction"
+joined -> preserved: "Accepted conjunction"
+preserved -> continuing: "Keeps parent rule"
+prefix -> continuing: "Current + prefix"
+
+deltaHost: "Bind the actual frontier\nRequired pre/post epoch reader"
+frontier: "Final installs its successor\nIf: an actual Delta Final exists\nThen: epochs match its frontier"
+successive: "Later Finals advance\nIf: two Finals + monotone Run\nThen: review epochs increase"
+finalRollback: "Whole-reader rollback fails\nRestore every authority reader\nThe same Final can apply again"
+deltaHost -> frontier: "Pre/post binding"
+frontier -> successive: "Frontier law"
+finalRollback -> successive: "Every writer required"

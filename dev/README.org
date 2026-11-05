@@ -1,13 +1,33 @@
 # SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 # SPDX-License-Identifier: Apache-2.0
 
-#+title: Lean JSON, SysML and hand-drawn engineering views
+#+title: Source-bound engineering views
 #+language: en
+
+* Project entry and language ownership
+
+The top-level [[file:../Project.sysml][Project.sysml]] follows the source-bound project-entry organization of
+[[https://github.com/hardenedlinux/deterministic-engineering][deterministic-engineering]], using the existing pinned renderer revision.
+It declares development owners and the SysML source inventory. All TypeScript
+implementation and tests live under =dev/ts/=; SysML lives under =dev/sysml/=
+and Quint under =dev/qnt/=. =package.json=, its lockfile and =tsconfig.json=
+remain the existing development entry, dependency and compiler declarations.
+
+The OpenSysML SDK parses Project.sysml and evaluates its declared roots and
+source list. Each view must select declared SysML sources. The same captured
+Project bytes join that view's actual parse and publication hash, so missing,
+changed, undeclared or escaping sources refuse. No SysML text parser, new model
+runtime, project/package loader or duplicate dependency configuration is added.
+The existing renderer still owns questions, vector export and the 12px gate.
+
+=dev/sysml/attackers.sysml= maps the actual shared/financial Lean declarations
+and Host boundary. SDK and native Lean checks validate its assurance claims;
+these declarations do not establish a physical incident reconstruction.
 
 * One development path
 
 Native Lean =caseManifestsNative catalog= publishes the existing SourceCatalog JSON.
-=dev/catalog.ts= observes only entry headers, source-reference closure and counts;
+=dev/ts/catalog.ts= observes only entry headers, source-reference closure and counts;
 it never parses Cedar policies or turns an expected allow/deny into a decision.
 Opaque policy, schema and entity values remain =unknown= because their semantics
 belong to the existing Lean/Rust owners, not to this display adapter.
@@ -30,10 +50,94 @@ to match an actual SDK connection. Missing, additional or drifting relationships
 refuse. Captions do not replace topology. These are logical specification handoffs,
 not physical networking links or a proof that Lean import boundaries conform.
 
-The installed deterministic-engineering renderer owns typed composition, font
-measurement, ELK layout, Rough.js strokes and PNG/SVG/HTML exports. Long connection
-labels become a readable source-bound legend; actual text must remain at least
-12 CSS pixels. This local condition does not assert aesthetic acceptance.
+The installed renderer owns vector annotations, declared surfaces, measured
+text and PNG/SVG/HTML export. This project selects a notation from the question
+being answered. It no longer sends every view through one directed-graph
+compositor. The original 12 CSS pixel readability gate remains in force.
+
+| View | Expression | What it communicates |
+|------+------------+----------------------|
+| Architecture overview | Illustrated reading guide and dependency graph | Library, independent consumers and runtime boundaries; static relationships |
+| Model Components | Grouped capability catalogue | Composition/control, operation/information and cross-industry capabilities |
+| Verticals and platforms | Industry/platform comparison | Industry controls and separate platform projections |
+| Zero Trust detail | Dependency graph | Which layer supplies semantics, refinement or binding to another |
+| Transport inventory | Quantitative distribution | Native entry counts, checked through the SDK |
+| Model proofs | Assurance panels | Requirements, current-use laws, history laws and counterexamples |
+| Object proofs | Assurance panels | Original-parent composition, continuing use and publication-frontier Contracts |
+| Profile admission | Branching workflow | Success/error return paths of the actual pure APIs |
+| Publication ownership | Swimlanes | Caller, shared authority and observer responsibilities; one retained lock scope |
+| Final completion | Task decomposition | All mandatory fields together, not a temporal sequence |
+
+Reading groups are authored presentation, not additional SysML containment or
+execution stages. Every captured subject still appears exactly once, and every
+captured relationship stays visible as a dependency arrow or a numbered argument
+reference. PROOF references retain checked lemma uses; CONTEXT references are
+explanatory and do not assert proof-term dependencies. Proof labels distinguish native-checked lemma dependencies from authored
+reading relationships. The bars consume already verified numeric SDK observations,
+not numbers parsed from prose. No industry/platform coverage cross-product is
+invented. Temporal flow or sequence notation belongs to a view with actual
+ordered events; these static responsibility and proof views do not assert one.
+
+* Visual communication standard
+
+Read the [[file:../docs/diagram-review.org][student-perspective review]] for all ten views, before/after measurements,
+comprehension questions and remaining limitations. This is an author review,
+not a study with recruited students.
+
+A view starts from a reader's question and the decision they need to make.
+Use a scene or structure that carries the explanation: participants, a shared
+boundary, alternative outcomes, required inputs, quantities or a proof argument.
+Choose the notation after identifying these semantics. A different palette on
+the same stack of text cards does not constitute a different visual explanation.
+
+- Show a few clear regions with short question headings. Place related visual
+  information together; use available width before creating a tall text scroll.
+- Give icons distinct meanings (request, evidence, registrar, registry, recovery,
+  current-use shield, pending intent and commit gate). Repeating a document icon
+  for every role adds no information. Every image remains an inspectable vector.
+- Keep the main labels in the reader's language. Function names, field names and
+  proof terms belong in the source index or proof view when they are not needed
+  to understand the main scene. The source binding remains machine checked.
+- Make relation semantics visible: alternatives for workflows, responsibility
+  and retained critical sections for lanes, AND requirements for task assemblies.
+  Never imply temporal order, authenticated facts or completed work by decoration.
+- Visually inspect the complete exported image for whitespace, text burden,
+  hierarchy and navigation. Existing 12px/vector/source checks remain necessary;
+  passing them alone does not establish human comprehension or design quality.
+
+* A reading path for people
+
+Start with the architecture to locate a responsibility. Move to the
+[[file:d2/gateway-profile-workflow.png][Profile admission workflow]] to follow success/error alternatives. Use the
+[[file:d2/gateway-publication-swimlanes.png][publication swimlanes]] to locate each participant and the retained atomic
+boundary. Then use the [[file:d2/gateway-final-tasks.png][Final task decomposition]] to ask what evidence must
+exist together; finish at the proof maps to distinguish kernel guarantees,
+Host premises and deliberate counterexamples. These are different questions,
+not interchangeable render themes.
+
+| Notation | Meaning of its structure | What must not be inferred |
+|----------+--------------------------+---------------------------|
+| Workflow | Labelled alternatives; one return path per call | Every branch runs, or a returned Receipt dispatches an effect |
+| Swimlanes | One responsible participant per operation; rows give the documented call order | Separate rows are separate transactions; the callback is outside the lock |
+| Tasks | Every child is required (AND); leaves state completion requirements | Child order is execution order; a task card is a completed verification |
+| Assurance | Definitions, premises, checked lemma uses and counterexamples | Explanatory links are proof terms or authenticated external facts |
+
+The three behavior views name their scope. Profile admission is pure Lean;
+publication lanes describe the existing Rust test-owned in-memory authority;
+Final tasks assemble record-construction obligations around three reader questions. They do not represent
+production dispatch or a captured runtime trace. Workflow/Final symbols and
+defining modules are checked by the existing native Lean declaration checker.
+The Final task map also checks its complete field set against Lean structure
+metadata; omitted and substituted projections refuse, even if all remaining
+symbols are valid.
+The swimlane source is the actual Rust fixture, captured byte-for-byte.
+
+The notation binder refuses unreachable or cyclic workflows, missing terminal
+outcomes, unlabelled decision alternatives, missing/duplicate lane ownership,
+missing stages, backwards handoffs and non-tree task requirements. Source
+capture and SDK edge closure remain mandatory. These checks validate the
+authored reading model; they do not extract arbitrary program behavior or
+replace the Rust concurrency regressions.
 
 * Distinct model scopes
 
@@ -70,6 +174,12 @@ just render
 just test
 #+end_src
 
+=bun run test= delegates to =just test=, which builds the required Lean test
+modules before running Bun. Direct =bun test= skips that prerequisite and is
+only appropriate after the standard build has completed. The proof suite reuses
+one SDK-owned WASM worker; every source mutation is still parsed and checked
+independently, with the original test deadlines unchanged.
+
 =just build= uses the existing Lake target. =just prepare= directly executes the
 existing compiled Lean producer; it does not start a benchmark or another test
 runner. =just render= builds that existing target first and consumes those original bytes. Call =bun run render path=
@@ -89,7 +199,7 @@ this view neither replaces them nor modifies their resource limits.
 | =d2/*.png= | Hand-drawn documentation images; no external font load needed |
 | =d2/*.svg= | Vector export with embedded font notices |
 | =../.cache/render/dev/d2/*.html= | Browser verification intermediate; ignored by Git |
-| =d2/*.json= | Input/output hashes, SDK spans/model hash, input counts and observations |
+| =../.cache/render/**/*.json= | Disposable input/output and SDK acceptance receipts; ignored by Git |
 
 The source =CedarPooSpec/ZeroTrust/architecture.d2= and its RAW SVG are migrated to
 this development path. The module README displays the new PNG and links its model
@@ -107,7 +217,7 @@ New development glue uses that license and HardenedLinux project attribution.
 The renderer is installed by Bun from its reviewed upstream Git revision and
 retains LGPL-2.1-or-later. No renderer source archive is committed here. OpenSysML packages retain their own Apache-2.0 license.
 Kalam's actual 2014 Indian Type Foundry notice and OFL-1.1 are retained in exports.
-JSON and PNG use standard REUSE sidecars; comment-capable sources
+Maintained JSON source data and PNG use standard REUSE sidecars; comment-capable sources
 carry in-file SPDX headers. =../LICENSES= contains the canonical licenses this development subtree uses.
 
 * Audit and invalidation boundary
@@ -115,8 +225,10 @@ carry in-file SPDX headers. =../LICENSES= contains the canonical licenses this d
 The host discovers top-level =d2/*.d2= declarations; it contains no figure-name
 switch. Questions, themes, icons, layout options and model/name bindings stay in
 D2. The existing Render Library owns D2 compilation, SDK display projection,
-ELK, font measurement, Rough.js and output serialization. The local composer
-adds only Cedar's heading/legend composition; it implements no layout solver.
+ELK, font measurement, Rough.js and output serialization. The local composer selects responsibility regions, catalogues, compact
+relationship tables, quantity charts or assurance panels from each view's
+question. Browser grid/table layout and native vector annotations express these
+structures; no replacement layout solver or universal flow template is added.
 
 The finite catalog categories and format 2 describe the existing Lean wire
 contract, not a second policy parser or version registry. Source pools remain
@@ -216,7 +328,7 @@ binary and its build declarations. Unrelated D2 changes and producer changes do
 not invalidate an architecture-only view. A change inside a shared referenced
 file still invalidates its consumers; granularity is per file, not per AST span.
 
-=artifacts.ts= is a filesystem adapter over the existing renderer receipt. It
+=ts/artifacts.ts= is a filesystem adapter over the existing renderer receipt. It
 removes the old active receipt before invoking the exporter, stages complete
 bytes in a temporary directory, checks current sources, renames outputs and
 commits the receipt last. Browser interruption or a mid-write filesystem error
@@ -339,3 +451,64 @@ receipt before the update, then refused it with =Captured source changed= for
 SDK/Lean interpretation, Questions and layout declarations are unchanged.
 The existing cold-install, exact-source and dependency/worker/artifact recovery
 checks apply to this released source, without consuming a Release attachment.
+
+* Final task source index
+
+The primary picture uses short labels. Its SDK metadata retains these exact
+source bindings in =CedarPooSpec/Gateway/PublicationReview.lean=:
+
+| Picture label | Actual =PublicationReview.Final= field |
+|---------------+---------------------------------------|
+| Same request | =receipt= |
+| Admissible intent | =pending= |
+| Selected review | =approved= |
+| Registered evidence | =durable= |
+| Recovered registry | =recovered= |
+| Current registrar | =fenced= |
+| Current use | =current= |
+| Bound commit | =committed= |
+
+Scenario-local D2 declarations are explicitly listed in =Project.sysml= under
+=scenarioFigures=. The same render command publishes their SVG and PNG beside the Lean scenarios in =Examples/Scenarios/=; =dev/sysml/= remains
+the owner of maintained SysML source. Undeclared figures and paths escaping the
+scenario directory are refused.
+
+The reusable Financial identity frame is in =dev/ts/components/financial.ts=;
+=payment.ts= specializes it for wallet signing and reported incident views.
+Original AI-generated artwork, generation prompts and hashes live under
+=dev/assets/financial/=. Artwork is embedded in SVG as explicit raster images;
+all proof cards, model relations and semantic labels retain native vector form.
+The same source/publication checks also bind image bytes through binary hashes.
+
+The Binance figure starts with four illustrated reported stages, explains the
+current signing gates and delegation containment timeline, then gives each
+component a distinct source-bound structural miniature. Incident provenance is
+exported from Lean during =prepare= under the existing 120s wall-time, 3s kill
+grace and Lean memory/heartbeat limits. macOS uses GNU =gtimeout= from coreutils;
+the views workflow installs it explicitly. Generation is never part of CI: only
+the checked-in original image bytes and their prompt/hash manifests are read.
+
+* Illustrated financial scenario
+
+#+CAPTION: Follow the reported entry path and the stateful modeled defense; detailed proof cards are a separate appendix.
+#+ATTR_ORG: :width 1200
+[[file:../Examples/Scenarios/FinancialServices/Wallet/Binance2026.png]]
+
+* Compression and generated evidence
+
+=deterministic-engineering= at =6f3113eaeb75effb8b692b8eacae1cbe48767769= owns
+the Sharp dependency and native encoding. Its public =encodeWebP= compresses
+the illustration layer at explicit lossy quality 88, lossless alpha and effort 4,
+retaining original pixel dimensions. Cedar declares no direct Sharp dependency
+and implements no resizing or codec pipeline. The existing PNG deliverable uses
+the upstream lossless PNG compression; an unused whole-figure WebP is not emitted.
+Text, nodes, ports and edges remain native SVG. Original PNGs and one generation
+manifest retain the selected artwork and exact prompts. Render-time binaries
+and native output validation remain checked.
+
+Generated JSON receipts now live only under =.cache/render/= alongside the
+existing HTML intermediates, and CI uploads that ignored directory. Git owns
+maintained source and published pictures; these disposable receipts validate
+current source-to-output binding and acceptance rather than duplicating a
+scenario metadata source. Lean owns scenario metadata. No adjacent generated
+receipt JSON or per-receipt license sidecars need versioning.

@@ -372,10 +372,11 @@ fn policy_body_preparation_shares_only_complete_source_within_one_invocation() {
             actual,
             original().expect("independent uncached normalization")
         );
-        assert_eq!(metrics.policy_body_normalizations, 2);
+        assert_eq!(metrics.policy_body_normalizations, 0);
+        assert_eq!(metrics.typed_policy_body_matches, 2);
         assert_eq!(metrics.policy_body_reuses, 0);
         assert_eq!(metrics.revision_syntax_reuses, 1);
-        assert_eq!(metrics.policy_body_slot_peak, 2);
+        assert_eq!(metrics.policy_body_slot_peak, 0);
         assert_eq!(metrics.prepared_revisions, 3);
         assert_eq!(metrics.source_policy_loads, 2);
         assert_eq!(metrics.source_policy_reuses, 1);

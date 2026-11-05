@@ -1,10 +1,37 @@
 [project]
 name = "cedar-poo-bridge"
 version = "0.1.0"
-description = "Python process client for the Cedar POO Rust bridge"
+description = "Native Rust Cedar validation and replay bindings"
 requires-python = ">=3.11"
 dependencies = []
 
 [build-system]
-requires = ["uv_build==0.11.3"]
-build-backend = "uv_build"
+requires = ["maturin==1.16.0"]
+build-backend = "maturin"
+
+[tool.maturin]
+manifest-path = "../../../rust/python/Cargo.toml"
+python-source = "src"
+module-name = "cedar_poo_bridge._native"
+bindings = "pyo3"
+features = ["pyo3/extension-module"]
+locked = true
+
+# The native path dependency closure is outside this Python package directory.
+# Include those sources explicitly in uv's existing build cache identity.
+[tool.uv]
+cache-keys = [
+  { file = "pyproject.toml" },
+  { file = "src/**/*.py" },
+  { file = "src/**/*.pyi" },
+  { file = "src/cedar_poo_bridge/py.typed" },
+  { file = "../../../Cargo.toml" },
+  { file = "../../../Cargo.lock" },
+  { file = "../../../.cargo/config.toml" },
+  { file = "../../../rust/python/Cargo.toml" },
+  { file = "../../../rust/python/src/**/*.rs" },
+  { file = "../../../rust/runtime/Cargo.toml" },
+  { file = "../../../rust/runtime/src/**/*.rs" },
+  { file = "../../../rust/core/Cargo.toml" },
+  { file = "../../../rust/core/src/**/*.rs" },
+]

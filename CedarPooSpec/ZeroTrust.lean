@@ -3,3 +3,4 @@ import CedarPooSpec.ZeroTrust.Composition
 import CedarPooSpec.ZeroTrust.Continuous
 import CedarPooSpec.ZeroTrust.UsageControl
 import CedarPooSpec.ZeroTrust.ProfileObject
+import CedarPooSpec.ZeroTrust.Evidence

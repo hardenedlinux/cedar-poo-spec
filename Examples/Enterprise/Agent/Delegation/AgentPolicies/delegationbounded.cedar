@@ -5,5 +5,5 @@ permit(
   action == Action::"delegate",
   resource == Agent::"data-bot"
 ) when {
-  ((context.depth) <= 3) && ((resource.capabilities).containsAll(context.requestedCaps))
+  (context.depth <= 3) && resource.capabilities.containsAll(context.requestedCaps)
 };

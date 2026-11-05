@@ -1,0 +1,151 @@
+#+TITLE: External Security Implementations: Gap and Integration Audit
+#+LANGUAGE: en
+#+OPTIONS: toc:2
+
+* Scope and conclusion
+
+This is a static, source-based audit dated 2026-11-03. It compares nine external
+repositories with SPEC commit =9c04814= and selected current Weaver execution
+sources. External deployments and test suites were not executed. Repository
+stars and README claims are not security evidence. Findings distinguish missing
+contracts, incomplete application refinement and optional product integration.
+
+The useful common improvement is an end-to-end binding from authenticated fact
+sources, through reviewed policy publication and current admission, to the exact
+mediated effect and independently checkable outcome. Do not add nine security
+engines, replace Cedar or move transport/database implementation into Lean.
+
+* Corrections to the supplied comparison
+
+- agent-custody does not generally forward a protected call when its precommit
+  log rejects authorization. Enforcement withholds it. Its observation mode has
+  an explicit non-strict, non-financial forwarding exception. An empty precommit
+  configuration is another distinct case. These modes must not be conflated.
+- OpenFirma's proxy integration requires traffic to traverse its boundary.
+  Respecting HTTP_PROXY/HTTPS_PROXY is not proof against an adversarial process
+  opening another route. Credential isolation and network coverage are separate.
+  Its advertised policy-push delay is not immediate source-of-truth currentness.
+- Weaver already owns provider consumption, durable unknown ranges, a private
+  by-value ProviderRelease bound to session/plan/digest/format, and final checks
+  around queue insertion. Generic filesystem descriptor binding remains a
+  different, resource-specific obligation. Neither capability starts from zero.
+- SPEC already exports schema-bound inputs and Rust already performs strict
+  validation. The interoperability gap is a maintained, versioned external
+  contract with compatibility tests, not the absence of schemas.
+- Existing P-256/JWS mandate verification is not missing cryptography. Binding
+  authenticated originating-user/MFA/audience/session facts to actual use is
+  the open application integration; copying HMAC would not itself solve it.
+- Current release coherence is implemented at =9c04814=: ongoing admission binds
+  active root, exact policies, enforcing mode and epoch. Complete Host/IO trace
+  refinement and independent fact authenticity remain open.
+
+* Repository findings
+
+| Reference | Useful inspected mechanism | Actual gap and placement | Priority |
+|-----------+----------------------------+--------------------------+----------|
+| [[https://github.com/Firma-AI/openfirma/tree/1d793612485f0bc9f6d3ba75b6b45d301e8cd2f3][OpenFirma]] | Out-of-process admission, unmapped-request refusal, credentials released after permission | Versioned action projection and explicit interception coverage in an existing native Gateway adapter. Unknown mappings, redirects and alternate routes need refusal/bypass controls. No universal-network-coverage claim. | P1 |
+| [[https://github.com/svayatta/agent-custody/tree/39266b569db620d257f3972a6498da8bb703b19e][agent-custody]] | Per-field provenance, authorization-before-forward, independent log verification and provider-side completeness checks | Export source identity, evidence class, validity and verification result; separate local durability from external witnesses. Add independent outcome reconciliation through the shared Backend, first with simulated provider records. | P0/P1 |
+| [[https://github.com/ridi-oss/proxy-monster/tree/b85c0185d2590d1a7b8bda71614cf105ded23b1b][proxy-monster]] | Query lineage, statement-level enforcement and audit-before-relay | Optional database protocol adapter and physical lineage correspondence. Its limitations include revocation exposure and name-keyed classification problems. Do not import its SQL/control-plane architecture into the common Backend. | P2 |
+| [[https://github.com/trusted-remote-execution/trusted-remote-execution/tree/0a392d41e10c23e7fd9c1cfba4ff1d49d79bcc27][trusted-remote-execution]] | Cedar-mediated system APIs and descriptor-oriented safe IO | Bind resource generation and the actual open handle to authorization, and specify rename/symlink/reopen behavior in each native effect adapter. The repository describes TOCTOU mitigation, not a complete elimination theorem. | P0 model / P1 adapter |
+| [[https://github.com/cedar-policy/cedar-for-agents/tree/6e3e0e68e37eed2c7151c45f7dd06aad30621cc4][cedar-for-agents]] | Analysis tools and MCP-description-to-Cedar schema/request generation | A governed edit-to-publish path that requires engine evidence for exact source/schema identities. Generated tool descriptions need authenticated ownership and collision/unsupported-input tests; generation alone establishes no trust. | P0/P1 |
+| [[https://github.com/Pigius/cedar-mcp-server/tree/0a1e1c1063345f3c95b9c24630c6c0033cc487a0][cedar-mcp-server]] | Local validation, request matrices and structural policy/schema change explanations | Reuse authoring assistance only. AVP update-in-place rules and safe/review/breaking schema labels are not a semantic no-gain theorem and cannot replace SymCC or ExactCoverage. | P1 |
+| [[https://github.com/aws-samples/sample-cedar-agentic-ai-authorization/tree/047a1be9b26aa53aedc2329d1420d0ec3665c13d][AWS authorization sample]] | Originating-user context, layered refusal and audit delivery fallback | Verify user/MFA source before signing; bind audience, operation and freshness. Reuse existing signature/mandate owners. Its audit emitter deliberately does not block decisions and can lose events when no DLQ exists; that is not mandatory pre-effect evidence. | P0/P1 |
+| [[https://github.com/ScopeBlind/scopeblind-gateway/tree/07360605999c1ce1926b46a098ed39d8ea4f4544][ScopeBlind/protect-mcp]] | Existing-server wrapper, explicit shadow/enforce behavior, signed decisions and startup refusal self-test | A native MCP entrypoint through the same admission engine, with observable mode and no shadow-to-authorized conversion. Its security policy records historical evaluator fail-open versions; pin and test actual enforcing behavior. | P1 |
+| [[https://github.com/RelayOne/truecom-specs/tree/a0883314bf83553779c7e35b9dc37e8683480f71][truecom-specs]] | Normative schema adjacent to wire/API specifications | Publish versioned SPEC-facing schema/receipt contracts and positive/negative vectors. The public specification's comment about rejecting unknown types is not a verified runtime implementation; its documented validation command checks OpenAPI. | P0 contract / P1 compatibility |
+
+* Primary source anchors
+
+The important findings were checked beyond repository summaries:
+
+- [[https://github.com/svayatta/agent-custody/blob/39266b569db620d257f3972a6498da8bb703b19e/packages/receipts/src/gateway.ts][Gateway forwarding and logging]], [[https://github.com/svayatta/agent-custody/blob/39266b569db620d257f3972a6498da8bb703b19e/packages/receipts/src/receipt.ts][field provenance]], [[https://github.com/svayatta/agent-custody/blob/39266b569db620d257f3972a6498da8bb703b19e/packages/receipts/docs/threat-model.md][operator/agent boundaries]] and [[https://github.com/svayatta/agent-custody/blob/39266b569db620d257f3972a6498da8bb703b19e/packages/receipts/docs/completeness.md][provider completeness]]. A log commits existence, not truth; an observed response is not necessarily signed by its provider. Completeness depends on the provider's independent enumeration, scope and reporting window.
+- [[https://github.com/Firma-AI/openfirma/blob/1d793612485f0bc9f6d3ba75b6b45d301e8cd2f3/tests/e2e/scenarios/unclassified_intent.rs][Unclassified-request control]] and [[https://github.com/Firma-AI/openfirma/blob/1d793612485f0bc9f6d3ba75b6b45d301e8cd2f3/crates/firma-sidecar/src/interceptor/http.rs][HTTP interception]]. These are source-inspected tests, not tests executed by this audit.
+- [[https://github.com/ridi-oss/proxy-monster/blob/b85c0185d2590d1a7b8bda71614cf105ded23b1b/KNOWN_LIMITATIONS.md][Proxy limitations]] explicitly include resource-classification and revocation residuals. Their finite proxy boundary does not establish global statement completeness.
+- [[https://github.com/Pigius/cedar-mcp-server/blob/0a1e1c1063345f3c95b9c24630c6c0033cc487a0/src/tools/check-change.ts][Policy update classification]] and [[https://github.com/Pigius/cedar-mcp-server/blob/0a1e1c1063345f3c95b9c24630c6c0033cc487a0/src/tools/diff-schema.ts][schema difference classification]] inspect structure. Keep permission change, schema compatibility and deployment mutability as separate results.
+- [[https://github.com/aws-samples/sample-cedar-agentic-ai-authorization/blob/047a1be9b26aa53aedc2329d1420d0ec3665c13d/lambda/mcp_adapter/context_signer.py][Context signing]] uses ordered delimiter-separated fields. Required field order is not by itself an unambiguous encoding or authentication of their source. [[https://github.com/aws-samples/sample-cedar-agentic-ai-authorization/blob/047a1be9b26aa53aedc2329d1420d0ec3665c13d/lambda/cedar_evaluator/audit_emitter.py][The audit emitter]] documents best-effort delivery and handles DLQ failure without refusing the authorization decision.
+- [[https://github.com/ScopeBlind/scopeblind-gateway/blob/07360605999c1ce1926b46a098ed39d8ea4f4544/SECURITY.md][ScopeBlind's security policy]] distinguishes enforcing, shadow, startup self-tests and credential bypass. Its historical fail-open advisory is not a claim that the inspected revision still has that defect.
+
+* Integrated delivery order and acceptance
+
+P0 fixes the shared contracts before new transports:
+
+1. Extend the existing observation/admission vocabulary with source-bound field
+   evidence. A caller-written provenance label must not satisfy a verified-source
+   requirement. Bind issuer, subject, audience, validity, source generation and
+   exact attribute meaning. Signature validity does not imply semantic truth.
+2. Bind the edit/review artifact to the exact policy/schema/source revision at
+   publication and again to the active current-use receipt. Candidate editing
+   may precede analysis; activation must require the bound result. An editing
+   session identifier alone cannot prevent reuse against changed contents. Unknown solver
+   results, stale analysis and governed gains remain distinct outcomes.
+3. Define versioned external schema/receipt input and effect identity. Preserve
+   existing POO Contract/Session and strict Cedar validation. Keep reusable
+   semantics independent of transport, vertical applications and Examples.
+
+P1 closes one complete simulated path across the existing native owners:
+authenticated context, mapped action, reviewed publication, durable original
+consumption, current use, exact effect handle, outcome receipt and independent
+reconciliation. Require the same semantics through an MCP wrapper and one
+existing native effect adapter. Shadow records possible denials but cannot
+produce enforcing admission evidence. The shared Backend owns commit/recovery;
+provider adapters do not each introduce a new Backend.
+
+Acceptance includes forged provenance, untrusted MFA, expired/wrong-audience
+claims, unmapped action, changed tool schema, stale review, changed active
+release, resource replacement, revocation during waiting, precommit failure,
+crash after send, missing outcome, duplicate provider action and an omitted
+receipt. Preserve unknown exposure after ambiguous delivery. Compare full Lean
+and independent Rust states/refusals, not just an Allow counter. Simulated Host
+and provider records are sufficient; deployed credentials are not required.
+
+P2 expands adapters and lineage only when a concrete consumer needs them.
+SQL wire proxies remain optional. DuckDB/Arrow source lineage and GraphAr graph
+storage/indexing can support explainability, dependency queries and blast-radius
+analysis in the shared data architecture. They do not authenticate facts, decide
+Cedar permissions or make a provenance graph complete by themselves.
+
+* Reuse boundaries
+
+[[file:../CedarPooSpec/ZeroTrust/Model.lean][ZeroTrust observations]] currently carry generation and typed attributes;
+[[file:../CedarPooSpec/Gateway/ZeroTrust.lean][Gateway current admission]] supplies the active-release join;
+[[file:../rust/commerce-mandate/src/wire.rs][mandate verification]] already checks ES256 signatures and exact token
+bytes; [[file:../rust/runtime/src/schema.rs][Rust schema replay]] performs SDK validation.
+[[file:rfc/0010-zero-trust.org][RFC 0010]] identifies the existing Weaver final-boundary correspondence
+and the remaining whole-application refinement. This audit does not authorize
+merging PR #12 or claim NIST compliance, full UCON temporal mechanization,
+external-log truth, or delegated-agent discounted-MDP safety.
+
+* Integrated implementation following this audit
+
+The [[file:protocol/gateway-effect.org][shared protocol implementation]] lands the following simulation scope as one
+cross-domain path. These are implementation/qualification claims, not claims
+that an external deployment has been certified.
+
+| Stage | Shared implementation | Acceptance boundary |
+|-------+-----------------------+---------------------|
+| P0 | Typed per-field facts; independent issuer keys and required inventory; exact review/effect identity; version 1.0 wire schema | Kernel laws retain current evidence, original POO requirements and actual typed Cedar error-free Allow. Rust verifies signatures and strict wire representations. |
+| P1 | Existing exact-effect AuthorityLedger consumption; owner-bound single-use handles; mandatory signed precommit; simulated provider and outcome; independent public-key auditor; explicit MCP shadow/enforce | Complete applicable catalogue, original publication/registration corpora and native process controls. Missing outcomes remain unresolved and cannot authorize a retry. The shared adapter now executes actual C4 nonidentity review, separately approved expansion, publication and current SDK effects; signed publication prefixes survive independent audit and reviewed recovery. The original Delta/PublicationReview corpora remain required. |
+| P2 | Verified-log lineage, source-to-operation reverse index and versioned graph-neutral export | Distinguish precommitted intent from provider observation. GraphAr/Arrow physical storage and additional interception adapters remain conditional on concrete consumers; this export does not claim GraphAr conformance. |
+
+The native SDK still owns Cedar decisions. No paper supplies authenticated Host
+facts, complete provider enumeration or physical durability by implication.
+Simulation uses public test keys and an independently configured source adapter.
+The public audit CLI accepts no private signer. All source, lease, object,
+review, version, loss, corruption and duplication controls remain in the gate.
+PR #12 remains unmerged.
+
+* Continuous-use follow-up
+
+The [[file:protocol/gateway-effect.org][protocol boundary audit]] now records the source/world, revocation, mediator
+ownership and recovery findings against the current implementation. The major
+change is to stop treating a valid historical record as current authority.
+Source refresh re-runs the SDK, revocation persists, and recovery uses a surviving
+trusted authority with separate historical audit trust. The original publication
+world-continuity check is retained and strengthened at registration/use boundaries;
+cross-world publication through that history refuses explicitly.
+
+The POO lifecycle Contracts and kernel laws are in
+[[file:../CedarPooSpec/Gateway/Lifecycle.lean][Gateway.Lifecycle]]. Full-domain native replay includes current facts and
+policy changes as well as retained outcome uncertainty. Physical antirollback,
+issuer truth, live clock readers, complete external IO mediation and temporal
+fairness are still not established by these finite simulations or by a Cedar
+same-world authorization Delta.

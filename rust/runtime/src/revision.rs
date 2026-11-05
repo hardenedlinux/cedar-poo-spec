@@ -9,6 +9,7 @@ use crate::policy_codec::{
 use crate::preparation::{ParsedTextPolicies, PreparedReplay};
 use crate::syntax::CheckedRevision;
 use cedar_policy::PolicySet;
+use std::collections::BTreeMap;
 use std::ops::Deref;
 use std::time::Instant;
 
@@ -18,7 +19,55 @@ pub(crate) struct SourcePolicies {
     source: CompiledPolicyJson,
     policies: std::sync::Arc<PolicySet>,
 }
+// Construction is private to the source owner loaded through the SDK JSON
+// parser. These bodies/text cannot be paired with another compiled policy set.
+struct RenderedSource<'source> {
+    owner: &'source SourcePolicies,
+    text: String,
+    bodies: BTreeMap<String, String>,
+}
+impl RenderedSource<'_> {
+    fn bind_parsed(&self, parsed: &ParsedTextPolicies) -> Option<BTreeMap<String, String>> {
+        let mut compiled = self.owner.policies.policies().collect::<Vec<_>>();
+        if compiled.len() != parsed.policies().policies().count()
+            || parsed.policies().templates().next().is_some()
+        {
+            return None;
+        }
+        // Order is only a candidate hint. Complete typed equality decides every
+        // binding; permutations/unknown shapes fall back to the original oracle.
+        compiled.sort_unstable_by(|left, right| left.id().cmp(right.id()));
+        if !compiled
+            .iter()
+            .zip(parsed.policies().policies())
+            .all(|(left, right)| {
+                left.is_static() && right.is_static() && **left == right.new_id(left.id().clone())
+            })
+        {
+            return None;
+        }
+        Some(
+            parsed
+                .policies()
+                .policies()
+                .zip(self.bodies.values())
+                .map(|(policy, body)| (policy.id().to_string(), body.clone()))
+                .collect(),
+        )
+    }
+    fn into_bodies(self) -> BTreeMap<String, String> {
+        self.bodies
+    }
+}
 impl SourcePolicies {
+    fn render(&self) -> Result<RenderedSource<'_>, String> {
+        let (text, bodies) = rendered_policy_bodies(&self.policies)?;
+        Ok(RenderedSource {
+            owner: self,
+            text,
+            bodies,
+        })
+    }
     pub(crate) fn new(case: &Case) -> Result<Self, String> {
         Ok(Self {
             revision: case.revision.clone(),
@@ -103,27 +152,36 @@ impl CheckedRevision {
         mut metrics: Option<&mut ReplayMetrics>,
         mut bodies: Option<&mut PreparedReplay>,
     ) -> Result<Self, String> {
-        let SourcePolicies {
-            source, policies, ..
-        } = source;
-        // SourcePolicies is sealed and loaded exclusively through Policy::from_json.
-        // to_cedar already renders its normalized AST; retain those exact bodies.
-        let (text, compiled_bodies) = revision_phase(
+        // The sealed source owner renders normalized AST bodies once.
+        let generated = revision_phase(
             metrics.as_deref_mut(),
             |s| &mut s.revision_render_ns,
-            || rendered_policy_bodies(&policies),
+            || source.render(),
         )?;
         let rendered = revision_phase(
             metrics.as_deref_mut(),
             |s| &mut s.revision_text_parse_ns,
-            || ParsedTextPolicies::parse(&text),
+            || ParsedTextPolicies::parse(&generated.text),
         )?;
         // A source miss parses rendered text independently of the compiled AST.
         // The complete immutable source keys reuse; revision bindings, strict
         // schema validation and both authorizers remain independent.
         let normalize_started = metrics.as_ref().map(|_| Instant::now());
         let rendered_bodies = if let Some(prepared) = bodies.as_mut() {
-            prepared.bodies_by_id(&rendered, metrics.as_deref_mut())
+            match generated.bind_parsed(&rendered) {
+                Some(bound) => {
+                    if let Some(stats) = metrics.as_deref_mut() {
+                        stats.typed_policy_body_matches += bound.len();
+                    }
+                    Ok(bound)
+                }
+                None => {
+                    if let Some(stats) = metrics.as_deref_mut() {
+                        stats.typed_policy_body_fallbacks += 1;
+                    }
+                    prepared.bodies_by_id(&rendered, metrics.as_deref_mut())
+                }
+            }
         } else {
             policy_bodies_by_id(rendered.policies())
         };
@@ -134,11 +192,15 @@ impl CheckedRevision {
         let same = revision_phase(
             metrics.as_deref_mut(),
             |s| &mut s.revision_compare_ns,
-            || policy_body_counts(&compiled_bodies) == policy_body_counts(&rendered_bodies),
+            || policy_body_counts(&generated.bodies) == policy_body_counts(&rendered_bodies),
         );
         if !same {
             return Err("rendered Cedar text changed policy bodies".into());
         }
+        let compiled_bodies = generated.into_bodies();
+        let SourcePolicies {
+            source, policies, ..
+        } = source;
         let policy_sha256 = revision_phase(
             metrics,
             |s| &mut s.revision_hash_ns,
@@ -160,3 +222,7 @@ impl CheckedRevision {
         })
     }
 }
+
+#[cfg(test)]
+#[path = "../tests/unit/revision_body_binding.rs"]
+mod tests;

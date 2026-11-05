@@ -45,6 +45,81 @@ models do not authenticate source data or supply a durable transaction.
 | [[https://docs.stripe.com/api/idempotent_requests][Stripe, idempotent requests]] | Binds retries to one key and the same parameters, with a documented retention window. | Illustrates target participation; a provider key is not a Cedar permit or proof of a permanent exactly-once effect. |
 | [[https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/FIFO-queues-exactly-once-processing.html][Amazon SQS FIFO deduplication]] | Deduplicates repeated sends within a five-minute interval. | A finite provider window cannot replace a durable Host record for long-running Agent workflows. |
 
+* Reading the papers as Gateway proof obligations
+
+The threat model distinguishes three actors. An agent proposes an exact
+tool effect. A reviewer can contribute evidence or advise on a fallback.
+The Gateway and the final receiver enforce the independently configured
+authorization, provenance and consumption rules. The proposer and reviewer
+can see adversarial content. Their agreement does not authenticate the
+destination, source ancestry, external result or current authority cut.
+
+** FLOWSEAL: observe effects across channels
+
+[[https://arxiv.org/abs/2609.14003][Shim et al.]] report attacks based on collaborative workspaces,
+observable omissions and separating instructions from the eventual
+disclosure channel. Tool interception outside the model addresses the
+enforcement boundary. A deployment still has to identify which effects and
+metadata its observers can see. For example, removing all but selected rows
+reveals the survivor set to a collaborator who can compare versions, even
+when the agent produces no confidential text.
+
+A finite counterexample now runs against the existing Lean ledger in
+[[file:../../../Tests/AgenticAI/Boundary.lean][Tests.AgenticAI.Boundary]]. A workspace edit leaves candidates
+={p1,p2}= and a tool response leaves ={p2,p3}=.
+Both pass a minimum of two against the initial inventory. A shared ledger
+refuses the second release in either order because the intersection is
+={p2}=. This proves a property of the modeled candidate observations.
+The Host must authenticate the observed survivor set and decide which
+recipients can combine their views. An unmodeled observer or channel
+remains outside the result.
+
+** OCELOT: separate a proved charge bound from inferred privacy
+
+[[https://arxiv.org/html/2606.12341v1#A2][Xie and Li, Appendix B]]
+prove a ledger charge bound separately from the inference claim. The latter
+depends on cost calibration covering the adversary's observations.
+Section 4.3 makes the dependency assumption explicit for additive operator
+costs and handles declared dependent pairs jointly. The paper also evaluates
+residual escapes from omission or labeling errors. A proof that a budget
+never went negative cannot establish the fidelity of the candidate set,
+the completeness of the sink map or a bound on posterior inference.
+
+A Gateway extension can bind the exact output, its transformation witness,
+the observer scope and the current ledger revision. Costs or candidate sets
+must be derived by the trusted verifier from the evidence. A model-supplied
+numeric charge is only a proposal. Existing candidate cardinality has a
+different meaning from OCELOT's calibrated min-entropy measure. Both the
+cost model and the enforcement result should retain their own provenance.
+
+** Delegated review: a vote threshold is a policy parameter
+
+[[https://arxiv.org/abs/2609.15803][Collina et al.]] characterize safe threshold review under assumptions
+about the reviewers' utility differences and their reporting. With up to
+=k= disapprovals, the condition must hold for the remaining coalition after
+each possible removal of =k= reviewers. Counting signatures establishes
+which reviewers approved. It gives no evidence that any such coalition
+represents the principal's utility. The paper's sequential result uses a
+designated baseline and continuation-aware values in a discounted MDP.
+Its strategic-voting analysis has separate assumptions. This reading uses
+the authors' abstract for those claims.
+
+For SPEC, the immediately testable property is narrower. A panel may
+propose a branch or supply bounded evidence. The receiver still checks
+the actual Cedar input, current cut, exact effect, and cumulative state.
+The existing [[file:../../Authorization/Delta/Trace.lean][Delta trace]]
+replays a fixed proposal list across two policy roots. An adaptive agent
+may change its next proposal after seeing a denial or tool result.
+A trajectory guarantee therefore needs an explicit fallback and a step law
+quantified over all admitted proposals in the declared model.
+
+| Adversarial control | Existing owner | Evidence required for a stronger claim |
+|---------------------+----------------+----------------------------------------|
+| Observable selection across tools | =AgenticAI.Boundary= and =Data.CumulativeDisclosure= | Bind the actual survivor set and jointly observable history at the sink. |
+| Two stale permits competing for one release budget | =ZeroTrust.Observation= and the disclosure Host | Prove current-revision reservation and replay both commit orders with one shared ledger. |
+| A lost reply followed by replanning | =Gateway.Lifecycle= and the provider audit | Bind the original operation and outcome, retain the charge while unknown, and refuse a second dispatch. |
+| A panel approves a locally valid but harmful continuation | =Authorization.Delta.Trace= | Supply the baseline, transition semantics and utility or invariant for the claim. Include the counterexample when continuation evidence is absent. |
+
 * Distinct identities and the unresolved effect gap
 
 An approval-instance ID identifies one authorized use. A logical-operation ID
@@ -78,8 +153,8 @@ An uncertain effect must keep its effect-budget reservation. A confirmed
 no-effect result may release that reservation in a recorded correction, but
 it cannot silently restore the consumed human approval. A rate budget counts
 attempts and should not be released merely because the effect failed. The
-current Rust Host debits budget at admission and implements none of these
-report, correction, or dispatch-state transitions; its conservative debit
+current Rust Host debits budget at admission and does not persist
+remote outcome reports or budget corrections; its conservative debit
 is therefore not evidence of completed delivery.
 
 Cedar's [[https://github.com/cedar-policy/cedar-spec/blob/main/cedar-lean/README.md][verified symbolic equivalence and implication checks]] compare policy
@@ -89,6 +164,163 @@ the durable operation journal and result reconciliation belong to the Host.
 The Host must obtain logical-operation identity from an authenticated workflow
 record; neither a POO prototype name nor a new approval ID can mint that
 identity on the Agent's behalf.
+
+* Process-local receiver replay
+
+One disclosure Host instance owns one jointly observable cohort. Prepared
+tickets carry that instance's identity and the shared revision alongside the
+exact effect, including its channel and audience. The receiver refuses a
+ticket from another instance even if every revision number matches. The
+existing transaction checks the current evidence, records the narrowed
+cohort, consumes approval, debits budget and reserves the logical operation
+before any dispatch callback. The Lean release model proves that a successful
+release advances the shared revision and retires competing tickets across
+channels.
+
+The Rust healthcare replay covers both delivery orders for distinct channel
+tickets prepared against the same authenticated observation. It also
+simulates one external attempt followed by a lost reply. A different
+channel and unused approval cannot send again under the same logical
+operation. The original budget charge and operation reservation survive.
+=DispatchOutcome::Unknown= reports uncertainty to the caller. The
+process-local Host retains the admission as a conservative barrier and
+does not provide durable outcome settlement. The trusted dispatch adapter
+must send the exact admitted effect. Remote fencing and authenticated
+reconciliation are separate deployment obligations.
+
+* Persistent sender transaction and receiver fencing
+
+The Unix reference provisions an authoritative sender image explicitly.
+Under one stable file lock, the sender reloads that image, rechecks the
+exact effect and current Cedar evidence, consumes approval, debits budget,
+updates the cohort, reserves the logical operation and appends the audit
+receipt. A staged file is synchronized, atomically renamed and followed by
+a directory sync before any send. Reopen restores the complete image and
+checks the identity of the independently supplied validated Cedar policy.
+A staging failure leaves the previous image in force. An error after
+replacement may leave the successor visible, so the caller must reopen
+and reconcile. A reservation with an unknown result continues to block a
+send, including when a crash occurred before the external attempt.
+
+The receiver keeps its current scope and generation in a separate trusted
+directory. Cut advancement and effect application use the same stable file
+lock. The receiver reloads the cut on each use and reserves the exact
+operation before applying the effect. Reopen takes the directory alone,
+so a caller cannot supply an older in-memory cut to the recovery entrypoint.
+The transport must authenticate the Host and protect the observed effect.
+Both directories require non-rollback storage and trusted provisioning.
+
+The first terminal provider outcome is verified against an independently
+configured key and the exact retained binding, then stored as signed bytes
+in the sender image. A matching observation is idempotent. An authenticated
+contradiction is rejected and cannot replace the first observation, even
+after reopen or a later admission. This detects contradictory evidence
+presented to this sender. Provider truth and signing-key custody remain
+independent premises. Settlement does not credit budget, restore approval
+or make the operation dispatchable.
+
+| Failure window | Reopen rule | Evidence |
+|----------------+-------------+----------|
+| Sender candidate or settlement staged before replacement | Load the previous committed image. A failed staging operation does not invoke dispatch or acknowledge settlement. | Native staging fault controls. |
+| Replacement visible before directory sync is acknowledged | Return an error. Reopen the committed name and recheck. If the same settlement is already visible, synchronize the directory before acknowledging it. | Ordering in the adapter. Power-loss behavior is outside this replay. |
+| Admission durable before an external call | Retain the charge and reservation. An absent result does not establish that nothing happened. | Contract and conservative replay rule. |
+| Receiver reservation durable before effect or reply | Repeated attempts remain blocked. Independent provider evidence can settle the result. | Duplicate receiver request and lost-reply replay. |
+| Receiver cut advanced before restart | Reopen from the receiver directory and compare the request to the current cut under the application lock. | A previously unseen operation bearing the old cut is rejected. |
+
+The native replay drops and reopens the sender after a lost reply, checks
+recovered accounting, and refuses a changed channel and approval before
+and after settlement. It also tests a validly signed contradictory result
+after reopen and after another admission. These controls use a local Unix
+filesystem and a simulated receiver. Remote transport, provider durability
+and physical power-loss qualification require separate deployment evidence.
+
+* Provider receipt custody and remote storage qualification
+
+The receiver verifies and persists the provider's exact signed result before
+returning it. A reopened receiver can return that evidence by operation ID
+without calling the effect adapter. Its receipt reader checks the original
+reservation and the independently configured provider key. If the effect
+runs but receipt persistence fails, reopen reports no receipt and the
+receiver reservation still refuses another application. An absent receipt
+cannot distinguish a crash before the effect from a crash after it.
+The sender retains its charge in both cases. A production provider that
+requires automatic resolution must supply its own transaction joining the
+effect and its durable outcome, or independent target evidence.
+
+The local writer stages bytes, synchronizes the file, replaces the committed
+name and synchronizes the directory. Linux [[https://man7.org/linux/man-pages/man2/fsync.2.html][fsync(2)]]
+documents why synchronizing a file does not by itself persist its directory
+entry. The native controls inject a failure before receipt replacement and
+reopen against a stale staged cut. They exercise recovery logic on an intact
+filesystem. They do not model device cache loss, a filesystem rollback or
+power interruption between system calls.
+
+A remote adapter must qualify all of the following properties before reuse
+of this safety claim.
+
+| Required property | Acceptance observation |
+|-------------------+------------------------|
+| Linearizable cut and reservation decisions | After an acknowledged cut advance, a receiver using another connection or a promoted replica rejects a previously unseen request with the old cut. A check against a cached or stale replica cannot authorize application. |
+| Atomic, durable replacement | After an acknowledged write and storage failover, the entire committed image is recoverable. Interrupted writes expose the preceding image or the whole successor. A staging object cannot become the live image on its own. |
+| Durable conditional reservation | Competing writers for the same operation have one winner across independent clients. An ambiguous response leaves the operation unresolved until an authoritative read. |
+| Independent provider receipt custody | A provider restart can return the exact signed bytes without invoking the effect. A missing or corrupt result does not release the operation or reverse the charge. |
+
+Herlihy and Wing's [[https://www.cs.cmu.edu/~wing/publications/HerlihyWing90.pdf][linearizability definition]]
+supplies the real-time ordering requirement for acknowledged cut changes.
+[[https://www.rfc-editor.org/rfc/rfc8881.html#section-18.3][RFC 8881, COMMIT]]
+illustrates a separate durability obligation: an unstable remote write can
+require a later commit and a write-verifier check after a server restart.
+A remote mount or storage API needs deployment-specific qualification.
+The Lean model proves old-cut refusal when the reopened generation is at
+least the acknowledged generation. The accompanying counterexample accepts
+a previously unseen old-cut operation when recovery instead reads the stale
+generation. The provider receipt Contract preserves the reserved operation
+and its exact binding while recording a terminal observation.
+
+* Qualification at a quiesced promotion barrier
+
+The sender and receiver expose an exact acknowledged image fingerprint.
+Capture both while admission, delivery and control writers are quiesced.
+Persist the pair in trusted independent custody, keep the old writer fenced,
+and qualify both candidate directories before enabling either endpoint.
+The sender image includes accounting, reservations and signed settlements.
+The receiver image includes the cut, every operation reservation, and the
+signed receipt files. Unresolved reservations are included. Lock files and
+staging paths are excluded. Copying only the latest cut can leave an unsafe
+candidate if the copy omits a reservation or receipt.
+
+The native promotion entrypoints synchronize copied committed files and the
+candidate directory, then require exact equality with the independently
+supplied image. An image produced from the candidate itself provides no
+independent protection. Qualification is an activation barrier for a quiesced
+snapshot, with non-rollback storage required after activation. It does not
+establish distributed lease ownership, continuous anti-rollback monitoring
+or safe promotion of an unverified successor.
+
+The =promotionContract= preserves the modeled sender and receiver images,
+including settlements and reservations. The native replay first rejects
+older sender and receiver copies. It rejects a current-cut copy missing
+an acknowledged receipt and a copy missing an unresolved reservation.
+A complete copy recovers the original signed payload and signature and
+continues to reject an old cut, contradictory signed evidence and a retry
+under another channel and approval. This is controlled replica-copy and
+restart validation. It does not exercise a real remote storage outage,
+physical power loss or an automatic promotion controller.
+
+* Optional Rust recovery replay
+
+The =recovery-replay= feature belongs to the Rust disclosure case package.
+It enables fault and replica scenarios in the existing healthcare example.
+The healthcare recipe explicitly enables it. Normal builds leave it off.
+No external cluster or Kubernetes service is required for this replay.
+
+The Lean =promotionContract= specifies the admitted state. The Rust
+replay checks the existing receiver and sender adapters against the same
+boundary using staged writes and copied images. A sender replica at the
+correct admission revision but missing the accepted settlement is refused.
+These checks model authorization and recovery decisions on an intact local
+filesystem. Physical power interruption and remote storage conformance
+remain distinct deployment tests.
 
 * Host transaction contract
 

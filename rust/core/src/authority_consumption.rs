@@ -2,7 +2,7 @@
 //! Durable storage and approval authentication belong to the deploying Host.
 
 /// Stable identity of one approval instance in the Host's authority store.
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct AuthorityId(pub String);
 
 impl From<&str> for AuthorityId {
@@ -12,7 +12,7 @@ impl From<&str> for AuthorityId {
 }
 
 /// One exact-effect approval with a Host-owned use limit and consumed count.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct AuthorityGrant<Effect> {
     pub id: AuthorityId,
     pub effect: Effect,
@@ -21,7 +21,7 @@ pub struct AuthorityGrant<Effect> {
 }
 
 /// Process-local collection of approval instances.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, serde::Serialize, serde::Deserialize)]
 pub struct AuthorityLedger<Effect> {
     pub grants: Vec<AuthorityGrant<Effect>>,
 }

@@ -96,4 +96,104 @@ end Counterexamples
 #print axioms ZeroTrust.specialization_preserves_core_and_original
 #print axioms ZeroTrust.continuing_use_preserves_original_consumption
 #print axioms ZeroTrust.continuing_objects_preserve_parent_and_consumption
+
+-- The current state is projected into the actual Cedar context. Keeping the
+-- initial permit, profile and source does not keep Allow when this fact changes.
+private def currentState (view : View) : Bool := view.floor == 0
+private def currentPrepared (view : View) : Gateway.Prepared String Bool request :=
+  { prepared with operation := ⟨"invoke", currentState view⟩ }
+private def activeRelease : Authorization.Delta.ReleaseState :=
+  ⟨"base", [permitPolicy], .enforcing, context.policyRevision⟩
+private def currentAssessment := ZeroTrust.currentAdmission profile host currentPrepared
+  (fun _ => model) currentState (fun _ => checks) (fun _ => entities) (fun _ => activeRelease)
+
+theorem current_receipt_constructs_assessment
+    (receipt : Gateway.Receipt (currentPrepared initial) model "invoke" (currentState initial)
+      initial.context checks entities) : currentAssessment "invoke" initial := by
+  refine ⟨receipt, by decide, ?_⟩
+  apply (Authorization.Delta.ReleaseState.matchesCurrent_iff _ _ _).mpr
+  refine ⟨rfl, ?_, rfl, rfl⟩
+  have compiled : (model.compile "base").toOption = some [permitPolicy] := by native_decide
+  have current := congrArg Except.toOption receipt.cedar.compiled
+  change (model.compile "base").toOption = some receipt.cedar.policies at current
+  rw [compiled] at current
+  exact Option.some.inj current
+
+#guard (Gateway.authorize (currentPrepared initial) model "invoke" (currentState initial)
+  initial.context checks entities).isOk
+#guard !(Gateway.authorize (currentPrepared {initial with floor := 1}) model "invoke" false
+  initial.context checks entities).isOk
+
+-- An initial receipt has the wrong state index for the fresh current world.
+#check_failure fun (receipt : Gateway.Receipt (currentPrepared initial) model "invoke" true
+    initial.context checks entities) =>
+  (show Gateway.Receipt (currentPrepared {initial with floor := 1}) model "invoke" false
+    initial.context checks entities from receipt)
+
+theorem denied_current_world_has_no_assessment :
+    ¬ currentAssessment "invoke" {initial with floor := 1} := by
+  rintro ⟨receipt, _⟩
+  have accepted := Gateway.admitted_actual_request_is_error_free receipt
+  have compiled : (model.compile "base").toOption = some [permitPolicy] := by native_decide
+  have current := congrArg Except.toOption receipt.cedar.compiled
+  change (model.compile "base").toOption = some receipt.cedar.policies at current
+  rw [compiled] at current
+  have same := Option.some.inj current
+  rw [← same] at accepted
+  have denied : let response := Cedar.Spec.isAuthorized (request "invoke" false) entities [permitPolicy]
+    (response.decision == .allow && response.erroringPolicies.isEmpty) = false := by native_decide
+  change (let response := Cedar.Spec.isAuthorized (request "invoke" false) entities [permitPolicy]
+    (response.decision == .allow && response.erroringPolicies.isEmpty)) = true at accepted
+  rw [denied] at accepted
+  contradiction
+
+-- A model can still compile an old root while the independent active release
+-- has changed. A valid Cedar receipt alone therefore cannot establish current use.
+private def assessRelease (release : Authorization.Delta.ReleaseState) :=
+  ZeroTrust.authorizeCurrent profile host currentPrepared (fun _ => model)
+    currentState (fun _ => checks) (fun _ => entities) (fun _ => release) "invoke" initial
+
+#guard (assessRelease activeRelease).isOk
+#guard !(assessRelease {activeRelease with activeRoot := "restricted"}).isOk
+#guard !(assessRelease {activeRelease with activePolicies := [denyPolicy]}).isOk
+#guard !(assessRelease {activeRelease with executionMode := .observing}).isOk
+#guard !(assessRelease {activeRelease with executionMode := .disabled}).isOk
+#guard !(assessRelease {activeRelease with epoch := 2}).isOk
+
+-- This witness exposes the old gap without adding a compatibility API: a valid
+-- receipt/refinement can coexist with a different active root in the same view.
+theorem receipt_without_release_binding_is_insufficient
+    (receipt : Gateway.Receipt (currentPrepared initial) model "invoke" (currentState initial)
+      initial.context checks entities) :
+    (∃ _sameReceipt : Gateway.Receipt (currentPrepared initial) model "invoke" (currentState initial)
+      initial.context checks entities, profile.Refines (currentPrepared initial).profile) ∧
+    ({activeRelease with activeRoot := "restricted"} : Authorization.Delta.ReleaseState).activeRoot ≠
+      (currentPrepared initial).policy.root :=
+  ⟨⟨receipt, by decide⟩, by decide⟩
+
+theorem observing_release_has_no_current_admission :
+    ¬ ZeroTrust.currentAdmission profile host currentPrepared (fun _ => model)
+      currentState (fun _ => checks) (fun _ => entities)
+      (fun _ => {activeRelease with executionMode := .observing}) "invoke" initial := by
+  rintro ⟨_, _, matched⟩
+  have enforced := (Authorization.Delta.ReleaseState.matchesCurrent_iff _ _ _).mp matched
+  cases enforced.2.2.1
+
+theorem changed_active_root_has_no_current_admission :
+    ¬ ZeroTrust.currentAdmission profile host currentPrepared (fun _ => model)
+      currentState (fun _ => checks) (fun _ => entities)
+      (fun _ => {activeRelease with activeRoot := "restricted"}) "invoke" initial := by
+  rintro ⟨_, _, matched⟩
+  have root := ((Authorization.Delta.ReleaseState.matchesCurrent_iff _ _ _).mp matched).1
+  contradiction
+
+#print axioms Authorization.Delta.ReleaseState.matchesCurrent_iff
+#print axioms ZeroTrust.current_admission_binds_active_release
+#print axioms receipt_without_release_binding_is_insufficient
+#print axioms observing_release_has_no_current_admission
+#print axioms changed_active_root_has_no_current_admission
+#print axioms ZeroTrust.current_admission_has_error_free_allow
+#print axioms ZeroTrust.continuing_current_admission_preserves_delta
+#print axioms denied_current_world_has_no_assessment
+
 end CedarPooSpec.Gateway.ZeroTrustTest

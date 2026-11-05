@@ -25,7 +25,12 @@ pub struct ReplayMetrics {
     pub revision_source_load_ns: u128,
     pub revision_render_ns: u128,
     pub revision_text_parse_ns: u128,
+    /// Typed body binding or legacy normalization, not an additional phase.
     pub revision_normalize_ns: u128,
+    /// Full AST matches after rebinding a temporary parsed policy's ID.
+    pub typed_policy_body_matches: usize,
+    /// Revision sets delegated to the original normalizer after a typed miss.
+    pub typed_policy_body_fallbacks: usize,
     /// Text-side normalization work; reuse is keyed by the complete parsed policy text.
     pub policy_body_normalizations: usize,
     pub policy_body_reuses: usize,

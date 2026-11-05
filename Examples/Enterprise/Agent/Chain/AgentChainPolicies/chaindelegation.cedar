@@ -5,5 +5,5 @@ permit(
   action == Action::"delegate",
   resource
 ) when {
-  (((context.depth) <= 3) && ((resource.capabilities).containsAll(context.requestedCaps))) && ((3 <= (principal.trust)) && ((principal.capabilities).contains("delegate")))
+  (context.depth <= 3) && resource.capabilities.containsAll(context.requestedCaps) && ((3 <= principal.trust) && principal.capabilities.contains("delegate"))
 };

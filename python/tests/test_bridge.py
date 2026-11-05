@@ -4,7 +4,7 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from cedar_poo_bridge import BridgeError, RustBridge
+from cedar_poo_py_test.process import BridgeError, RustBridge
 
 
 class RustBridgeTests(unittest.TestCase):

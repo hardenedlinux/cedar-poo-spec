@@ -5,14 +5,15 @@ vars: {d2-config: {data: {figure: |json
 {
   "purpose": "architecture",
   "language": "en",
-  "width": 1280,
+  "width": 1700,
   "primary": "purpose",
   "themes": [
-    "sketchbook",
+    "blueprint",
     "compact"
   ],
   "icons": [
-    "engineering"
+    "engineering",
+    "cedar"
   ],
   "basis": {
     "captureRef": "development-source-observation",
@@ -20,12 +21,12 @@ vars: {d2-config: {data: {figure: |json
     "obligationRefs": [],
     "evidenceRefs": []
   },
-  "title": "Cedar model: Components, domains and consumers",
+  "title": "Cedar: from checked rules to controlled effects",
   "kind": "responsibility-map",
   "questions": [
     {
       "ref": "purpose",
-      "text": "How are reusable Components composed into distinct consumers?",
+      "text": "What does the library prove, and what must the Host enforce?",
       "focusRefs": [
         "sysml",
         "library"
@@ -46,16 +47,52 @@ vars: {d2-config: {data: {figure: |json
     "hostSource": "Productions/Backend.org"
   },
   "copy": {
-    "description": "Zero Trust is an explicit model Component. Industry controls and platform projections remain distinct.",
-    "status": "Arrows describe selected composition and ownership handoffs, not mandatory imports or deployed effects."
+    "description": "Read left to right: foundations, reusable controls, independent profiles, then execution.",
+    "status": "Arrows are declared dependencies, not runtime order. Zero Trust is a selectable Component. Host IO remains an obligation."
   },
   "presentation": {
-    "options": {
-      "elk.direction": "DOWN",
-      "elk.layered.spacing.nodeNodeBetweenLayers": "42"
-    },
-    "edgeLabels": false,
-    "legend": true
+    "notation": "components",
+    "columns": 4,
+    "groups": [
+      {
+        "title": "What can we trust?",
+        "icon": "foundation",
+        "subjects": [
+          "leanPoo",
+          "cedar"
+        ],
+        "columns": 1
+      },
+      {
+        "title": "Which controls compose?",
+        "icon": "puzzle",
+        "subjects": [
+          "model",
+          "zeroTrust",
+          "verticalControls",
+          "platformProjections"
+        ],
+        "columns": 2
+      },
+      {
+        "title": "Where are they declared?",
+        "icon": "branch",
+        "subjects": [
+          "production",
+          "examples"
+        ],
+        "columns": 1
+      },
+      {
+        "title": "Who performs the effect?",
+        "icon": "gate",
+        "subjects": [
+          "rust",
+          "host"
+        ],
+        "columns": 1
+      }
+    ]
   },
   "sysml": {
     "source": "dev/sysml/architecture.sysml",
@@ -63,70 +100,70 @@ vars: {d2-config: {data: {figure: |json
     "bindings": {
       "leanPoo": {
         "name": "CedarArchitecture::leanPoo",
-        "icon": "library"
+        "icon": "foundation"
       },
       "cedar": {
         "name": "CedarArchitecture::cedar",
-        "icon": "library"
+        "icon": "rules"
       },
       "model": {
         "name": "CedarArchitecture::model",
-        "icon": "library"
+        "icon": "puzzle"
       },
       "zeroTrust": {
         "name": "CedarArchitecture::zeroTrust",
-        "icon": "obligation"
+        "icon": "current"
       },
       "verticalControls": {
         "name": "CedarArchitecture::verticalControls",
-        "icon": "model"
+        "icon": "hospital"
       },
       "platformProjections": {
         "name": "CedarArchitecture::platformProjections",
-        "icon": "model"
+        "icon": "cloud"
       },
       "production": {
         "name": "CedarArchitecture::production",
-        "icon": "model"
+        "icon": "gate"
       },
       "examples": {
         "name": "CedarArchitecture::examples",
-        "icon": "model"
+        "icon": "request"
       },
       "rust": {
         "name": "CedarArchitecture::rust",
-        "icon": "model"
+        "icon": "evidence"
       },
       "host": {
         "name": "CedarArchitecture::host",
-        "icon": "model"
+        "icon": "registrar"
       }
     }
   }
 }
 |
 }}}
-leanPoo: "LeanPoo foundation\nObject algorithms / C4 / caches\nTypes / Contracts / proof reuse"
-cedar: "Upstream Cedar semantics\nEvaluation and typechecking\nOfficial Lean specification"
-model: "Shared Cedar model\nComposable typed Components\nSee the component inventory"
-zeroTrust: "Zero Trust Component\nContinuous-use requirements\nConditions / obligations / refinement"
-verticalControls: "Vertical controls\nHealthcare / financial services\nSee each implemented vertical"
-platformProjections: "Platform projections\nAWS AgentCore / Google SDP\nOptional profile bindings"
-production: "Production profiles\nIndependent composed exports\nShared Backend architecture contract"
-examples: "Example Cases\nScenario facts and assumptions\nCatalog exports / conformance inputs"
-rust: "Rust consumers\nStrict SDK validation / replay\nShared crates and Host adapters"
-host: "Downstream Host\nAuthenticates facts / enforces effects\nDurability and runtime providers"
-leanPoo -> model: Object and proof APIs
-cedar -> model: Cedar semantic authority
-model -> zeroTrust: Exposes a model Component
-model -> verticalControls: Shared capability composition
-model -> platformProjections: Platform-specific projection
-model -> production: Compose selected Components
-model -> examples: Compose scenario controls
-zeroTrust -> production: Selected use requirements
-zeroTrust -> examples: Selected use requirements
-verticalControls -> production: Selected industry controls
-platformProjections -> production: Optional platform binding
-production -> rust: Versioned profile exports
-examples -> rust: Scenario replay inputs
-rust -> host: Admitted receipts and adapters
+leanPoo: "LeanPoo\nObjects + Contracts + proofs"
+cedar: "Cedar\nAuthorization semantics"
+model: "Shared model\nCompose typed controls"
+zeroTrust: "Zero Trust\nRecheck every use"
+verticalControls: "Industry controls\nHealthcare + finance"
+platformProjections: "Platform adapters\nAWS + Google"
+production: "Production\nIndependent profile exports"
+examples: "Examples\nScenario verification"
+rust: "Rust + Python\nSDK replay; native wheels"
+host: "Host\nAuthentic facts + actual IO"
+leanPoo -> model: "Object + proof APIs"
+cedar -> model: "Cedar semantics"
+model -> zeroTrust: "Component"
+model -> verticalControls: "Industry controls"
+model -> platformProjections: "Platform binding"
+model -> production: "Profile composition"
+model -> examples: "Scenario composition"
+zeroTrust -> production: "Use requirements"
+zeroTrust -> examples: "Use requirements"
+verticalControls -> production: "Industry selection"
+platformProjections -> production: "Platform selection"
+production -> rust: "Profile exports"
+examples -> rust: "Replay inputs"
+rust -> host: "Receipts + adapters"

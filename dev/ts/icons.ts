@@ -1,0 +1,27 @@
+// SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+// SPDX-License-Identifier: Apache-2.0
+import type {IconAsset} from '@deterministic-engineering/render/icons';
+const glyph=(label:string,body:string):IconAsset=>({label,svg:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`});
+/** Local vector metaphors selected by the view; no imported bitmap or font icon. */
+export const cedarIcons={
+ foundation:glyph('Object and proof foundation','<path d="M6 48h52M12 48V25h40v23M6 25l26-16 26 16M21 29v15M32 29v15M43 29v15"/>'),
+ puzzle:glyph('Composable typed capability','<path d="M9 12h17c-5 14 17 14 12 0h17v17c-14-5-14 17 0 12v14H38c5-14-17-14-12 0H9V39c14 5 14-17 0-12z"/>'),
+ hospital:glyph('Healthcare and consent','<path d="M10 56V17h44v39M5 56h54M25 56V43h14v13M26 6h12v9H26zM24 26h16M32 20v14"/>'),
+ bank:glyph('Finance and controlled release','<path d="M5 22 32 7 59 22H5zM8 55h48M12 49h40M17 27v17M32 27v17M47 27v17"/>'),
+ cloud:glyph('Cloud and platform integration','<path d="M17 44a13 13 0 1 1 1-26 17 17 0 0 1 32 7 10 10 0 1 1 0 19H17zM25 53h14M32 44v9"/>'),
+ robot:glyph('Agent delegation and tools','<rect x="10" y="18" width="44" height="34" rx="8"/><path d="M32 18V8M6 28v13M58 28v13M24 43h16"/><circle cx="24" cy="31" r="3"/><circle cx="40" cy="31" r="3"/>'),
+ fingerprint:glyph('Pseudonymous identity','<path d="M12 30a20 20 0 0 1 40 0M18 39V29a14 14 0 0 1 28 0v12M24 44V30a8 8 0 0 1 16 0v16M30 55V32M36 52V32M12 38v11M46 49v7M24 52v5"/>'),
+ rules:glyph('Policy and authorization rules','<path d="M14 8h36v48H14zM22 19h19M22 29h19M22 39h11"/><path d="m39 46 4 4 10-13"/>'),
+ warning:glyph('A proved failure case','<path d="m32 7 27 47H5L32 7zM32 23v14"/><circle cx="32" cy="45" r="1.5"/>'),
+ branch:glyph('Retained parent and selected object','<rect x="22" y="5" width="20" height="16" rx="3"/><path d="M32 21v13M12 34h40M12 34v9M52 34v9"/><rect x="4" y="43" width="17" height="15" rx="3"/><rect x="43" y="43" width="17" height="15" rx="3"/>'),
+ caller:glyph('Caller requesting publication','<circle cx="32" cy="17" r="10"/><path d="M12 56V43a20 20 0 0 1 40 0v13M23 56V45M41 56V45"/>'),
+ request:glyph('Request bound to its original contract','<rect x="7" y="9" width="32" height="43" rx="5"/><path d="M15 20h16M15 28h12M15 36h9"/><circle cx="45" cy="43" r="12"/><path d="M45 26v8M45 52v7M28 43h8M54 43h7"/>'),
+ evidence:glyph('Selected review evidence','<path d="M12 6h29l10 10v38H12zM41 6v12h10M20 26h20M20 34h14"/><circle cx="39" cy="43" r="11"/><path d="m34 43 4 4 7-9"/>'),
+ registry:glyph('Committed authority record','<ellipse cx="29" cy="14" rx="20" ry="8"/><path d="M9 14v31c0 11 40 11 40 0V14M9 28c0 11 40 11 40 0"/><path d="m36 44 7 7 13-15"/>'),
+ recovery:glyph('Recovered record remains bound','<path d="M15 23a19 19 0 1 1-1 20M15 10v14H3"/><rect x="24" y="25" width="21" height="25" rx="3"/><path d="M30 32h9M30 39h9"/>'),
+ registrar:glyph('Current registrar identity','<circle cx="23" cy="17" r="9"/><path d="M7 49v-8a16 16 0 0 1 32 0v8"/><circle cx="45" cy="34" r="7"/><path d="M45 41v16M45 48h9M45 54h6"/>'),
+ current:glyph('Current-use security condition','<path d="M32 5 52 13v15c0 14-20 27-20 27S12 42 12 28V13z"/><circle cx="32" cy="28" r="10"/><path d="M32 21v7l6 4"/>'),
+ pending:glyph('Command-specific pending intent','<rect x="8" y="10" width="30" height="44" rx="4"/><path d="M16 20h14M16 29h12"/><path d="M41 24h17M41 51h17M44 24v7l11 13v7M55 24v7L44 44v7"/>'),
+ gate:glyph('Actual final commit boundary','<path d="M8 55V12h39v43M3 55h52M17 12V6h22v6M18 22h12M18 31h8"/><rect x="31" y="32" width="25" height="22" rx="4"/><path d="M36 32v-8a8 8 0 0 1 16 0v8"/><circle cx="44" cy="43" r="2"/>'),
+ observer:glyph('Observer sees the installed image','<path d="M4 31s10-17 28-17 28 17 28 17-10 17-28 17S4 31 4 31z"/><circle cx="32" cy="31" r="9"/><path d="m28 31 3 3 6-7"/>')
+} as const;

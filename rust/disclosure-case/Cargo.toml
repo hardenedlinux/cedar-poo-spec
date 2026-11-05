@@ -6,6 +6,9 @@ license.workspace = true
 publish.workspace = true
 description = "Language-model disclosure executable case"
 
+[features]
+recovery-replay = []
+
 [dependencies]
 cedar-poo-disclosure-host.workspace = true
 cedar-poo-runtime.workspace = true
@@ -14,5 +17,6 @@ cedar-poo-core.workspace = true
 serde_json.workspace = true
 
 [dev-dependencies]
+p256.workspace = true
 asp-rust.workspace = true
 

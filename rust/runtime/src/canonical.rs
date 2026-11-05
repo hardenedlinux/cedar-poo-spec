@@ -4,27 +4,76 @@ use serde_json::Value;
 use sha2::{Digest, Sha256};
 use std::io::{self, Write};
 
-pub(crate) fn json_sha256(value: &impl Serialize) -> Result<String, String> {
+/// Hash the existing canonical JSON encoding; a digest alone grants no authority.
+pub fn json_sha256(value: &impl Serialize) -> Result<String, String> {
     let value = serde_json::to_value(value).map_err(|error| error.to_string())?;
     value_sha256(&value)
 }
 
 pub(crate) fn value_sha256(value: &Value) -> Result<String, String> {
+    hash_encoding(|writer| write_canonical_json(value, writer))
+}
+
+#[cfg(feature = "gateway")]
+pub(crate) fn signed_sha256(payload: &[u8], signature: &[u8]) -> Result<String, String> {
+    use base64::{engine::general_purpose::URL_SAFE_NO_PAD, write::EncoderWriter};
+    hash_encoding(|writer| {
+        writer
+            .write_all(b"{\"payload\":\"")
+            .map_err(|e| e.to_string())?;
+        for (index, bytes) in [payload, signature].into_iter().enumerate() {
+            if index != 0 {
+                writer
+                    .write_all(b"\",\"signature\":\"")
+                    .map_err(|e| e.to_string())?;
+            }
+            let mut encoder = EncoderWriter::new(&mut *writer, &URL_SAFE_NO_PAD);
+            encoder.write_all(bytes).map_err(|e| e.to_string())?;
+            encoder.finish().map_err(|e| e.to_string())?;
+        }
+        writer.write_all(b"\"}").map_err(|e| e.to_string())
+    })
+}
+
+fn hash_encoding(
+    encode: impl FnOnce(&mut HashWriter) -> Result<(), String>,
+) -> Result<String, String> {
     let mut writer = HashWriter {
         digest: Sha256::new(),
         buffer: [0; 1024],
         used: 0,
     };
-    write_canonical_json(value, &mut writer)?;
+    encode(&mut writer)?;
     writer.flush().map_err(|error| error.to_string())?;
-    let digest = writer.digest.finalize();
+    Ok(encode_digest(writer.digest.finalize()))
+}
+
+// The source owner supplies its own exact wire; arbitrary bytes cannot be paired
+// with another value. Preserve the canonical fallback if object order changes.
+pub(crate) fn schema_sha256(source: &cedar_poo_core::SchemaSourceJson) -> Result<String, String> {
+    fn ordered(value: &Value) -> bool {
+        match value {
+            Value::Object(fields) => fields.keys().is_sorted() && fields.values().all(ordered),
+            Value::Array(values) => values.iter().all(ordered),
+            _ => true,
+        }
+    }
+    if ordered(source) {
+        Ok(encode_digest(Sha256::digest(
+            source.source_identity()?.as_bytes(),
+        )))
+    } else {
+        value_sha256(source)
+    }
+}
+fn encode_digest(digest: impl IntoIterator<Item = u8>) -> String {
     const HEX: &[u8; 16] = b"0123456789abcdef";
     let mut encoded = String::with_capacity(64);
     for byte in digest {
         encoded.push(HEX[usize::from(byte >> 4)] as char);
         encoded.push(HEX[usize::from(byte & 15)] as char);
     }
-    Ok(encoded)
+    encoded
 }
 
 // Stack buffering avoids a full canonical payload and tiny SHA update calls.

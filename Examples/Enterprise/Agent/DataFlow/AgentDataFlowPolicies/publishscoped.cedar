@@ -5,5 +5,5 @@ permit(
   action == Action::"publish-document",
   resource
 ) when {
-  (resource.tenant) == ((context.source).tenant)
+  resource.tenant == context.source.tenant
 };

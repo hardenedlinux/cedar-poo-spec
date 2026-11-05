@@ -1,0 +1,254 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: Apache-2.0
+
+#+TITLE: Student-perspective review of every engineering view
+#+LANGUAGE: en
+#+OPTIONS: toc:2
+
+* Findings and scope
+
+Review date: 2026-11-03. Baseline: =3506f8707de648c98ba033e85de9e94b915ed337=.
+This review covers all ten top-level figures in =dev/d2/=, including the first
+architecture image in the repository README. It is an author review using
+beginner comprehension tasks, not a study with recruited students. No reading
+time, answer accuracy or cognitive-load experiment has been conducted.
+
+The main obstacles were repeated prose replacing visual relationships,
+indistinguishable icons, unbalanced tall columns and full proof/source names
+occupying the first reading layer. All ten figures were redrawn with revised
+questions, captions, illustrations and layouts. Their semantics remain distinct:
+dependencies, catalogues, quantities, conditional arguments, workflow, swimlanes
+and conjunctive requirements.
+
+Entry views establish orientation. The two proof views remain advanced material
+requiring vocabulary support. Fewer words, shorter canvases and successful
+technical checks do not establish experimentally improved comprehension.
+
+* Review method
+
+The intended reader knows basic programming but is unfamiliar with this
+repository's names, Lean proofs and Gateway lifecycle. Inspect each image
+without opening the source, then check its explanation against Lean/SysML:
+
+1. Can the reader identify the question immediately, without reading a paragraph?
+2. Are the entry, main relationships and stopping/completion conditions apparent?
+   Does a static relationship accidentally look like execution order?
+3. Do icons, boundaries, directions and groups explain something rather than decorate it?
+4. Is nearby material related? Does whitespace express a role/alternative, or merely uneven column height?
+5. Can the reader answer the task below without decoding a function name? Can necessary technical terms be looked up separately?
+6. Does simplification preserve the distinction between assumptions, proved conclusions, counterexamples and Host obligations?
+
+Design reference: [[https://doi.org/10.1017/9781108894333.019][Mayer and Fiorella on reducing extraneous processing]].
+This review draws on coherence, signaling and spatial contiguity. It does not
+mechanically apply narration-specific redundancy findings to all static text,
+or treat that research as an experiment on these repository figures.
+
+* Per-figure reflection and review
+
+** Architecture overview
+
+[[file:../dev/d2/architecture-overview.png][Full image]] · [[file:../dev/d2/architecture-overview.d2][Figure source]] · [[file:../dev/d2/architecture-overview.json][Source and binding receipt]]
+
+- Original obstacle: Four responsibility regions were followed by fourteen relationship rows, requiring repeated name matching.
+- Change: A four-question illustrated guide leads into the native dependency graph. All fourteen edges remain; the duplicate table is removed.
+- Comprehension task: Does Production obtain its definitions from Examples?
+- Expected explanation: No. Both independently consume shared capabilities and provide inputs to Rust. Zero Trust is a model Component.
+- Review result and remaining difficulty: Fourteen edges still branch. Use the preview to locate responsibilities and open the full image to inspect dependencies.
+
+** Capability catalogue
+
+[[file:../dev/d2/model-components.png][Full image]] · [[file:../dev/d2/model-components.d2][Figure source]] · [[file:../dev/d2/model-components.json][Source and binding receipt]]
+
+- Original obstacle: Columns with three, five and two subjects were unbalanced, and repeated icons did not distinguish responsibilities.
+- Change: Three rows distinguish rules, operation/information controls and cross-industry capabilities. Each capability has a distinct visual metaphor.
+- Comprehension task: Must an application select every Component?
+- Expected explanation: No. A profile selects the capabilities it needs. Catalogue groups do not prescribe execution order.
+- Review result and remaining difficulty: Terms such as Functional and Delta still need an introductory explanation; an icon cannot define them.
+
+** Industries and platforms
+
+[[file:../dev/d2/verticals-platforms.png][Full image]] · [[file:../dev/d2/verticals-platforms.d2][Figure source]] · [[file:../dev/d2/verticals-platforms.json][Source and binding receipt]]
+
+- Original obstacle: Four identical model icons obscured the difference between industry rules and platform integrations.
+- Change: Separate the two reader questions into rows, with hospital, bank, cloud and data-protection illustrations.
+- Comprehension task: Is AWS a vertical industry?
+- Expected explanation: No. Healthcare and financial services are industry controls; AWS and Google are platform projections.
+- Review result and remaining difficulty: Only implemented library families are shown. Other Example scenarios do not automatically become industry implementations.
+
+** Zero Trust responsibilities
+
+[[file:../dev/d2/security-frameworks.png][Full image]] · [[file:../dev/d2/security-frameworks.d2][Figure source]] · [[file:../dev/d2/security-frameworks.json][Source and binding receipt]]
+
+- Original obstacle: A three-column table repeated destination names and left two relationship cells empty.
+- Change: Five responsibility nodes and four directed dependencies expose the join between retained parent rules and policy assessment.
+- Comprehension task: Does Gateway need only the Zero Trust core?
+- Expected explanation: No. The diagram shows the POO-retained parent rule and the Authorization policy assessment joining at Gateway.
+- Review result and remaining difficulty: Dependency arrows do not specify runtime order or authenticate Host inputs.
+
+** Model proofs
+
+[[file:../dev/d2/zero-trust-model-proofs.png][Full image]] · [[file:../dev/d2/zero-trust-model-proofs.d2][Figure source]] · [[file:../dev/d2/zero-trust-model-proofs.json][Source and binding receipt]]
+
+- Original obstacle: Full declaration names, classifications, source names and relationship explanations repeated across tall columns.
+- Change: One argument per row uses short A/B/C references, conditions, conclusions and counterexamples. Full symbols move to the lookup table below.
+- Comprehension task: Why can rollback make an old observation pass again?
+- Expected explanation: It breaks the premise that every writer preserves generation order. Merely declaring an edge mediated is insufficient.
+- Review result and remaining difficulty: This is an advanced reading view. Observation, generation and Run require explanation before a beginner can interpret the conditional claims.
+
+** Object and publication proofs
+
+[[file:../dev/d2/zero-trust-object-proofs.png][Full image]] · [[file:../dev/d2/zero-trust-object-proofs.d2][Figure source]] · [[file:../dev/d2/zero-trust-object-proofs.json][Source and binding receipt]]
+
+- Original obstacle: Equal-width columns held five parent-rule cards, two continuing-use cards and four frontier cards, wasting space and attention.
+- Change: Three argument rows retain the numerical counterexample, parent/selected conjunction, consumed prefix and conditional publication-frontier reasoning.
+- Comprehension task: With root ≤ 10 and parent ≤ 5, may a child accept value 8?
+- Expected explanation: Passing the root alone is insufficient. The independently required parent condition must also be retained.
+- Review result and remaining difficulty: These are three conditional arguments, not one unconditional safety theorem. The wording explicitly rejects repeat consumption, not all continuing access.
+
+** Native catalog counts
+
+[[file:../dev/d2/lean-catalog.png][Full image]] · [[file:../dev/d2/lean-catalog.d2][Figure source]] · [[file:../dev/d2/lean-catalog.json][Source and binding receipt]]
+
+- Original obstacle: Five widely separated bars did not first show the total inventory.
+- Change: Show the total computed from observations, shorten row spacing and add category icons while retaining the shared zero baseline.
+- Comprehension task: Do 24 raw entries mean 24 successful authorizations?
+- Expected explanation: No. These are transport-form counts; the complete catalog contains 51 entries.
+- Review result and remaining difficulty: This is neither industry coverage nor a newly issued permission. Numeric values still come from the SDK observation.
+
+** Profile admission workflow
+
+[[file:../dev/d2/gateway-profile-workflow.png][Full image]] · [[file:../dev/d2/gateway-profile-workflow.d2][Figure source]] · [[file:../dev/d2/gateway-profile-workflow.json][Source and binding receipt]]
+
+- Original obstacle: The success route and shared refusal routes were wide, with unnecessarily long secondary captions.
+- Change: Shorter checks and return labels retain every failure edge. A warning icon distinguishes Stop from the receipt.
+- Comprehension task: May the caller dispatch an external effect after receiving a bound receipt?
+- Expected explanation: No. Final-use checks and the Host effect boundary still apply.
+- Review result and remaining difficulty: Stop intentionally aggregates error paths. Exact error variants belong in the typed API rather than the overview.
+
+** Publication swimlanes
+
+[[file:../dev/d2/gateway-publication-swimlanes.png][Full image]] · [[file:../dev/d2/gateway-publication-swimlanes.d2][Figure source]] · [[file:../dev/d2/gateway-publication-swimlanes.json][Source and binding receipt]]
+
+- Original obstacle: Eight stages and oversized role headers consumed excessive vertical space.
+- Change: Shorter role headers and stage rows preserve handoff gaps and the contiguous lock region. Ownership is still checked before acquiring the lock.
+- Comprehension task: Does the observer see installation under the same lock?
+- Expected explanation: Yes. Installation and observation share the boundary; unlocking precedes the local reply.
+- Review result and remaining difficulty: Empty lane positions express ownership and ordering. Removing them to fill space would change the notation. A local reply does not establish remote delivery.
+
+** Final requirements
+
+[[file:../dev/d2/gateway-final-tasks.png][Full image]] · [[file:../dev/d2/gateway-final-tasks.d2][Figure source]] · [[file:../dev/d2/gateway-final-tasks.json][Source and binding receipt]]
+
+- Original obstacle: The previous three-region arrangement still duplicated large illustrations and an oversized result region.
+- Change: Smaller scene illustrations and a compact result retain three questions, eight mandatory fields and AND semantics.
+- Comprehension task: Are A, B and C sequential execution stages?
+- Expected explanation: No. All eight requirements must hold together in the same deciding view.
+- Review result and remaining difficulty: Inhabited record fields do not authenticate real credentials. Authority, persistence and atomic execution remain Host obligations.
+
+* Reproducible text and space observations
+
+Visible word tokens are English letter/number sequences matching =[A-Za-z0-9]+=,
+extracted from SVG =text= elements. Metadata, CSS, paths and source JSON are
+excluded. PNG heights are normalized to the same display width of 1200 pixels,
+so changing export width alone cannot manufacture a shorter figure. Rounded
+values describe presentation, not reading speed or learning outcomes.
+More icons can increase file bytes; file size is not a comprehension score.
+The industry/platform view is slightly taller at equal width. This non-win is
+retained: its two independent question regions are a deliberate space tradeoff.
+
+| Figure | Visible tokens: before → after | Equal-width height: before → after | Minimum source CSS px |
+|--------+--------------------------------+-----------------------------------+-----------------------|
+| [[file:../dev/d2/architecture-overview.png][architecture-overview]] | 276 → 95 | 1095 → 436 | 13.00 |
+| [[file:../dev/d2/model-components.png][model-components]] | 131 → 87 | 697 → 654 | 13.00 |
+| [[file:../dev/d2/verticals-platforms.png][verticals-platforms]] | 89 → 64 | 502 → 524 | 13.00 |
+| [[file:../dev/d2/security-frameworks.png][security-frameworks]] | 129 → 69 | 544 → 372 | 13.00 |
+| [[file:../dev/d2/zero-trust-model-proofs.png][zero-trust-model-proofs]] | 346 → 260 | 880 → 851 | 13.00 |
+| [[file:../dev/d2/zero-trust-object-proofs.png][zero-trust-object-proofs]] | 386 → 269 | 1047 → 936 | 13.00 |
+| [[file:../dev/d2/lean-catalog.png][lean-catalog]] | 62 → 59 | 766 → 685 | 13.00 |
+| [[file:../dev/d2/gateway-profile-workflow.png][gateway-profile-workflow]] | 91 → 74 | 347 → 344 | 13.00 |
+| [[file:../dev/d2/gateway-publication-swimlanes.png][gateway-publication-swimlanes]] | 111 → 100 | 969 → 883 | 13.00 |
+| [[file:../dev/d2/gateway-final-tasks.png][gateway-final-tasks]] | 124 → 118 | 612 → 594 | 13.00 |
+
+The readability gate remains 12 CSS pixels on the original export canvas. It
+does not guarantee that size in GitHub thumbnails or on a narrow phone screen.
+Use the preview for orientation and open the full image for proof details.
+No font threshold, declaration coverage or relationship requirement was reduced.
+
+* Vocabulary before entering the proof views
+
+| Term | First explanation |
+|------+-------------------|
+| Contract | Requirements relating inputs, results and states; not evidence that IO already occurred. |
+| Profile | Composable requirements; selecting a child still retains the independently required parent. |
+| Observation / generation | Observed values and their generation; equal values do not make an old generation current. |
+| Frontier / epoch | An independently authoritative boundary/version constraining reuse of an old review. |
+| CommittedPrefix | Evidence that current history retains the original consumption, not just a committed label. |
+| Host premise | Authentic facts or atomic ordering supplied by the application; a Lean theorem does not implement them. |
+
+* Advanced lookup: short figure references and actual Lean declarations
+
+This table is a navigation aid. The existing SDK/Lean checks still validate
+existence, defining modules, roles and declared PROOF dependencies. Short
+references follow reading groups; they are not new proof identities.
+
+| Figure | Reference | Actual declaration |
+|--------+-----------+--------------------|
+| zero-trust-model-proofs | A1 | [[file:../CedarPooSpec/ZeroTrust/Model.lean][CedarPooSpec.ZeroTrust.Framework]] |
+| zero-trust-model-proofs | A2 | [[file:../CedarPooSpec/ZeroTrust/Composition.lean][CedarPooSpec.ZeroTrust.Framework.required]] |
+| zero-trust-model-proofs | A3 | [[file:../CedarPooSpec/ZeroTrust/Composition.lean][CedarPooSpec.ZeroTrust.with_requirement_preserves_framework]] |
+| zero-trust-model-proofs | B1 | [[file:../CedarPooSpec/ZeroTrust/Continuous.lean][CedarPooSpec.ZeroTrust.changed_generation_blocks]] |
+| zero-trust-model-proofs | B2 | [[file:../CedarPooSpec/ZeroTrust/Continuous.lean][CedarPooSpec.ZeroTrust.effect_step_rechecks]] |
+| zero-trust-model-proofs | B3 | [[file:../CedarPooSpec/ZeroTrust/UsageControl.lean][CedarPooSpec.ZeroTrust.usage_retains_core]] |
+| zero-trust-model-proofs | B4 | [[file:../CedarPooSpec/ZeroTrust/UsageControl.lean][CedarPooSpec.ZeroTrust.usage_rechecks_after_recovery]] |
+| zero-trust-model-proofs | C1 | [[file:../CedarPooSpec/ZeroTrust/Continuous.lean][CedarPooSpec.ZeroTrust.run_generation_monotone]] |
+| zero-trust-model-proofs | C2 | [[file:../CedarPooSpec/ZeroTrust/Continuous.lean][CedarPooSpec.ZeroTrust.Observation.retired_cut_refuses_after_run]] |
+| zero-trust-model-proofs | C3 | [[file:../Tests/ZeroTrust/Functional.lean][CedarPooSpec.ZeroTrustTest.authority_rollback_revives_cut_counterexample]] |
+| zero-trust-object-proofs | A1 | [[file:../CedarPooSpec/ZeroTrust/ProfileObject.lean][CedarPooSpec.ZeroTrust.ProfileObject.Profile]] |
+| zero-trust-object-proofs | A2 | [[file:../CedarPooSpec/ZeroTrust/ProfileObject.lean][CedarPooSpec.ZeroTrust.ProfileObject.Session]] |
+| zero-trust-object-proofs | A3 | [[file:../Tests/ZeroTrust/ProfileObject.lean][CedarPooSpec.ZeroTrustObjectTest.raw_override_parent_weakening_counterexample]] |
+| zero-trust-object-proofs | A4 | [[file:../CedarPooSpec/ZeroTrust/ProfileObject.lean][CedarPooSpec.ZeroTrust.ProfileObject.Composed.requirement]] |
+| zero-trust-object-proofs | A5 | [[file:../CedarPooSpec/ZeroTrust/ProfileObject.lean][CedarPooSpec.ZeroTrust.ProfileObject.composed_preserves_actual_parent_and_original]] |
+| zero-trust-object-proofs | B1 | [[file:../CedarPooSpec/Gateway/ZeroTrust.lean][CedarPooSpec.Gateway.ZeroTrust.CommittedPrefix]] |
+| zero-trust-object-proofs | B2 | [[file:../CedarPooSpec/Gateway/ZeroTrust.lean][CedarPooSpec.Gateway.ZeroTrust.continuing_objects_preserve_parent_and_consumption]] |
+| zero-trust-object-proofs | C1 | [[file:../CedarPooSpec/Gateway/PublicationReview.lean][CedarPooSpec.Gateway.PublicationReview.Host.withDeltaReview]] |
+| zero-trust-object-proofs | C2 | [[file:../CedarPooSpec/Gateway/PublicationReview.lean][CedarPooSpec.Gateway.PublicationReview.delta_final_retains_frontier]] |
+| zero-trust-object-proofs | C3 | [[file:../Tests/Gateway/PublicationReview.lean][CedarPooSpec.Gateway.PublicationReviewTest.rolled_back_frontier_allows_same_final_counterexample]] |
+| zero-trust-object-proofs | C4 | [[file:../CedarPooSpec/Gateway/PublicationReview.lean][CedarPooSpec.Gateway.PublicationReview.successive_delta_finals_advance_review_epoch]] |
+
+* Verification and open questions
+
+Each full PNG was visually inspected for related text/images, crossing lines,
+unbalanced whitespace and role meaning. The first visual pass found connectors
+crossing text and oversized chart icons; native graph layout and explicit SVG
+dimensions corrected them. Swimlanes retain necessary arrow spacing instead
+of optimizing only for minimum area.
+
+The full local development gate passes 52 tests / 321 assertions; Org parsing
+and diff checks pass. Ten figures retain the 12px gate, subject/edge identities,
+proof-role checks and positive/negative coverage for every Final field. Three
+initial tests failed because they did not load the project's icon resources;
+they now use the same resource entrypoint. No test was removed. Final wording
+explicitly distinguishes duplicate consumption from continuing access.
+Remote acceptance belongs to the exact submitted head; earlier green CI does
+not qualify a later redraw. Current results are recorded in the PR description.
+
+Open questions remain: comprehension by actual students, narrow-screen reading
+and the effectiveness of the proof vocabulary. The per-figure tasks above can
+support interviews: ask for an explanation before revealing the expected one,
+and record misunderstandings rather than coaching a correct answer. Do not
+invent scores, pass rates or claims of faster understanding.
+
+* Connection to research and the security model
+
+The [[file:zero-trust-contract.org][security-model research review]] distinguishes policy changes, current facts,
+continuing use and actual effects. Host premises must remain visible: same-world
+Delta no-expansion does not imply cross-world or entire-agent-trajectory safety.
+Cached policy analysis and PyO3 replay receipts are not execution capabilities.
+
+Packaging scope is explicit: =cedar-poo-bridge= uses PyO3/maturin; the external
+=cedar-poo-py-test= process observer remains Python/uv_build. See the
+[[file:python-native.org][native Python boundary]].
+
+The complete redraw, sources and receipts belong to existing draft PR #12.
+Until it is merged, =main= continues to show its own images. This is not a
+reason to bypass the instruction to keep the PR unmerged.

@@ -1,0 +1,116 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: Apache-2.0
+
+vars: {d2-config: {data: {figure: |json
+{
+  "purpose": "architecture",
+  "component": {
+    "kind": "payment",
+    "variant": "incident"
+  },
+  "language": "en",
+  "width": 1700,
+  "primary": "purpose",
+  "themes": [
+    "editorial",
+    "comfortable"
+  ],
+  "icons": [
+    "engineering",
+    "cedar"
+  ],
+  "basis": {
+    "captureRef": "development-source-observation",
+    "modelRefs": [],
+    "obligationRefs": [],
+    "evidenceRefs": []
+  },
+  "title": "How a stolen deployment key reached a wallet",
+  "kind": "proof-reading-map",
+  "questions": [
+    {
+      "ref": "purpose",
+      "text": "How did the attacker get in\u2014and why would the modeled signing gate say no?",
+      "focusRefs": [
+        "sysml"
+      ]
+    }
+  ],
+  "references": {
+    "source": "Examples/Scenarios/FinancialServices/Wallet/Binance2026.d2",
+    "sysml": "dev/sysml/attackers.sysml",
+    "incidentSource": "Examples/Scenarios/FinancialServices/Wallet/Binance2026.lean",
+    "paymentSource": "CedarPooSpec/Vertical/FinancialServices/PaymentSigning.lean"
+  },
+  "copy": {
+    "description": "Follow the four reported pivots. Then follow one synthetic stolen-token request through the defense flow.",
+    "status": "Preliminary source; AI exploit unknown. The highlighted refusal is an observed Lean fixture result. Host identity, mediation and chain-finality premises remain required."
+  },
+  "presentation": {
+    "notation": "dependencies"
+  },
+  "sysml": {
+    "source": "dev/sysml/attackers.sysml",
+    "view": "PaymentDefenseFlow::defense",
+    "bindings": {
+      "purpose": {
+        "name": "PaymentDefenseFlow::purpose",
+        "icon": "gate"
+      },
+      "approval": {
+        "name": "PaymentDefenseFlow::approval",
+        "icon": "evidence"
+      },
+      "exact": {
+        "name": "PaymentDefenseFlow::exact",
+        "icon": "request"
+      },
+      "transferKind": {
+        "name": "PaymentDefenseFlow::transferKind",
+        "icon": "rules"
+      },
+      "gateway": {
+        "name": "PaymentDefenseFlow::gateway",
+        "icon": "current"
+      },
+      "host": {
+        "name": "PaymentDefenseFlow::host",
+        "icon": "registrar"
+      },
+      "joint": {
+        "name": "PaymentDefenseFlow::joint",
+        "icon": "gate"
+      },
+      "released": {
+        "name": "PaymentDefenseFlow::released",
+        "icon": "bank"
+      },
+      "refused": {
+        "name": "PaymentDefenseFlow::refused",
+        "icon": "warning"
+      }
+    }
+  },
+  "proofs": {
+    "namespace": "PaymentDefenseFlow"
+  }
+}
+|
+}}}
+purpose: "Signing purpose"
+approval: "Current approval"
+exact: "Exact transfer"
+"transferKind": "Transfer only"
+gateway: "Current gateway"
+host: "Authentic Host facts"
+joint: "All required checks"
+released: "Approved transfer"
+refused: "No signature"
+purpose -> joint: "required"
+approval -> joint: "required"
+exact -> joint: "required"
+"transferKind" -> joint: "required"
+gateway -> joint: "required"
+host -> joint: "required"
+joint -> released: "admitted dispatch"
+joint -> refused: "refused"

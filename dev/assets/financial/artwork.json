@@ -1,0 +1,75 @@
+{
+  "formatVersion": 1,
+  "generator": "OpenAI built-in image_gen (imagegen skill)",
+  "generatedOn": "2026-11-05",
+  "purpose": "Original decorative and teaching illustrations; exact prompts and selected originals, not forensic evidence or security certification.",
+  "transparentBackground": true,
+  "assets": [
+    {
+      "id": "financial",
+      "path": "dev/assets/financial/financial.png",
+      "sha256": "fcbb31a8f6311e69cc63a4e9278fc90722425d21b4223be7ed897b47584dce34",
+      "prompt": "Use case: logo-brand. Asset type: original editorial illustration and emblem for an open-source formal-verification financial-services scenario component. Create one distinctive finance emblem: a sculptural bank-vault form built from three nested architectural arches, a small cedar leaf integrated into its center, and two restrained ledger planes suggesting governed financial flow. Refined contemporary editorial 3D illustration with soft ceramic surfaces, deep teal and muted antique gold accents, clear silhouette, generous transparent negative space. Centered composition, no text, no letters, no numbers, no watermark, no existing company or cryptocurrency logos, no Binance branding. The illustration is decorative identity artwork, not a security certification badge. Actual transparent background with preserved alpha. Output a single polished image."
+    },
+    {
+      "id": "payment",
+      "path": "dev/assets/financial/payment.png",
+      "sha256": "92176cbf551a88f79b0bb0ceabf7effb27e14b1307d83f2cb6deeb657c30222b",
+      "prompt": "Use case: logo-brand. Asset type: original payment emblem and small editorial illustration for the Payment component of an open-source formal-verification project. Primary request: a refined sculptural payment wallet, two interlocking transaction rails and a small cedar leaf seal integrated into the clasp. Make the wallet and rails clearly recognizable even at small display size. Contemporary editorial 3D ceramic illustration, restrained deep teal, warm ivory and muted antique gold, soft tactile materials, crisp simple silhouette, generous transparent negative space, centered composition. It should form a consistent family with financial architectural vault illustrations while being clearly a wallet/payment image. No text, no letters, no numbers, no watermark, no existing company, cryptocurrency or Binance logos. Decorative identity artwork, no claims of security certification. Actual transparent background; preserve alpha. One image only."
+    },
+    {
+      "id": "endpoint",
+      "prompt": "Use case: illustration-story. Asset type: one panel for a public incident explainer that teaches non-security readers how a reported wallet attack progressed and where defenses apply. Refined editorial narrative illustration, tactile paper and subtle isometric 3D shapes, light warm ivory background with real transparent outer background, dark navy objects, restrained coral-red attacker accents, teal reserved for defensive elements, gold for money. Clearly readable focal action and distinct silhouettes, landscape composition. No text, no letters, no numbers, no labels, no brand or cryptocurrency logos, no watermark, no fake command lines. Depict a conceptual teaching metaphor, never a claimed forensic screenshot. Panel 1 only: an engineer's open laptop receives an attractive recruitment envelope and a downloadable software package; a tiny coral-red concealed hook inside the package reaches into the laptop, suggesting the endpoint is compromised. Show the person's hand accepting the package, a clearly recognizable laptop and envelope. Make the social-engineering entry point instantly understandable without words. No hooded hacker stereotypes.",
+      "path": "dev/assets/financial/binance/endpoint.png",
+      "sha256": "92ebfc3788219e5dc3df30cac93ea2a80c3101782c6ee154e8d6b31632a6b802"
+    },
+    {
+      "id": "ai-token",
+      "prompt": "Use case: illustration-story. Asset type: one panel for a public incident explainer that teaches non-security readers how a reported wallet attack progressed and where defenses apply. Refined editorial narrative illustration, tactile paper and subtle isometric 3D shapes, light warm ivory background with real transparent outer background, dark navy objects, restrained coral-red attacker accents, teal reserved for defensive elements, gold for money. Clearly readable focal action and distinct silhouettes, landscape composition. No text, no letters, no numbers, no labels, no brand or cryptocurrency logos, no watermark, no fake command lines. Depict a conceptual teaching metaphor, never a claimed forensic screenshot. Panel 2 only: inside a company's workspace, an AI assistant terminal is connected to several internal systems by short passageways. A coral-red intruder trail passes through an open doorway at the AI terminal and emerges holding a distinctive gold access-token keycard. The exploit mechanism is intentionally not drawn: no chat prompt or injection symbols. Focus on lateral movement from one internal tool to a more powerful deployment credential.",
+      "path": "dev/assets/financial/binance/ai-token.png",
+      "sha256": "d5f86826b4d95ef6cf113540524e7d8409b3d82445cd29cf776ec9d2d8cce572"
+    },
+    {
+      "id": "deployment",
+      "prompt": "Use case: illustration-story. Asset type: one panel for a public incident explainer that teaches non-security readers how a reported wallet attack progressed and where defenses apply. Refined editorial narrative illustration, tactile paper and subtle isometric 3D shapes, light warm ivory background with real transparent outer background, dark navy objects, restrained coral-red attacker accents, teal reserved for defensive elements, gold for money. Clearly readable focal action and distinct silhouettes, landscape composition. No text, no letters, no numbers, no labels, no brand or cryptocurrency logos, no watermark, no fake command lines. Depict a conceptual teaching metaphor, never a claimed forensic screenshot. Panel 3 only: a gold access-token keycard unlocks a container-deployment control console. A coral-red marked software container moves from this console across a deployment rail toward a protected wallet-signing service represented as a machine with a pen nib. An ordinary payment approval desk stands on a separate unused route, making it clear that deployment access can reach a sensitive service while bypassing normal business approval.",
+      "path": "dev/assets/financial/binance/deployment.png",
+      "sha256": "ec1f4762953bf2137c3e5f4fe22ea8767a9fc2a256ccec8be6cce77753d1014d"
+    },
+    {
+      "id": "signer",
+      "prompt": "Use case: illustration-story. Asset type: one panel for a public incident explainer that teaches non-security readers how a reported wallet attack progressed and where defenses apply. Refined editorial narrative illustration, tactile paper and subtle isometric 3D shapes, light warm ivory background with real transparent outer background, dark navy objects, restrained coral-red attacker accents, teal reserved for defensive elements, gold for money. Clearly readable focal action and distinct silhouettes, landscape composition. No text, no letters, no numbers, no labels, no brand or cryptocurrency logos, no watermark, no fake command lines. Depict a conceptual teaching metaphor, never a claimed forensic screenshot. Panel 4 only: a wallet-signing machine with a pen nib receives a coral-red unauthorized instruction and stamps a transaction; gold value moves out of a wallet along a coral-red arrow. Beside the wallet a small persistent external control cable remains connected, symbolizing delegated authority that can outlast a local pause button. Make signing, unauthorized transfer and lingering control visually distinct, without suggesting private-key theft or a specific MPC failure.",
+      "path": "dev/assets/financial/binance/signer.png",
+      "sha256": "0a3a10ddee8e64f6e35298d190b66ed2f32f71a5471db3c698141587881915d0"
+    },
+    {
+      "id": "purpose",
+      "prompt": "Use case: scientific-educational. Asset type: a single clear teacher-like visual metaphor inside a security defense flow node, for readers with no security background. Refined tactile editorial 3D paper/ceramic illustration, dark navy structure, soft teal for required protection, coral only for a wrong input, gold for keys or money, simple silhouette, generous real transparent background, no words, no letters, no numbers, no watermark, no logos. The picture must communicate the concrete idea instantly and be legible when displayed at 160px wide. One focused concept, no full diagram, no decorative shield badge. Show two very different keys and two differently shaped locks: a coral deployment key fits a small software-container cabinet, but is visibly incompatible with the keyhole of a wallet-signing pen machine. Emphasize the wrong key cannot fit the signing door. No checkmark implying the compromised credential is safe.",
+      "path": "dev/assets/financial/defense/purpose.png",
+      "sha256": "52ac3ce40de16e6572e1901a0742e6666ddbfbdc7cd481cc54abacca4080c46f"
+    },
+    {
+      "id": "approval",
+      "prompt": "Use case: scientific-educational. Asset type: a single clear teacher-like visual metaphor inside a security defense flow node, for readers with no security background. Refined tactile editorial 3D paper/ceramic illustration, dark navy structure, soft teal for required protection, coral only for a wrong input, gold for keys or money, simple silhouette, generous real transparent background, no words, no letters, no numbers, no watermark, no logos. The picture must communicate the concrete idea instantly and be legible when displayed at 160px wide. One focused concept, no full diagram, no decorative shield badge. Show a payment envelope on a small review desk, with three clearly separate reviewers around it, each holding their own approval stamp. The stamps must converge on the exact same envelope. Friendly professional figures, no faces needed, no robot inventing approvals. Communicate independent review rather than one actor approving everything.",
+      "path": "dev/assets/financial/defense/approval.png",
+      "sha256": "11f8f634cd165d0d9ad811f731b064f5f050ffdc08e2a5ee89e232bf2e2d133e"
+    },
+    {
+      "id": "exact",
+      "prompt": "Use case: scientific-educational. Asset type: a single clear teacher-like visual metaphor inside a security defense flow node, for readers with no security background. Refined tactile editorial 3D paper/ceramic illustration, dark navy structure, soft teal for required protection, coral only for a wrong input, gold for keys or money, simple silhouette, generous real transparent background, no words, no letters, no numbers, no watermark, no logos. The picture must communicate the concrete idea instantly and be legible when displayed at 160px wide. One focused concept, no full diagram, no decorative shield badge. Show two matching payment instructions as compact paired transaction slips: the same gold coin pile and same distinctive recipient symbol on both, connected by a precise teal alignment bridge. A coral hand attempts to substitute a different recipient symbol but is stopped outside the pair. No words or written amounts.",
+      "path": "dev/assets/financial/defense/exact.png",
+      "sha256": "60e715eb847617d80372fdc45acf39be6c7006e286adee5afcd5486a94ff5bdc"
+    },
+    {
+      "id": "freshness",
+      "prompt": "Use case: scientific-educational. Asset type: a single clear teacher-like visual metaphor inside a security defense flow node, for readers with no security background. Refined tactile editorial 3D paper/ceramic illustration, dark navy structure, soft teal for required protection, coral only for a wrong input, gold for keys or money, simple silhouette, generous real transparent background, no words, no letters, no numbers, no watermark, no logos. The picture must communicate the concrete idea instantly and be legible when displayed at 160px wide. One focused concept, no full diagram, no decorative shield badge. Show a small access gate checking a credential beside a prominent clock: an old coral pass is caught before the gate while the teal current credential aligns with the gate reader. Communicate that permission must be checked again now, not reused from an old approval. No text or numerals on the clock.",
+      "path": "dev/assets/financial/defense/freshness.png",
+      "sha256": "469223013da1978501351a141dd73b1c8143400ef5b4476b4c53e2a43427cafe"
+    },
+    {
+      "id": "transfer",
+      "prompt": "Use case: scientific-educational. Asset type: a single clear teacher-like visual metaphor inside a security defense flow node, for readers with no security background. Refined tactile editorial 3D paper/ceramic illustration, dark navy structure, soft teal for required protection, coral only for a wrong input, gold for keys or money, simple silhouette, generous real transparent background, no words, no letters, no numbers, no watermark, no logos. The picture must communicate the concrete idea instantly and be legible when displayed at 160px wide. One focused concept, no full diagram, no decorative shield badge. Show a wallet with one narrow approved outgoing path carrying gold coins. A separate coral computer-code plug tries to attach to the wallet but hits a closed barrier. Clearly distinguish sending the approved payment from granting persistent programmable control. No code text, no numeric currency symbols.",
+      "path": "dev/assets/financial/defense/transfer.png",
+      "sha256": "c6dca63ae7764d4ebe2a89670df7e1c6d5e008700ec60fb3848cad2467695ac6"
+    }
+  ]
+}

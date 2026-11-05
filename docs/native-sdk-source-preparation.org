@@ -1,6 +1,12 @@
 #+title: Finite SDK preparation and streaming source publication
 #+options: toc:2 num:nil
 
+
+This document retains its original dependency and performance snapshot.
+For current Cedar/Lean/Rust pins and security integration, see
+[[file:zero-trust-contract.org][current-release coherence]]. Historical measurements are not requalified
+by a dependency upgrade.
+
 * Scope and identity
 
 This stage follows [[file:native-source-table.org][the canonical source-table audit]]. The baseline is

@@ -26,5 +26,5 @@ forbid(
   action in [Action::"ApproverActions"],
   resource is Timesheet
 ) when {
-  (resource.hasTag("classification")) && (!((principal.hasTag("clearance")) && ((principal.getTag("clearance")) == (resource.getTag("classification")))))
+  resource.hasTag("classification") && (!(principal.hasTag("clearance") && (principal.getTag("clearance") == resource.getTag("classification"))))
 };

@@ -3,6 +3,8 @@
 
 name: Cedar engineering views
 on:
+  push:
+    branches: [main]
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -31,6 +33,9 @@ jobs:
           test: false
           lint: false
       - uses: taiki-e/install-action@b6a061addd82b81aaeca51bdf2c53cd707996e5a # just
+      - name: Install GNU producer timeout on macOS
+        if: runner.os == 'macOS'
+        run: brew install coreutils
       - uses: ./.github/actions/lean-cache
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
         with:
@@ -52,7 +57,7 @@ jobs:
           rm -rf node_modules
           bun install --frozen-lockfile --cache-dir "$RUNNER_TEMP/cedar-render-bun-cache"
           bun run typecheck
-          bun test ./test/sources.test.ts ./test/inputs.test.ts ./test/artifacts.test.ts
+          bun test ./ts/test/sources.test.ts ./ts/test/inputs.test.ts ./ts/test/artifacts.test.ts ./ts/test/project.test.ts ./ts/test/financial.test.ts
           git diff --exit-code -- package.json bun.lock
       - name: Upload actual platform outputs and captured inputs
         if: ${{ always() }}
@@ -66,3 +71,6 @@ jobs:
             dev/.generated/
             dev/d2/
             dev/sysml/
+            Project.sysml
+            Examples/Scenarios/
+            dev/assets/financial/

@@ -5,5 +5,5 @@ permit(
   action == Action::"read-document",
   resource
 ) when {
-  ((resource.tenant) == "acme") && ((context.origin) in Role::"Admin")
+  (resource.tenant == "acme") && (context.origin in Role::"Admin")
 };

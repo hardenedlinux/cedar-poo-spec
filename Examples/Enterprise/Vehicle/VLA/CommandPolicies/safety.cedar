@@ -14,7 +14,7 @@ permit(
   action == Action::"accelerate",
   resource
 ) when {
-  (context.routeApproved) && (!(resource.pedestriansPresent))
+  context.routeApproved && (!resource.pedestriansPresent)
 };
 
 // POO policy ID: safe-braking

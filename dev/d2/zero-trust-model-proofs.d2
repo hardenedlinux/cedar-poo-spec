@@ -5,14 +5,15 @@ vars: {d2-config: {data: {figure: |json
 {
   "purpose": "architecture",
   "language": "en",
-  "width": 1280,
+  "width": 1700,
   "primary": "purpose",
   "themes": [
-    "sketchbook",
-    "compact"
+    "editorial",
+    "comfortable"
   ],
   "icons": [
-    "engineering"
+    "engineering",
+    "cedar"
   ],
   "basis": {
     "captureRef": "development-source-observation",
@@ -20,12 +21,12 @@ vars: {d2-config: {data: {figure: |json
     "obligationRefs": [],
     "evidenceRefs": []
   },
-  "title": "Zero Trust: conditional model proofs",
+  "title": "Why must each use be checked again?",
   "kind": "proof-reading-map",
   "questions": [
     {
       "ref": "purpose",
-      "text": "Which premises do the model laws preserve or reject?",
+      "text": "What follows from the assumptions, and what breaks without them?",
       "focusRefs": [
         "sysml",
         "core"
@@ -42,19 +43,51 @@ vars: {d2-config: {data: {figure: |json
     "mediatedSource": "CedarPooSpec/ZeroTrust/Continuous.lean",
     "usageSource": "CedarPooSpec/ZeroTrust/UsageControl.lean",
     "recoverySource": "CedarPooSpec/ZeroTrust/UsageControl.lean",
-    "meaningsSource": "CedarPooSpec/ZeroTrust/Model.lean"
+    "meaningsSource": "CedarPooSpec/ZeroTrust/Model.lean",
+    "monotoneSource": "CedarPooSpec/ZeroTrust/Continuous.lean",
+    "retiredSource": "CedarPooSpec/ZeroTrust/Continuous.lean",
+    "rollbackSource": "Tests/ZeroTrust/Functional.lean"
   },
   "copy": {
-    "description": "Definitions, premises, kernel laws and counterexamples are distinct. Each card names its actual Lean declaration.",
-    "status": "Authored proof-reading map. Arrows label premises or lemma use; a conditional theorem is not native Host enforcement."
+    "description": "Read one argument per row. PROOF marks a checked lemma dependency; CONTEXT is explanatory.",
+    "status": "Host assumptions are not implemented by a theorem. Exact Lean declarations and proof dependencies remain in the linked source receipt."
   },
   "presentation": {
-    "options": {
-      "elk.direction": "DOWN",
-      "elk.layered.spacing.nodeNodeBetweenLayers": "48"
-    },
-    "edgeLabels": true,
-    "legend": true
+    "notation": "assurance",
+    "columns": 1,
+    "groups": [
+      {
+        "title": "Assume and strengthen",
+        "icon": "registrar",
+        "subjects": [
+          "meanings",
+          "required",
+          "refinement"
+        ],
+        "columns": 3
+      },
+      {
+        "title": "Check each use",
+        "icon": "current",
+        "subjects": [
+          "observed",
+          "mediated",
+          "usage",
+          "recovery"
+        ],
+        "columns": 4
+      },
+      {
+        "title": "Keep old observations retired",
+        "icon": "recovery",
+        "subjects": [
+          "monotone",
+          "retired",
+          "rollback"
+        ],
+        "columns": 3
+      }
+    ]
   },
   "sysml": {
     "source": "dev/sysml/zero-trust-proofs.sysml",
@@ -62,31 +95,43 @@ vars: {d2-config: {data: {figure: |json
     "bindings": {
       "required": {
         "name": "ZeroTrustProofs::required",
-        "icon": "library"
+        "icon": "rules"
       },
       "refinement": {
         "name": "ZeroTrustProofs::refinement",
-        "icon": "evidence"
+        "icon": "branch"
       },
       "observed": {
         "name": "ZeroTrustProofs::observed",
-        "icon": "evidence"
+        "icon": "current"
       },
       "mediated": {
         "name": "ZeroTrustProofs::mediated",
-        "icon": "evidence"
+        "icon": "gate"
       },
       "usage": {
         "name": "ZeroTrustProofs::usage",
-        "icon": "evidence"
+        "icon": "observer"
       },
       "recovery": {
         "name": "ZeroTrustProofs::recovery",
-        "icon": "evidence"
+        "icon": "recovery"
       },
       "meanings": {
         "name": "ZeroTrustProofs::meanings",
-        "icon": "obligation"
+        "icon": "registrar"
+      },
+      "monotone": {
+        "name": "ZeroTrustProofs::monotone",
+        "icon": "pending"
+      },
+      "retired": {
+        "name": "ZeroTrustProofs::retired",
+        "icon": "evidence"
+      },
+      "rollback": {
+        "name": "ZeroTrustProofs::rollback",
+        "icon": "warning"
       }
     }
   },
@@ -96,16 +141,22 @@ vars: {d2-config: {data: {figure: |json
 }
 |
 }}}
-required: "Core requirement [definition]\nauthn / authz / current\ncommitted / unknown retained\nnot revoked / mediated"
-refinement: "Strengthening [kernel law]\nwith_requirement_preserves_\nframework\naccepted strengthened framework\nimplies the original full core"
-observed: "Observation [kernel law]\nchanged_generation_blocks\ngiven an atObservation binding\nchanged generation blocks use"
-mediated: "Every effect [kernel law]\neffect_step_rechecks\ngiven an accepted MediatedStep\nthen: fresh source-state conditions"
-usage: "Use transition [kernel law]\nusage_retains_core\ngiven accepted UsageControl.step\nthen: core.required at source state"
-recovery: "After recovery [kernel law]\nusage_rechecks_after_recovery\ngiven recovery AND ongoing admission\nthen: current / committed / unknown"
-meanings: "Supplied meanings [premises]\nactual identity / current facts\ncommit / unknown / mediation\nmodel proofs do not implement IO"
-required -> refinement: "Definition used by conditional theorem"
-required -> observed: "Add actual observation equality"
-required -> mediated: "MediatedStep requires the core"
-mediated -> usage: "UsageControl.step includes MediatedStep"
-usage -> recovery: "usage_retains_core is used in this proof"
-meanings -> required: "Application supplies predicate meanings"
+required: "Core requirement\nIdentity + permission + freshness\nCommit + retain unknowns\nNo revocation + mediated effect"
+refinement: "Keep the original rule\nIf: stronger requirement holds\nThen: the full core still holds"
+observed: "Reject stale observations\nIf: bound generation changes\nThen: use is blocked"
+mediated: "Recheck each effect\nIf: mediated step is accepted\nThen: source-state checks hold"
+usage: "Retain checks during use\nIf: usage step is accepted\nThen: the core still holds"
+recovery: "Recheck after recovery\nIf: recovery + ongoing admission\nThen: current + committed + retained"
+meanings: "Authentic inputs\nAssume: real facts + ordered IO"
+required -> refinement: "Original core"
+required -> observed: "Observation binding"
+required -> mediated: "Per-effect core"
+mediated -> usage: "Mediated step"
+usage -> recovery: "Retains core"
+meanings -> required: "Authentic meanings"
+monotone: "Keep generations ordered\nIf: every writer preserves order\nThen: a finite Run preserves it"
+retired: "Old observations stay refused\nIf: old cut + monotone Run\nThen: later callbacks reject it"
+rollback: "Rollback breaks retirement\nRewind the authority generation\nThe old observation can pass again"
+meanings -> monotone: "Every writer"
+monotone -> retired: "Generation order"
+rollback -> retired: "Monotone recovery required"

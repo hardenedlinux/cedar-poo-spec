@@ -1,0 +1,143 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: Apache-2.0
+
+vars: {d2-config: {data: {figure: |json
+{
+  "purpose": "architecture",
+  "language": "en",
+  "width": 1500,
+  "primary": "purpose",
+  "themes": [
+    "blueprint",
+    "comfortable"
+  ],
+  "icons": [
+    "engineering",
+    "cedar"
+  ],
+  "basis": {
+    "captureRef": "development-source-observation",
+    "modelRefs": [],
+    "obligationRefs": [],
+    "evidenceRefs": []
+  },
+  "title": "Eight requirements, one publication gate",
+  "kind": "tasks",
+  "questions": [
+    {
+      "ref": "purpose",
+      "text": "What must be present together before Final exists?",
+      "focusRefs": [
+        "sysml",
+        "sourceCode"
+      ]
+    }
+  ],
+  "references": {
+    "source": "dev/d2/gateway-final-tasks.d2",
+    "sysml": "dev/sysml/gateway-activities.sysml",
+    "sourceCode": "CedarPooSpec/Gateway/PublicationReview.lean"
+  },
+  "copy": {
+    "description": "Three questions organize all eight fields. Every field is required in the same deciding view.",
+    "status": "AND requirements, not run order. Lean checks field binding; Host authority and atomic execution remain obligations."
+  },
+  "presentation": {
+    "notation": "tasks",
+    "activity": {
+      "entry": "stepFinal"
+    },
+    "groups": [
+      {
+        "title": "What is being requested?",
+        "subjects": [
+          "stepReceipt",
+          "stepPending"
+        ],
+        "columns": 1
+      },
+      {
+        "title": "Who vouches for it?",
+        "subjects": [
+          "stepApproved",
+          "stepDurable",
+          "stepRecovered",
+          "stepFenced"
+        ],
+        "columns": 2
+      },
+      {
+        "title": "May it commit now?",
+        "subjects": [
+          "stepCurrent",
+          "stepCommitted"
+        ],
+        "columns": 1
+      }
+    ]
+  },
+  "sysml": {
+    "source": "dev/sysml/gateway-activities.sysml",
+    "view": "GatewayFinalTasks::overview",
+    "bindings": {
+      "stepFinal": {
+        "name": "GatewayFinalTasks::stepFinal",
+        "icon": "gate"
+      },
+      "stepReceipt": {
+        "name": "GatewayFinalTasks::stepReceipt",
+        "icon": "request"
+      },
+      "stepApproved": {
+        "name": "GatewayFinalTasks::stepApproved",
+        "icon": "evidence"
+      },
+      "stepDurable": {
+        "name": "GatewayFinalTasks::stepDurable",
+        "icon": "registry"
+      },
+      "stepRecovered": {
+        "name": "GatewayFinalTasks::stepRecovered",
+        "icon": "recovery"
+      },
+      "stepFenced": {
+        "name": "GatewayFinalTasks::stepFenced",
+        "icon": "registrar"
+      },
+      "stepCurrent": {
+        "name": "GatewayFinalTasks::stepCurrent",
+        "icon": "current"
+      },
+      "stepPending": {
+        "name": "GatewayFinalTasks::stepPending",
+        "icon": "pending"
+      },
+      "stepCommitted": {
+        "name": "GatewayFinalTasks::stepCommitted",
+        "icon": "gate"
+      }
+    }
+  },
+  "proofs": {
+    "namespace": "GatewayFinalTasks"
+  }
+}
+|
+}}}
+stepFinal: "One admissible publication\nAll eight requirements together"
+stepReceipt: "Same request\nOriginal Contract"
+stepPending: "Admissible intent\nThis command fits pending state"
+stepApproved: "Selected review\nChosen by the authority"
+stepDurable: "Registered evidence\nExact artifact is committed"
+stepRecovered: "Recovered registry\nAuthority record is available"
+stepFenced: "Current registrar\nCorrect authority incarnation"
+stepCurrent: "Current use\nSecurity holds at use"
+stepCommitted: "Bound commit\nResult + next state bound"
+stepFinal -> stepReceipt: requires
+stepFinal -> stepPending: requires
+stepFinal -> stepApproved: requires
+stepFinal -> stepDurable: requires
+stepFinal -> stepRecovered: requires
+stepFinal -> stepFenced: requires
+stepFinal -> stepCurrent: requires
+stepFinal -> stepCommitted: requires

@@ -1,0 +1,53 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: Apache-2.0
+
+#+title: CI module ownership
+
+* Independent validation scopes
+
+Each workflow runs on pull requests to =main=, pushes to =main= and manual
+dispatch. Shared library changes still exercise every module. There are no
+path filters that could silently skip a required domain or cross-workflow
+=workflow_run= chains that might test a different revision. Every runner checks
+out the event revision. Independent workflows do not imply security isolation
+between source modules; the existing Lean import audit enforces that boundary.
+
+| Workflow | Owner / gate | Local entrypoints |
+|----------+--------------+-------------------|
+| [[file:../.github/workflows/ci.yml][ci.yml]] | Whole-library Lean integration and Rust workspace | =just check-lean=, =just check-rust= |
+| [[file:../.github/workflows/zero-trust.yml][zero-trust.yml]] | Zero Trust / Gateway native simulation and Production current-use vectors; generic authorization Delta | =just check-gateway-delta=, =just check-effect-protocol=, =just check-agent-trace-delta= and authorization Delta recipes |
+| [[file:../.github/workflows/healthcare.yml][healthcare.yml]] | Healthcare Cases and impact analysis | =just example health ...=, =just check-health-authorization-impact= |
+| [[file:../.github/workflows/financial-services.yml][financial-services.yml]] | Banking, claims, payment and commerce | Financial-services examples and payment/commerce recipes |
+| [[file:../.github/workflows/platforms.yml][platforms.yml]] | Cloud and agent platform integration | Cloud, AWS AgenticPlatform and enterprise Agent examples |
+| [[file:../.github/workflows/governance.yml][governance.yml]] | Governance, personnel and schema evolution | Governance examples and governance recipes |
+| [[file:../.github/workflows/conformance.yml][conformance.yml]] | Canonical artifacts and cross-module replay | Artifact, replay and schema-bound conformance recipes |
+| [[file:../.github/workflows/native-performance.yml][native-performance.yml]] | Lean/Rust benchmarks and OS observations | Existing native benchmark, cold recovery, allocation and launch recipes |
+| [[file:../.github/workflows/python-bindings.yml][python-bindings.yml]] | Native Rust/Python wheel and FFI boundary on Ubuntu/macOS | =just check-python-bindings= |
+| [[file:../.github/workflows/views.yml][views.yml]] | SDK-bound render / recovery on Ubuntu and macOS | =cd dev && just render && just test= |
+
+The full Lean integration gate is intentionally retained alongside module
+checks; module ownership does not remove the aggregate compile/proof check.
+The original =just check-delta= remains the local aggregate. Its nine checks
+are assigned across Zero Trust/authorization, financial services and healthcare
+rather than hidden in one all-domain job.
+
+* Common setup, separate evidence
+
+[[file:../.github/actions/setup-verification/action.yml][Shared verification setup]] installs the declared Lean toolchain, pinned uv,
+just and recipe search dependency, plus optional Rust and pinned CVC5.
+Every module executing solver-backed Delta explicitly enables CVC5; a separate
+module cannot rely on another job having installed a process or environment. It invokes the existing
+[[file:../.github/actions/lean-cache/action.yml][Lean cache owner]]; no new cache generation or version ladder is introduced.
+Each independent job restores only compiler-compatible outputs and lets Lake
+traces determine rebuilding. First runs of newly named jobs can have cache
+misses. Fixtures, receipts and observations remain fresh, never cached evidence.
+
+All existing checks, negative controls and fixed watchdog/heap limits remain.
+Benchmarks retain every sample and upload observations with exact commit and
+input identities; a green gate does not mean stable speedup. The cold recovery
+case empties the root build while preserving dependency directories and the
+official cache. Core setup does not add Cargo job-count environment overrides.
+
+Each workflow reports its own checks and failure logs. Keep the PR draft until
+review is requested. Repository branch/ruleset requirements are an independent
+administrative policy; this code does not weaken or edit them.

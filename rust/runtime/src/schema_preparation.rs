@@ -38,7 +38,7 @@ impl PreparedSchema {
     }
     pub(crate) fn digest(&self) -> Result<&str, String> {
         if self.digest.get().is_none() {
-            let value = crate::canonical::value_sha256(&self.source)?;
+            let value = crate::canonical::schema_sha256(&self.source)?;
             let _ = self.digest.set(value);
         }
         self.digest
@@ -118,3 +118,94 @@ impl SchemaPreparation {
         Ok(prepared)
     }
 }
+
+/// Immutable, strictly validated Schema/Policy sources owned by one live program.
+/// Request/entity parsing, both authorizers and receipt expectations remain fresh.
+/// Clones share only successful source preparation; no request or Allow is retained.
+#[derive(Clone)]
+pub struct ValidatedProgram {
+    schema: Arc<PreparedSchema>,
+    revision: crate::syntax::CheckedRevision,
+}
+impl ValidatedProgram {
+    /// Digest of the exact immutable Schema bound to this source owner.
+    pub fn schema_sha256(&self) -> Result<&str, String> {
+        self.schema.digest()
+    }
+
+    /// Prepare sources and evaluate the first Case exactly once.
+    pub fn prepare(
+        source: &SchemaSourceJson,
+        case: &crate::Case,
+    ) -> Result<(Self, crate::SchemaBoundReceipt), String> {
+        Self::prepare_using(PreparedSchema::parse(source, None)?, case)
+    }
+    fn prepare_using(
+        schema: Arc<PreparedSchema>,
+        case: &crate::Case,
+    ) -> Result<(Self, crate::SchemaBoundReceipt), String> {
+        let manifest = crate::ValidatedManifest {
+            schema: schema.source.clone(),
+            cases: vec![case.clone()],
+        };
+        let mut preparation = crate::preparation::PreparedReplay::default();
+        let receipt =
+            crate::schema::replay_with_schema_using(&manifest, &schema, None, &mut preparation)?
+                .into_iter()
+                .next()
+                .ok_or("missing prepared program receipt")?;
+        let revision = preparation
+            .checked(&case.policies, true)?
+            .ok_or("missing checked program source")?;
+        Ok((Self { schema, revision }, receipt))
+    }
+    /// Validate a replacement policy against this exact Schema; unchanged full
+    /// sources reuse successful preparation, including annotation/source identity.
+    pub fn revise(&self, case: &crate::Case) -> Result<(Self, crate::SchemaBoundReceipt), String> {
+        if self.revision.source.same_source(&case.policies) {
+            Ok((self.clone(), self.replay(case)?))
+        } else {
+            Self::prepare_using(self.schema.clone(), case)
+        }
+    }
+    /// Evaluate a fresh Case under the bound Schema and exact original policies.
+    pub fn replay(&self, case: &crate::Case) -> Result<crate::SchemaBoundReceipt, String> {
+        self.replay_observed(case, None)
+    }
+    /// Observe reuse without changing source checks or authorizer execution.
+    pub fn replay_measured(
+        &self,
+        case: &crate::Case,
+        metrics: &mut ReplayMetrics,
+    ) -> Result<crate::SchemaBoundReceipt, String> {
+        self.replay_observed(case, Some(metrics))
+    }
+    fn replay_observed(
+        &self,
+        case: &crate::Case,
+        mut metrics: Option<&mut ReplayMetrics>,
+    ) -> Result<crate::SchemaBoundReceipt, String> {
+        if !self.revision.source.same_source(&case.policies) {
+            return Err("prepared program policy source changed".into());
+        }
+        if let Some(stats) = metrics.as_deref_mut() {
+            stats.schema_reuses += 1;
+            stats.source_policy_reuses += 1;
+            stats.revision_syntax_reuses += 1;
+        }
+        let replay = crate::replay::replay_checked_case(
+            case,
+            &self.revision,
+            self.schema.validator.schema(),
+            metrics,
+        )?;
+        Ok(crate::SchemaBoundReceipt {
+            schema_sha256: self.schema.digest()?.to_owned(),
+            replay,
+        })
+    }
+}
+
+#[cfg(test)]
+#[path = "../tests/unit/validated_program.rs"]
+mod program_tests;

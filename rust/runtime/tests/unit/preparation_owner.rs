@@ -60,3 +60,40 @@ fn uid_owner_reuses_exact_successful_syntax_and_retires_with_invocation() {
         "new invocation must prepare independently"
     );
 }
+
+#[test]
+fn one_source_slot_preserves_both_receipt_modes_and_distinct_source_bindings() {
+    use super::PreparedReplay;
+    use crate::{input::Case, syntax::CheckedRevision};
+    use serde_json::json;
+    let mut owner = PreparedReplay::default();
+    let mut metrics = crate::ReplayMetrics::default();
+    for effect in ["permit", "forbid"] {
+        let case:Case=serde_json::from_value(json!({
+            "name":"slot", "revision":"one", "policy_ids":["base"],
+            "policies":{"staticPolicies":{"base":{"effect":effect,"principal":{"op":"All"},"action":{"op":"All"},"resource":{"op":"All"},"conditions":[]}},"templates":{},"templateLinks":[]},
+            "entities":[],"request":{"principal":"User::\"a\"","action":"Action::\"read\"","resource":"Doc::\"a\"","context":{}},
+            "expected":"allow","expected_reasons":["base"],"expected_error_policies":[]
+        })).unwrap();
+        for hash in [false, true, false, true] {
+            let actual =
+                CheckedRevision::new(&case, hash, Some(&mut metrics), Some(&mut owner)).unwrap();
+            let independent = CheckedRevision::new(&case, hash, None, None).unwrap();
+            assert_eq!(actual.policy_sha256, independent.policy_sha256);
+            assert_eq!(actual.compiled_bodies, independent.compiled_bodies);
+            assert_eq!(actual.rendered_bodies, independent.rendered_bodies);
+            assert!(actual.source.same_source(&case.policies));
+        }
+    }
+    assert_eq!(
+        owner.syntax.len(),
+        2,
+        "one complete source key per different body"
+    );
+    for slot in owner.syntax.values() {
+        assert!(slot.checked.iter().all(Option::is_some));
+    }
+    assert_eq!(metrics.source_policy_loads, 2);
+    assert_eq!(metrics.source_policy_reuses, 6);
+    assert_eq!(metrics.revision_syntax_reuses, 4);
+}

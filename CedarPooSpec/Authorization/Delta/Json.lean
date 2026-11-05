@@ -1,6 +1,7 @@
 import CedarPooSpec.Functional.CompilationJson
 import CedarPooSpec.Authorization.Delta.Evidence
 import CedarPooSpec.PolicyJson
+import Cedar.Spec.Json
 
 /-! JSON projection for authorization-delta reports and Cedar replay cases. -/
 

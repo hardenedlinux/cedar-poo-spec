@@ -5,5 +5,5 @@ permit(
   action == Action::"view",
   resource is Document
 ) when {
-  ((principal.email) like "*@example.org") && (principal is User)
+  (principal.email like "*@example.org") && (principal is User)
 };

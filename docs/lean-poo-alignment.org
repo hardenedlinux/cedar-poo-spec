@@ -4,7 +4,7 @@
 
 The library and lockfile pin [[https://github.com/tao3k/lean-poo/pull/13][LeanPOO PR 13]] at
 =ed1a2834991b44e8b8e7f47d739229edd599da9b=. This is a pinned research-branch
-snapshot, not a claim that PR 13 has merged. SPEC retains Lean 4.34.1 and its
+snapshot, not a claim that PR 13 has merged. That historical snapshot retained Lean 4.34.1 and its
 existing Cedar revision; no unrelated dependency upgrade is included.
 
 Industry models use the existing typed object and Contract systems. LeanPOO
@@ -165,3 +165,14 @@ Run =lake build CedarPooSpec Tests Productions= and =just check-lean=; the
 existing layer check must keep library/Production separate from Examples.
 The full GitHub CI additionally qualifies existing Rust conformance, exported
 Cedar artifacts, schema-bound scenarios and authorization-delta proofs.
+
+
+* Current Cedar integration toolchain
+
+The current integration uses Cedar Lean commit
+=ac201c127d31cff4bea784c87d3e3d3e8fb8bfe9= and its required Lean =4.35.0=.
+Rust pins =cedar-policy 4.14.1=; replay receipts report language =4.6.0=.
+LeanPoo stays on the latest official release tag =v0.1.2=. Earlier timing,
+allocation and source-bound receipts above remain historical measurements;
+they are not performance claims for these upgraded dependencies.
+See [[file:zero-trust-contract.org][current-release coherence]] for the integrated security obligation and limits.

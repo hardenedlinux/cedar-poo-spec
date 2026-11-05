@@ -80,3 +80,25 @@ fn streaming_hash_preserves_block_boundaries_and_large_escaped_payloads() {
         assert_eq!(value_sha256(&value), legacy_hash(&value), "length {length}");
     }
 }
+
+#[test]
+fn schema_owned_wire_digest_matches_independent_canonical_writer() {
+    for value in [
+        json!({"z": "μ\n\"😀", "a": [{"β": [-0.0, 1.25, u64::MAX], "a": i64::MIN}]}),
+        json!({"": {"entityTypes": {}, "actions": {}}}),
+        json!({}),
+        json!([]),
+        json!(null),
+    ] {
+        let source: cedar_poo_core::SchemaSourceJson =
+            serde_json::from_value(value.clone()).unwrap();
+        assert_eq!(
+            super::schema_sha256(&source).unwrap(),
+            legacy_hash(&value).unwrap()
+        );
+        assert_eq!(
+            super::schema_sha256(&source).unwrap(),
+            value_sha256(&value).unwrap()
+        );
+    }
+}

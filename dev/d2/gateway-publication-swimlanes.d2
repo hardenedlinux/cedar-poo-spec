@@ -1,0 +1,194 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: Apache-2.0
+
+vars: {d2-config: {data: {figure: |json
+{
+  "purpose": "architecture",
+  "language": "en",
+  "width": 1450,
+  "primary": "purpose",
+  "themes": [
+    "blueprint",
+    "comfortable"
+  ],
+  "icons": [
+    "engineering",
+    "cedar"
+  ],
+  "basis": {
+    "captureRef": "development-source-observation",
+    "modelRefs": [],
+    "obligationRefs": [],
+    "evidenceRefs": []
+  },
+  "title": "Who does what at publication?",
+  "kind": "swimlanes",
+  "questions": [
+    {
+      "ref": "purpose",
+      "text": "What is checked before the lock, and what stays inside it?",
+      "focusRefs": [
+        "sysml",
+        "sourceCode"
+      ]
+    }
+  ],
+  "references": {
+    "source": "dev/d2/gateway-publication-swimlanes.d2",
+    "sysml": "dev/sysml/gateway-activities.sysml",
+    "sourceCode": "rust/runtime/tests/unit/publication_review.rs",
+    "contract": "CedarPooSpec/Gateway/PublicationReview.lean"
+  },
+  "copy": {
+    "description": "Read down the three roles. The dashed region is one shared critical section.",
+    "status": "Rust in-memory fixture, not a deployed Host. A local reply does not prove remote delivery."
+  },
+  "presentation": {
+    "notation": "swimlanes",
+    "columns": 3,
+    "groups": [
+      {
+        "title": "Caller",
+        "subjects": [
+          "stepCapture",
+          "stepCall",
+          "stepReturn"
+        ],
+        "icon": "caller"
+      },
+      {
+        "title": "Shared authority / Mutex",
+        "subjects": [
+          "stepOwner",
+          "stepCheck",
+          "stepAdmit",
+          "stepInstall"
+        ],
+        "icon": "gate"
+      },
+      {
+        "title": "Commit observer",
+        "subjects": [
+          "stepObserve"
+        ],
+        "icon": "observer"
+      }
+    ],
+    "activity": {
+      "stages": [
+        {
+          "title": "Prepare",
+          "subjects": [
+            "stepCapture"
+          ]
+        },
+        {
+          "title": "Invoke",
+          "subjects": [
+            "stepCall"
+          ]
+        },
+        {
+          "title": "Check ownership",
+          "subjects": [
+            "stepOwner"
+          ]
+        },
+        {
+          "title": "Validate; Mutex acquired",
+          "subjects": [
+            "stepCheck"
+          ]
+        },
+        {
+          "title": "Recheck Delta",
+          "subjects": [
+            "stepAdmit"
+          ]
+        },
+        {
+          "title": "Install",
+          "subjects": [
+            "stepInstall"
+          ]
+        },
+        {
+          "title": "Observe; then unlock",
+          "subjects": [
+            "stepObserve"
+          ]
+        },
+        {
+          "title": "Return locally",
+          "subjects": [
+            "stepReturn"
+          ]
+        }
+      ],
+      "critical": {
+        "title": "FINAL-USE LOCK",
+        "subjects": [
+          "stepCheck",
+          "stepAdmit",
+          "stepInstall",
+          "stepObserve"
+        ]
+      }
+    }
+  },
+  "sysml": {
+    "source": "dev/sysml/gateway-activities.sysml",
+    "view": "GatewayPublicationLanes::overview",
+    "bindings": {
+      "stepCapture": {
+        "name": "GatewayPublicationLanes::stepCapture",
+        "icon": "request"
+      },
+      "stepCall": {
+        "name": "GatewayPublicationLanes::stepCall",
+        "icon": "reference"
+      },
+      "stepCheck": {
+        "name": "GatewayPublicationLanes::stepCheck",
+        "icon": "current"
+      },
+      "stepAdmit": {
+        "name": "GatewayPublicationLanes::stepAdmit",
+        "icon": "evidence"
+      },
+      "stepInstall": {
+        "name": "GatewayPublicationLanes::stepInstall",
+        "icon": "registry"
+      },
+      "stepObserve": {
+        "name": "GatewayPublicationLanes::stepObserve",
+        "icon": "observer"
+      },
+      "stepReturn": {
+        "name": "GatewayPublicationLanes::stepReturn",
+        "icon": "document"
+      },
+      "stepOwner": {
+        "name": "GatewayPublicationLanes::stepOwner",
+        "icon": "registrar"
+      }
+    }
+  }
+}
+|
+}}}
+stepOwner: "Check owner\nMissing / foreign: stop"
+stepCapture: "Capture ticket\nOwner + generation"
+stepCall: "Request publication\nTicket is not a commit right"
+stepCheck: "Check generation\nStale: stop"
+stepAdmit: "Recheck review + counters\nDenied / exhausted: stop"
+stepInstall: "Install successor\nAdvance image + generation"
+stepObserve: "Observe installed state\nUnder lock; then unlock"
+stepReturn: "Receive local reply\nLost reply stays unknown"
+stepCapture -> stepCall: "ticket passed to caller"
+stepCall -> stepOwner: "enter publish; error branches return immediately"
+stepCheck -> stepAdmit: "current ticket only"
+stepAdmit -> stepInstall: "admitted image + checked counter only"
+stepInstall -> stepObserve: "installed state; lock retained"
+stepObserve -> stepReturn: "callback returns; then release lock"
+stepOwner -> stepCheck: "owner matches; acquire current Mutex"

@@ -4,19 +4,20 @@
   "type": "module",
   "license": "Apache-2.0",
   "scripts": {
-    "render": "bun render.ts",
+    "render": "bun ts/render.ts",
     "typecheck": "tsc --noEmit",
-    "test": "bun test ./test"
+    "test": "just test"
   },
   "dependencies": {
-    "@deterministic-engineering/render": "git+https://github.com/hardenedlinux/deterministic-engineering.git#1fe20380441a0cd85055695c2adcc55ce699a369",
+    "@deterministic-engineering/render": "git+https://github.com/hardenedlinux/deterministic-engineering.git#6f3113eaeb75effb8b692b8eacae1cbe48767769",
     "@openmbee/opensysml": "0.11.0",
     "@openmbee/opensysml-wasm": "0.11.0",
+    "parse5": "8.0.1",
     "playwright": "1.64.1",
-    "valibot": "1.2.0",
-    "parse5": "8.0.1"
+    "valibot": "1.2.0"
   },
   "devDependencies": {
+    "@informalsystems/quint": "0.33.0",
     "@types/bun": "1.4.4",
     "typescript": "7.0.2"
   },

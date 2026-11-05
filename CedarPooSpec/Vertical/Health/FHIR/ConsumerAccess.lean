@@ -1,3 +1,4 @@
+import CedarPooSpec.Gateway.OAuth
 import CedarPooSpec.Governance.Veto
 
 /-!
@@ -84,5 +85,11 @@ def RevocableUse.control (access : RevocableUse) : Veto :=
   { policyId := access.policyId,
     actionScope := .actionInAny access.actions,
     denyWhen := negated (context access.accessActiveFact) }
+
+/-- Apply current Host-verified OAuth evidence to the existing resource policy.
+The caller supplies the observation from the actual deciding view. -/
+def withOAuth (base : CedarPooSpec.ZeroTrust.Framework E V)
+    (observe : E → V → CedarPooSpec.Gateway.OAuth.CurrentUse) :=
+  CedarPooSpec.Gateway.OAuth.strengthen base observe
 
 end CedarPooSpec.Vertical.Health.FHIR

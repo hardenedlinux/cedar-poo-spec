@@ -77,7 +77,9 @@ bench-catalog-launch output: check-functional-catalog
 
 # Same bytes/real workload, but new paths share a single source inode. Keep this
 # diagnostic distinct from the fresh-copy and ordinary complete-process cohorts.
-bench-catalog-inode output:
+bench-catalog-inode output: check-functional-catalog
+    lake build caseManifestsNative manifestLifecycleNative
+    cargo build --release --locked -p cedar-poo-bridge --manifest-path Cargo.toml --example launch_probe
     timeout --signal=TERM --kill-after=3s 120s uv run --project python --package cedar-poo-py-test --locked python -m cedar_poo_py_test.launch .lake/build/bin/manifestLifecycleNative --output-directory {{quote(output)}}/lean --materialization hardlink --expected-exit 0 --child-arguments catalog
     timeout --signal=TERM --kill-after=3s 120s uv run --project python --package cedar-poo-py-test --locked python -m cedar_poo_py_test.launch rust/target/release/examples/launch_probe --output-directory {{quote(output)}}/rust --materialization hardlink --input .lake/build/functional-catalog.json --expected-exit 0 --child-arguments replay-catalog
     for stdout in {{quote(output)}}/lean/*.stdout; do cmp "$stdout" .lake/build/functional-catalog.json || exit $?; done
@@ -97,3 +99,124 @@ bench-catalog-stages:
 bench-catalog-authorization:
     lake build manifestLifecycleNative
     timeout --signal=TERM --kill-after=3s 120s .lake/build/bin/manifestLifecycleNative stages-authorized
+
+# Observe an empty root build with the declared toolchain; preserve dependency
+# directories and restore the qualified build on success, timeout or interruption.
+[script]
+bench-project-native-cold output:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    output=$(python3 -c 'from pathlib import Path; import sys; p=Path(sys.argv[1]).resolve(); b=Path(".lake/build").resolve(); assert p != b and b not in p.parents, "cold evidence must be outside the build directory"; print(p)' {{quote(output)}})
+    test -d .lake/build
+    test ! -e "$output"
+    mkdir -p "$output"
+    lake_executable="$(lake env lean --print-prefix)/bin/lake"
+    {
+        cat lean-toolchain
+        "$lake_executable" --version
+        lake env lean --version
+    } > "$output/toolchain.txt"
+    python3 -c 'from pathlib import Path; import hashlib,json,sys; p=Path(sys.argv[1]).resolve(); print(json.dumps({"lake_executable":str(p),"lake_sha256":hashlib.sha256(p.read_bytes()).hexdigest(),"declared_toolchain":Path("lean-toolchain").read_text().strip()}))' "$lake_executable" > "$output/toolchain.json"
+    expected=$(sed 's/.*:v//' lean-toolchain)
+    "$lake_executable" --version | tail -n 1 | rg -F "Lean version $expected)" > /dev/null
+    python_executable=$(uv run --project python --package cedar-poo-py-test --locked python -c 'import sys; print(sys.executable)')
+    observer_pid=""
+    restore() {
+        local final_status=$?
+        if test -d "$output/qualified-build"; then
+            if test -n "$observer_pid"; then
+                if jobs -pr | rg -qx "$observer_pid"; then kill -TERM "$observer_pid" || true; fi
+                wait "$observer_pid" || true
+                observer_pid=""
+            fi
+            # A missing quiescence receipt leaves the qualified build protected
+            # at its backup path instead of exposing it to a surviving writer.
+            if ! "$python_executable" -c 'import json,sys; assert json.load(open(sys.argv[1])).get("owned_group_quiesced") is True' "$output/resource.json"; then
+                echo "Cannot confirm compiler group exit; qualified build retained at $output/qualified-build" >&2
+                return 1
+            fi
+            printf '%s\n' "$final_status" > "$output/exit-status"
+            "$python_executable" -c 'from pathlib import Path; import hashlib,json,sys; r=Path(sys.argv[1]); h=lambda p:hashlib.sha256(p.read_bytes()).hexdigest() if p.is_file() else None; names=["caseManifestsNative","objectProfilesNative","functionalReuseNative","manifestLifecycleNative"]; rows={n:{"qualified":h(r/"qualified-build/bin"/n),"cold":h(Path(".lake/build/bin")/n)} for n in names}; status=int(sys.argv[2]); print(json.dumps({"scope":"Root build initially absent; dependency directories and official Lake cache preserved; not an all-cache-empty source build; fixed120s/defaultjobs", "returncode":status,"executables":rows,"accepted":status==0 and all(v["cold"] is not None and v["cold"]==v["qualified"] for v in rows.values())},indent=2))' "$output" "$final_status" > "$output/identities.json"
+            if test -e .lake/build; then mv .lake/build "$output/cold-build"; fi
+            mv "$output/qualified-build" .lake/build
+            if test "$final_status" -eq 0; then
+                "$python_executable" -c 'import json,sys; assert json.load(open(sys.argv[1]))["accepted"] is True' "$output/identities.json"
+            fi
+        fi
+    }
+    trap restore EXIT
+    trap 'exit 129' HUP
+    trap 'exit 130' INT
+    trap 'exit 143' TERM
+    mv .lake/build "$output/qualified-build"
+    status=0
+    "$python_executable" -m cedar_poo_py_test.resources --output "$output/resource.json" --timeout-seconds 120 "$lake_executable" build caseManifestsNative objectProfilesNative functionalReuseNative manifestLifecycleNative > "$output/build.log" 2>&1 &
+    observer_pid=$!
+    wait "$observer_pid" || status=$?
+    observer_pid=""
+    "$python_executable" -c 'import json,sys; j=json.load(open(sys.argv[1])); assert j.get("resource_observation_complete") is True or j["returncode"] != 0' "$output/resource.json"
+    exit "$status"
+
+# Same job/host, exact historical sources, complete workload, fixed A-B-C-C-B-A.
+# A=before progress retention; B=verified-view reuse; C=current streaming/recovery.
+# All six samples and original watchdogs are retained, with no timing admission.
+[script("bash")]
+bench-gateway-history:
+    set -euo pipefail
+    repository="$PWD"
+    evidence="$repository/.lake/build/resources/history-comparison"
+    binaries="$repository/.lake/build/history-comparison/bin"
+    scratch=$(mktemp -d "${TMPDIR:-/tmp}/cedar-history-XXXXXX")
+    scratch=$(cd "$scratch" && pwd -P)
+    target="$scratch/target"
+    mkdir -p "$evidence" "$binaries"
+    before=3d75c77f2e169458cf4887f6d2409c56d079e56a
+    retained=c0b684188c8dc5ee04ce59aeb912aa3f95d8ad24
+    git rev-parse HEAD > "$evidence/current-commit.txt"
+    git diff --binary > "$evidence/current-source.patch"
+    uname -a > "$evidence/host.txt"
+    if command -v lscpu >/dev/null; then lscpu >> "$evidence/host.txt"; fi
+    if test -f /sys/fs/cgroup/cpu.max; then cat /sys/fs/cgroup/cpu.max > "$evidence/cpu.max"; fi
+    cargo build --release --locked -p cedar-poo-bridge --features gateway
+    cp rust/target/release/cedar-poo-bridge "$binaries/C"
+    mkdir -p "$target"
+    cp -a rust/target/release "$target/release"
+    for label in A B; do
+        if test "$label" = A; then revision="$before"; else revision="$retained"; fi
+        if ! git cat-file -e "$revision^{commit}" 2>/dev/null; then
+            git fetch --no-tags --depth=1 origin "$revision"
+        fi
+        mkdir -p "$scratch/$label"
+        git rev-parse "$revision^{tree}" > "$evidence/$label-source-tree.txt"
+        git archive "$revision^{tree}" Cargo.toml Cargo.lock rust | tar -x -C "$scratch/$label"
+        cmp Cargo.lock "$scratch/$label/Cargo.lock"
+        printf '%s\n' "$revision" > "$evidence/$label-commit.txt"
+        # Git's tree archive uses current mtimes while preserving exact source
+        # blobs. Require fresh workspace compilation and the emitted executable.
+        cargo build --release --locked --manifest-path "$scratch/$label/Cargo.toml" --target-dir "$target" -p cedar-poo-bridge --features gateway --message-format=json > "$evidence/$label-build.jsonl"
+        for package in core runtime bridge; do
+            jq -s -e --arg manifest "$scratch/$label/rust/$package/Cargo.toml" 'any(.[]; .reason == "compiler-artifact" and .manifest_path == $manifest and .fresh == false)' "$evidence/$label-build.jsonl" >/dev/null
+        done
+        executable=$(jq -rs --arg manifest "$scratch/$label/rust/bridge/Cargo.toml" '[.[] | select(.reason == "compiler-artifact" and .manifest_path == $manifest and .fresh == false and (.target.kind | index("bin")) and .executable != null)] | last | .executable' "$evidence/$label-build.jsonl")
+        test -f "$executable"
+        cp "$executable" "$binaries/$label"
+    done
+    sha256sum "$binaries/A" "$binaries/B" "$binaries/C" > "$evidence/binary-identities.sha256"
+    test "$(cut -d ' ' -f 1 "$evidence/binary-identities.sha256" | sort -u | wc -l)" -eq 3
+    sha256sum "$binaries/A" "$binaries/B" "$binaries/C" Cargo.lock .lake/build/functional-catalog.json .lake/build/reviewed-effects/*.json > "$evidence/inputs.sha256"
+    for sample in A1 B1 C1 C2 B2 A2; do
+        label=${sample:0:1}
+        timeout --signal=TERM --kill-after=3s 120s uv run --project python --package cedar-poo-py-test --locked python -m cedar_poo_py_test.resources --timeout-seconds 120 --output "$evidence/$sample.resource.json" "$binaries/$label" gateway-lifecycle-catalog .lake/build/reviewed-effects < .lake/build/functional-catalog.json > "$evidence/$sample.jsonl"
+        jq -e '.returncode == 0 and .termination_reason == null and .owned_group_quiesced and .resource_observation_complete and .timeout_seconds == 120' "$evidence/$sample.resource.json" >/dev/null
+        cmp "$evidence/$sample.jsonl" .lake/build/gateway-lifecycle.jsonl
+        tail -n 1 "$evidence/$sample.jsonl" | jq -e '.lifecycle_outcomes == 28989 and .entries == 51 and .groups == 211 and .cases == 1253 and .refusals == 39 and .publications == 3759' >/dev/null
+    done
+    jq -s 'map({executable_sha256,wall_s:(.elapsed_ns/1000000000),cpu_s:((.user_cpu_ns+.system_cpu_ns)/1000000000),rss_mib:(.peak_rss_bytes/1048576),returncode})' "$evidence/A1.resource.json" "$evidence/B1.resource.json" "$evidence/C1.resource.json" "$evidence/C2.resource.json" "$evidence/B2.resource.json" "$evidence/A2.resource.json" | tee "$evidence/summary.json"
+
+    # Separate diagnostic image: never replace the ordinary A/B/C products or
+    # include allocation instrumentation in their complete-process comparison.
+    cargo build --release --locked -p cedar-poo-bridge --features gateway,allocation-observation
+    timeout --signal=TERM --kill-after=3s 120s uv run --project python --package cedar-poo-py-test --locked python -m cedar_poo_py_test.resources --timeout-seconds 120 --output "$evidence/signed-identity.resource.json" rust/target/release/cedar-poo-bridge benchmark-gateway-append .lake/build/reviewed-effects < .lake/build/functional-catalog.json > "$evidence/signed-identity.json"
+    jq -e '.returncode == 0 and .termination_reason == null and .owned_group_quiesced and .resource_observation_complete and .timeout_seconds == 120' "$evidence/signed-identity.resource.json" >/dev/null
+    jq -e '.operations == 1024 and .recovery_log_entries == 1026 and .recovery_samples == 3 and (.samples_ns["signed-identity.reference"] | length) == 2 and (.samples_ns["signed-identity.stream"] | length) == 2' "$evidence/signed-identity.json" >/dev/null
+    jq -c '{kind,operations,recovery_log_entries,phases,memory_phases}' "$evidence/signed-identity.json"

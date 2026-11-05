@@ -1,0 +1,82 @@
+import CedarPooSpec.Functional.Capabilities
+import CedarPooSpec.Gateway.Lifecycle
+#print axioms CedarPooSpec.Gateway.Lifecycle.invocation_is_exact
+#print axioms CedarPooSpec.Gateway.Lifecycle.old_handle_after_renew
+#print axioms CedarPooSpec.Gateway.Lifecycle.old_handle_after_recovery
+#print axioms CedarPooSpec.Gateway.Lifecycle.revoked_cannot_use
+#print axioms CedarPooSpec.Gateway.Lifecycle.recovery_preserves_revocation
+#print axioms CedarPooSpec.Gateway.Lifecycle.recovery_preserves_facts_and_clock
+#print axioms CedarPooSpec.Gateway.Lifecycle.recovery_preserves_burn
+#print axioms CedarPooSpec.Gateway.Lifecycle.fresh_use_is_actual_error_free
+#print axioms CedarPooSpec.Gateway.EffectProtocol.accepted_world_is_current
+#print axioms CedarPooSpec.Gateway.Lifecycle.renewal_preserves_clock_and_controls
+#print axioms CedarPooSpec.Gateway.Lifecycle.revoked_after_recovery_and_renewal
+#print axioms CedarPooSpec.Gateway.Lifecycle.publication_exact_and_current
+#print axioms CedarPooSpec.Gateway.Lifecycle.different_world_blocks_publication
+#print axioms CedarPooSpec.Gateway.Lifecycle.failed_refresh_blocks_use
+#print axioms CedarPooSpec.Gateway.Lifecycle.recovery_does_not_reopen_failed_sources
+#print axioms CedarPooSpec.Gateway.Lifecycle.unresolved_without_commit_is_retained
+#print axioms CedarPooSpec.Gateway.Lifecycle.publication_requires_original_consumption
+#print axioms CedarPooSpec.Gateway.Lifecycle.spent_blocks_publication
+
+#print axioms CedarPooSpec.ZeroTrust.accepted_statements_preserve_field_admission
+#print axioms CedarPooSpec.ZeroTrust.accepted_statements_are_verified
+#print axioms CedarPooSpec.ZeroTrust.accepted_statements_cover_exact_inventory
+
+#print axioms CedarPooSpec.Gateway.Lifecycle.source_invocation_preserves_field_admission
+
+#print axioms CedarPooSpec.Functional.Ready.reuse_at_current_worlds
+
+#print axioms CedarPooSpec.Gateway.Lifecycle.unclean_audit_retains_unknown
+#print axioms CedarPooSpec.Gateway.Lifecycle.audited_recovery_preserves_burn
+
+#print axioms CedarPooSpec.Gateway.Lifecycle.recovery_invocation_is_bound
+#print axioms CedarPooSpec.Gateway.Lifecycle.missing_retained_intent_is_refused
+#print axioms CedarPooSpec.Gateway.Lifecycle.foreign_log_key_is_refused
+
+#print axioms CedarPooSpec.Gateway.Lifecycle.retained_recovery_requires_exact_history
+
+#print axioms CedarPooSpec.Gateway.Lifecycle.renewal_preserves_retained_intent
+#print axioms CedarPooSpec.Gateway.Lifecycle.recovery_preserves_retained_intent
+
+#print axioms CedarPooSpec.Gateway.EffectProtocol.accepted_provider_is_bound_to_configured_trust
+#print axioms CedarPooSpec.Gateway.EffectProtocol.provider_without_outcomes_remains_unresolved
+#print axioms CedarPooSpec.Gateway.Lifecycle.provider_recovery_invocation_is_bound
+#print axioms CedarPooSpec.Gateway.Lifecycle.provider_recovery_exact_retained_history
+#print axioms CedarPooSpec.Gateway.Lifecycle.provider_settlement_does_not_remint
+
+#print axioms CedarPooSpec.Gateway.Lifecycle.provider_settlement_preserves_current_image
+
+#print axioms CedarPooSpec.Gateway.Lifecycle.retained_source_is_original
+#print axioms CedarPooSpec.Gateway.Lifecycle.missing_retained_source_is_refused
+#print axioms CedarPooSpec.Gateway.Lifecycle.provider_recovery_is_independent_of_current_authority
+#print axioms CedarPooSpec.Gateway.Lifecycle.renewal_preserves_retained_source
+#print axioms CedarPooSpec.Gateway.Lifecycle.provider_settlement_preserves_source_views
+
+#print axioms CedarPooSpec.Gateway.EffectProtocol.scoped_invalid_log_is_not_hidden
+#print axioms CedarPooSpec.Gateway.EffectProtocol.scoped_missing_anchor_is_invalid
+#print axioms CedarPooSpec.Gateway.EffectProtocol.scoped_bad_envelope_is_not_ignored
+#print axioms CedarPooSpec.Gateway.EffectProtocol.scoped_same_operation_precommits_are_reported
+
+#print axioms CedarPooSpec.Gateway.EffectProtocol.unrelated_precommit_preserves_operation_report
+
+#print axioms CedarPooSpec.Gateway.Lifecycle.history_invocation_is_bound
+#print axioms CedarPooSpec.Gateway.Lifecycle.rollback_frontier_is_refused
+#print axioms CedarPooSpec.Gateway.Lifecycle.changed_frontier_is_refused
+
+#print axioms CedarPooSpec.Gateway.Lifecycle.history_result_retains_observed_frontier
+#print axioms CedarPooSpec.Gateway.Lifecycle.changed_witness_key_is_refused
+
+#print axioms CedarPooSpec.Gateway.Lifecycle.observed_recovery_retains_verified_progress
+#print axioms CedarPooSpec.Gateway.Lifecycle.observed_recovery_preserves_current_authority
+
+#print axioms CedarPooSpec.Gateway.Lifecycle.indexed_boundary_matches_verified_prefix
+
+#print axioms CedarPooSpec.Gateway.Lifecycle.revoked_trace_blocks_use_and_publication
+#print axioms CedarPooSpec.Gateway.Lifecycle.burned_trace_stays_burned
+#print axioms CedarPooSpec.Gateway.Lifecycle.history_invocation_extends_independent
+#print axioms CedarPooSpec.Gateway.Lifecycle.same_length_fork_refused
+#print axioms CedarPooSpec.Gateway.Lifecycle.receiver_retains_release_contract
+#print axioms CedarPooSpec.Gateway.Lifecycle.revocation_retires_publication_cut
+#print axioms CedarPooSpec.Gateway.Lifecycle.revoked_receiver_cannot_publish
+#print axioms CedarPooSpec.Gateway.Lifecycle.stale_receiver_cannot_publish

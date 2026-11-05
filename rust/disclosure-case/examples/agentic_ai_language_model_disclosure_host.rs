@@ -4,7 +4,8 @@ use cedar_poo_agentic::boundary::SelectionDelta;
 use cedar_poo_core::authority_consumption::{AuthorityGrant, AuthorityId, AuthorityLedger};
 use cedar_poo_core::operation_identity::OperationId;
 use cedar_poo_disclosure_host::{
-    Effect, Evidence, Grant, InMemoryDisclosureHost, RecipientGrant, ValidatedDisclosurePolicy,
+    DispatchOutcome, Effect, Evidence, Grant, InMemoryDisclosureHost, RecipientGrant,
+    ValidatedDisclosurePolicy,
 };
 use cedar_poo_runtime::ValidatedManifest;
 use serde_json::json;
@@ -185,16 +186,26 @@ fn run() -> Result<(), String> {
         evidence(),
         authority(&first, &independent, &second),
     ));
-    let attempts = (0..2)
+    let prepared = (0..2)
         .map(|_| {
-            let host = Arc::clone(&concurrent);
-            let effect = first.clone();
-            let ticket = host
-                .prepare(AuthorityId::from("approval-first"), effect.clone())?
-                .ok_or("parallel prepare denied")?;
-            Ok(thread::spawn(move || host.commit(ticket, &effect)))
+            concurrent
+                .prepare(AuthorityId::from("approval-first"), first.clone())?
+                .ok_or_else(|| "parallel prepare denied".to_owned())
         })
         .collect::<Result<Vec<_>, String>>()?;
+    let start = Arc::new(std::sync::Barrier::new(2));
+    let attempts = prepared
+        .into_iter()
+        .map(|ticket| {
+            let host = Arc::clone(&concurrent);
+            let start = Arc::clone(&start);
+            let effect = first.clone();
+            thread::spawn(move || {
+                start.wait();
+                host.commit(ticket, &effect)
+            })
+        })
+        .collect::<Vec<_>>();
     let mut committed_parallel = 0;
     for attempt in attempts {
         if attempt
@@ -238,6 +249,78 @@ fn run() -> Result<(), String> {
     if !second_alone_allowed {
         return Err("independent second release was denied".into());
     }
+
+    // Both channels see the same authenticated result and shared ledger revision.
+    let mut alternate = independent.clone();
+    alternate.channel = "message".into();
+    for workspace_first in [true, false] {
+        let shared = InMemoryDisclosureHost::new(
+            &policy,
+            evidence(),
+            authority(&first, &alternate, &second),
+        );
+        let separate_scope = InMemoryDisclosureHost::new(
+            &policy,
+            evidence(),
+            authority(&first, &alternate, &second),
+        );
+        let workspace = shared
+            .prepare(AuthorityId::from("approval-first"), first.clone())?
+            .ok_or("workspace preparation denied")?;
+        let message = shared
+            .prepare(AuthorityId::from("approval-independent"), alternate.clone())?
+            .ok_or("message preparation denied")?;
+        if separate_scope.commit(workspace.clone(), &first)?.is_some() {
+            return Err("foreign observer scope accepted a prepared ticket".into());
+        }
+        let (winner, effect, loser, other) = if workspace_first {
+            (workspace, &first, message, &alternate)
+        } else {
+            (message, &alternate, workspace, &first)
+        };
+        if shared.commit(winner, effect)?.is_none()
+            || shared.commit(loser, other)?.is_some()
+            || shared.audit()?.len() != 1
+        {
+            return Err("cross-channel tickets did not share one deciding revision".into());
+        }
+    }
+
+    let mut replan = first.clone();
+    replan.channel = "message".into();
+    let ambiguous =
+        InMemoryDisclosureHost::new(&policy, evidence(), authority(&first, &replan, &second));
+    let original = ambiguous
+        .prepare(AuthorityId::from("approval-first"), first.clone())?
+        .ok_or("dispatch preparation denied")?;
+    let retry = ambiguous
+        .prepare(AuthorityId::from("approval-independent"), replan.clone())?
+        .ok_or("alternative channel was not initially eligible")?;
+    let mut sends = 0;
+    let dispatched = ambiguous.commit_and_dispatch(original, &first, |actual| {
+        assert_eq!(actual, &first);
+        sends += 1;
+        Err("simulated lost provider reply".into())
+    })?;
+    if !matches!(dispatched, Some(DispatchOutcome::Unknown(receipt)) if receipt.remaining_budget == 1)
+        || ambiguous
+            .commit_and_dispatch(retry, &replan, |_| {
+                sends += 1;
+                Ok(())
+            })?
+            .is_some()
+        || ambiguous
+            .prepare(AuthorityId::from("approval-independent"), replan)?
+            .is_some()
+        || ambiguous.authority_used(&AuthorityId::from("approval-independent"))? != Some(0)
+        || ambiguous.audit()?.len() != 1
+        || sends != 1
+    {
+        return Err("lost reply allowed a second send or changed the original charge".into());
+    }
+
+    #[cfg(all(unix, feature = "recovery-replay"))]
+    check_restarted_dispatch(&policy, &first)?;
 
     let first_delta = SelectionDelta {
         before: (1..=6).map(|n| format!("p{n}")).collect(),
@@ -451,9 +534,372 @@ fn run() -> Result<(), String> {
             "candidateSubstitutionDenied": candidate_substitution_denied,
             "unobservedSelectionDenied": unobserved_selection_denied,
             "cumulativeSelectionDenied": cumulative_selection_denied,
+            "crossChannelRevisionSerialized": true,
+            "lostReplyCrossChannelRetryDenied": true,
+            "restartReconciliationAndFencing": cfg!(all(unix, feature = "recovery-replay")),
             "auditEntries": host.audit()?.len(),
         })
     );
+    Ok(())
+}
+
+#[cfg(all(unix, feature = "recovery-replay"))]
+fn check_restarted_dispatch(
+    policy: &ValidatedDisclosurePolicy,
+    first: &Effect,
+) -> Result<(), String> {
+    use cedar_poo_disclosure_host::{
+        DisclosureOutcome, DisclosureReceiver, PersistentDisclosureHost, ReceiverCut,
+    };
+    use cedar_poo_runtime::gateway::{Signed, verify};
+    use p256::ecdsa::{Signature, SigningKey, signature::Signer};
+
+    let path = env::temp_dir().join(format!("cedar-disclosure-restart-{}", process::id()));
+    let sender_path = path.join("sender");
+    let receiver_path = path.join("receiver");
+    fs::create_dir(&path).map_err(|e| e.to_string())?;
+    let result = (|| {
+        fs::create_dir(&sender_path).map_err(|e| e.to_string())?;
+        fs::create_dir(&receiver_path).map_err(|e| e.to_string())?;
+        let mut replan = first.clone();
+        replan.channel = "message".into();
+        let mut delayed = first.clone();
+        delayed.operation_id = OperationId::from("delayed-operation");
+        let mut uncertain = first.clone();
+        uncertain.operation_id = OperationId::from("effect-without-durable-receipt");
+        let approval = |id| AuthorityId::from(id);
+        let cut = ReceiverCut {
+            scope: "study-observers".into(),
+            generation: 7,
+        };
+        assert!(PersistentDisclosureHost::open(&sender_path, policy).is_err());
+        assert!(DisclosureReceiver::open(&receiver_path).is_err());
+        let mut grants = authority(first, &replan, &delayed);
+        grants.grants.push(AuthorityGrant {
+            id: approval("approval-uncertain"),
+            effect: uncertain.clone(),
+            max_uses: 1,
+            used: 0,
+        });
+        PersistentDisclosureHost::initialize(
+            &sender_path,
+            policy,
+            Evidence {
+                budget: 3,
+                ..evidence()
+            },
+            grants,
+        )?;
+        DisclosureReceiver::initialize(&receiver_path, &cut)?;
+        let stale_sender = path.join("stale-sender");
+        let stale_receiver = path.join("stale-receiver");
+        copy_replica(&sender_path, &stale_sender)?;
+        copy_replica(&receiver_path, &stale_receiver)?;
+        let receiver = DisclosureReceiver::open(&receiver_path)?;
+        let mut sends = 0;
+        let provider = SigningKey::from_slice(&[11; 32]).map_err(|e| e.to_string())?;
+        let foreign = SigningKey::from_slice(&[12; 32]).map_err(|e| e.to_string())?;
+        let key = provider.verifying_key().to_encoded_point(false);
+        let sign = |payload: Vec<u8>| {
+            let signature: Signature = provider.sign(&payload);
+            Signed {
+                payload,
+                signature: signature.to_bytes().to_vec(),
+            }
+        };
+        let sign_outcome = |binding: &cedar_poo_disclosure_host::DispatchBinding| {
+            serde_json::to_vec(&DisclosureOutcome {
+                domain: DisclosureOutcome::DOMAIN.into(),
+                binding: binding.clone(),
+                delivered: true,
+            })
+            .map(sign)
+            .map_err(|e| e.to_string())
+        };
+        {
+            let sender = PersistentDisclosureHost::open(&sender_path, policy)?;
+            let ticket = sender
+                .prepare(approval("approval-first"), first.clone())?
+                .ok_or("initial persistent dispatch denied")?;
+            let competing = PersistentDisclosureHost::open(&sender_path, policy)?;
+            let stale = competing
+                .prepare(approval("approval-independent"), replan.clone())?
+                .ok_or("competing channel did not prepare before reservation")?;
+            // A staging failure occurs after the candidate image is computed.
+            // No part of that image or external effect may become visible.
+            let staged = sender_path.join("sender.staged");
+            fs::create_dir(&staged).map_err(|e| e.to_string())?;
+            assert!(
+                sender
+                    .commit_and_dispatch(ticket.clone(), first, cut.clone(), |_, _| {
+                        sends += 1;
+                        Ok(())
+                    })
+                    .is_err()
+            );
+            let unchanged = PersistentDisclosureHost::open(&sender_path, policy)?;
+            assert!(unchanged.audit()?.is_empty());
+            assert_eq!(
+                unchanged.approval_used(&approval("approval-first"))?,
+                Some(0)
+            );
+            assert_eq!(sends, 0);
+            fs::remove_dir(&staged).map_err(|e| e.to_string())?;
+            let result =
+                sender.commit_and_dispatch(ticket, first, cut.clone(), |binding, actual| {
+                    assert!(
+                        receiver
+                            .receive(binding, actual, key.as_bytes(), |_| {
+                                sends += 1;
+                                sign_outcome(binding)
+                            })?
+                            .is_some()
+                    );
+                    Err("lost provider reply".into())
+                })?;
+            assert!(matches!(result, Some(DispatchOutcome::Unknown(_))));
+            assert!(
+                competing
+                    .commit_and_dispatch(stale, &replan, cut.clone(), |_, _| {
+                        sends += 1;
+                        Ok(())
+                    })?
+                    .is_none()
+            );
+        }
+
+        // An uncommitted staged write cannot replace the live image on reopen.
+        fs::write(sender_path.join("sender.staged"), b"partial").map_err(|e| e.to_string())?;
+        let restarted = PersistentDisclosureHost::open(&sender_path, policy)?;
+        let audit = restarted.audit()?;
+        assert_eq!(audit.len(), 1);
+        assert_eq!(audit[0].remaining_budget, 2);
+        assert_eq!(audit[0].remaining_candidates, 4);
+        assert_eq!(audit[0].operation_id, first.operation_id.0);
+        assert_eq!(
+            restarted.approval_used(&approval("approval-first"))?,
+            Some(1)
+        );
+        assert_eq!(
+            restarted.approval_used(&approval("approval-independent"))?,
+            Some(0)
+        );
+        assert!(
+            restarted
+                .prepare(approval("approval-independent"), replan.clone())?
+                .is_none()
+        );
+
+        drop(receiver);
+        let receiver = DisclosureReceiver::open(&receiver_path)?;
+        let signed = receiver
+            .outcome(&first.operation_id, key.as_bytes())?
+            .ok_or("provider lost acknowledged signed receipt after reopen")?;
+        assert!(
+            receiver
+                .outcome(
+                    &first.operation_id,
+                    foreign.verifying_key().to_encoded_point(false).as_bytes()
+                )
+                .is_err()
+        );
+        let outcome: DisclosureOutcome = verify(&signed, provider.verifying_key())?;
+        assert!(
+            receiver
+                .receive(&outcome.binding, first, key.as_bytes(), |_| {
+                    sends += 1;
+                    Err("duplicate reached the effect".into())
+                })?
+                .is_none()
+        );
+        let staged = sender_path.join("sender.staged");
+        fs::remove_file(&staged).map_err(|e| e.to_string())?;
+        fs::create_dir(&staged).map_err(|e| e.to_string())?;
+        assert!(
+            restarted
+                .reconcile(&first.operation_id, &signed, key.as_bytes())
+                .is_err()
+        );
+        assert_eq!(restarted.audit()?.len(), 1);
+        fs::remove_dir(&staged).map_err(|e| e.to_string())?;
+        // This replica has the correct admission revision and reservation,
+        // but was copied before the independently accepted settlement.
+        let unsettled_sender = path.join("unsettled-sender");
+        copy_replica(&sender_path, &unsettled_sender)?;
+        assert!(restarted.reconcile(&first.operation_id, &signed, key.as_bytes())?);
+        let mut conflict = serde_json::to_value(&outcome).map_err(|e| e.to_string())?;
+        conflict["delivered"] = json!(false);
+        let conflict = sign(serde_json::to_vec(&conflict).map_err(|e| e.to_string())?);
+        let settled = PersistentDisclosureHost::open(&sender_path, policy)?;
+        assert_eq!(
+            settled
+                .reconcile(&first.operation_id, &conflict, key.as_bytes())
+                .err()
+                .as_deref(),
+            Some("conflicting authenticated provider settlement")
+        );
+        assert!(settled.reconcile(&first.operation_id, &signed, key.as_bytes())?);
+
+        assert!(
+            restarted
+                .reconcile(
+                    &first.operation_id,
+                    &signed,
+                    foreign.verifying_key().to_encoded_point(false).as_bytes()
+                )
+                .is_err()
+        );
+        let mut altered = serde_json::to_value(&outcome).map_err(|e| e.to_string())?;
+        altered["binding"]["effect"] = json!("different observed effect");
+        let altered = sign(serde_json::to_vec(&altered).map_err(|e| e.to_string())?);
+        assert!(
+            restarted
+                .reconcile(&first.operation_id, &altered, key.as_bytes())
+                .is_err()
+        );
+        assert!(
+            restarted
+                .prepare(approval("approval-independent"), replan)?
+                .is_none()
+        );
+        assert_eq!(restarted.audit()?.len(), 1);
+
+        let next = ReceiverCut {
+            generation: 8,
+            ..cut.clone()
+        };
+        receiver.advance(&next)?;
+        let stale_cut = serde_json::to_vec(&cut).map_err(|e| e.to_string())?;
+        fs::write(receiver_path.join("receiver.staged"), stale_cut).map_err(|e| e.to_string())?;
+        drop(receiver);
+        let receiver = DisclosureReceiver::open(&receiver_path)?;
+        let sender_point = restarted.recovery_point()?;
+        assert!(
+            PersistentDisclosureHost::open_failover(&unsettled_sender, policy, &sender_point)
+                .is_err()
+        );
+
+        let receiver_point = receiver.recovery_point()?;
+        assert!(
+            PersistentDisclosureHost::open_failover(&stale_sender, policy, &sender_point).is_err()
+        );
+        assert!(DisclosureReceiver::open_failover(&stale_receiver, &receiver_point).is_err());
+
+        let promoted_sender = path.join("promoted-sender");
+        let promoted_receiver = path.join("promoted-receiver");
+        let missing_receipt = path.join("missing-receipt");
+        copy_replica(&sender_path, &promoted_sender)?;
+        copy_replica(&receiver_path, &promoted_receiver)?;
+        copy_replica(&receiver_path, &missing_receipt)?;
+        let receipt_hash = cedar_poo_runtime::gateway_source_sha256(&first.operation_id.0)?;
+        fs::remove_file(missing_receipt.join(format!("outcome-{receipt_hash}.json")))
+            .map_err(|e| e.to_string())?;
+        assert!(DisclosureReceiver::open_failover(&missing_receipt, &receiver_point).is_err());
+
+        drop(receiver);
+        drop(restarted);
+        drop(settled);
+        let sender_path = promoted_sender;
+        let receiver_path = promoted_receiver;
+        let restarted =
+            PersistentDisclosureHost::open_failover(&sender_path, policy, &sender_point)?;
+        let reopened = DisclosureReceiver::open_failover(&receiver_path, &receiver_point)?;
+        let recovered = reopened
+            .outcome(&first.operation_id, key.as_bytes())?
+            .ok_or("promoted receiver lost the signed outcome")?;
+        assert_eq!(recovered.payload, signed.payload);
+        assert_eq!(recovered.signature, signed.signature);
+        let mut alternate_channel = first.clone();
+        alternate_channel.channel = "message".into();
+        assert!(
+            restarted
+                .prepare(approval("approval-independent"), alternate_channel)?
+                .is_none()
+        );
+        assert!(
+            restarted
+                .reconcile(&first.operation_id, &conflict, key.as_bytes())
+                .is_err()
+        );
+        assert!(restarted.reconcile(&first.operation_id, &recovered, key.as_bytes())?);
+        assert!(reopened.advance(&cut).is_err());
+        let delayed_ticket = restarted
+            .prepare(approval("approval-second"), delayed.clone())?
+            .ok_or("recovered sender lost the remaining budget or distinct approval")?;
+        let result =
+            restarted.commit_and_dispatch(delayed_ticket, &delayed, cut, |binding, actual| {
+                assert!(
+                    reopened
+                        .receive(binding, actual, key.as_bytes(), |_| {
+                            sends += 1;
+                            Err("retired cut reached the effect".into())
+                        })?
+                        .is_none()
+                );
+                Err("receiver rejected retired cut".into())
+            })?;
+        assert!(
+            matches!(result, Some(DispatchOutcome::Unknown(receipt)) if receipt.remaining_budget == 1)
+        );
+        assert_eq!(sends, 1);
+        let latest = PersistentDisclosureHost::open(&sender_path, policy)?;
+        assert_eq!(latest.audit()?.len(), 2);
+        assert!(
+            latest
+                .reconcile(&first.operation_id, &conflict, key.as_bytes())
+                .is_err()
+        );
+        assert!(latest.reconcile(&first.operation_id, &signed, key.as_bytes())?);
+        let operation = &uncertain.operation_id;
+        let digest = cedar_poo_runtime::gateway_source_sha256(&operation.0)?;
+        let staged = receiver_path.join(format!("outcome-{digest}.staged"));
+        fs::create_dir(&staged).map_err(|e| e.to_string())?;
+        let ticket = latest
+            .prepare(approval("approval-uncertain"), uncertain.clone())?
+            .ok_or("missing budget for receipt crash control")?;
+        let failed = latest.commit_and_dispatch(ticket, &uncertain, next, |binding, actual| {
+            let result = reopened.receive(binding, actual, key.as_bytes(), |_| {
+                sends += 1;
+                sign_outcome(binding)
+            });
+            assert!(result.is_err());
+            let recovered = DisclosureReceiver::open(&receiver_path)?;
+            assert!(recovered.outcome(operation, key.as_bytes())?.is_none());
+            assert!(
+                recovered
+                    .receive(binding, actual, key.as_bytes(), |_| {
+                        sends += 1;
+                        Err("receipt failure released receiver reservation".into())
+                    })?
+                    .is_none()
+            );
+            Err("provider receipt persistence failed after effect".into())
+        })?;
+        assert!(
+            matches!(failed, Some(DispatchOutcome::Unknown(receipt)) if receipt.remaining_budget == 0)
+        );
+        assert_eq!(sends, 2);
+        let pending_point = reopened.recovery_point()?;
+        let missing_reservation = path.join("missing-reservation");
+        copy_replica(&receiver_path, &missing_reservation)?;
+        fs::remove_file(missing_reservation.join(digest)).map_err(|e| e.to_string())?;
+        assert!(DisclosureReceiver::open_failover(&missing_reservation, &pending_point).is_err());
+        Ok(())
+    })();
+    let cleanup = fs::remove_dir_all(path).map_err(|e| e.to_string());
+    result.and(cleanup)
+}
+
+#[cfg(all(unix, feature = "recovery-replay"))]
+fn copy_replica(source: &std::path::Path, destination: &std::path::Path) -> Result<(), String> {
+    fs::create_dir(destination).map_err(|e| e.to_string())?;
+    for entry in fs::read_dir(source).map_err(|e| e.to_string())? {
+        let entry = entry.map_err(|e| e.to_string())?;
+        if entry.file_type().map_err(|e| e.to_string())?.is_file() {
+            fs::copy(entry.path(), destination.join(entry.file_name()))
+                .map_err(|e| e.to_string())?;
+        }
+    }
     Ok(())
 }
 

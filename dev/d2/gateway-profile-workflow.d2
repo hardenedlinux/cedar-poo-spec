@@ -1,0 +1,113 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: Apache-2.0
+
+vars: {d2-config: {data: {figure: |json
+{
+  "purpose": "architecture",
+  "language": "en",
+  "width": 1900,
+  "primary": "purpose",
+  "themes": [
+    "blueprint",
+    "comfortable"
+  ],
+  "icons": [
+    "engineering",
+    "cedar"
+  ],
+  "basis": {
+    "captureRef": "development-source-observation",
+    "modelRefs": [],
+    "obligationRefs": [],
+    "evidenceRefs": []
+  },
+  "title": "May this request use the published profile?",
+  "kind": "workflow",
+  "questions": [
+    {
+      "ref": "purpose",
+      "text": "Which check continues the request, and which one stops it?",
+      "focusRefs": [
+        "sysml",
+        "sourceCode"
+      ]
+    }
+  ],
+  "references": {
+    "source": "dev/d2/gateway-profile-workflow.d2",
+    "sysml": "dev/sysml/gateway-activities.sysml",
+    "sourceCode": "CedarPooSpec/Gateway/ProfileAdmission.lean",
+    "objects": "CedarPooSpec/Gateway/ProfileObject.lean",
+    "admission": "CedarPooSpec/Gateway/Admission.lean"
+  },
+  "copy": {
+    "description": "Follow the upper route to a receipt. Every failed check joins Stop.",
+    "status": "A receipt permits final-use checks; it does not dispatch an effect."
+  },
+  "presentation": {
+    "notation": "workflow",
+    "activity": {
+      "entry": "stepSession",
+      "decisions": [
+        "stepSession",
+        "stepCapture",
+        "stepAuthorize",
+        "stepBind"
+      ],
+      "terminals": [
+        "stepAccepted",
+        "stepRefused"
+      ],
+      "direction": "RIGHT"
+    }
+  },
+  "sysml": {
+    "source": "dev/sysml/gateway-activities.sysml",
+    "view": "GatewayProfileFlow::overview",
+    "bindings": {
+      "stepSession": {
+        "name": "GatewayProfileFlow::stepSession",
+        "icon": "branch"
+      },
+      "stepCapture": {
+        "name": "GatewayProfileFlow::stepCapture",
+        "icon": "request"
+      },
+      "stepAuthorize": {
+        "name": "GatewayProfileFlow::stepAuthorize",
+        "icon": "current"
+      },
+      "stepBind": {
+        "name": "GatewayProfileFlow::stepBind",
+        "icon": "evidence"
+      },
+      "stepAccepted": {
+        "name": "GatewayProfileFlow::stepAccepted",
+        "icon": "evidence"
+      },
+      "stepRefused": {
+        "name": "GatewayProfileFlow::stepRefused",
+        "icon": "warning"
+      }
+    }
+  },
+  "proofs": {
+    "namespace": "GatewayProfileFlow"
+  }
+}
+|
+}}}
+stepSession: "Rule retained?\nOriginal checks"
+stepCapture: "Profile selected?\nActual object"
+stepAuthorize: "Allowed now?\nCurrent Cedar input"
+stepBind: "Publication matches?\nProfile + context"
+stepAccepted: "Bound receipt\nNext: final-use checks"
+stepRefused: "Stop\nTyped error"
+stepSession -> stepCapture: "fits"
+stepSession -> stepRefused: "invalid"
+stepCapture -> stepAuthorize: "selected"
+stepCapture -> stepRefused: "missing"
+stepAuthorize -> stepBind: "allow"
+stepAuthorize -> stepRefused: "deny / error"
+stepBind -> stepAccepted: "match"
+stepBind -> stepRefused: "changed"

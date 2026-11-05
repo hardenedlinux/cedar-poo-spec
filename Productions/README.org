@@ -44,3 +44,15 @@ providers for all Profiles and Cases. Profile adapters supply domain state,
 validation and authority requirements; the common backend owns persistence,
 recovery, lifecycle, backpressure and performance instrumentation. The document
 is an architecture contract; implementation/physical qualification remain open.
+
+
+* Current-use authorization
+
+[[file:Gateway/CurrentUse.lean][Gateway current-use composition]] applies the shared release-bound admission to
+medical disclosure and financial controller payment profiles. Their existing
+POO Contracts produce the actual Cedar policies. Four strict-schema worlds and
+24 release/use combinations are exported by [[file:Gateway/CurrentUseMain.lean][the native Lean entrypoint]] and
+independently replayed by Rust in =just check-gateway-delta=.
+The vectors cover current Allow/Deny and root, policy, epoch and enforcement
+changes. They model semantic admission; Host authentication, durable effects
+and complete mediation require separate application refinement.

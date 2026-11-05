@@ -23,6 +23,7 @@ inductive Error where
   | invalidPreparation
   | staleContext
   | staleSource
+  | releaseNotCurrent
   | unqualifiedEvidence
   | invalidSchema
   | invalidRequest

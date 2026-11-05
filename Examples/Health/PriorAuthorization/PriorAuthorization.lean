@@ -1,3 +1,4 @@
+import Cedar.Validation.RequestEntityValidator
 import CedarPooSpec.SchemaJson
 import CedarPooSpec.Functional.Capabilities
 

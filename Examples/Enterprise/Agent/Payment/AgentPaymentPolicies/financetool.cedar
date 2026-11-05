@@ -5,5 +5,5 @@ permit(
   action == Action::"invoke",
   resource == Tool::"process-payment"
 ) when {
-  (3 <= (principal.trust)) && (((principal.namespace) == "payments") && ((principal.stage) == "production"))
+  (3 <= principal.trust) && ((principal.namespace == "payments") && (principal.stage == "production"))
 };

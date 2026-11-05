@@ -14,5 +14,5 @@ forbid(
   action == Action::"transfer",
   resource
 ) when {
-  !(((context.amount).greaterThan(decimal("0.0000"))) && ((context.amount).lessThanOrEqual(decimal("100.0000"))))
+  !(context.amount.greaterThan(decimal("0.0000")) && context.amount.lessThanOrEqual(decimal("100.0000")))
 };

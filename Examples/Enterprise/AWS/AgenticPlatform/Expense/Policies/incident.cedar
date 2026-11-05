@@ -21,7 +21,7 @@ forbid(
   action == AnyCompany::Action::"rejectExpense",
   resource is AnyCompany::Expense
 ) when {
-  !((principal.department) == (resource.department))
+  !(principal.department == resource.department)
 };
 
 // POO policy ID: reject-duty-boundary
@@ -30,7 +30,7 @@ forbid(
   action == AnyCompany::Action::"rejectExpense",
   resource is AnyCompany::Expense
 ) when {
-  (principal.email) == (resource.submitterEmail)
+  principal.email == resource.submitterEmail
 };
 
 // POO policy ID: reject-role-boundary
@@ -48,7 +48,7 @@ forbid(
   action == AnyCompany::Action::"rejectExpense",
   resource is AnyCompany::Expense
 ) when {
-  !((resource.status) == "submitted")
+  !(resource.status == "submitted")
 };
 
 // POO policy ID: team-row-boundary
@@ -57,5 +57,5 @@ forbid(
   action == AnyCompany::Action::"listTeamExpenses",
   resource is AnyCompany::Expense
 ) when {
-  !((principal.department) == (resource.department))
+  !(principal.department == resource.department)
 };

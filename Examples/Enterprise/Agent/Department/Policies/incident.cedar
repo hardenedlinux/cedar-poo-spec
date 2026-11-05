@@ -14,7 +14,7 @@ forbid(
   action == Action::"send",
   resource == Endpoint::"external-report"
 ) when {
-  (context.salesSeen) && (context.financeSeen)
+  context.salesSeen && context.financeSeen
 };
 
 // POO policy ID: delegated-intent
@@ -23,7 +23,7 @@ forbid(
   action == Action::"send",
   resource
 ) when {
-  !((context.intent) == (context.delegatedIntent))
+  !(context.intent == context.delegatedIntent)
 };
 
 // POO policy ID: delegated-send
@@ -32,7 +32,7 @@ permit(
   action == Action::"send",
   resource == Endpoint::"external-report"
 ) when {
-  ((context.localUsed) < (context.localMax)) && ((context.sharedUsed) < (context.sharedMax))
+  (context.localUsed < context.localMax) && (context.sharedUsed < context.sharedMax)
 };
 
 // POO policy ID: delegation-egress-freeze
@@ -50,7 +50,7 @@ forbid(
   action == Action::"send",
   resource == Endpoint::"external-report"
 ) when {
-  !((context.sharedUsed) < (context.sharedMax))
+  !(context.sharedUsed < context.sharedMax)
 };
 
 // POO policy ID: expired-delegation
@@ -59,7 +59,7 @@ forbid(
   action in [Action::"read",Action::"send"],
   resource
 ) when {
-  !(context.delegationActive)
+  !context.delegationActive
 };
 
 // POO policy ID: finance-owner-boundary
@@ -68,7 +68,7 @@ forbid(
   action == Action::"read",
   resource == Document::"finance-invoice"
 ) when {
-  (!((context.originDept) == "Finance")) && (!((context.originDept) == "Joint"))
+  (!(context.originDept == "Finance")) && (!(context.originDept == "Joint"))
 };
 
 // POO policy ID: read-then-egress
@@ -77,7 +77,7 @@ forbid(
   action == Action::"send",
   resource
 ) when {
-  (context.sensitiveSeen) && (resource.external)
+  context.sensitiveSeen && resource.external
 };
 
 // POO policy ID: sales-owner-boundary
@@ -86,7 +86,7 @@ forbid(
   action == Action::"read",
   resource == Document::"sales-contract"
 ) when {
-  (!((context.originDept) == "Sales")) && (!((context.originDept) == "Joint"))
+  (!(context.originDept == "Sales")) && (!(context.originDept == "Joint"))
 };
 
 // POO policy ID: worker-local-budget
@@ -95,5 +95,5 @@ forbid(
   action == Action::"send",
   resource == Endpoint::"external-report"
 ) when {
-  !((context.localUsed) < (context.localMax))
+  !(context.localUsed < context.localMax)
 };

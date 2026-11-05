@@ -12,14 +12,15 @@ import Case crates or synthetic scenario inputs.
 | Package | Responsibility | Local features |
 |---------+----------------+----------------|
 | =cedar-poo-core= | Policy JSON artifacts, authority/operation ledgers and typed handoff scopes | None |
-| =cedar-poo-runtime= | Official Cedar validation, schema checks and replay | None |
+| =cedar-poo-runtime= | Official Cedar validation, schema checks and replay | =gateway= adds the shared evidence/effect simulator |
 | =cedar-poo-agentic= | Common tool-action, selection and sink boundary | None |
 | =cedar-poo-commerce= | Storage-independent signatures, claims and admission | =projection=, =admission= |
 | =cedar-poo-commerce-mandate= | Bounded pinned Checkout signature/disclosure/context binding | =ap2-checkout= (selected merchant/item constraints) |
 | =cedar-poo-pseudonymization= | Common token modes and lineage | =google-sdp= adds provider wire contracts |
 | =cedar-poo-google-sdp-host= | In-memory Cedar and Google admission reference | None |
 | =cedar-poo-disclosure-host= | In-memory language-model disclosure reference | None |
-| =cedar-poo-bridge= | JSON conformance CLI and export benchmark | None |
+| =cedar-poo-bridge= | JSON conformance CLI and export benchmark | =gateway=, =allocation-observation= |
+| =cedar-poo-python= | PyO3 native consumer of shared runtime; maturin builds the Python wheel | CPython stable ABI, minimum 3.11 |
 | =cedar-poo-commerce-case= | Independent Lean commerce fixture consumers | =projection=, =admission= |
 | =cedar-poo-pseudonymization-case= | Local crypto and Google examples | =local=, =google-contract=, =google-admission= |
 | =cedar-poo-disclosure-case= | Language-model disclosure scenario | None |
@@ -53,6 +54,18 @@ it does not justify a reversed ownership edge.
 The CLI keeps its command names, JSON formats and binary name. Library consumers
 migrate directly to their owning crate; the bridge has no domain re-export
 facade or old feature aliases.
+
+* Optional evidence/effect simulation
+
+The =gateway= feature retains one [[file:runtime/src/gateway/mod.rs][shared native owner]] for trusted field
+sources, current review/effect binding, exact original consumption, signed
+witness precommits, outcome receipts and independent public-key reconciliation.
+The bridge exposes the corresponding catalogue, MCP stdio and auditor commands.
+Default runtime/bridge builds exclude P-256; isolated feature gates check this.
+=just check-effect-protocol= exercises the complete applicable catalogue and
+real native child processes. The [[file:../docs/protocol/gateway-effect.org][protocol guide]] and [[file:../docs/protocol/gateway-effect-v1.schema.json][versioned wire schema]]
+distinguish simulation evidence from deployed Host guarantees. This is not a
+second Backend or a reverse MRR dependency.
 
 * Choosing a Case and profile
 
@@ -248,3 +261,163 @@ source-bound and retires with its declared input uses. Strict policy validation,
 Contexts, Requests and authorizers execute independently. See the
 [[file:../docs/native-schema-representation.org][complete schema/representation audit]] for source identity, parser error ordering,
 allocator observations and the required full-domain proof/replay gates.
+
+* Reviewed nonidentity effects
+
+=just check-reviewed-effects= runs actual Lean C4 Delta analysis and POO Contract
+transitions, then the shared native review/publication/effect simulation for all
+applicable domains. The configured mock review authority and a separate gain
+approval authority bind source, Schema, policy roots, compiled policies and
+epochs. Opaque publication tickets install the actual candidate SDK receipt;
+current effects never reuse the predecessor's Allow decision. Witness precommits
+bind the complete signed publication prefix. Public audit and authority-bound recovery
+retain both that prefix and the original consumption/unknown-exposure state.
+
+=cedar-poo-bridge gateway-reviewed-stdio BUNDLE GROUP_INDEX --enforce|--shadow=
+uses trusted startup analyzer output with the existing MCP owner. The
+[[file:../docs/protocol/gateway-effect.org][protocol guide]] documents trust assumptions, refusal coverage and simulation
+limits. No incoming MCP argument can certify a review or approve expansion.
+
+* Current sources, revocation and recovery
+
+The trusted simulated adapter exposes =refresh_facts=, =advance_time= and
+=revoke= on the existing Simulator owner. Refresh evaluates fresh inputs under the exact strictly validated SDK sources
+while retaining the exact original request, policies, Schema and consumed grant.
+The new inventory has a current lease, a newer source generation and the actual
+world commitment. Old evidence, handles and pending publication tickets refuse.
+Time rollback refuses; expiry is checked at use and publication. Revocation
+cannot be cleared by any renewal or recovery method.
+
+=Simulator::recover(authority, evidence)= replaces both draft Case/history-only
+recovery APIs. It requires the current surviving trusted authority, exact signed
+publication prefix and independent historical audit configuration. It rotates
+the mediator owner under the same deciding lock, retains current authorization
+inputs and reconciles outcome evidence without reminting consumption. The old
+facade is fenced from all use and writes. There is no serialized caller-selected
+recovery checkpoint that can reset revocation or source freshness.
+
+A different fact world requires fresh SDK preparation for effects. Publication
+through an existing history additionally retains its pinned world; attempts
+from another world refuse. Request/context changes require a newly authorized
+logical operation. See the [[file:../docs/protocol/gateway-effect.org][boundary audit]] for the exact supported scope and
+physical Backend obligations. The additional =gateway-lifecycle-catalog= phase
+compares actual native effects and current state with Lean's POO lifecycle
+Contracts across every qualified Case; the original matrices remain required.
+
+=just bench-gateway-runtime= reports native API percentiles independently of the
+full regression process. It covers all qualified Cases, warm handle preparation,
+four-worker contention, SDK/source preparation and signed sends with a growing
+1,024-operation witness. See the [[file:../docs/protocol/gateway-effect.org][measurement definitions]] before interpreting
+these values as application latency. Witness history is owned append-only;
+untrusted snapshots take full validation at restore and public audit boundaries.
+
+
+Source preparation signs issuer-bound =FactStatement= batches, retaining every
+field binding and exact inventory check. Independent issuers use separate keys;
+no signature, current lease or generation check is removed. The native benchmark
+retains per-Case samples in generated JSON and labels hot preparation, fresh
+source preparation, full regression wall time and launch diagnostics separately.
+See [[file:../docs/protocol/gateway-effect.org][the protocol and source preparation proof boundary]].
+
+
+* Live Schema/Policy program ownership
+
+=ValidatedProgram::prepare(schema, case)= validates the exact immutable source
+pair and evaluates its first Case once, returning the owner and its receipt.
+=replay(case)= accepts only the complete original policy source and evaluates
+fresh Entities, context, request, expectations and both independent authorizers.
+It reuses the existing Case evaluator and receipt constructor directly, without
+rebuilding a source lookup map for a known single revision. =revise(case)=
+shares the immutable Schema, validates a changed policy source before returning
+a replacement owner, and evaluates that candidate afresh. A different Schema
+requires a new preparation. Revision names, policy IDs and old Allow decisions
+are never sufficient cache identities. Full source equality includes annotations
+and signed-zero distinctions.
+
+The original finite =SchemaPreparation= / =CatalogPreparation= APIs retain their
+per-manifest validation behavior. The live owner is a separate explicit lifetime:
+the simulator retains its current program, pending publication and in-flight
+readers. Explicit caller-owned programs may also outlive individual operations. Dropping the last owner releases its parsed Schema
+and policies; there is no unbounded process-wide source or request cache. Tests
+observe actual Arc retirement, not just an entry-count estimate. Program objects
+are not serialized checkpoints or execution capabilities.
+
+=Simulator::with_prepared_release= constructs a new logical operation from an
+explicitly supplied source owner, replays its current Case and binds the original
+release as before. The deciding lock installs the new program with the reviewed
+Case, SDK receipt and epoch. Renewal retains sticky controls, closes sources
+before replay and checks generation again before installing fresh signed facts.
+These source optimizations preserve the existing current-use/source Contracts.
+The Lean =Functional.Ready.reuse_at_current_worlds= law joins actual typed Cedar
+validation with independent evaluation at two supplied worlds. Native differential
+checks compare complete receipts and signed initial operation state.
+
+The seven pre-existing fixed simulation keys and the three-source key inventory
+now have explicit process ownership, so each operation does not derive the same
+provider keys again. This retains the same separate issuer identities and exact
+signature checks. Facts, leases, world generations, availability and grants stay
+operation-local. Real provider credential rotation and custody are not supplied
+by these fixed mock keys. The independent provider-outcome role uses an eighth
+cached key, distinct from Gateway, witness, source, review and approval roots.
+A provider signature attests its own outcome domain; it is not a Gateway signature.
+
+=bench-gateway-runtime= retains fresh-source preparation and constructor samples,
+and adds =program.prepare=, =sdk.replay.prepared= and
+=operation.construct.shared-program=. Program bootstrap includes its first SDK
+evaluation and is reported separately. All 211 group bootstrap samples and all
+1,253 per-Case samples remain in native JSON and timing-only CI logs. The distinct
+1,024-operation append control shares one explicit program while evaluating each
+operation afresh. Its single bootstrap sample is not a latency distribution.
+The expanded API process has a different workload from the earlier observer;
+whole-process comparisons use the unchanged complete lifecycle command instead.
+
+
+The matched lifecycle sample set retained three complete before/after pairs with
+identical output bytes. User CPU fell in all three pairs, but one wall sample
+regressed (43.636 to 45.335 seconds). Its OS process elapsed also grew; the outer
+observer gap was only about 65 ms. That is not evidence of stable wall-time
+acceleration. Full results and resource limitations are recorded in the protocol
+guide; failed and non-winning samples are not selectively rerun or omitted.
+
+* Independent provider completion evidence
+
+A lost Gateway receipt can be reconciled through
+=ProviderJournal::signed_outcomes= and =reconcile_provider_outcomes= with explicit
+=ProviderAuditTrust=. The distinct provider signature covers a versioned domain,
+exact witness precommit, full action/result and original source/publication
+material. The existing public auditor supports this mode using a trusted
+=provider_key= plus detached =provider_outcomes=; mixed or downgraded modes fail.
+
+=Simulator::recover_with_provider_outcomes= still requires the surviving
+retained intent and generation fence. Completion clears historical uncertainty,
+keeps the original burn and current resource/revocation/source image, and never
+resends. Missing, invalid or uncorroborated proofs retain uncertainty. Plain
+serialized journals remain read-only observations, not live provider authority.
+Provider record durability and eventual delivery are not supplied by this
+in-memory model. See [[file:../docs/protocol/gateway-effect.org][the shared boundary and evidence audit]].
+
+The surviving authority also retains the original immutable fact interpretation
+at precommit. Both recovery channels use that historical source window while
+preserving the current clock, renewal, source quarantine/repair and SDK world.
+A supplied current audit view must retain the same issuer roots; replacing them
+is refused before ownership changes. This historical audit cannot renew current
+authorization or remint a consumed effect. See the shared protocol's historical
+source authority section for the typed laws and full Case matrix.
+
+For a shared log, =reconcile_intent= / =IntentAuditTrust= anchor the audit to exact
+independently expected signed bytes. Every log record and outcome envelope is
+verified before unrelated operations are selected out; the complete signed-pair
+index reuses authenticated Commit metadata without repeated signature/JSON work; same-operation ambiguity
+remains a refusal. The existing CLI accepts an intent only in trusted setup and
+marks scoped output explicitly. Global audit findings remain distinct. The
+native append Benchmark preserves its 1,024 samples and adds 1,026-record scoped
+recovery, with independent audit, revocation/source controls and native byte-buffer
+capacity observations. See the shared protocol for the full boundary matrix and
+all non-winning performance/resource observations.
+
+Recovery retains an authenticated witness frontier in the surviving authority.
+Subsequent recovery or send must extend the same prefix, even when an older valid
+checkpoint still contains the original intent. The frontier advances with the
+existing owner/generation update; source renewal and historical metadata cannot
+reset it. See the protocol's shared-log progress section for signed rollback/fork
+controls, Lean history Contracts and the limits of per-authority continuity.

@@ -1,15 +1,37 @@
 """Native process receipts preserve execution identity and failed child exits."""
 import json
 import platform
+import signal
+import time
 import subprocess
 import sys
 import tempfile
 import unittest
+import venv
 from pathlib import Path
 
 
 @unittest.skipUnless(platform.system() in ("Darwin", "Linux"), "POSIX resource observer")
 class NativeResourceTests(unittest.TestCase):
+    def test_observer_preserves_virtual_environment_invocation(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            environment = Path(temporary) / "environment"
+            venv.EnvBuilder(with_pip=False, symlinks=True).create(environment)
+            interpreter = environment / "bin/python"
+            output = Path(temporary) / "receipt.json"
+            result = subprocess.run([
+                sys.executable, "-m", "cedar_poo_py_test.resources", "--output", str(output),
+                "--timeout-seconds", "120", str(interpreter), "-I", "-c",
+                "import sys; print(sys.prefix)",
+            ], capture_output=True, text=True, check=False)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(Path(result.stdout.strip()).resolve(), environment.resolve())
+            receipt = json.loads(output.read_text())
+            self.assertEqual(receipt["executable"], str(interpreter.resolve()))
+            self.assertEqual(receipt["invocation_executable"], str(interpreter.absolute()))
+            self.assertTrue(receipt["owned_group_quiesced"])
+            self.assertTrue(receipt["resource_observation_complete"])
+
     def test_failed_child_remains_failed_with_an_observation_receipt(self):
         with tempfile.TemporaryDirectory() as temporary:
             output = Path(temporary) / "receipt.json"
@@ -30,6 +52,115 @@ class NativeResourceTests(unittest.TestCase):
             self.assertGreaterEqual(receipt["system_cpu_ns"], 0)
             self.assertGreaterEqual(receipt["os_elapsed_ns"], 0)
             self.assertGreater(receipt["os_elapsed_resolution_ns"], 0)
+
+    def test_bounded_natural_exit_has_complete_counters(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary) / "receipt.json"
+            result = subprocess.run([
+                sys.executable, "-m", "cedar_poo_py_test.resources", "--output", str(output),
+                "--timeout-seconds", "120", "/usr/bin/true",
+            ], capture_output=True, check=False)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            receipt = json.loads(output.read_text())
+            self.assertTrue(receipt["resource_observation_complete"])
+            self.assertTrue(receipt["owned_group_quiesced"])
+            self.assertIsNone(receipt["termination_reason"])
+            self.assertGreater(receipt["peak_rss_bytes"], 0)
+
+    def test_deadline_is_failed_and_not_complete_resource_evidence(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary) / "receipt.json"
+            result = subprocess.run([
+                sys.executable, "-m", "cedar_poo_py_test.resources", "--output", str(output),
+                "--timeout-seconds", "0.1", "/bin/sleep", "30",
+            ], capture_output=True, check=False, timeout=15)
+            self.assertEqual(result.returncode, 124, result.stderr)
+            receipt = json.loads(output.read_text())
+            self.assertEqual(receipt["termination_reason"], "deadline")
+            self.assertFalse(receipt["resource_observation_complete"])
+            self.assertTrue(receipt["owned_group_quiesced"])
+
+    def test_cancel_drains_term_resistant_descendant_before_return(self):
+        worker = """import signal,sys,time
+from pathlib import Path
+signal.signal(signal.SIGTERM, signal.SIG_IGN)
+p = Path(sys.argv[1])
+i = 0
+while True:
+ p.write_text(str(i)); i += 1; time.sleep(.03)
+"""
+        parent = """import subprocess,sys
+subprocess.run([sys.executable, '-c', sys.argv[1], sys.argv[2]], check=False)
+"""
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary) / "receipt.json"
+            marker = Path(temporary) / "heartbeat"
+            observer = subprocess.Popen([
+                sys.executable, "-m", "cedar_poo_py_test.resources", "--output", str(output),
+                "--timeout-seconds", "120", sys.executable, "-c", parent, worker, str(marker),
+            ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            try:
+                deadline = time.monotonic() + 15
+                while not marker.exists() and time.monotonic() < deadline and observer.poll() is None:
+                    time.sleep(.02)
+                self.assertTrue(marker.exists(), "resistant grandchild did not reach its ready marker")
+                observer.send_signal(signal.SIGTERM)
+                _, stderr = observer.communicate(timeout=15)
+                self.assertEqual(observer.returncode, 143, stderr)
+                receipt = json.loads(output.read_text())
+                self.assertEqual(receipt["termination_reason"], "signal:SIGTERM")
+                self.assertTrue(receipt["owned_group_quiesced"])
+                self.assertFalse(receipt["resource_observation_complete"])
+                before = marker.read_bytes()
+                time.sleep(.25)
+                self.assertEqual(marker.read_bytes(), before, "descendant still writes after observer returned")
+            finally:
+                if observer.poll() is None:
+                    observer.send_signal(signal.SIGTERM)
+                    observer.communicate(timeout=15)
+
+    def test_natural_parent_exit_does_not_hide_a_live_background_writer(self):
+        worker = """import signal,sys,time
+from pathlib import Path
+signal.signal(signal.SIGTERM, signal.SIG_IGN)
+p = Path(sys.argv[1])
+i = 0
+while True:
+ p.write_text(str(i)); i += 1; time.sleep(.03)
+"""
+        parent = """import subprocess,sys,time
+from pathlib import Path
+subprocess.Popen([sys.executable, '-c', sys.argv[1], sys.argv[2]])
+while not Path(sys.argv[2]).exists(): time.sleep(.01)
+"""
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary) / "receipt.json"
+            marker = Path(temporary) / "heartbeat"
+            result = subprocess.run([
+                sys.executable, "-m", "cedar_poo_py_test.resources", "--output", str(output),
+                "--timeout-seconds", "120", sys.executable, "-c", parent, worker, str(marker),
+            ], capture_output=True, check=False, timeout=20)
+            self.assertEqual(result.returncode, 125, result.stderr)
+            receipt = json.loads(output.read_text())
+            self.assertEqual(receipt["termination_reason"], "leftover_group")
+            self.assertEqual(receipt["command_returncode"], 0)
+            self.assertFalse(receipt["resource_observation_complete"])
+            self.assertTrue(receipt["owned_group_quiesced"])
+            before = marker.read_bytes()
+            time.sleep(.25)
+            self.assertEqual(marker.read_bytes(), before)
+
+    def test_nonfinite_or_nonpositive_deadlines_are_refused_before_launch(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary) / "receipt.json"
+            for value in ("nan", "inf", "0", "-1"):
+                with self.subTest(value=value):
+                    result = subprocess.run([
+                        sys.executable, "-m", "cedar_poo_py_test.resources", "--output", str(output),
+                        "--timeout-seconds", value, "/usr/bin/true",
+                    ], capture_output=True, check=False)
+                    self.assertEqual(result.returncode, 2)
+                    self.assertFalse(output.exists())
 
 
 class NativeStatsParsingTests(unittest.TestCase):

@@ -8,6 +8,7 @@ import Cedar.Validation.Validator
 import Cedar.Validation.EnvironmentValidator
 import Cedar.Thm.Authorization
 import Lean.Data.Json
+import Std.Data.TreeMap.Raw.AdditionalOperations
 
 /-!
 Export the concrete subset of Cedar's Lean policy AST to Cedar's documented
@@ -92,6 +93,21 @@ theorem uniqueRecordKeys_eq (fields : List (String × α)) :
 
 def entity (uid : EntityUID) : Lean.Json :=
   obj [("type", Lean.toJson (toString uid.ty)), ("id", Lean.toJson uid.eid)]
+
+-- Fixed field inventories are built once. Public logical projections stay the
+-- original reference; compiler rewrites require their exact equality proofs.
+private inductive EntityField where
+  | type | id
+@[inline] private def entityField (uid : EntityUID) : EntityField → Lean.Json
+  | .type => Lean.toJson (toString uid.ty)
+  | .id => Lean.toJson uid.eid
+private def entityLayout : Std.TreeMap.Raw String EntityField :=
+  .ofList [("type", EntityField.type), ("id", EntityField.id)]
+private def entityWithLayout (uid : EntityUID) : Lean.Json :=
+  .obj (entityLayout.map fun _ field => entityField uid field)
+@[csimp] theorem entity_eq_layout : entity = entityWithLayout := by
+  funext uid
+  rfl
 
 private def scope : Scope → Except Error Lean.Json
   | .any => .ok (obj [("op", Lean.toJson "All")])
@@ -362,6 +378,29 @@ private def attrs (values : Cedar.Data.Map String Value) : Except Error Lean.Jso
     return (key, ← value val)
   return obj fields
 
+private def entityObject (uid : EntityUID) (attributes parents tags : Lean.Json) : Lean.Json :=
+  obj [("uid", entity uid), ("attrs", attributes), ("parents", parents), ("tags", tags)]
+private structure EntityObjectFields where
+  uid : EntityUID
+  attributes : Lean.Json
+  parents : Lean.Json
+  tags : Lean.Json
+private inductive EntityObjectField where
+  | uid | attributes | parents | tags
+@[inline] private def entityObjectField (fields : EntityObjectFields) : EntityObjectField → Lean.Json
+  | .uid => entity fields.uid
+  | .attributes => fields.attributes
+  | .parents => fields.parents
+  | .tags => fields.tags
+private def entityObjectLayout : Std.TreeMap.Raw String EntityObjectField :=
+  .ofList [("uid", EntityObjectField.uid), ("attrs", EntityObjectField.attributes),
+    ("parents", EntityObjectField.parents), ("tags", EntityObjectField.tags)]
+private def entityObjectWithLayout (uid : EntityUID) (attributes parents tags : Lean.Json) : Lean.Json :=
+  .obj (entityObjectLayout.map fun _ field => entityObjectField ⟨uid, attributes, parents, tags⟩ field)
+@[csimp] theorem entityObject_eq_layout : entityObject = entityObjectWithLayout := by
+  funext uid attributes parents tags
+  rfl
+
 /-- Export Cedar entities using the public entity JSON format. -/
 def entities (values : Cedar.Spec.Entities) : Except Error Lean.Json := do
   let rows ← Cedar.Data.Map.toList values |>.mapM fun (uid, data) => do
@@ -371,11 +410,8 @@ def entities (values : Cedar.Spec.Entities) : Except Error Lean.Json := do
       if let some ancestorData := values.find? ancestor then
         if !ancestorData.ancestors.subset data.ancestors then
           throw (.incompleteEntityAncestors uid)
-    return obj [
-      ("uid", entity uid),
-      ("attrs", ← attrs data.attrs),
-      ("parents", Lean.toJson (data.ancestors.toList.map entity)),
-      ("tags", ← attrs data.tags)]
+    return entityObject uid (← attrs data.attrs)
+      (Lean.toJson (data.ancestors.toList.map entity)) (← attrs data.tags)
   return Lean.toJson rows
 
 /-- Export a request with explicit Cedar entity UIDs and context. -/
@@ -385,6 +421,27 @@ def request (req : Cedar.Spec.Request) : Except Error Lean.Json := do
     ("action", Lean.toJson (toString req.action)),
     ("resource", Lean.toJson (toString req.resource)),
     ("context", ← attrs req.context)]
+
+private structure RequestObjectFields where
+  request : Cedar.Spec.Request
+  context : Lean.Json
+private inductive RequestObjectField where
+  | principal | action | resource | context
+@[inline] private def requestObjectField (fields : RequestObjectFields) : RequestObjectField → Lean.Json
+  | .principal => Lean.toJson (toString fields.request.principal)
+  | .action => Lean.toJson (toString fields.request.action)
+  | .resource => Lean.toJson (toString fields.request.resource)
+  | .context => fields.context
+private def requestLayout : Std.TreeMap.Raw String RequestObjectField :=
+  .ofList [("principal", RequestObjectField.principal), ("action", RequestObjectField.action),
+    ("resource", RequestObjectField.resource), ("context", RequestObjectField.context)]
+private def requestWithLayout (req : Cedar.Spec.Request) : Except Error Lean.Json := do
+  let context ← attrs req.context
+  return .obj (requestLayout.map fun _ field => requestObjectField ⟨req, context⟩ field)
+@[csimp] theorem request_eq_layout : request = requestWithLayout := by
+  funext req
+  unfold request requestWithLayout
+  cases attrs req.context <;> rfl
 
 /-- Compile POO edits, then export the resulting ordinary Cedar policies. -/
 def compiled (model : PolicyModules.Model) (root : String) :

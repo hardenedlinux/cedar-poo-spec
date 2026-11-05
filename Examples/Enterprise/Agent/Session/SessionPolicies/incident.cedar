@@ -23,7 +23,7 @@ forbid(
   action == Action::"send",
   resource
 ) when {
-  !((context.intent) == (context.delegatedIntent))
+  !(context.intent == context.delegatedIntent)
 };
 
 // POO policy ID: incident-egress-freeze
@@ -41,7 +41,7 @@ forbid(
   action == Action::"send",
   resource
 ) when {
-  (context.sensitiveSeen) && (resource.external)
+  context.sensitiveSeen && resource.external
 };
 
 // POO policy ID: session-export-budget
@@ -50,5 +50,5 @@ forbid(
   action == Action::"send",
   resource
 ) when {
-  (resource.external) && (!((context.usedExports) < (context.maxExports)))
+  resource.external && (!(context.usedExports < context.maxExports))
 };

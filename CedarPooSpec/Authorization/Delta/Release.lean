@@ -124,7 +124,7 @@ inductive ExecutionMode where
   | enforcing
   | observing
   | disabled
-  deriving BEq, Repr
+  deriving DecidableEq, BEq, Repr
 
 /-- Pure model of the Host's active policy version and execution mode. The
     Host owns durable storage and synchronization of this state. -/
@@ -133,7 +133,22 @@ structure ReleaseState where
   activePolicies : Policies
   executionMode : ExecutionMode
   epoch : Nat
-  deriving BEq, Repr
+  deriving DecidableEq, BEq, Repr
+
+/-- Compare an independently read active release with the exact policy snapshot
+and context epoch used for current admission. This is publication coherence,
+not authorization or authentication; the caller must still assess current facts. -/
+def ReleaseState.matchesCurrent (state : ReleaseState)
+    (snapshot : CedarPooSpec.Admission.PolicySnapshot) (epoch : Nat) : Bool :=
+  decide (state.activeRoot = snapshot.root ∧ state.activePolicies = snapshot.policies ∧
+    state.executionMode = .enforcing ∧ state.epoch = epoch)
+
+theorem ReleaseState.matchesCurrent_iff (state : ReleaseState)
+    (snapshot : CedarPooSpec.Admission.PolicySnapshot) (epoch : Nat) :
+    state.matchesCurrent snapshot epoch = true ↔
+      state.activeRoot = snapshot.root ∧ state.activePolicies = snapshot.policies ∧
+      state.executionMode = .enforcing ∧ state.epoch = epoch := by
+  simp [matchesCurrent]
 
 /-- A compare-and-swap transition for a no-gain candidate. A real Host must
     apply the version check, publication, and epoch increment atomically. -/
@@ -150,5 +165,144 @@ def ReviewedInteraction.advanceNoGain (reviewed : ReviewedInteraction)
       activePolicies := policies, executionMode := .enforcing,
       epoch := state.epoch + 1 }
   return (next, policies)
+
+/-- Governed expansion is a separate path. The approval interpreter receives
+this exact reviewed result and current active state. Its authenticity is a Host
+obligation; approval never bypasses parent, mode, epoch, schema or source checks.
+A no-gain release retains the existing path and needs no expansion approval. -/
+def ReviewedInteraction.advanceReviewed (reviewed : ReviewedInteraction)
+    (model : Model) (schema : Schema) (state : ReleaseState)
+    (approveGain : ReviewedInteraction → ReleaseState → Bool) :
+    Except ReleaseError (ReleaseState × Policies) := do
+  match reviewed.advanceNoGain model schema state with
+  | .ok value => return value
+  | .error .requiresReview =>
+    if !approveGain reviewed state then throw .requiresReview
+    let policies ← reviewed.snapshot.currentPolicies model schema state.epoch
+    let next : ReleaseState :=
+      { activeRoot := reviewed.snapshot.combined.root,
+        activePolicies := policies, executionMode := .enforcing,
+        epoch := state.epoch + 1 }
+    return (next, policies)
+  | .error error => throw error
+
+theorem advanceReviewed_without_approval (reviewed : ReviewedInteraction)
+    (model : Model) (schema : Schema) (state : ReleaseState) :
+    reviewed.advanceReviewed model schema state (fun _ _ => false) =
+      reviewed.advanceNoGain model schema state := by
+  unfold ReviewedInteraction.advanceReviewed
+  cases h : reviewed.advanceNoGain model schema state with
+  | ok value => rfl
+  | error error => cases error <;> rfl
+
+/-- Successful revalidation retains the authoritative review epoch. This is
+independent of the solver result and of the chosen policy root names. -/
+theorem ReviewSnapshot.currentPolicies_epoch (snapshot : ReviewSnapshot)
+    (model : Model) (schema : Schema) (epoch : Nat) (policies : Policies)
+    (accepted : snapshot.currentPolicies model schema epoch = .ok policies) :
+    snapshot.epoch = epoch := by
+  by_contra different
+  simp [ReviewSnapshot.currentPolicies, different, bind, Except.bind, throw, throwThe] at accepted
+
+private theorem noGainCurrentPolicies_epoch (reviewed : ReviewedInteraction)
+    (model : Model) (schema : Schema) (epoch : Nat) (policies : Policies)
+    (accepted : reviewed.noGainCurrentPolicies model schema epoch = .ok policies) :
+    reviewed.snapshot.epoch = epoch := by
+  cases outcome : reviewed.analysis.outcome with
+  | noCombinedGain =>
+    exact reviewed.snapshot.currentPolicies_epoch model schema epoch policies
+      (by simpa [ReviewedInteraction.noGainCurrentPolicies, outcome] using accepted)
+  | branchExpanded => simp [ReviewedInteraction.noGainCurrentPolicies, outcome] at accepted
+  | jointOnlyGain _ => simp [ReviewedInteraction.noGainCurrentPolicies, outcome] at accepted
+
+private theorem advanceNoGain_postcondition (reviewed : ReviewedInteraction)
+    (model : Model) (schema : Schema) (state next : ReleaseState) (policies : Policies)
+    (accepted : reviewed.advanceNoGain model schema state = .ok (next, policies)) :
+    state.epoch = reviewed.snapshot.epoch ∧
+      next =
+        { activeRoot := reviewed.snapshot.combined.root
+          activePolicies := policies
+          executionMode := .enforcing
+          epoch := state.epoch + 1 } := by
+  by_cases root : state.activeRoot = reviewed.snapshot.base.root
+  · by_cases same : state.activePolicies = reviewed.snapshot.base.policies
+    · cases mode : state.executionMode with
+      | observing =>
+        have modeCheck : (ExecutionMode.observing != .enforcing) = true := rfl
+        simp [ReviewedInteraction.advanceNoGain, root, same, mode, modeCheck, bind, Except.bind, throw, throwThe] at accepted
+      | disabled =>
+        have modeCheck : (ExecutionMode.disabled != .enforcing) = true := rfl
+        simp [ReviewedInteraction.advanceNoGain, root, same, mode, modeCheck, bind, Except.bind, throw, throwThe] at accepted
+      | enforcing =>
+        have modeCheck : (ExecutionMode.enforcing != .enforcing) = false := rfl
+        cases prepared : reviewed.noGainCurrentPolicies model schema state.epoch with
+        | error error =>
+          simp [ReviewedInteraction.advanceNoGain, root, same, mode, modeCheck, prepared, bind, Except.bind] at accepted
+        | ok checked =>
+          have epoch := noGainCurrentPolicies_epoch reviewed model schema state.epoch checked prepared
+          simp [ReviewedInteraction.advanceNoGain, root, same, mode, modeCheck, prepared, bind, Except.bind, pure, Except.pure] at accepted
+          obtain ⟨rfl, rfl⟩ := accepted
+          exact ⟨epoch.symm, rfl⟩
+    · simp [ReviewedInteraction.advanceNoGain, root, same, bind, Except.bind, throw, throwThe] at accepted
+  · simp [ReviewedInteraction.advanceNoGain, root, bind, Except.bind, throw, throwThe] at accepted
+
+/-- Every accepted path, including independently approved gains, installs the
+exact returned policies in enforcing mode and advances the matched review epoch.
+No assumption about the external approval's truth supplies this postcondition. -/
+theorem ReviewedInteraction.advanceReviewed_postcondition (reviewed : ReviewedInteraction)
+    (model : Model) (schema : Schema) (state next : ReleaseState) (policies : Policies)
+    (approveGain : ReviewedInteraction → ReleaseState → Bool)
+    (accepted : reviewed.advanceReviewed model schema state approveGain = .ok (next, policies)) :
+    state.epoch = reviewed.snapshot.epoch ∧
+      next =
+        { activeRoot := reviewed.snapshot.combined.root
+          activePolicies := policies
+          executionMode := .enforcing
+          epoch := state.epoch + 1 } := by
+  cases prior : reviewed.advanceNoGain model schema state with
+  | ok value =>
+    have same : value = (next, policies) := by
+      simpa [ReviewedInteraction.advanceReviewed, prior, pure, Except.pure] using accepted
+    rw [same] at prior
+    exact advanceNoGain_postcondition reviewed model schema state next policies prior
+  | error error =>
+    cases error <;> try (simp [ReviewedInteraction.advanceReviewed, prior, bind, Except.bind, throw, throwThe] at accepted)
+    cases approval : approveGain reviewed state with
+    | false => simp [approval] at accepted
+    | true =>
+      cases checked : reviewed.snapshot.currentPolicies model schema state.epoch with
+      | error error => simp [approval, checked] at accepted
+      | ok checkedPolicies =>
+        have epoch := reviewed.snapshot.currentPolicies_epoch model schema state.epoch checkedPolicies checked
+        simp [approval, checked] at accepted
+        obtain ⟨rfl, rfl⟩ := accepted
+        exact ⟨epoch.symm, rfl⟩
+
+/-- A stale review cannot publish even with fresh approval and a different
+current model/schema. Epoch authenticity and non-rollback remain Host premises. -/
+theorem ReviewedInteraction.stale_epoch_cannot_advance (reviewed : ReviewedInteraction)
+    (model : Model) (schema : Schema) (state : ReleaseState)
+    (approveGain : ReviewedInteraction → ReleaseState → Bool)
+    (stale : state.epoch ≠ reviewed.snapshot.epoch) :
+    (reviewed.advanceReviewed model schema state approveGain).isOk = false := by
+  cases accepted : reviewed.advanceReviewed model schema state approveGain with
+  | error error => rfl
+  | ok value =>
+    obtain ⟨next, policies⟩ := value
+    exact False.elim (stale (reviewed.advanceReviewed_postcondition model schema state next policies approveGain accepted).1)
+
+/-- Reusing the actual returned state cannot consume this review again. The
+second approval, model and schema are arbitrary; resetting external state is not. -/
+theorem ReviewedInteraction.returned_state_rejects_republication (reviewed : ReviewedInteraction)
+    (model otherModel : Model) (schema otherSchema : Schema)
+    (state next : ReleaseState) (policies : Policies)
+    (approveGain otherApproval : ReviewedInteraction → ReleaseState → Bool)
+    (accepted : reviewed.advanceReviewed model schema state approveGain = .ok (next, policies)) :
+    (reviewed.advanceReviewed otherModel otherSchema next otherApproval).isOk = false := by
+  obtain ⟨epoch, installed⟩ := reviewed.advanceReviewed_postcondition model schema state next policies approveGain accepted
+  apply reviewed.stale_epoch_cannot_advance
+  rw [installed]
+  simp only
+  omega
 
 end CedarPooSpec.Authorization.Delta

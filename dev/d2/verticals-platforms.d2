@@ -5,14 +5,15 @@ vars: {d2-config: {data: {figure: |json
 {
   "purpose": "architecture",
   "language": "en",
-  "width": 1120,
+  "width": 1400,
   "primary": "purpose",
   "themes": [
-    "sketchbook",
-    "compact"
+    "editorial",
+    "comfortable"
   ],
   "icons": [
-    "engineering"
+    "engineering",
+    "cedar"
   ],
   "basis": {
     "captureRef": "development-source-observation",
@@ -20,12 +21,12 @@ vars: {d2-config: {data: {figure: |json
     "obligationRefs": [],
     "evidenceRefs": []
   },
-  "title": "Vertical controls and platform projections",
+  "title": "Industry rules and platform adapters",
   "kind": "responsibility-map",
   "questions": [
     {
       "ref": "purpose",
-      "text": "Which industry controls and platform adapters actually exist?",
+      "text": "Am I choosing an industry rule or a platform integration?",
       "focusRefs": [
         "sysml",
         "library"
@@ -42,16 +43,32 @@ vars: {d2-config: {data: {figure: |json
     "googleSource": "CedarPooSpec/Platform/Google/README.org"
   },
   "copy": {
-    "description": "Healthcare and financial services are reusable verticals. AWS and Google are separate platform projections.",
-    "status": "Vehicle, procurement and other scenario families remain Examples; this view does not invent industry implementations."
+    "description": "Two different choices: what must be controlled, and where it is integrated.",
+    "status": "These are the implemented library families. Other scenario industries remain Examples."
   },
   "presentation": {
-    "options": {
-      "elk.algorithm": "box",
-      "elk.aspectRatio": "1.8"
-    },
-    "edgeLabels": false,
-    "legend": false
+    "notation": "catalogue",
+    "columns": 1,
+    "groups": [
+      {
+        "title": "What must be controlled?",
+        "icon": "hospital",
+        "subjects": [
+          "health",
+          "finance"
+        ],
+        "columns": 2
+      },
+      {
+        "title": "Where is it integrated?",
+        "icon": "cloud",
+        "subjects": [
+          "aws",
+          "google"
+        ],
+        "columns": 2
+      }
+    ]
   },
   "sysml": {
     "source": "dev/sysml/architecture.sysml",
@@ -59,26 +76,26 @@ vars: {d2-config: {data: {figure: |json
     "bindings": {
       "health": {
         "name": "CedarArchitecture::health",
-        "icon": "model"
+        "icon": "hospital"
       },
       "finance": {
         "name": "CedarArchitecture::finance",
-        "icon": "model"
+        "icon": "bank"
       },
       "aws": {
         "name": "CedarArchitecture::aws",
-        "icon": "model"
+        "icon": "cloud"
       },
       "google": {
         "name": "CedarArchitecture::google",
-        "icon": "model"
+        "icon": "fingerprint"
       }
     }
   }
 }
 |
 }}}
-health: "Healthcare vertical\nDisclosure / consent / emergency\nFHIR / regional clinical exchange"
-finance: "Financial-services vertical\nBanking / payment release\nInsurance claims controls"
-aws: "AWS platform projection\nAgentCore Gateway integration\nSelected by a consuming profile"
-google: "Google platform projection\nSensitive Data Protection adapter\nSelected by a consuming profile"
+health: "Healthcare\nConsent + disclosure + emergency"
+finance: "Financial services\nBanking + payments + claims"
+aws: "AWS\nAgentCore Gateway binding"
+google: "Google\nSensitive Data Protection binding"

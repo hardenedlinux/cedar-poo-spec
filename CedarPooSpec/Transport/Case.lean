@@ -1,3 +1,4 @@
+import CedarPooSpec.Transport.SchemaSource
 import CedarPooSpec.PolicyJson
 import LeanPoo.Functional.ContextSlot
 
@@ -5,10 +6,18 @@ import LeanPoo.Functional.ContextSlot
 namespace CedarPooSpec.Transport
 open Cedar.Spec
 
+/-- Original C4 declarations remain attached to the compiled source. -/
+structure PolicyOrigin (policies : Policies) where
+  model : PolicyModules.Model
+  root : String
+  compiled : model.compile root = .ok policies
+  schema : Option Cedar.Validation.Schema := none
+
 structure PolicySource where
   policies : Policies
   snapshot : SourceSnapshot .policy
   aligned : PolicyJson.policySet policies = .ok snapshot.value
+  origin : Option (PolicyOrigin policies) := none
   identifiers : Thunk { value : Lean.Json // value = Lean.toJson (policies.map Policy.id) } :=
     Thunk.mk fun _ => ⟨Lean.toJson (policies.map Policy.id), rfl⟩
 
@@ -29,7 +38,7 @@ structure Case where
 /-- A manifest is a typed inventory; schema projection still admits no SDK policy. -/
 structure Manifest where
   cases : List Case
-  schema : Option (SourceSnapshot .schema) := none
+  schema : Option SchemaSource := none
 
 structure PolicyArtifact where
   root : String
@@ -103,7 +112,8 @@ theorem EntitySlot.read_value (slot : EntitySlot) (store : Entities) :
 theorem EntitySlot.bound (slot : EntitySlot) : slot.retained.toList.length ≤ 1 := by
   cases slot.retained <;> simp
 
-/-- Common fields are generated once per case; source values stay separate. -/
+/-- Reference projection of the common fields; source values stay separate.
+The native publisher uses the proof-bound fixed-layout constructor. -/
 def Case.fields (input : Case) : Except String (List (String × Lean.Json)) := do
   let request ← (PolicyJson.request input.request).mapError reprStr
   let response := input.response.get

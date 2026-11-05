@@ -1,6 +1,12 @@
 #+TITLE: Complete Cedar typed dataflow migration and native lifecycle evidence
 #+OPTIONS: toc:2
 
+
+This document retains its original dependency and performance snapshot.
+For current Cedar/Lean/Rust pins and security integration, see
+[[file:zero-trust-contract.org][current-release coherence]]. Historical measurements are not requalified
+by a dependency upgrade.
+
 * Measurement storage and benchmark ownership
 
 Generated CSV/JSON observations are build/CI artifacts rather than source files.

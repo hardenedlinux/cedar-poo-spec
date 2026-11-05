@@ -66,4 +66,49 @@ theorem omitted_ongoing_check_counterexample :
 #print axioms restored_attributes_do_not_revive_old_observation
 #print axioms fresh_observation_can_progress_without_reconsuming
 #print axioms omitted_ongoing_check_counterexample
+
+-- Equal attributes after an ABA do not revive the authority's old cut.
+example : Observation.compareAndAdvance 0 (snapshot restored) "stale"
+    (fun _ => (.error "callback must not run" : Except String (Unit × Bool))) = .error "stale" := rfl
+example : Observation.compareAndAdvance 2 (snapshot restored) "stale"
+    (fun allowed => (.ok ((), allowed) : Except String (Unit × Bool))) = .ok ((), ⟨3, true⟩) := rfl
+example : Observation.compareAndAdvance 2 (snapshot restored) "stale"
+    (fun _ => (.error "denied" : Except String (Unit × Bool))) = .error "denied" := rfl
+
+-- Pure checks against two copies of the same pre-state both succeed. The
+-- native authority must serialize the read/check/install, not cache this result.
+#guard (Observation.compareAndAdvance 0 (snapshot initial) "stale"
+    (fun allowed => (.ok ((), allowed) : Except String (Unit × Bool)))).isOk &&
+  (Observation.compareAndAdvance 0 (snapshot initial) "stale"
+    (fun allowed => (.ok ((), allowed) : Except String (Unit × Bool)))).isOk
+
+#print axioms Observation.compareAndAdvance_error
+#print axioms Observation.compareAndAdvance_postcondition
+#print axioms Observation.returned_cut_refuses_reuse
+#print axioms Observation.compareAndAdvance_retains_framework
+
+-- Arbitrarily many application controls may intervene. The premise is about
+-- the real step relation, including recovery, rather than a bounded corpus.
+theorem monotone_recovery_keeps_old_cut_retired
+    (history : Run framework (fun before _ after => before.generation ≤ after.generation)
+      restored final) :
+    Observation.compareAndAdvance 0 (snapshot final) "stale"
+      (fun allowed => (.ok ((), allowed) : Except String (Unit × Bool))) = .error "stale" := by
+  apply Observation.retired_cut_refuses_after_run snapshot 0 (fun _ _ _ event => event) history
+  decide
+
+-- A mediated no-effect edge alone does not establish monotonic recovery.
+theorem authority_rollback_revives_cut_counterexample :
+    Run framework rawStep restored initial ∧
+      (Observation.compareAndAdvance 0 (snapshot initial) "stale"
+        (fun allowed => (.ok ((), allowed) : Except String (Unit × Bool)))).isOk = true := by
+  constructor
+  · exact .next (effect := none) (.refl restored)
+      ⟨True.intro, by intro effect impossible; cases impossible⟩
+  · rfl
+
+#print axioms run_generation_monotone
+#print axioms Observation.retired_cut_refuses_after_run
+#print axioms monotone_recovery_keeps_old_cut_retired
+#print axioms authority_rollback_revives_cut_counterexample
 end CedarPooSpec.ZeroTrustTest

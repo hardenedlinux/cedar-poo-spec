@@ -132,15 +132,22 @@ def PaymentAuditPolicy.accepts (policy : PaymentAuditPolicy)
 
 /-- Authorization, audit, and transaction freshness are separate checks.
     The authorization snapshot must name the current audit policy exactly. -/
-def PaymentOperation.admissible (payment : PaymentOperation)
+def PaymentOperation.authorizedAtUse (payment : PaymentOperation)
     (authorization : PaymentAuthorization)
     (state : PaymentState) (evidence : List AuditEvidence) : Bool :=
   authorization.verified && authorization.allowed &&
   authorization.payment == payment &&
   decide (authorization.auditPolicy = state.auditPolicy) && payment.wellFormed &&
   payment.policyEpoch == state.policyEpoch && state.now < payment.expiresAt &&
-  !(state.usedNonces.contains payment.nonce) &&
   state.auditPolicy.accepts payment state.now evidence
+
+/-- Admission adds nonce freshness to the reusable current-use assessment. A
+reserved payment is reassessed at signing without unburning its nonce. -/
+def PaymentOperation.admissible (payment : PaymentOperation)
+    (authorization : PaymentAuthorization)
+    (state : PaymentState) (evidence : List AuditEvidence) : Bool :=
+  payment.authorizedAtUse authorization state evidence &&
+    !(state.usedNonces.contains payment.nonce)
 
 /-- Pure reservation. The Host must durably bind this nonce to one pending
     attempt before dispatch; this function does not execute a transfer. -/
@@ -156,14 +163,14 @@ theorem deniedAuthorizationCannotReserve (payment : PaymentOperation)
     (state : PaymentState) (evidence : List AuditEvidence)
     (h : authorization.allowed = false) :
     payment.reserve authorization state evidence = none := by
-  simp [PaymentOperation.reserve, PaymentOperation.admissible, h]
+  simp [PaymentOperation.reserve, PaymentOperation.admissible, PaymentOperation.authorizedAtUse, h]
 
 theorem changedAuditPolicyCannotReserve (payment : PaymentOperation)
     (authorization : PaymentAuthorization) (state : PaymentState)
     (evidence : List AuditEvidence)
     (h : authorization.auditPolicy ≠ state.auditPolicy) :
     payment.reserve authorization state evidence = none := by
-  simp [PaymentOperation.reserve, PaymentOperation.admissible, h]
+  simp [PaymentOperation.reserve, PaymentOperation.admissible, PaymentOperation.authorizedAtUse, h]
 
 theorem reservationConsumesNonce (payment : PaymentOperation)
     (authorization : PaymentAuthorization)
@@ -182,6 +189,6 @@ theorem reservedPaymentCannotReplay (payment : PaymentOperation)
     (h : payment.reserve authorization state evidence = some next) :
     payment.reserve authorization next evidence = none := by
   have hnonce := reservationConsumesNonce payment authorization state next evidence h
-  simp [PaymentOperation.reserve, PaymentOperation.admissible, hnonce]
+  simp [PaymentOperation.reserve, PaymentOperation.admissible, PaymentOperation.authorizedAtUse, hnonce]
 
 end CedarPooSpec.Vertical.FinancialServices
