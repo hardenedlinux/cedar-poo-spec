@@ -133,4 +133,121 @@ theorem committed_receipt_recovered (receipt : Invocation contract prepare input
   rw [evidence, retained.1]
   simp [retained.2]
 
+/-- The independent authority retains the complete acknowledged image and
+the only active placement. Native code uses a canonical digest for equality. -/
+structure Checkpoint where
+  active : String
+  image : Image
+  deriving DecidableEq
+
+def Checkpoint.permits (checkpoint : Checkpoint) (placement : String) (image : Image) : Prop :=
+  checkpoint.active = placement ∧ checkpoint.image = image
+
+structure PromotionInput where
+  independent : Option Checkpoint
+  candidate : Image
+  placement : String
+
+def promote (input : PromotionInput) : Option Checkpoint := do
+  let pin ← input.independent
+  if input.placement ≠ "" ∧ input.placement ≠ pin.active ∧ input.candidate = pin.image then
+    let image ← advance input.candidate input.candidate.cut
+    return ⟨input.placement, image⟩
+  else none
+
+def promotionContract : Contract Unit PromotionInput Checkpoint where
+  input := ⟨"independently-acknowledged-receiver-image-and-candidate", fun _ => True, fun _ => inferInstance⟩
+  output := ⟨"promoted-receiver-placement-and-advanced-cut", fun _ => True, fun _ => inferInstance⟩
+  meaning := fun _ input result => promote input = some result
+  decide := fun _ _ _ => inferInstance
+  rule := .atom ()
+
+def preparePromotion (input : PromotionInput) : Except String (Checkpoint × Unit) :=
+  match promote input with
+  | some checkpoint => .ok (checkpoint, ())
+  | none => .error "receiver promotion refused"
+
+theorem different_image_cannot_promote (present : input.independent = some pin)
+    (different : input.candidate ≠ pin.image) : promote input = none := by
+  simp [promote, present, different]
+
+theorem promotion_retains_acknowledged_delivery
+    (receipt : Invocation promotionContract preparePromotion input) :
+    ∃ pin, input.independent = some pin ∧ input.candidate = pin.image ∧
+      receipt.result.active = input.placement ∧ receipt.result.active ≠ pin.active ∧
+      receipt.result.image.cut.scope = pin.image.cut.scope ∧
+      receipt.result.image.cut.generation = pin.image.cut.generation + 1 ∧
+      receipt.result.image.operations = pin.image.operations ∧
+      receipt.result.image.delivered = pin.image.delivered := by
+  have accepted := receipt.logic
+  change promote input = some receipt.result at accepted
+  cases present : input.independent with
+  | none => simp [promote, present] at accepted
+  | some pin =>
+    simp only [promote, present, bind, Option.bind] at accepted
+    split at accepted
+    · rename_i checked
+      simp [advance] at accepted
+      rw [← accepted, checked.2.2]
+      exact ⟨pin, rfl, rfl, rfl, checked.2.1, rfl, rfl, rfl, rfl⟩
+    · contradiction
+
+theorem promotion_fences_previous_placement
+    (receipt : Invocation promotionContract preparePromotion input)
+    (present : input.independent = some pin) :
+    ¬ receipt.result.permits pin.active image := by
+  obtain ⟨actual, source, _, _, changed, _⟩ := promotion_retains_acknowledged_delivery receipt
+  have same : actual = pin := Option.some.inj (source.symm.trans present)
+  exact fun accepted => changed (accepted.1.trans (congrArg Checkpoint.active same).symm)
+
+theorem promotion_keeps_signed_evidence
+    (receipt : Invocation promotionContract preparePromotion input)
+    (present : input.independent = some pin) (operation : Admission.OperationId) :
+    evidence receipt.result.image operation = evidence pin.image operation := by
+  obtain ⟨actual, source, _, _, _, _, _, _, delivered⟩ := promotion_retains_acknowledged_delivery receipt
+  have same : actual = pin := Option.some.inj (source.symm.trans present)
+  simp only [evidence, delivered, same]
+
+theorem promoted_receiver_refuses_same_operation
+    (receipt : Invocation promotionContract preparePromotion input)
+    (present : input.independent = some pin) (retry : Input)
+    (current : retry.image = receipt.result.image)
+    (reserved : pin.image.operations.check retry.request.dispatch.operation = false) :
+    receive retry = none := by
+  obtain ⟨actual, source, _, _, _, _, _, operations, _⟩ := promotion_retains_acknowledged_delivery receipt
+  have same : actual = pin := Option.some.inj (source.symm.trans present)
+  apply reserved_operation_refused
+  rw [current, operations, same]
+  exact reserved
+
+structure ManagedInput where
+  independent : Option Checkpoint
+  placement : String
+  delivery : Input
+
+def receiveManaged (input : ManagedInput) : Option Checkpoint := do
+  let pin ← input.independent
+  if pin.active = input.placement ∧ pin.image = input.delivery.image then
+    let image ← receive input.delivery
+    return { pin with image }
+  else none
+
+def managedContract : Contract Unit ManagedInput Checkpoint where
+  input := ⟨"active-receiver-and-exact-independent-image", fun _ => True, fun _ => inferInstance⟩
+  output := ⟨"independently-committed-delivery", fun _ => True, fun _ => inferInstance⟩
+  meaning := fun _ input result => receiveManaged input = some result
+  decide := fun _ _ _ => inferInstance
+  rule := .atom ()
+
+def prepareManaged (input : ManagedInput) : Except String (Checkpoint × Unit) :=
+  match receiveManaged input with
+  | some checkpoint => .ok (checkpoint, ())
+  | none => .error "managed receiver dispatch refused"
+
+theorem fenced_placement_cannot_receive (present : input.independent = some pin)
+    (fenced : ¬ pin.permits input.placement input.delivery.image) :
+    receiveManaged input = none := by
+  change ¬ (pin.active = input.placement ∧ pin.image = input.delivery.image) at fenced
+  simp only [receiveManaged, present, bind, Option.bind, if_neg fenced]
+
 end CedarPooSpec.Gateway.OAuth.Receiver

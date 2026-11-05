@@ -1248,6 +1248,44 @@ transaction or durable idempotency protocol. The simulation provides
 no physical power-loss or external transport guarantee.
 
 
+*** Receiver replica promotion
+
+The managed receiver uses a separate trusted checkpoint directory.
+The checkpoint binds the active placement, the acknowledged receiver
+cut, and the canonical digest of the complete receiver image. The
+digest covers the configured roots, operation reservations, signed
+dispatches, actions and signed outcomes. A copied image with an older
+cut or different contents at the same cut cannot be promoted.
+
+The promotion Contract requires the exact acknowledged image. A
+successful promotion advances the cut and changes the active
+placement while preserving the original reservations and signed
+outcomes. Every managed delivery and evidence read rechecks both
+placement and contents under the independent lock. Even an exact
+copy at a former placement cannot deliver without a new promotion.
+A retry under a new channel, worker or witnessed review still uses
+the same operation ID and cannot redeliver.
+
+The reference syncs the candidate image before installing and
+syncing the independent checkpoint. That checkpoint is the
+acknowledgment boundary. A stop before its installation leaves
+the prior placement authoritative. A stop after its sync leaves
+the new placement active despite acknowledgment loss. An ahead
+replica refuses service until an exact acknowledged copy can be
+recovered. Availability after an interrupted write therefore
+requires keeping such a copy. Recovery never initializes a new
+checkpoint from candidate bytes.
+
+Standalone receiver stores retain their local behavior. Managed
+stores require explicit bootstrap and cannot be reopened through
+the standalone interface. The deployment must retain independent
+custody of the checkpoint directory and stable lock, and configure
+all workers to use that same authority. The local replay uses
+separate directories and injected write failures. It relies on
+the filesystem and collision-resistance assumptions and does not
+model a simultaneous rollback of the independent authority.
+
+
 References include [[https://www.rfc-editor.org/rfc/rfc9700.html#section-2.3][OAuth Security BCP]],
 [[https://www.rfc-editor.org/rfc/rfc8707.html][Resource Indicators]],
 [[https://www.rfc-editor.org/rfc/rfc7662.html][Token Introspection]],

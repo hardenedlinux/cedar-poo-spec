@@ -43,16 +43,33 @@ private def crashExercise (durable : Revocation.Recovery.Store)
   let delivery : Receiver.Delivery := ⟨dispatch, "channel-one", outcome⟩
   let request : Receiver.Input := ⟨receiver, delivery, dispatch, "channel-one", intent, true⟩
   let .ok delivered := Receiver.contract.invoke Receiver.prepare request | return false
+  let managed : Receiver.ManagedInput := ⟨some ⟨"primary", receiver⟩, "primary", request⟩
+  let .ok committed := Receiver.managedContract.invoke Receiver.prepareManaged managed | return false
   let some advanced := Receiver.advance delivered.result cut | return false
   let restored := Revocation.Crash.recoverImage .durable delivered.result advanced
   let staged := Revocation.Crash.recoverImage .staged receiver delivered.result
-  let some (action, outcome) := Receiver.evidence restored dispatch.operation | return false
-  let newDispatch := { dispatch with cut := restored.cut }
-  let retry : Receiver.Input := ⟨restored, ⟨newDispatch, "channel-two", outcome⟩,
+  let pin : Receiver.Checkpoint := ⟨"primary", restored⟩
+  let promotion : Receiver.PromotionInput := ⟨some pin, restored, "standby"⟩
+  let .ok promoted := Receiver.promotionContract.invoke Receiver.preparePromotion promotion | return false
+  let stagedPromotion := Revocation.Crash.recoverImage .staged pin promoted.result
+  let committedPromotion := Revocation.Crash.recoverImage .durable pin promoted.result
+  let fork : Receiver.Image := { restored with delivered := [] }
+  let some (action, outcome) := Receiver.evidence committedPromotion.image dispatch.operation | return false
+  let newDispatch := { dispatch with cut := committedPromotion.image.cut }
+  let retry : Receiver.Input := ⟨committedPromotion.image, ⟨newDispatch, "channel-two", outcome⟩,
     newDispatch, "channel-two", intent, true⟩
   let reconcile : Revocation.Crash.ReconcileInput := ⟨live, 1, intent.operation, trust, source, history, [action], [outcome]⟩
   let .ok settled := Revocation.Crash.reconcileContract.invoke Revocation.Crash.prepareReconcile reconcile | return false
-  return (Receiver.evidence staged dispatch.operation).isNone &&
+  return decide (committed.result.image = delivered.result) &&
+    (Receiver.promote { promotion with independent := none }).isNone &&
+    (Receiver.promote { promotion with candidate := receiver }).isNone &&
+    (Receiver.promote { promotion with candidate := fork }).isNone &&
+    decide (stagedPromotion = pin) &&
+    decide (committedPromotion.active = "standby") &&
+    decide (committedPromotion.image.cut.generation = restored.cut.generation + 1) &&
+    (Receiver.receiveManaged ⟨some committedPromotion, "primary", retry⟩).isNone &&
+    (Receiver.receiveManaged ⟨some committedPromotion, "standby", retry⟩).isNone &&
+    (Receiver.evidence staged dispatch.operation).isNone &&
     decide (restored.cut.generation = cut.generation + 1) &&
     (Receiver.receive { request with image := restored }).isNone &&
     (Receiver.receive retry).isNone &&
@@ -194,3 +211,9 @@ end Tests.Gateway.OAuthRefresh
 #print axioms CedarPooSpec.Gateway.OAuth.Receiver.committed_cut_refuses_old_dispatch
 #print axioms CedarPooSpec.Gateway.OAuth.Receiver.cut_advance_keeps_no_resend
 #print axioms CedarPooSpec.Gateway.OAuth.Receiver.committed_receipt_recovered
+
+#print axioms CedarPooSpec.Gateway.OAuth.Receiver.promotion_retains_acknowledged_delivery
+#print axioms CedarPooSpec.Gateway.OAuth.Receiver.promotion_fences_previous_placement
+#print axioms CedarPooSpec.Gateway.OAuth.Receiver.promotion_keeps_signed_evidence
+#print axioms CedarPooSpec.Gateway.OAuth.Receiver.promoted_receiver_refuses_same_operation
+#print axioms CedarPooSpec.Gateway.OAuth.Receiver.fenced_placement_cannot_receive

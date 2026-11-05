@@ -55,9 +55,14 @@ pub(super) enum CheckpointStage {
 
 impl<'a> LockedCheckpoint<'a> {
     pub(super) fn initialize(&self, value: &impl Serialize) -> Result<(), String> {
+        self.ensure_uninitialized()?;
+        self.persist(value)
+    }
+
+    pub(super) fn ensure_uninitialized(&self) -> Result<(), String> {
         match fs::symlink_metadata(self.directory.join("checkpoint.json")) {
             Ok(_) => Err("independent checkpoint already initialized".into()),
-            Err(error) if error.kind() == io::ErrorKind::NotFound => self.persist(value),
+            Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(()),
             Err(error) => Err(error.to_string()),
         }
     }
