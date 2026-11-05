@@ -34,17 +34,18 @@ preservation law. =preservesInvariant step invariant= then supplies a statewise
 requirement:
 
 #+begin_example
-for every after:
-  step before (some effect) after ->
-  invariant before ->
-  invariant after
+invariant before AND
+  for every after:
+    step before (some effect) after -> invariant after
 #+end_example
 
 =Framework.atInvariant= adds this requirement through the existing strengthening
 operation. =invariant_guard_preserves_framework= retains all original identity,
 authorization, currentness, consumption, unknown-retention, revocation and
 mediation requirements. =unsafe_successor_blocks= refuses an effect whenever
-one possible successor violates the invariant from a safe source state.
+one possible successor violates the invariant. =unsafe_source_blocks= also
+refuses an already unsafe observed state, even if the proposed target is safe;
+source safety cannot disappear through a vacuous implication.
 
 =invariant_guard_preserves_run= proves safety after every finite admitted
 history from a safe initial state, given a separate preservation law for
@@ -62,7 +63,7 @@ It adds no state store, token format, scheduler or alternative Cedar evaluator.
 
 * Countermodels and scope
 
-The existing [[file:../Tests/ZeroTrust/Functional.lean][functional model tests]] retain three distinct failures:
+The existing [[file:../Tests/ZeroTrust/Functional.lean][functional model tests]] retain four distinct failures:
 
 1. Identical authorization before and after a revision still admits a two-action
    path to an unsafe state. Same-world no-expansion alone cannot rule it out.
@@ -70,8 +71,11 @@ The existing [[file:../Tests/ZeroTrust/Functional.lean][functional model tests]]
    it even though a favorable sample exists.
 3. An unmarked rollback reaches an unsafe state despite effect guarding. This
    witnesses why the maintenance preservation premise cannot be omitted.
+4. Conditional preservation is vacuous at an already unsafe starting state.
+   The source-invariant check refuses a new effect even if its target is safe.
 
-The positive law accepts a harmless first action, refuses the newly dangerous
+The positive law refuses an unsafe observed starting state, accepts a harmless
+first action, refuses the newly dangerous
 second action, and quantifies over arbitrary finite guarded runs. It does not
 prove liveness, fairness, unbounded probabilistic value, semantic intent or
 physical IO refinement. No new axiom or native decision oracle is needed.

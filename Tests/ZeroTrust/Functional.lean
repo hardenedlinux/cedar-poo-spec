@@ -165,7 +165,6 @@ theorem harmless_first_step_allowed :
 theorem newly_dangerous_second_step_refused :
     ¬ (unchangedPolicy.atInvariant step safe).required .emit .armed := by
   apply unsafe_successor_blocks unchangedPolicy step safe (after := .violated)
-  · simp [safe]
   · simp [step]
   · simp [safe]
 
@@ -176,9 +175,22 @@ theorem safe_sample_does_not_certify_nondeterminism :
   constructor
   · simp [step]
   · apply unsafe_successor_blocks unchangedPolicy step safe (after := .violated)
-    · simp [safe]
     · simp [step]
     · simp [safe]
+
+-- Preservation as an implication would be vacuous in an already unsafe
+-- observed state. A new effect must establish source safety as well.
+theorem unsafe_observed_state_refused :
+    ¬ (unchangedPolicy.atInvariant step safe).required .arm .violated := by
+  apply unsafe_source_blocks unchangedPolicy step safe
+  simp [safe]
+
+theorem vacuous_preservation_is_insufficient :
+    (∀ after, step .violated (some .arm) after → safe .violated → safe after) ∧
+      ¬ (unchangedPolicy.atInvariant step safe).required .arm .violated := by
+  constructor
+  · simp [safe]
+  · exact unsafe_observed_state_refused
 
 theorem all_guarded_runs_safe
     (run : Run (unchangedPolicy.atInvariant step safe) step .ready after) : safe after := by
@@ -202,6 +214,10 @@ theorem unchecked_maintenance_can_break_safety :
 #print axioms run_preserves_mediated
 #print axioms invariant_guard_preserves_framework
 #print axioms unsafe_successor_blocks
+#print axioms unsafe_source_blocks
+#print axioms invariant_guard_effect_states
+#print axioms unsafe_observed_state_refused
+#print axioms vacuous_preservation_is_insufficient
 #print axioms invariant_guard_preserves_run
 #print axioms pointwise_refinement_does_not_imply_trace_safety
 #print axioms identical_authorization_can_reach_unsafe

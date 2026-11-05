@@ -75,8 +75,8 @@ An adapter must justify its actual transition relation; this predicate does not
 infer future behavior from an Allow, a vote or a sampled successful outcome. -/
 def preservesInvariant (step : V → Option E → V → Prop) (invariant : V → Prop) :
     Requirement E V :=
-  fun effect before => ∀ after, step before (some effect) after →
-    invariant before → invariant after
+  fun effect before => invariant before ∧
+    ∀ after, step before (some effect) after → invariant after
 
 def Framework.atInvariant (framework : Framework E V)
     (step : V → Option E → V → Prop) (invariant : V → Prop) : Framework E V :=
@@ -89,10 +89,21 @@ theorem invariant_guard_preserves_framework (framework : Framework E V)
 
 theorem unsafe_successor_blocks (framework : Framework E V)
     (step : V → Option E → V → Prop) (invariant : V → Prop)
-    (initial : invariant before) (possible : step before (some effect) after)
-    (violated : ¬ invariant after) :
+    (possible : step before (some effect) after) (violated : ¬ invariant after) :
     ¬ (framework.atInvariant step invariant).required effect before :=
-  fun accepted => violated (accepted.2.1.2 after possible initial)
+  fun accepted => violated (accepted.2.1.2.2 after possible)
+
+theorem unsafe_source_blocks (framework : Framework E V)
+    (step : V → Option E → V → Prop) (invariant : V → Prop)
+    (violated : ¬ invariant before) :
+    ¬ (framework.atInvariant step invariant).required effect before :=
+  fun accepted => violated accepted.2.1.2.1
+
+theorem invariant_guard_effect_states {framework : Framework E V}
+    {step : V → Option E → V → Prop} {invariant : V → Prop}
+    (event : MediatedStep (framework.atInvariant step invariant) step before (some effect) after) :
+    invariant before ∧ invariant after :=
+  ⟨(event.2 effect rfl).2.1.2.1, (event.2 effect rfl).2.1.2.2 after event.1⟩
 
 /-- Inductive safety under arbitrary finite checked proposals, including
 nondeterministic effects. Unmarked recovery, publication and fact updates
@@ -107,7 +118,7 @@ theorem invariant_guard_preserves_run (framework : Framework E V)
   intro before effect after event safe
   cases effect with
   | none => exact maintenance before after event.1 safe
-  | some effect => exact (event.2 effect rfl).2.1.2 after event.1 safe
+  | some effect => exact (invariant_guard_effect_states event).2
 
 /-- Pure specification of an authority-owned compare-and-advance operation.
 The transition receives the actual attributes, never a cached assessment. All
