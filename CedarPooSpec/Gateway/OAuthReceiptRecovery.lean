@@ -239,4 +239,15 @@ theorem trace_preserves_original (history : Trace initial after)
     | staged => exact ih
     | durable => exact persistence_keeps_original receipt (by simpa [current] using ih)
 
+theorem trace_cannot_resend (history : Trace initial after)
+    (retry : Revocation.Crash.BeginInput)
+    (burned : (initial.oauth.retained.any fun entry => entry.intent.operation == retry.operation) = true) :
+    Revocation.Crash.begin { retry with image := after.oauth } = none := by
+  have intents := trace_preserves_intents history
+  have sameBurn := congrArg (fun entries => entries.any (fun intent => intent.operation == retry.operation)) intents
+  simp only [List.any_map, Function.comp_def] at sameBurn
+  have afterBurn : (after.oauth.retained.any fun entry => entry.intent.operation == retry.operation) = true :=
+    sameBurn.trans burned
+  exact Revocation.Crash.burned_operation_cannot_begin _ afterBurn
+
 end CedarPooSpec.Gateway.OAuth.ReceiptRecovery

@@ -1646,19 +1646,46 @@ both worker orders with a conflicting receipt before or after the original.
 Staged recovery leaves the row absent, while durable recovery and three further
 handoffs preserve that row and the operation burn.
 
+The shared =ReceiptBatch.RecoveryInput= names the current image, one batch
+item and the observed =staged= or =durable= boundary. Its =recoveryContract=
+returns only the recovered image; a transient report is not a durable cursor.
+A staged attempt recovers exactly the prior image. A durable accepted attempt
+binds the exact original row. Both preserve OAuth authorization. The
+=recovery_trace= theorem embeds each attempt into the same finite recovery
+trace, and =trace_cannot_resend= preserves the retained operation burn through
+any finite composition of recovery, revocation and handoff. This safety result
+does not assert eventual evidence arrival or recovery completion.
+
+The extended Lean replay invokes this Contract for two pre-install crashes,
+checks old-writer and old-replica suffix rejection after each handoff, then
+installs the original mapping. Four further handoffs and reordered duplicate
+and conflict batches preserve its identity. It checks both the complete trace's
+operation burn and the post-install trace's immutable row.
+
 The Rust batch replay keeps its original workload and appends late-evidence
 recovery within the same 120-second gate. After seven prior handoffs, two
 restarted workers consume overlapping, reordered packets containing the original
-receipt, a validly signed conflicting receipt and duplicates. The first worker
-dies after durable installation without acknowledging it; its peer independently
-confirms the original row. A later read-only confirmation is lost, followed by
-three more handoffs. All resumed confirmations are read-only, the original
-digest and receipt remain unchanged, and durable discovery no longer reports
-that item as unmapped. Items still lacking evidence remain pending in the
-preceding batch checks. A receipt supplies recovery evidence only: it neither
-renews authorization nor permits the revoked operation to execute again.
-=SETTLED-LATE-OK= reports the observed handoff count and checked recovery
-invariants. These are deterministic Rust fault simulations, not claims about
+receipt, a validly signed conflicting receipt and duplicates. Worker A and then
+worker B die after syncing the staging file and before checkpoint replacement.
+Their peers pause between items outside all store locks; the parent promotes
+the receiver and rotates the OAuth writer before resuming the old suffix.
+Neither fenced peer can install a mapping, and the target remains discoverable.
+
+A later worker dies after durable installation without acknowledging it; its
+peer independently confirms the original row. Four subsequent confirmations
+alternate between A and B and are lost after the read-only checks. Fresh peers
+confirm the original row without writing it again. Six handoffs in total occur
+during this extended recovery. The original digest and receipt remain unchanged,
+the unrelated missing-evidence record retains its exact observation, and durable
+discovery stops reporting the successfully migrated item. A receipt supplies
+recovery evidence only: it neither renews authorization nor permits the revoked
+operation to execute again.
+
+=SETTLED-LATE-OK= reports the observed handoff count, two staged crashes, one
+durable crash, four lost confirmations and the checked recovery invariants.
+The boundary observation is a trusted persistence input to the Lean model.
+Rust injects faults at the matching checkpoint hooks on a trusted local
+filesystem. These are deterministic process-fault simulations, not proofs of
 physical power-loss durability or an external storage service.
 
 The first clean audit durably binds the canonical identity of the

@@ -3,6 +3,87 @@ import CedarPooSpec.Gateway.OAuthReceiptBatch
 namespace Tests.Gateway.SettledLate
 open CedarPooSpec.Gateway.OAuth
 
+/-- Alternate pre-install crashes, then recover one durable binding across
+repeated lost confirmations. Every recovered step uses the public Contract. -/
+def alternating (image : ReceiptRecovery.Image) (delayed first : ReceiptRecovery.Input)
+    (retry : Revocation.Crash.BeginInput) : Bool := Id.run do
+  let operation := delayed.request.operation
+  let mut tracked : { state : ReceiptRecovery.Image // ReceiptRecovery.Trace image state } :=
+    ⟨image, .start image⟩
+  for _ in [:2] do
+    let before := tracked
+    let item := { delayed with image := before.1, writer := before.1.oauth.writer }
+    let .ok eligible := ReceiptRecovery.contract.invoke ReceiptRecovery.prepare
+      { item with mode := .settled } | return false
+    let _wouldBind := ReceiptRecovery.persistence_records eligible
+    let input : ReceiptBatch.RecoveryInput := ⟨before.1, item, .staged⟩
+    let .ok staged := ReceiptBatch.recoveryContract.invoke ReceiptBatch.prepareRecovery input
+      | return false
+    let _notInstalled := ReceiptBatch.recovery_staged_is_before staged rfl
+    if staged.result != before.1 then return false
+    let step := ReceiptRecovery.Trace.trans before.2 (ReceiptBatch.recovery_trace staged)
+    match advanced : Revocation.Crash.handoff staged.result.oauth staged.result.oauth.writer with
+    | none => return false
+    | some active =>
+      let next : ReceiptRecovery.Image := { staged.result with oauth := active }
+      let oldWriter := ReceiptBatch.State.step { image := next } item
+      let oldReplica := { item with
+        image := next, writer := active.writer
+        recovery := { item.recovery with placement := "retired-replica" } }
+      let replicaStop := ReceiptBatch.State.step { image := next } oldReplica
+      if oldWriter.stopped != some operation || oldWriter.image != next ||
+          replicaStop.stopped != some operation || replicaStop.image != next then return false
+      if (ReceiptRecovery.lookup next.rows operation).isSome then return false
+      tracked := ⟨next, .authorization step (.handoff (.start staged.result.oauth) advanced)⟩
+  let item := { delayed with image := tracked.1, writer := tracked.1.oauth.writer }
+  let input : ReceiptBatch.RecoveryInput := ⟨tracked.1, item, .durable⟩
+  let .ok installed := ReceiptBatch.recoveryContract.invoke ReceiptBatch.prepareRecovery input
+    | return false
+  let historyPrefix := ReceiptRecovery.Trace.trans tracked.2 (ReceiptBatch.recovery_trace installed)
+  let row := ReceiptRecovery.Request.stored delayed.request
+  if bound : ReceiptRecovery.lookup installed.result.rows operation = some row then
+    let mut resumed : { state : ReceiptRecovery.Image //
+        ReceiptRecovery.Trace installed.result state } := ⟨installed.result, .start installed.result⟩
+    for _ in [:4] do
+      let before := resumed
+      match advanced : Revocation.Crash.handoff before.1.oauth before.1.oauth.writer with
+      | none => return false
+      | some active =>
+        let next : ReceiptRecovery.Image := { before.1 with oauth := active }
+        let handoff : ReceiptRecovery.Trace installed.result next :=
+          .authorization before.2 (.handoff (.start before.1.oauth) advanced)
+        let original := { delayed with image := next, writer := active.writer }
+        let duplicate : ReceiptBatch.RecoveryInput := ⟨next, original, .durable⟩
+        let .ok confirmed := ReceiptBatch.recoveryContract.invoke ReceiptBatch.prepareRecovery duplicate
+          | return false
+        let prior := { first with image := confirmed.result, writer := active.writer }
+        let conflicting := { original with request := { original.request with outcomeSource :=
+          { original.request.outcomeSource with signature := [99] } } }
+        let .ok peer := ReceiptBatch.contract.invoke ReceiptBatch.prepare
+          ⟨confirmed.result, [prior, conflicting, original, original]⟩ | return false
+        if confirmed.result != next || peer.result.image != next ||
+            peer.result.pending != [operation] then return false
+        have folded : ReceiptRecovery.Trace confirmed.result peer.result.image := by
+          have same := peer.logic
+          change ReceiptBatch.Input.run _ = peer.result at same
+          rw [← same]
+          exact ReceiptBatch.fold_trace [prior, conflicting, original, original]
+            { image := confirmed.result }
+        resumed := ⟨peer.result.image, ReceiptRecovery.Trace.trans handoff
+          (ReceiptRecovery.Trace.trans (ReceiptBatch.recovery_trace confirmed) folded)⟩
+    let _immutable := ReceiptRecovery.trace_preserves_original resumed.2 bound
+    let complete := ReceiptRecovery.Trace.trans historyPrefix resumed.2
+    let finalRetry := { retry with
+      image := resumed.1.oauth, operation := operation
+      intent := delayed.request.symbolic.receipt.commit
+      writer := resumed.1.oauth.writer, checkedWriter := resumed.1.oauth.writer }
+    if burned : (image.oauth.retained.any fun entry => entry.intent.operation == finalRetry.operation) = true then
+      let _noResend := ReceiptRecovery.trace_cannot_resend complete finalRetry burned
+      return decide (ReceiptRecovery.lookup resumed.1.rows operation = some row) &&
+        (Revocation.Crash.begin finalRetry).isNone
+    else return false
+  else return false
+
 def exercise (image : ReceiptRecovery.Image) (delayed first : ReceiptRecovery.Input)
     (retry : Revocation.Crash.BeginInput) : Bool := Id.run do
   let operation := delayed.request.operation
@@ -53,7 +134,7 @@ def exercise (image : ReceiptRecovery.Image) (delayed first : ReceiptRecovery.In
           change input.run = confirmation.result at equal
           rw [← equal]
           exact ReceiptBatch.fold_trace input.items { image := input.image })⟩
-  return decide (a.result.confirmed = [operation, operation, prior.request.operation]) &&
+  return alternating image delayed first retry && decide (a.result.confirmed = [operation, operation, prior.request.operation]) &&
     decide (a.result.pending = [operation]) &&
     decide (b.result.confirmed = [prior.request.operation, operation, operation]) &&
     decide (b.result.pending = [operation]) &&
@@ -70,3 +151,13 @@ def exercise (image : ReceiptRecovery.Image) (delayed first : ReceiptRecovery.In
       checkedWriter := tracked.1.oauth.writer }).isNone
 
 end Tests.Gateway.SettledLate
+
+#print axioms CedarPooSpec.Gateway.OAuth.ReceiptRecovery.trace_cannot_resend
+#print axioms CedarPooSpec.Gateway.OAuth.ReceiptBatch.recovery_trace
+#print axioms CedarPooSpec.Gateway.OAuth.ReceiptBatch.recovery_staged_is_before
+#print axioms CedarPooSpec.Gateway.OAuth.ReceiptBatch.recovery_keeps_original
+#print axioms CedarPooSpec.Gateway.OAuth.ReceiptBatch.recovery_durable_binds
+
+#print axioms CedarPooSpec.Gateway.OAuth.ReceiptBatch.recovery_keeps_authorization
+#print axioms CedarPooSpec.Gateway.OAuth.ReceiptBatch.recovery_refused_is_before
+#print axioms CedarPooSpec.Gateway.OAuth.ReceiptBatch.recovery_fenced_is_before

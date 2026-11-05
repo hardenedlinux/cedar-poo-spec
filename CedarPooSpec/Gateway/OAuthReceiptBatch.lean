@@ -66,6 +66,18 @@ theorem step_trace (state : State) (item : ReceiptRecovery.Input) :
       · rename_i receipt accepted
         exact .commit (.start _) receipt rfl .durable
 
+theorem step_keeps_authorization (state : State) (item : ReceiptRecovery.Input) :
+    (State.step state item).image.oauth.oauth = state.image.oauth.oauth := by
+  unfold State.step
+  split
+  · rfl
+  · split
+    · rfl
+    · split
+      · rfl
+      · rename_i receipt accepted
+        exact ReceiptRecovery.persistence_keeps_authorization receipt
+
 theorem accepted_step_binds
     (running : state.stopped = none) (writer : item.writer = state.image.oauth.writer)
     (replica : item.recovery.currentReplica = true)
@@ -108,14 +120,9 @@ theorem batch_cannot_resend (receipt : Invocation contract prepare input)
     Revocation.Crash.begin { retry with image := receipt.result.image.oauth } = none := by
   have same := receipt.logic
   change input.run = receipt.result at same
-  have intents := ReceiptRecovery.trace_preserves_intents
-    (fold_trace input.items { image := input.image })
-  have sameBurn := congrArg (fun entries => entries.any (fun intent => intent.operation == retry.operation)) intents
-  simp only [List.any_map, Function.comp_def] at sameBurn
-  have afterBurn : (receipt.result.image.oauth.retained.any fun entry => entry.intent.operation == retry.operation) = true := by
-    rw [← same]
-    simpa [Input.run, List.any_map, Function.comp_def] using sameBurn.trans burned
-  exact Revocation.Crash.burned_operation_cannot_begin _ afterBurn
+  rw [← same]
+  exact ReceiptRecovery.trace_cannot_resend
+    (fold_trace input.items { image := input.image }) retry burned
 
 theorem refused_keeps_image
     (refused : ReceiptRecovery.persist (current state item) = none) :
@@ -141,5 +148,97 @@ theorem fenced_suffix_keeps_prefix (items : List ReceiptRecovery.Input)
 theorem append_resumes_same_fold (first second : List ReceiptRecovery.Input) (state : State) :
     (first ++ second).foldl State.step state =
       second.foldl State.step (first.foldl State.step state) := List.foldl_append
+
+/-- Only the durable image survives a worker crash; batch reports and cursors do not. -/
+structure RecoveryInput where
+  image : ReceiptRecovery.Image
+  item : ReceiptRecovery.Input
+  boundary : Revocation.Crash.CommitBoundary
+
+def RecoveryInput.run (input : RecoveryInput) : ReceiptRecovery.Image :=
+  Revocation.Crash.recoverImage input.boundary input.image
+    (State.step { image := input.image } input.item).image
+
+def recoveryContract : Contract Unit RecoveryInput ReceiptRecovery.Image where
+  input := ⟨"current-item-and-observed-commit-boundary", fun _ => True, fun _ => inferInstance⟩
+  output := ⟨"recovered-image-without-transient-batch-report", fun _ => True, fun _ => inferInstance⟩
+  meaning := fun _ input result => input.run = result
+  decide := fun _ _ _ => inferInstance
+  rule := .atom ()
+
+def prepareRecovery (input : RecoveryInput) : Except String (ReceiptRecovery.Image × Unit) :=
+  .ok (input.run, ())
+
+theorem recovery_trace (receipt : Invocation recoveryContract prepareRecovery input) :
+    ReceiptRecovery.Trace input.image receipt.result := by
+  have same := receipt.logic
+  change input.run = receipt.result at same
+  rw [← same]
+  unfold RecoveryInput.run
+  cases input.boundary with
+  | staged => exact .start _
+  | durable =>
+      simpa [Revocation.Crash.recoverImage] using
+        step_trace { image := input.image } input.item
+
+theorem recovery_staged_is_before (receipt : Invocation recoveryContract prepareRecovery input)
+    (staged : input.boundary = .staged) : receipt.result = input.image := by
+  have same := receipt.logic
+  change input.run = receipt.result at same
+  rw [← same]
+  simp [RecoveryInput.run, staged, Revocation.Crash.recoverImage]
+
+theorem recovery_keeps_authorization (receipt : Invocation recoveryContract prepareRecovery input) :
+    receipt.result.oauth.oauth = input.image.oauth.oauth := by
+  have same := receipt.logic
+  change input.run = receipt.result at same
+  rw [← same]
+  unfold RecoveryInput.run
+  cases input.boundary with
+  | staged => rfl
+  | durable =>
+      simpa [Revocation.Crash.recoverImage] using
+        step_keeps_authorization { image := input.image } input.item
+
+theorem recovery_keeps_original (receipt : Invocation recoveryContract prepareRecovery input)
+    (bound : ReceiptRecovery.lookup input.image.rows operation = some row) :
+    ReceiptRecovery.lookup receipt.result.rows operation = some row :=
+  ReceiptRecovery.trace_preserves_original (recovery_trace receipt) bound
+
+theorem recovery_refused_is_before (receipt : Invocation recoveryContract prepareRecovery input)
+    (refused : ReceiptRecovery.persist (current { image := input.image } input.item) = none) :
+    receipt.result = input.image := by
+  have same := receipt.logic
+  change input.run = receipt.result at same
+  rw [← same]
+  unfold RecoveryInput.run
+  rw [refused_keeps_image refused]
+  cases input.boundary <;> rfl
+
+theorem recovery_fenced_is_before (receipt : Invocation recoveryContract prepareRecovery input)
+    (old : input.item.writer ≠ input.image.oauth.writer ∨ input.item.recovery.currentReplica = false) :
+    receipt.result = input.image := by
+  have same := receipt.logic
+  change input.run = receipt.result at same
+  rw [← same]
+  unfold RecoveryInput.run
+  have fenced : (State.step { image := input.image } input.item).image = input.image := by
+    simp [State.step, old]
+  rw [fenced]
+  cases input.boundary <;> rfl
+
+theorem recovery_durable_binds (receipt : Invocation recoveryContract prepareRecovery input)
+    (durable : input.boundary = .durable)
+    (writer : input.item.writer = input.image.oauth.writer)
+    (replica : input.item.recovery.currentReplica = true)
+    (accepted : ReceiptRecovery.contract.invoke ReceiptRecovery.prepare
+      (current { image := input.image } input.item) = .ok mapping) :
+    ReceiptRecovery.lookup receipt.result.rows input.item.request.identity.operation =
+      some (ReceiptRecovery.Request.stored input.item.request) := by
+  have same := receipt.logic
+  change input.run = receipt.result at same
+  rw [← same]
+  simp only [RecoveryInput.run, durable, Revocation.Crash.recoverImage]
+  exact accepted_step_binds rfl writer replica accepted
 
 end CedarPooSpec.Gateway.OAuth.ReceiptBatch

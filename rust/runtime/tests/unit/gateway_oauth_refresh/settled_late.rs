@@ -29,6 +29,8 @@ pub(super) fn exercise(
     let initial = current.effect_observation(&operation).unwrap().unwrap();
     assert!(initial.receipt_identity.is_none());
     let old_digest = initial.outcome_identity.unwrap();
+    let missing = OperationId(fixture.missing.operation.clone());
+    let missing_before = current.effect_observation(&missing).unwrap().unwrap();
     let original: ProviderOutcome = verify(delayed, simulation_key(8).verifying_key()).unwrap();
     let mut conflict = original;
     conflict.outcome.action.result = "conflicting delayed completion".into();
@@ -42,6 +44,48 @@ pub(super) fn exercise(
     .unwrap();
     let fixture_path = root.join("restart-fixture.json");
     std::fs::write(&fixture_path, serde_json::to_vec(fixture).unwrap()).unwrap();
+    let mut stable_unmapped = std::fs::read(&checkpoint).unwrap();
+    // Each peer pauses between items, with no store lock held. Promotion then
+    // wins deterministically before its old-writer suffix is resumed.
+    for (role, peer_role) in [("a", "b"), ("b", "a")] {
+        let phase = format!("settled-late-staged-{role}");
+        let crashing = OwnedWorker::spawn(&fixture_path, &phase);
+        wait_for_marker(&root.join(format!("{phase}-staged")));
+        let peer_phase = format!("settled-late-fenced-{peer_role}");
+        let peer = OwnedWorker::spawn(&fixture_path, &peer_phase);
+        crashing.crash();
+        wait_for_marker(&root.join(format!("{peer_phase}-paused")));
+        assert_eq!(std::fs::read(&checkpoint).unwrap(), stable_unmapped);
+        let current =
+            DurableRefreshLedger::new(&oauth_path, "settlement-race").for_writer(fixture.writer);
+        assert!(
+            current
+                .effect_observation(&operation)
+                .unwrap()
+                .unwrap()
+                .receipt_identity
+                .is_none()
+        );
+        takeover(root, fixture);
+        let after_handoff = std::fs::read(&checkpoint).unwrap();
+        std::fs::write(root.join(format!("{peer_phase}-continue")), []).unwrap();
+        peer.finish(&peer_phase);
+        assert_eq!(std::fs::read(&checkpoint).unwrap(), after_handoff);
+        let current =
+            DurableRefreshLedger::new(&oauth_path, "settlement-race").for_writer(fixture.writer);
+        assert!(
+            current
+                .settled_unmapped_operations()
+                .unwrap()
+                .contains(&operation)
+        );
+        assert_eq!(
+            current.effect_observation(&missing).unwrap().unwrap(),
+            missing_before
+        );
+        stable_unmapped = after_handoff;
+        std::fs::write(&fixture_path, serde_json::to_vec(fixture).unwrap()).unwrap();
+    }
     let winner = OwnedWorker::spawn(&fixture_path, "settled-late-first-a");
     wait_for_marker(&root.join("settled-late-committed"));
     let peer = OwnedWorker::spawn(&fixture_path, "settled-late-peer-b");
@@ -63,15 +107,18 @@ pub(super) fn exercise(
             .unwrap()
             .contains(&operation)
     );
-    let stable = std::fs::read(&checkpoint).unwrap();
-    let lost = OwnedWorker::spawn(&fixture_path, "settled-late-ack-a");
-    wait_for_marker(&root.join("settled-late-confirmed"));
-    lost.crash();
-    assert_eq!(std::fs::read(&checkpoint).unwrap(), stable);
     let mut cut = takeover(root, fixture);
-    for role in ["a", "b"] {
+    for (round, role, peer_role) in [(0, "a", "b"), (1, "b", "a"), (2, "a", "b"), (3, "b", "a")] {
         std::fs::write(&fixture_path, serde_json::to_vec(fixture).unwrap()).unwrap();
-        run_worker(&fixture_path, &format!("settled-late-confirm-{role}"));
+        let stable = std::fs::read(&checkpoint).unwrap();
+        let phase = format!("settled-late-ack-{round}-{role}");
+        let lost = OwnedWorker::spawn(&fixture_path, &phase);
+        wait_for_marker(&root.join(format!("{phase}-confirmed")));
+        let peer_phase = format!("settled-late-confirm-{peer_role}");
+        let peer = OwnedWorker::spawn(&fixture_path, &peer_phase);
+        lost.crash();
+        peer.finish(&peer_phase);
+        assert_eq!(std::fs::read(&checkpoint).unwrap(), stable);
         let current =
             DurableRefreshLedger::new(&oauth_path, "settlement-race").for_writer(fixture.writer);
         assert_eq!(
@@ -99,16 +146,24 @@ pub(super) fn exercise(
                 .unwrap()
                 .contains(&operation)
         );
-        cut = takeover(root, fixture);
+        assert_eq!(
+            current.effect_observation(&missing).unwrap().unwrap(),
+            missing_before
+        );
+        if round < 3 {
+            cut = takeover(root, fixture);
+        }
     }
     std::fs::write(&fixture_path, serde_json::to_vec(fixture).unwrap()).unwrap();
     run_worker(&fixture_path, "settled-late-confirm-a");
     let later_handoffs = fixture.writer.generation() - before_writer;
-    assert_eq!(later_handoffs, 3);
+    assert_eq!(later_handoffs, 6);
     eprintln!(
         "SETTLED-LATE-OK {}",
         serde_json::json!({
             "previous_handoffs": 7, "later_handoffs": later_handoffs, "workers": 2,
+            "staged_crashes": 2, "durable_crashes": 1, "lost_confirmations": 4,
+            "fenced_suffixes": 2, "missing_preserved": true,
             "out_of_order": true, "duplicates_idempotent": true, "conflicts_refused": true,
             "original_digest_retained": true, "durable_ack_lost": true,
             "confirmation_lost": true, "pending_discovery_cleared": true,
@@ -130,7 +185,21 @@ pub(super) fn worker<'a>(
     let operation = OperationId(fixture.prefix.operation.clone());
     let first = OperationId(fixture.effect.operation.clone());
     let before = std::fs::read(root.join("oauth/checkpoint.json")).unwrap();
+    let fenced = phase.starts_with("settled-late-fenced-");
+    let items = items.into_iter().enumerate().map(|(index, item)| {
+        if fenced && index == 1 {
+            std::fs::write(root.join(format!("{phase}-paused")), []).unwrap();
+            wait_for_marker(&root.join(format!("{phase}-continue")));
+        }
+        item
+    });
     let report = receiver.migrate_settled_oauth_mappings_at(oauth, items, trusted, |_, stage| {
+        if phase.starts_with("settled-late-staged-") && stage == CheckpointStage::Staged {
+            std::fs::write(root.join(format!("{phase}-staged")), []).unwrap();
+            loop {
+                std::thread::park();
+            }
+        }
         if phase == "settled-late-first-a" {
             if stage == CheckpointStage::Durable {
                 std::fs::write(root.join("settled-late-committed"), []).unwrap();
@@ -143,6 +212,19 @@ pub(super) fn worker<'a>(
         }
         Ok(())
     });
+    if fenced {
+        let stopped = report.stopped.unwrap();
+        assert_eq!(stopped.error, "OAuth writer fenced");
+        assert_eq!(stopped.operation, operation.clone());
+        if phase.ends_with("-a") {
+            assert!(report.confirmed.is_empty());
+            assert_eq!(report.pending, [operation]);
+        } else {
+            assert_eq!(report.confirmed, [first]);
+            assert!(report.pending.is_empty());
+        }
+        return;
+    }
     assert!(report.stopped.is_none());
     assert_eq!(report.pending, std::slice::from_ref(&operation));
     assert_eq!(
@@ -157,8 +239,8 @@ pub(super) fn worker<'a>(
         std::fs::read(root.join("oauth/checkpoint.json")).unwrap(),
         before
     );
-    if phase == "settled-late-ack-a" {
-        std::fs::write(root.join("settled-late-confirmed"), []).unwrap();
+    if phase.starts_with("settled-late-ack-") {
+        std::fs::write(root.join(format!("{phase}-confirmed")), []).unwrap();
         loop {
             std::thread::park();
         }
