@@ -518,6 +518,17 @@ def prepareLegacyMigration (input : LegacyMigration) : Except String (Revocation
   | some result => .ok (result, ())
   | none => .error "legacy receiver migration refused"
 
+/-- A signed conflict cannot substitute for the independently committed outcome. -/
+theorem missing_committed_outcome_cannot_migrate (input : LegacyMigration)
+    (present : input.recovery.independent = some pin)
+    (committed : evidence pin.image ⟨input.recovery.audit.operation⟩ = some (action, outcome))
+    (missing : outcome ∉ input.recovery.audit.outcomes) : migrateLegacy input = none := by
+  rcases observation_from_committed_outcome present committed with absent | observed
+  · simp [migrateLegacy, absent]
+  · simp [migrateLegacy, observed,
+      Revocation.Crash.missing_committed_outcome_refuses_migration input.recovery.audit
+        ⟨pin.binding, outcome⟩ missing]
+
 theorem foreign_receiver_cannot_migrate (present : input.recovery.observation = some observation)
     (foreign : observation.binding ≠ input.trusted) : migrateLegacy input = none := by
   simp [migrateLegacy, present, foreign]
@@ -625,6 +636,18 @@ theorem legacyBatch_pending_keeps_image (trusted : Revocation.Crash.ReceiverBind
   have eligible : ¬ (item.audit.writer ≠ state.image.writer ∨ item.currentReplica = false) := by
     simp [writer, current]
   simp [LegacyBatchState.step, running, eligible, refused]
+
+/-- Confirmation of an already durable receipt only records the batch acknowledgment. -/
+theorem legacyBatch_confirmed_keeps_image (trusted : Revocation.Crash.ReceiverBinding)
+    (state : LegacyBatchState) (item : ManagedReconciliation)
+    (running : state.stopped = none) (writer : item.audit.writer = state.image.writer)
+    (current : item.currentReplica = true)
+    (confirmed : migrateLegacy ⟨{ item with audit := { item.audit with image := state.image } }, trusted⟩ =
+      some state.image) :
+    state.step trusted item = { state with confirmed := item.audit.operation :: state.confirmed } := by
+  have eligible : ¬ (item.audit.writer ≠ state.image.writer ∨ item.currentReplica = false) := by
+    simp [writer, current]
+  simp [LegacyBatchState.step, running, eligible, confirmed]
 
 theorem legacyBatch_stopped_keeps_state (trusted : Revocation.Crash.ReceiverBinding)
     (state : LegacyBatchState) (items : List ManagedReconciliation)

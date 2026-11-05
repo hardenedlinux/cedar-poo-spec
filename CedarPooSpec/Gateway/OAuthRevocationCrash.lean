@@ -473,6 +473,32 @@ theorem migration_pins_committed_outcome
       · exact reconciliation_from_pins_committed_outcome applied
       · contradiction
 
+/-- Re-auditing the independently committed receipt after settlement cannot
+rewrite the durable image, even under a different current writer. -/
+theorem confirmed_migration_is_read_only
+    (pinned : input.image.settledOutcome observation.outcome.receipt.commit.operation =
+      some observation.outcome)
+    (sameOperation : input.operation = observation.outcome.receipt.commit.operation)
+    (applied : migrateFrom input observation = some after) : after = input.image := by
+  have settled : input.image.settledOutcome input.operation = some observation.outcome :=
+    sameOperation ▸ pinned
+  cases found : input.retained with
+  | none => simp [migrateFrom, found] at applied
+  | some entry =>
+    simp only [migrateFrom, found, bind, Option.bind, settled, reduceCtorEq,
+      and_false, Option.isSome_some, and_true, ite_false] at applied
+    split at applied
+    · simp only [reconcileFrom, found, bind, Option.bind] at applied
+      split at applied
+      · cases selected : input.outcome entry (some observation) with
+        | none => simp [selected] at applied
+        | some outcome =>
+          have exactMatch := List.find?_some selected
+          simp [Bool.and_eq_true, and_assoc] at exactMatch
+          simpa [selected, exactMatch.2.2.2, pinned_outcome_is_idempotent pinned, eq_comm] using applied
+      · contradiction
+    · contradiction
+
 theorem missing_committed_outcome_refuses_migration (input : ReconcileInput)
     (observation : ReceiverObservation) (missing : observation.outcome ∉ input.outcomes) :
     migrateFrom input observation = none := by

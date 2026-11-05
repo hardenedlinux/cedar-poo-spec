@@ -1407,6 +1407,16 @@ carried through receiver handoffs. A missing envelope leaves the
 record pending even when the receiver already has the receipt.
 An operation without a committed receiver outcome remains pending.
 
+Two restarted workers may submit overlapping batches in different
+orders. Each attempt compares the supplied evidence with the same
+independent receiver authority. A conflicting signed receipt leaves
+the reservation pending, and repeated copies of the committed receipt
+confirm the same binding without another write. If the first worker
+loses its acknowledgment after the checkpoint is durable, the next
+writer can confirm that receipt after receiver promotion and revocation.
+The replay checks this interleaving with separate Rust processes and
+checks that a delivery retry on a new channel is refused.
+
 The first clean audit durably binds the canonical identity of the
 signed outcome. A later audit of that same outcome is idempotent.
 A different signed outcome cannot replace it, even if presented

@@ -823,7 +823,6 @@ fn settlement_race(case: &str, legacy_migration: bool, handoff_first: bool) {
             overlap_between.recv().unwrap();
             let cut = replacement.promote(&expected).unwrap();
             let current = open().for_writer(writer.rotate_writer().unwrap());
-            assert!(current.revoke(verified(digest())).unwrap());
             continue_overlap.send(()).unwrap();
             (first.join().unwrap(), second.join().unwrap(), current, cut)
         });
@@ -932,9 +931,9 @@ fn settlement_race(case: &str, legacy_migration: bool, handoff_first: bool) {
                 .is_none()
         );
         let writer_cut = writer.rotate_writer().unwrap();
-        late_batch::replay_across_processes(
+        let (writer_cut, successor_cut) = late_batch::replay_across_processes(
             &directory,
-            &late_batch::RestartFixture {
+            late_batch::RestartFixture {
                 active: primary.clone(),
                 retired: successor.clone(),
                 writer: writer_cut,
@@ -942,6 +941,7 @@ fn settlement_race(case: &str, legacy_migration: bool, handoff_first: bool) {
                 fact: fact.clone(),
                 history: history.clone(),
                 effect: batch_effects[3].clone(),
+                missing: batch_effects[2].clone(),
                 grant: grant.clone(),
             },
             late_outcome.as_ref().unwrap(),
@@ -951,7 +951,7 @@ fn settlement_race(case: &str, legacy_migration: bool, handoff_first: bool) {
             writer.legacy_unresolved_operations().unwrap(),
             std::slice::from_ref(&batch_operations[2])
         );
-        (writer, successor_cut, &primary)
+        (writer, successor_cut, &successor)
     } else {
         (writer, successor_cut, &successor)
     };
