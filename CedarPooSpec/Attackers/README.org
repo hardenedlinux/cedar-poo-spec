@@ -64,3 +64,20 @@ the actual C4 object specialization, finite Quint interleavings, native-decision
 axioms in closed fixtures, and unsafe-verifier/bypass counterexamples. Graph
 completeness, independent trust roots, authentic current facts, complete effect
 mediation and durable nonrollback execution remain explicit Host obligations.
+
+* Checked application writers
+
+A =Certified= object certifies its actual acquisition graph and retained parent
+requirements; it does not certify an arbitrary application =invoke= function.
+The lower-level =surface= constructor remains available for explicit models and
+countermodels. =CheckedWriter= carries the application owner's required output
+predicate and a preservation law; =Certified.checkedSurface= requires that law
+at construction. =checked_outputs= reuses the existing arbitrary-finite trace
+proof while retaining the selected C4 model. Neither labels nor the word
+“checked” authenticate the owner's native interpretation or grant physical IO.
+
+The wallet differential replay uses a fixed fixture requirement in its guarded
+lane and proves that its unchecked relay cannot supply the same writer law.
+Generic construction laws and fixture-dependent decoder/graph proofs retain
+separate axiom audits. Other verticals can supply their own typed output meaning
+without copying the capability graph or trace proof.

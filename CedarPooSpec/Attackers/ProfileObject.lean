@@ -138,6 +138,7 @@ theorem selection_retains_actual_parent (selection : Selection parent selected) 
     selected.read_matches .model _ selection.selectedRead,
     selection.retainsParent, selection.selectedModel.retains⟩
 
+/-- Lower-level acquisition surface; this constructor certifies no writer law. -/
 def Certified.surface (certified : Certified required)
     (reachable : List Capability → Request → Bool)
     (invoke : World → Request → Option (World × Output)) : Surface Capability Request World Output :=
@@ -158,5 +159,21 @@ theorem certified_isolation (certified : Certified required)
   have roots := (of_decide_eq_true valid).2.2.2.2.2
   have boundary := roots cap isolated
   exact run_preserves_absence _ cap boundary.2 _ boundary.1 actions
+
+/-- Retain the selected C4 acquisition model while demanding the independently
+selected application output predicate at writer construction. -/
+def Certified.checkedSurface (certified : Certified required)
+    (reachable : List Capability → Request → Bool)
+    (writer : CheckedWriter Request World Output safe) : Surface Capability Request World Output :=
+  certified.surface reachable writer.invoke
+
+theorem checked_outputs (certified : Certified required)
+    (reachable : List Capability → Request → Bool)
+    (writer : CheckedWriter Request World Output safe) (world : World)
+    (actions : List (Action Capability Request)) :
+    ∀ output ∈ (run (certified.checkedSurface reachable writer)
+      (certified.initialState world) actions).outputs, safe output :=
+  run_preserves_outputs _ safe writer.preserves _
+    (by simp [Certified.initialState]) actions
 
 end CedarPooSpec.Attackers.ProfileObject

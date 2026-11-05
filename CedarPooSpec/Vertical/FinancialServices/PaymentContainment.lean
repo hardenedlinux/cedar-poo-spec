@@ -55,6 +55,21 @@ def observeClear (state : Snapshot) (observation : ClearObservation) : Option Sn
   let exposure ← state.exposure.observeClear observation
   pure { state with exposure }
 
+/-- A previously submitted payment may settle after local suspension. This is
+read-only reconciliation of the existing lifecycle, never another signing grant.
+Authenticity and canonical settlement remain with the existing evidence owner. -/
+def observeSettlement (state : Snapshot) (evidence : ProcessorEvidence) : Option Snapshot := do
+  let ledger ← state.current.ledger.reconcile evidence
+  pure { state with current := { state.current with ledger } }
+
+theorem settlement_retains_exposure
+    (observed : observeSettlement state evidence = some next) :
+    next.exposure = state.exposure := by
+  unfold observeSettlement at observed
+  cases reconciled : state.current.ledger.reconcile evidence with
+  | none => simp [reconciled] at observed
+  | some ledger => simp [reconciled] at observed; cases observed; rfl
+
 theorem release_retains_signing (released : release state request = some result) :
     PaymentSigning.release state.current request = some result := by
   unfold release at released
@@ -73,6 +88,10 @@ theorem release_binds_wallet (released : release state request = some result) :
 
 theorem paused_cannot_release (paused : state.exposure.withdrawalsPaused = true) :
     release state request = none := by simp [release, eligible, paused]
+
+theorem settlement_cannot_resume (paused : state.exposure.withdrawalsPaused = true)
+    (observed : observeSettlement state evidence = some next) : release next request = none :=
+  paused_cannot_release (by rw [settlement_retains_exposure observed]; exact paused)
 
 theorem delegated_cannot_release (installed : state.exposure.code.isSome = true) :
     release state request = none := by
@@ -116,12 +135,14 @@ inductive Control where
   | recover (live : PaymentSigning.Current)
   | submitClear
   | observeClear (observation : ClearObservation)
+  | observeSettlement (evidence : ProcessorEvidence)
 
 def step (state : Snapshot) : Control → Snapshot
   | .pause => pause state
   | .recover live => recover state live
   | .submitClear => (submitClear state).getD state
   | .observeClear observation => (observeClear state observation).getD state
+  | .observeSettlement evidence => (observeSettlement state evidence).getD state
 
 def run (state : Snapshot) : List Control → Snapshot
   | [] => state
@@ -140,6 +161,14 @@ theorem step_retains_pause (paused : state.exposure.withdrawalsPaused = true)
       | none => simpa [step, observed] using paused
       | some next =>
         simpa [step, observed] using (observation_retains_pause observed).trans paused
+
+  | observeSettlement evidence =>
+      cases observed : observeSettlement state evidence with
+      | none => simpa [step, observed] using paused
+      | some next =>
+        have retained : next.exposure.withdrawalsPaused = true := by
+          rw [settlement_retains_exposure observed]; exact paused
+        simpa [step, observed] using retained
 
 theorem run_retains_pause (paused : state.exposure.withdrawalsPaused = true)
     (events : List Control) : (run state events).exposure.withdrawalsPaused = true := by

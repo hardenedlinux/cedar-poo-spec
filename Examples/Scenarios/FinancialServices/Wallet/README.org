@@ -395,3 +395,20 @@ slot and retains unknown exposure; no physical signer or durable store is added.
 [[file:Binance2026Host.d2][D2 source]] and [[file:Binance2026Host.svg][SVG export]]. A lying receipt verifier, an old-state replay and a
 conflicting codec interpretation remain explicit counterexamples. They prevent
 treating pure checks as cryptography, antirollback storage or physical mediation.
+
+* Disclosed-chain differential replay
+
+[[file:Binance2026Replay.org][The executable replay]] compares the same admitted Attackers family under an
+unchecked relay countermodel, a guarded clean wallet and a guarded wallet with
+prior exposure. Fourteen checkpoints retain reported/assumed/probe provenance.
+Existing lifecycle reconciliation makes late settlement visible without creating
+a signing grant. Persistent delegation, local pause and verified clearing remain
+separate; the replay promises neither retroactive cancellation nor native chain
+execution. Run =just example scenarios financial-services wallet binance-replay=.
+
+#+CAPTION: Computed three-lane replay. New signing intents, existing delegated activity and settlement observations are separate effects.
+#+ATTR_ORG: :width 1700
+[[file:Binance2026Replay.png]]
+
+[[file:Binance2026Replay.d2][D2 source]] · [[file:Binance2026Replay.svg][SVG export]]. A certified acquisition graph alone does not certify an
+unchecked application writer; the older assurance captions now state that scope.

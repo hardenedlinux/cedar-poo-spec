@@ -71,3 +71,10 @@ fact inventory/expiry, physical byte projection, exact durable plan, current cut
 and lost-response refusals. It also retains successful counterexamples under a
 lying acknowledgment verifier and replayed old immutable state, and a conflicting
 codec interpretation. These fixtures do not qualify native cryptography/storage.
+
+=Enterprise/Payment/WalletReplay.lean= covers source-classified complete replay,
+three initial/control lanes, legitimate single dispatch, unchanged capability
+roots under an unsafe writer, late settlement without new signing, exact clearing,
+refresh, invalid provenance and forged/foreign/incomplete settlement evidence.
+Generic replay/settlement laws and fixture-dependent graph results retain
+separate axiom audits; no fixture theorem is promoted to a universal kernel law.

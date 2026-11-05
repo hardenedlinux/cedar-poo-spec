@@ -77,3 +77,9 @@ bindings, current-use reassessment, consumed pending slots and retained unknown
 exposure narrow Host freedom. Cryptographic roots, canonical decoding, native
 atomic persistence and complete physical mediation remain explicit premises;
 see [[file:../../../Examples/Scenarios/FinancialServices/Wallet/HostTrustAudit.org][the per-item wallet Host audit]]. No signer backend or second Cedar evaluator is added.
+
+=PaymentContainment.observeSettlement= delegates to the existing ledger/lifecycle
+reconciliation and preserves exposure. The generic no-signing-after-pause law
+now also covers settlement observations in finite control traces. A delayed
+outcome can be observed after pause without another signature or resumed grant.
+The [[file:../../../Examples/Scenarios/FinancialServices/Wallet/Binance2026Replay.org][differential replay]] distinguishes these channels and retains native limits.

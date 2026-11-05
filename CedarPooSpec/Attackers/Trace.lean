@@ -139,4 +139,12 @@ theorem run_preserves_outputs (surface : Surface Capability Request World Output
       exact ih (step surface state action)
         (step_preserves_outputs surface safe writer state prior action)
 
+/-- The application owner fixes the required output meaning. A graph certificate
+alone is not a writer certificate; constructing this adapter requires its law.
+This is neither an affine effect token nor physical mediation evidence. -/
+structure CheckedWriter (Request World Output : Type) (required : Output → Prop) where
+  invoke : World → Request → Option (World × Output)
+  preserves : ∀ world request next output,
+    invoke world request = some (next, output) → required output
+
 end CedarPooSpec.Attackers

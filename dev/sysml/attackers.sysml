@@ -218,3 +218,36 @@ package WalletHostProofs {
   render asInterconnectionDiagram;
  }
 }
+
+// Differential replay: source-aware projections, not native incident execution.
+package WalletReplayProofs {
+ private import Views::*; private import ScalarValues::*;
+ part def KernelLaw; part def HostPremise;
+ part execution : KernelLaw;
+ attribute executionSymbol : String = "CedarPooSpec.Scenarios.Replay.invocation_retains_execution";
+ attribute executionSource : String = "CedarPooSpec/Scenarios/Replay.lean";
+ part acquisition : KernelLaw;
+ attribute acquisitionSymbol : String = "CedarPooSpec.Attackers.ProfileObject.certified_isolation";
+ attribute acquisitionSource : String = "CedarPooSpec/Attackers/ProfileObject.lean";
+ part writer : KernelLaw;
+ attribute writerSymbol : String = "CedarPooSpec.Attackers.ProfileObject.checked_outputs";
+ attribute writerSource : String = "CedarPooSpec/Attackers/ProfileObject.lean";
+ part settlement : KernelLaw;
+ attribute settlementSymbol : String = "CedarPooSpec.Vertical.FinancialServices.PaymentContainment.settlement_retains_exposure";
+ attribute settlementSource : String = "CedarPooSpec/Vertical/FinancialServices/PaymentContainment.lean";
+ part pause : KernelLaw;
+ attribute pauseSymbol : String = "CedarPooSpec.Vertical.FinancialServices.PaymentContainment.no_signing_after_pause";
+ attribute pauseSource : String = "CedarPooSpec/Vertical/FinancialServices/PaymentContainment.lean";
+ part runtime : HostPremise;
+ attribute runtimeSymbol : String = "CedarPooSpec.Vertical.FinancialServices.PaymentHost.Host";
+ attribute runtimeSource : String = "CedarPooSpec/Vertical/FinancialServices/PaymentHost.lean";
+ view assurance {
+  expose execution;
+  expose acquisition;
+  expose writer;
+  expose settlement;
+  expose pause;
+  expose runtime;
+  render asInterconnectionDiagram;
+ }
+}

@@ -53,3 +53,9 @@ classification and ancestry controls. [[file:../../Tests/Enterprise/Payment/Wall
 the concrete incident classification and parent identity as well as the original
 security controls. These are models with stated premises, not a reconstruction
 of unpublished malware or a qualification of real wallet infrastructure.
+
+=Replay= provides a reusable Functional Contract for source-classified stage
+projections over an existing application step. It rejects duplicate stage IDs,
+missing/foreign disclosure indexes and historical attribution on synthetic
+probes. Returned frames come from the actual event fold; it introduces no second
+attacker graph or scenario runtime. Source metadata does not authenticate claims.

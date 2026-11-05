@@ -15,6 +15,6 @@ render: build prepare
     bun run render .generated/lean-catalog.json
 
 test:
-    lake -d .. build Tests.ZeroTrust.Functional Tests.ZeroTrust.ProfileObject Tests.ZeroTrust.UsageControl Tests.Gateway.ZeroTrust Tests.Gateway.PublicationReview Examples.Scenarios.FinancialServices.Wallet.Binance2026 Examples.Scenarios.TenantDevicePolicyEvolution Tests.Enterprise.Payment.WalletContainment Tests.Enterprise.Payment.WalletHost
+    lake -d .. build Tests.ZeroTrust.Functional Tests.ZeroTrust.ProfileObject Tests.ZeroTrust.UsageControl Tests.Gateway.ZeroTrust Tests.Gateway.PublicationReview Examples.Scenarios.FinancialServices.Wallet.Binance2026 Examples.Scenarios.TenantDevicePolicyEvolution Tests.Enterprise.Payment.WalletContainment Tests.Enterprise.Payment.WalletHost Tests.Enterprise.Payment.WalletReplay
     bun run typecheck
     bun test ./ts/test

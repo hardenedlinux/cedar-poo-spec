@@ -67,3 +67,11 @@ unsafe states (including a second handoff for rollback). Existing signing and
 containment gates remain mandatory: 27 traces, three depth-12 positive checks,
 five negative countermodels. Trusted bits abstract real verifiers/readers and
 storage; no Lean/Quint refinement or deployed Host qualification is claimed.
+
+=financial/WalletReplay.qnt= receives the same Lean-selected graph through an
+ignored generated instance. It adds ten deterministic controls (including a
+legitimate positive control), depth-12 interleaving safety and two depth-4
+refutations of false containment claims. Those witnesses retain zero new signing
+intents while an old settlement or delegation survives pause; they are not
+hardened-invariant violations. Total: 37 deterministic controls, four positive
+depth-12 checks, five broken-boundary countermodels and two false-claim witnesses.

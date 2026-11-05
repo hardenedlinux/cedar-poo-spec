@@ -1,0 +1,120 @@
+# SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
+# SPDX-License-Identifier: Apache-2.0
+
+vars: {d2-config: {data: {figure: |json
+{
+  "purpose": "architecture",
+  "component": {
+    "kind": "payment",
+    "variant": "replay"
+  },
+  "language": "en",
+  "width": 1700,
+  "primary": "purpose",
+  "themes": [
+    "editorial",
+    "comfortable"
+  ],
+  "icons": [
+    "engineering",
+    "cedar"
+  ],
+  "basis": {
+    "captureRef": "development-source-observation",
+    "modelRefs": [],
+    "obligationRefs": [],
+    "evidenceRefs": []
+  },
+  "title": "The same attack path, three different outcomes",
+  "kind": "proof-reading-map",
+  "questions": [
+    {
+      "ref": "purpose",
+      "text": "What does Zero Trust stop, and what can still happen after we press pause?",
+      "focusRefs": [
+        "sysml"
+      ]
+    }
+  ],
+  "references": {
+    "source": "Examples/Scenarios/FinancialServices/Wallet/Binance2026Replay.d2",
+    "sysml": "dev/sysml/attackers.sysml",
+    "executionSource": "CedarPooSpec/Scenarios/Replay.lean",
+    "acquisitionSource": "CedarPooSpec/Attackers/ProfileObject.lean",
+    "writerSource": "CedarPooSpec/Attackers/ProfileObject.lean",
+    "settlementSource": "CedarPooSpec/Vertical/FinancialServices/PaymentContainment.lean",
+    "pauseSource": "CedarPooSpec/Vertical/FinancialServices/PaymentContainment.lean",
+    "runtimeSource": "CedarPooSpec/Vertical/FinancialServices/PaymentHost.lean"
+  },
+  "copy": {
+    "description": "Fourteen source-classified checkpoints compare a broken mediation relay, a guarded clean wallet and a guarded wallet with prior exposure.",
+    "status": "Executable abstract replay, not forensic malware/HSM or multichain execution. Synthetic nonces and settlement; AI exploit mechanics remain unknown."
+  },
+  "presentation": {
+    "notation": "assurance",
+    "columns": 1,
+    "groups": [
+      {
+        "title": "What the proof actually certifies",
+        "icon": "branch",
+        "subjects": [
+          "execution",
+          "acquisition",
+          "writer"
+        ],
+        "columns": 3
+      },
+      {
+        "title": "Contain new authority; account for old effects",
+        "icon": "recovery",
+        "subjects": [
+          "settlement",
+          "pause",
+          "runtime"
+        ],
+        "columns": 3
+      }
+    ]
+  },
+  "sysml": {
+    "source": "dev/sysml/attackers.sysml",
+    "view": "WalletReplayProofs::assurance",
+    "bindings": {
+      "execution": {
+        "name": "WalletReplayProofs::execution",
+        "icon": "evidence"
+      },
+      "acquisition": {
+        "name": "WalletReplayProofs::acquisition",
+        "icon": "branch"
+      },
+      "writer": {
+        "name": "WalletReplayProofs::writer",
+        "icon": "gate"
+      },
+      "settlement": {
+        "name": "WalletReplayProofs::settlement",
+        "icon": "observer"
+      },
+      "pause": {
+        "name": "WalletReplayProofs::pause",
+        "icon": "pending"
+      },
+      "runtime": {
+        "name": "WalletReplayProofs::runtime",
+        "icon": "warning"
+      }
+    }
+  },
+  "proofs": {
+    "namespace": "WalletReplayProofs"
+  }
+}
+|
+}}}
+execution: "Frames come from actual supplied steps"
+acquisition: "Key isolation is not effect mediation"
+writer: "Checked surface retains the required output law"
+settlement: "Old effects may settle after pause"
+pause: "Reconciliation never reopens checked signing"
+runtime: "Native identity and chain truth remain external"

@@ -7,24 +7,35 @@ import {dirname,join} from 'node:path';
 import {tmpdir} from 'node:os';
 import {captureDefenseArtwork} from '../components/defense-flow';
 import {captureIncidentStory} from '../components/incident';
+import {captureReplay} from '../components/replay';
 import {captureHostBoundary} from '../components/host-boundary';
 import {captureFinancialArtwork} from '../components/financial';
 import {verifyFigure,htmlArtifact,receiptArtifact} from '../artifacts';
 const root=new URL('../../../',import.meta.url);
 test('actual payment exports retain source-bound model labels and embed both original artwork assets',async()=>{
  const artwork=await captureFinancialArtwork(root.pathname);
- for(const name of ['Base','Binance2026','Binance2026Assurance','Binance2026Host']){
+ for(const name of ['Base','Binance2026','Binance2026Assurance','Binance2026Host','Binance2026Replay']){
   const entry=`Examples/Scenarios/FinancialServices/Wallet/${name}.d2`,stem=entry.slice(0,-3);
   const receipt=await verifyFigure(root.pathname,entry);
   const story=name==='Binance2026'?await captureIncidentStory(root.pathname):undefined;
   const defense=story?await captureDefenseArtwork(root.pathname):undefined;
-  expect(receipt.binaries).toEqual({...artwork.binaries,...story?.binaries,...defense?.binaries});
+  const replay=name==='Binance2026Replay'?await captureReplay(root.pathname):undefined;
+  expect(receipt.binaries).toEqual({...artwork.binaries,...story?.binaries,...defense?.binaries,...replay?.binaries});
   const svg=await readFile(new URL(stem+'.svg',root),'utf8');
   for(const uri of Object.values(artwork.images))expect(svg.includes(uri)).toBe(true);
   expect(svg).toContain('Financial services');
   expect(svg).toContain('data-heading-role');
   expect(svg).not.toContain('foreignObject');
   const claims=JSON.parse(await readFile(new URL(receiptArtifact(entry),root),'utf8')).proofClaims;
+  if(replay){
+   expect(replay.stages).toHaveLength(14);expect(replay.lanes).toHaveLength(3);expect(replay.legitimate_once).toBe(true);
+   expect(replay.lanes.map(lane=>lane.frames.at(-1)!.state.signing_intents)).toEqual([4,0,0]);
+   expect(replay.lanes.map(lane=>lane.frames.at(-1)!.state.settled)).toEqual([true,false,true]);
+   for(const stage of replay.stages)expect(svg).toContain('data-replay-stage="'+stage.id+'"');
+   for(const uri of Object.values(replay.images))expect(svg.includes(uri)).toBe(true);
+   expect([...svg.matchAll(/data-replay-checkpoint=/g)]).toHaveLength(42);expect(claims.cards).toHaveLength(6);
+   expect(Buffer.byteLength(svg)).toBeLessThan(5*1024*1024);
+  }
   if(name==='Binance2026Host'){
    const audit=await captureHostBoundary(root.pathname);
    expect(audit.observations.map(value=>value.admitted)).toEqual([true,false,false,false,false,false,false]);

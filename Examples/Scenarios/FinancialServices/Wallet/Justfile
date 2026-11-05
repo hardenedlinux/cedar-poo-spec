@@ -1,16 +1,22 @@
 set working-directory := '../../../..'
 
 binance:
-    lake build Examples.Scenarios.FinancialServices.Wallet.Binance2026Host Tests.Attackers.ProfileObject Tests.Scenarios.Metadata
+    lake build Examples.Scenarios.FinancialServices.Wallet.Binance2026Replay Tests.Attackers.ProfileObject Tests.Scenarios.Metadata
     timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 Tests/Enterprise/Payment/WalletSigning.lean
     timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 Tests/Enterprise/Payment/WalletContainment.lean
     timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 Tests/Enterprise/Payment/WalletHost.lean
+    timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 Tests/Enterprise/Payment/WalletReplay.lean
 
 binance-threat-profile:
     lake build Examples.Scenarios.FinancialServices.Wallet.Binance2026Export
     mkdir -p .lake/build
     timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 --run Examples/Scenarios/FinancialServices/Wallet/Binance2026Export.lean metadata > .lake/build/binance-2026-metadata.json
     timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 --run Examples/Scenarios/FinancialServices/Wallet/Binance2026Export.lean > .lake/build/wallet-attackers-case.qnt
+    timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 --run Examples/Scenarios/FinancialServices/Wallet/Binance2026Export.lean replay-quint > .lake/build/wallet-replay-case.qnt
 
 binance-threat-model: binance-threat-profile
     python3 dev/qnt/check.py
+
+binance-replay: binance-threat-profile
+    timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 Tests/Enterprise/Payment/WalletReplay.lean
+    timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 --run Examples/Scenarios/FinancialServices/Wallet/Binance2026Export.lean replay
