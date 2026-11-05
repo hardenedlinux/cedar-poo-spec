@@ -8,6 +8,12 @@ repeated lost confirmations. Every recovered step uses the public Contract. -/
 def alternating (image : ReceiptRecovery.Image) (delayed first : ReceiptRecovery.Input)
     (retry : Revocation.Crash.BeginInput) : Bool := Id.run do
   let operation := delayed.request.operation
+  let .ok identified := ReceiptIdentity.contract.invoke ReceiptIdentity.prepare
+    (delayed.authority, delayed.request) | return false
+  have symbolOperation : delayed.request.receiptSymbol.operation = operation := by
+    obtain ⟨source, _, matched, _⟩ := ReceiptIdentity.accepted_mapping identified
+    simpa [ReceiptIdentity.Request.receiptSymbol, ReceiptIdentity.project, operation] using
+      congrArg ReceiptIdentity.Identity.operation matched.1
   let observe := SettledLatePlan.observe image
   let mut observed := #[observe image delayed retry "ready" "both"]
   let mut tracked : { state : ReceiptRecovery.Image // ReceiptRecovery.Trace image state } :=
@@ -88,6 +94,12 @@ def alternating (image : ReceiptRecovery.Image) (delayed first : ReceiptRecovery
     let _immutable := ReceiptRecovery.trace_preserves_original resumed.2 bound
     let _identity := ReceiptRecovery.trace_preserves_receipt_identity resumed.2 bound
     let _sources := ReceiptRecovery.trace_preserves_receipt_sources resumed.2 bound
+    let symbol := delayed.request.receiptSymbol
+    have symbolicBound : ReceiptRecovery.lookup installed.result.rows symbol.operation = some row := by
+      change ReceiptRecovery.lookup installed.result.rows delayed.request.receiptSymbol.operation = some row
+      rw [symbolOperation]
+      exact bound
+    let _realized := ReceiptRecovery.trace_preserves_realization resumed.2 symbolicBound
     let complete := ReceiptRecovery.Trace.trans historyPrefix resumed.2
     let finalRetry := { retry with
       image := resumed.1.oauth, operation := operation
@@ -182,3 +194,13 @@ end Tests.Gateway.SettledLate
 
 #print axioms CedarPooSpec.Gateway.OAuth.ReceiptRecovery.trace_preserves_receipt_identity
 #print axioms CedarPooSpec.Gateway.OAuth.ReceiptRecovery.trace_preserves_receipt_sources
+
+#print axioms CedarPooSpec.Gateway.OAuth.ReceiptIdentity.realized_symbol_and_sources
+#print axioms CedarPooSpec.Gateway.OAuth.ReceiptIdentity.realized_source_digests
+#print axioms CedarPooSpec.Gateway.OAuth.ReceiptIdentity.realization_wrong_operation
+#print axioms CedarPooSpec.Gateway.OAuth.ReceiptIdentity.realization_foreign_receiver
+#print axioms CedarPooSpec.Gateway.OAuth.ReceiptIdentity.realization_foreign_provider
+#print axioms CedarPooSpec.Gateway.OAuth.ReceiptIdentity.realization_foreign_witness
+#print axioms CedarPooSpec.Gateway.OAuth.ReceiptIdentity.realization_wrong_receipt
+#print axioms CedarPooSpec.Gateway.OAuth.ReceiptIdentity.realization_check_exact
+#print axioms CedarPooSpec.Gateway.OAuth.ReceiptRecovery.trace_preserves_realization

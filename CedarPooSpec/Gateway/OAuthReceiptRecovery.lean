@@ -269,4 +269,16 @@ theorem trace_preserves_receipt_sources (history : Trace initial after)
     after.receiptSources operation = some (row.intentSource, row.outcomeSource) := by
   simp [Image.receiptSources, trace_preserves_original history bound]
 
+
+/-- Recover the symbolic/native association from the same durable mapping row. -/
+def Image.receiptRealization (image : Image) (symbol : ReceiptIdentity.ReceiptSymbol) :
+    Option ReceiptIdentity.Realization := do
+  let row ← lookup image.rows symbol.operation
+  ReceiptIdentity.Realization.select symbol row.identity row.symbolic row.intentSource row.outcomeSource
+
+theorem trace_preserves_realization (history : Trace initial after)
+    (bound : lookup initial.rows symbol.operation = some row) :
+    after.receiptRealization symbol = initial.receiptRealization symbol := by
+  simp [Image.receiptRealization, trace_preserves_original history bound, bound]
+
 end CedarPooSpec.Gateway.OAuth.ReceiptRecovery

@@ -36,7 +36,7 @@ impl Default for ProviderJournal {
 pub(super) const PROVIDER_OUTCOME_DOMAIN: &str = "cedar-poo/provider-outcome";
 
 /// A provider signature has a distinct domain and independently pinned key.
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ProviderOutcome {
     pub version: Version,
@@ -135,7 +135,7 @@ impl ProviderJournal {
 }
 /// Unsigned effect outcome. Gateway signs it directly; providers sign the
 /// explicitly domain-separated ProviderOutcome wrapper.
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Receipt {
     pub version: Version,

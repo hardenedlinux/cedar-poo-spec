@@ -1701,6 +1701,43 @@ It emits actual source SHA-256 values and the stored native identity in each
 native digest strings. Exact signed-source checks remain required even when
 model digest values collide.
 
+The shared =ReceiptIdentity.realizationContract= now makes the association a
+typed value. =ReceiptSymbol= contains the complete decoded model receipt and
+its operation, receiver, provider, witness and version frame. =Realization=
+contains that symbol, the native identity and both exact signed sources. Preparing
+a realization first invokes the existing verified-source identity relation, then
+checks the complete symbol frame and receipt. It cannot associate a different
+operation or authority, or a different symbolic result, with those sources.
+
+=realized_source_digests= proves that both output digests equal the configured
+digest function applied to the exact output sources. Rust instantiates this
+boundary with =Signed.source_sha256= after signature verification. The model does
+not implement or prove SHA-256 itself. Exact source equality remains mandatory;
+the fixture deliberately retains colliding abstract digest names.
+=Realization.check= accepts only the complete original association.
+=Image.receiptRealization= derives it from the existing durable row, and
+=trace_preserves_realization= proves that recovery, handoff and revocation do
+not replace an already bound association. No additional mapping journal is used.
+
+The public Rust =VerifiedReceiptIdentity.symbol= and =realize= APIs mirror this
+boundary. The symbol includes the decoded provider outcome, the provider
+signature and its complete native scope. =realize= borrows the checked source
+context and symbol; ordinary identity preparation retains no extra decoded
+object. An explicit =candidate= call materializes transport data. Checking a
+transport proposal compares both the complete symbol and the existing native
+source binding. It grants no authorization and performs no persistence.
+
+The late-recovery fixture advances to version 2 because it adds six explicit
+realization predicates; its 22-step schedule and all acceptance budgets remain
+unchanged. At every step, a valid signed sibling-operation receipt and a source
+context under another receiver authority are rejected by the target realization.
+Rewriting their operation labels cannot hide the different symbolic body or raw
+sources. Provider/witness changes, symbolic-result changes, signature changes and
+source changes with recomputed hostile digests are also refused. Each observation
+records a native symbolic-receipt digest and, once persisted, the complete
+realization digest. Fresh verified contexts reconstruct the same association
+after worker crashes and handoffs from the existing durable signed evidence.
+
 The agreement concerns this finite projection and its frame conditions.
 Logical target and missing-receipt roles identify different native operations.
 Lean checks the missing mapping and retained-intent frame; Rust additionally
