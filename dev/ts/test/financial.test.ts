@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 // SPDX-License-Identifier: Apache-2.0
 import {test,expect} from 'bun:test';
+import {chromium} from 'playwright';
 import {readFile,writeFile,mkdir,mkdtemp,rm} from 'node:fs/promises';
 import {dirname,join} from 'node:path';
 import {tmpdir} from 'node:os';
@@ -62,16 +63,23 @@ test('changing an original image invalidates a restored real scenario export and
 },30000);
 
 test('compressed artwork retains alpha and source originals while reducing embedded bytes',async()=>{
- const sharp=(await import('sharp')).default,artwork=await captureFinancialArtwork(root.pathname);
+ const artwork=await captureFinancialArtwork(root.pathname),browser=await chromium.launch();
+ try{
+ const page=await browser.newPage();
  for(const [id,uri] of Object.entries(artwork.images)){
   expect(uri.startsWith('data:image/webp;base64,')).toBe(true);
   const original=await readFile(new URL('dev/assets/financial/'+id+'.png',root));
   const compressed=Buffer.from(uri.slice(uri.indexOf(',')+1),'base64');
-  const before=await sharp(original).metadata(),after=await sharp(compressed).metadata();
-  expect(after.format).toBe('webp');expect(after.hasAlpha).toBe(before.hasAlpha);
-  expect(after.width!).toBeLessThanOrEqual(1024);expect(after.height!).toBeLessThanOrEqual(1024);
+  const decoded=await page.evaluate(async({original,encoded})=>{
+   const read=async(source:string)=>{const image=new Image();image.src=source;await image.decode();const canvas=document.createElement('canvas');canvas.width=image.naturalWidth;canvas.height=image.naturalHeight;const context=canvas.getContext('2d')!;context.drawImage(image,0,0);return{width:canvas.width,height:canvas.height,pixels:context.getImageData(0,0,canvas.width,canvas.height).data};};
+   const before=await read(original),after=await read(encoded);let alphaEqual=before.pixels.length===after.pixels.length;
+   for(let i=3;alphaEqual&&i<before.pixels.length;i+=4)if(before.pixels[i]!==after.pixels[i])alphaEqual=false;
+   return{before:{width:before.width,height:before.height},after:{width:after.width,height:after.height},alphaEqual};
+  },{original:'data:image/png;base64,'+original.toString('base64'),encoded:uri});
+  expect(decoded.after).toEqual(decoded.before);expect(decoded.alphaEqual).toBe(true);
   expect(compressed.length).toBeLessThan(original.length/4);
  }
+ }finally{await browser.close();}
  const entry='Examples/Scenarios/FinancialServices/Wallet/Binance2026.d2';
  await verifyFigure(root.pathname,entry);
  expect((await readFile(new URL(entry.slice(0,-3)+'.svg',root))).length).toBeLessThan(5*1024*1024);

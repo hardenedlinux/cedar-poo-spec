@@ -496,8 +496,12 @@ the checked-in original image bytes and their prompt/hash manifests are read.
 
 * Compression and generated evidence
 
-=sharp= 0.35.5 compresses the illustration layer to WebP at quality 88, with
-lossless alpha, Lanczos resizing inside 1024×1024, no upscaling, and effort 4.
+=deterministic-engineering= at =6f3113eaeb75effb8b692b8eacae1cbe48767769= owns
+the Sharp dependency and native encoding. Its public =encodeWebP= compresses
+the illustration layer at explicit lossy quality 88, lossless alpha and effort 4,
+retaining original pixel dimensions. Cedar declares no direct Sharp dependency
+and implements no resizing or codec pipeline. The existing PNG deliverable uses
+the upstream lossless PNG compression; an unused whole-figure WebP is not emitted.
 Text, nodes, ports and edges remain native SVG. Original PNGs and one generation
 manifest retain the selected artwork and exact prompts. Render-time binaries
 and native output validation remain checked.

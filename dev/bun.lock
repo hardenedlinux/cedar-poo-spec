@@ -8,12 +8,11 @@
     "": {
       "name": "cedar-poo-spec-dev",
       "dependencies": {
-        "@deterministic-engineering/render": "git+https://github.com/hardenedlinux/deterministic-engineering.git#1fe20380441a0cd85055695c2adcc55ce699a369",
+        "@deterministic-engineering/render": "git+https://github.com/hardenedlinux/deterministic-engineering.git#6f3113eaeb75effb8b692b8eacae1cbe48767769",
         "@openmbee/opensysml": "0.11.0",
         "@openmbee/opensysml-wasm": "0.11.0",
         "parse5": "8.0.1",
         "playwright": "1.64.1",
-        "sharp": "0.35.5",
         "valibot": "1.2.0",
       },
       "devDependencies": {
@@ -32,7 +31,7 @@
 
     "@connectrpc/connect-web": ["@connectrpc/connect-web@2.1.2", "", { "peerDependencies": { "@bufbuild/protobuf": "^2.7.0", "@connectrpc/connect": "2.1.2" } }, "sha512-1tfaK85MU+gJjwwmL31d2rzdf0XCYX99chZf63uG89SGBUd4XuZ4ZzhGo2u79TPXOE6nLIZQ2okrpyey42PYdg=="],
 
-    "@deterministic-engineering/render": ["@deterministic-engineering/render@github:hardenedlinux/deterministic-engineering#1fe2038", { "dependencies": { "@fontsource/inter": "5.3.0", "@fontsource/kalam": "5.3.0", "@terrastruct/d2": "0.1.33", "@xyflow/system": "0.0.83", "elkjs": "0.12.1", "parse5": "8.0.1", "roughjs": "4.6.6", "valibot": "1.2.0", "web-worker": "1.5.0" }, "peerDependencies": { "@openmbee/opensysml": "0.11.0", "playwright": "1.64.1" }, "optionalPeers": ["@openmbee/opensysml", "playwright"] }, "hardenedlinux-deterministic-engineering-1fe2038", "sha512-5UIhgvL/TO1wf+DhrZunpc0tYhjDnIpmPcWKOaXz4SCc0h+D3aZFsPtjQjx0bgOl46nELjAkDyfe1Jaxd7Bvdw=="],
+    "@deterministic-engineering/render": ["@deterministic-engineering/render@github:hardenedlinux/deterministic-engineering#6f3113e", { "dependencies": { "@fontsource/inter": "5.3.0", "@fontsource/kalam": "5.3.0", "@terrastruct/d2": "0.1.33", "@xyflow/system": "0.0.83", "elkjs": "0.12.1", "parse5": "8.0.1", "roughjs": "4.6.6", "sharp": "0.35.5", "valibot": "1.2.0", "web-worker": "1.5.0" }, "peerDependencies": { "@openmbee/opensysml": "0.11.0", "playwright": "1.64.1" }, "optionalPeers": ["@openmbee/opensysml", "playwright"] }, "hardenedlinux-deterministic-engineering-6f3113e", "sha512-TmCRHLPt3gmjkXTJ8aYTpkIqjsJrl5O/IWZ7mUkwHniwZX2Xd0VJ3pC0w5oQuxs2sprqjXNiFaIYtYjMJ5phIA=="],
 
     "@emnapi/runtime": ["@emnapi/runtime@1.11.3", "", { "dependencies": { "tslib": "^2.4.0" } }, "sha512-Xz4Tpyki7XyrpbUK1jR1AhdAdaXyhhY4lZ3neLodmhpuWfy2PAQN5B46sAiU4liOXGLkHypn/qU+jvfWSCYYLA=="],
 

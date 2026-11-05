@@ -117,6 +117,6 @@ try{
  const fonts=[...new Set(figure.fonts.map(font=>font.family))];
  for(const font of fonts)if(!Object.hasOwn(fontRights,font))throw new Error('Declare actual rights before publishing a new font: '+font);
  await publishFigure(root,{entry:file,sources:figure.sourceSHA256,binaries,sdk:{modelHash:model.hash,view:projection.view,trace:linked.trace,diagnostics:model.diagnostics,observations},lean,proofClaims,renderer},
-  ()=>exportFigure(figure,browser!,{scale:1.5,minimumTextSize:12,attribution:{copyright:['2026 hardenedlinux Linux Team and Contributors',...fonts.map(font=>fontRights[font]!)],license:fonts.length?'Apache-2.0 AND OFL-1.1':'Apache-2.0'}}));
+  ()=>exportFigure(figure,browser!,{scale:1.5,minimumTextSize:12,webp:false,attribution:{copyright:['2026 hardenedlinux Linux Team and Contributors',...fonts.map(font=>fontRights[font]!)],license:fonts.length?'Apache-2.0 AND OFL-1.1':'Apache-2.0'}}));
  console.log(name,{subjects:linked.model.subjects.length,relations:linked.model.relations.length,modelHash:model.hash});
 }}finally{await browser?.close();await connection.close();}

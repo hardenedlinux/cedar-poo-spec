@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import {readFile} from 'node:fs/promises';
 import * as v from 'valibot';
-import sharp from 'sharp';
+import {encodeWebP} from '@deterministic-engineering/render/export';
 import {repositoryPath,sha} from '../sources';
 export interface Artwork<Id extends string>{readonly images:Readonly<Record<Id,string>>;readonly sources:Readonly<Record<string,string>>;readonly binaries:Readonly<Record<string,string>>;}
 /** Shared immutable-original capture for component families; no image generation at render time. */
@@ -17,8 +17,8 @@ export async function captureArtwork<const Ids extends readonly string[]>(root:s
   if(asset.path!==`${directory}/${asset.id}.png`)throw new Error('Artwork path differs from its registered component');
   const bytes=await readFile(await repositoryPath(root,asset.path)),actual=sha(bytes);
   if(actual!==asset.sha256)throw new Error('Artwork differs from its generation manifest: '+asset.id);
-  const compressed=await sharp(bytes,{failOn:'error'}).resize({width:1024,height:1024,fit:'inside',withoutEnlargement:true,kernel:sharp.kernel.lanczos3}).webp({quality:88,alphaQuality:100,effort:4,smartSubsample:true}).toBuffer();
-  images[asset.id as Ids[number]]='data:image/webp;base64,'+compressed.toString('base64');binaries[asset.path]=actual;
+  const compressed=await encodeWebP(bytes,{lossless:false,quality:88,alphaQuality:100,effort:4,smartSubsample:true});
+  images[asset.id as Ids[number]]='data:image/webp;base64,'+Buffer.from(compressed.bytes).toString('base64');binaries[asset.path]=actual;
  }));
  return{images,sources:{[manifestPath]:raw},binaries};
 }
