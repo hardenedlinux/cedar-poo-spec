@@ -17,6 +17,51 @@ private def tokenSender : Confirmation → PAR.TokenSender
   | .dpop key => .dpop ⟨key⟩
   | .mtls certificate => .mtls certificate
 
+private def overlappingRecoveryExercise (takeover : Receiver.LegacyBatchInput)
+    (settled prior : Receiver.LegacyBatchState)
+    (original conflict missing : Receiver.ManagedReconciliation)
+    (retry : Revocation.Crash.BeginInput) : Bool := Id.run do
+  let some pin := original.independent | return false
+  let some (_, outcome) := Receiver.evidence pin.image ⟨original.audit.operation⟩ | return false
+  let operation := original.audit.operation
+  let pendingOperation := missing.audit.operation
+  let peerState := { prior with image := takeover.image }
+  let retired := { original with audit := { original.audit with writer := prior.image.writer } }
+  let stopped := [retired, missing].foldl
+    (Receiver.LegacyBatchState.step takeover.trusted) peerState
+  let recovered := Revocation.Crash.recoverImage .durable takeover.image settled.image
+  let some writer := Revocation.Crash.handoff recovered recovered.writer | return false
+  let promotion : Receiver.PromotionInput :=
+    ⟨some pin, pin, pin.image, "after-lost-ack"⟩
+  let .ok receiver := Receiver.promotionContract.invoke Receiver.preparePromotion promotion | return false
+  let receipt := { original with
+    independent := some receiver.result
+    placement := "after-lost-ack"
+    replica := receiver.result.image
+    audit := { original.audit with writer := writer.writer } }
+  let other := { receipt with audit := { conflict.audit with writer := writer.writer } }
+  let missingReceipt := { receipt with audit := { missing.audit with writer := writer.writer } }
+  let first : Receiver.LegacyBatchInput :=
+    ⟨writer, takeover.trusted, [receipt, other, missingReceipt, receipt]⟩
+  let .ok confirmed := Receiver.legacyBatchContract.invoke Receiver.prepareLegacyBatch first | return false
+  let second : Receiver.LegacyBatchInput :=
+    ⟨confirmed.result.image, takeover.trusted, [missingReceipt, receipt, receipt, other]⟩
+  let .ok repeated := Receiver.legacyBatchContract.invoke Receiver.prepareLegacyBatch second | return false
+  let retryAfterRecovery := { retry with
+    image := repeated.result.image
+    writer := writer.writer
+    checkedWriter := writer.writer }
+  return decide (stopped = { peerState with stopped := some operation }) &&
+    decide (confirmed.result.image = writer) &&
+    decide (repeated.result.image = writer) &&
+    decide (confirmed.result.confirmed = [operation, operation]) &&
+    decide (repeated.result.confirmed = confirmed.result.confirmed) &&
+    decide (confirmed.result.pending = [operation, pendingOperation]) &&
+    decide (repeated.result.pending = [pendingOperation, operation]) &&
+    decide (repeated.result.image.settledOutcome operation = some outcome) &&
+    decide (Revocation.Crash.effectStatus repeated.result.image pendingOperation = .unresolved) &&
+    (Revocation.Crash.begin retryAfterRecovery).isNone
+
 private def crashExercise (durable : Revocation.Recovery.Store)
     (read : Revocation.ReplicaRead) : Bool := Id.run do
   let openRevocation : Revocation.Crash.Image := { oauth := durable }
@@ -277,6 +322,8 @@ private def crashExercise (durable : Revocation.Recovery.Store)
     decide (takeoverRecovered.result.image.settledOutcome intent.operation = some outcome) &&
     decide (takeoverRecovered.result.image.oauth = takeoverFinal.oauth) &&
     decide (stoppedSuffix = { committedPrefix with stopped := some unrelated.operation }) &&
+    overlappingRecoveryExercise takeoverInput takeoverRecovered.result afterStagedBatch.result
+      lateOriginal lateOther lateMissing retryAuthorization &&
     decide (lateRetried.result.image = finalLateWriter) &&
     decide (lateRetried.result.image.settledOutcome intent.operation = some outcome) &&
     decide (lateRetried.result.confirmed = [intent.operation, intent.operation]) &&
@@ -536,3 +583,4 @@ end Tests.Gateway.OAuthRefresh
 #print axioms CedarPooSpec.Gateway.OAuth.Receiver.legacyBatch_stops_at_retired_writer
 #print axioms CedarPooSpec.Gateway.OAuth.Revocation.Crash.committed_migration_cannot_reopen_after_failover
 #print axioms CedarPooSpec.Gateway.OAuth.Receiver.legacyBatch_fenced_suffix_keeps_prefix
+#print axioms CedarPooSpec.Gateway.OAuth.Receiver.legacyBatch_read_only_fold_keeps_image

@@ -102,6 +102,12 @@ pub(super) fn replay_across_processes(
         }
     };
     wait_for_marker(&root.join("between-items"));
+    let peer_phase = match first {
+        FirstCommit::Takeover => "peer-takeover",
+        FirstCommit::Migration => "peer-migration",
+    };
+    let peer = spawn_worker(&fixture_path, peer_phase);
+    wait_for_marker(&root.join("peer-between-items"));
     let oauth_path = root.join("oauth");
     let oauth = DurableRefreshLedger::new(&oauth_path, "settlement-race");
     let operation = OperationId(fixture.effect.operation.clone());
@@ -119,9 +125,15 @@ pub(super) fn replay_across_processes(
             .revoke(verified(digest()))
             .unwrap()
     );
-    let cut = takeover(root, &mut fixture);
+    takeover(root, &mut fixture);
+    let checkpoint_after_takeover = std::fs::read(&checkpoint).unwrap();
     std::fs::write(root.join("resume-items"), []).unwrap();
     finish_worker(worker, phase);
+    finish_worker(peer, peer_phase);
+    assert_eq!(
+        std::fs::read(&checkpoint).unwrap(),
+        checkpoint_after_takeover
+    );
     let current = oauth.for_writer(fixture.writer);
     assert_eq!(current.effect_status(&operation).unwrap(), expected);
     write_fixture(&fixture);
@@ -133,7 +145,13 @@ pub(super) fn replay_across_processes(
         publish();
         run_worker(&fixture_path, "rebind");
     }
-    run_worker(&fixture_path, "resumed");
+    // The takeover-first migration may now be durable without its acknowledgment.
+    let cut = takeover(root, &mut fixture);
+    write_fixture(&fixture);
+    let first = spawn_worker(&fixture_path, "resumed-a");
+    let second = spawn_worker(&fixture_path, "resumed-b");
+    finish_worker(first, "resumed-a");
+    finish_worker(second, "resumed-b");
     (fixture.writer, cut)
 }
 
@@ -290,7 +308,7 @@ fn restart_worker() {
     let phase = std::env::var(PHASE).unwrap();
     assert_eq!(
         oauth.effect_status(&operation).unwrap(),
-        if phase == "resumed" {
+        if phase.starts_with("resumed-") || phase == "peer-migration" {
             EffectStatus::Reconciled
         } else {
             EffectStatus::Unresolved
@@ -315,7 +333,7 @@ fn restart_worker() {
         let dispatch =
             ReceiverDispatch::sign(receiver.cut().unwrap(), "late-retry", intent, &sender).unwrap();
         let checked = oauth.checkpoint().unwrap();
-        let current = actual(fixture.grant.clone(), 14, proof);
+        let current = actual(fixture.grant.clone(), 14, &format!("{phase}-{proof}"));
         let facts = [sign(&fixture.fact, &issuer).unwrap()];
         assert!(
             receiver
@@ -359,7 +377,7 @@ fn restart_worker() {
         "receiver replica differs from the independent checkpoint"
     );
 
-    if matches!(phase.as_str(), "fenced" | "resumed") {
+    if phase == "fenced" || phase.starts_with("resumed-") {
         let old_writer = oauth.for_writer(fixture.retired_writer.unwrap());
         let stopped = receiver
             .migrate_legacy_oauth_batch(
@@ -483,6 +501,33 @@ fn restart_worker() {
         assert_eq!(snapshot(), before);
         return;
     }
+    if phase.starts_with("peer-") {
+        let prefix_operation = OperationId(fixture.prefix.operation.clone());
+        let prefix = receiver.evidence(&prefix_operation).unwrap().unwrap();
+        let first = DurableEffectRecovery {
+            effect: &fixture.prefix,
+            ..evidence(&prefix.journal, std::slice::from_ref(&prefix.outcome))
+        };
+        let batch = [first, missing, conflict, original()]
+            .into_iter()
+            .enumerate()
+            .map(|(index, item)| {
+                if index == 3 {
+                    std::fs::write(root.join("peer-between-items"), []).unwrap();
+                    wait_for_marker(&root.join("resume-items"));
+                }
+                item
+            });
+        let report = receiver.migrate_legacy_oauth_batch_at(&oauth, batch, &trusted, |_, _| {
+            panic!("overlapping batch attempted a migration write");
+        });
+        assert_eq!(report.confirmed, [prefix_operation]);
+        assert_eq!(report.pending, [missing_operation, operation.clone()]);
+        let stopped = report.stopped.unwrap();
+        assert_eq!(stopped.operation, operation);
+        assert_eq!(stopped.error, "OAuth writer fenced");
+        return;
+    }
     if matches!(phase.as_str(), "takeover-first" | "durable-overlap") {
         let prefix_operation = OperationId(fixture.prefix.operation.clone());
         let prefix = if phase == "takeover-first" {
@@ -533,33 +578,48 @@ fn restart_worker() {
                 if stage == CheckpointStage::Durable {
                     assert!(!durable);
                     durable = true;
+                    return Err("late batch acknowledgment lost".into());
                 }
                 Ok(())
             },
         );
         assert!(durable);
-        assert_eq!(report.confirmed, std::slice::from_ref(&operation));
-        assert_eq!(report.pending, [operation.clone(), missing_operation]);
-        assert!(report.stopped.is_none());
+        assert!(report.confirmed.is_empty());
+        assert_eq!(report.pending, std::slice::from_ref(&operation));
+        let stopped = report.stopped.unwrap();
+        assert_eq!(stopped.operation, operation);
+        assert_eq!(stopped.error, "late batch acknowledgment lost");
         assert_eq!(
             oauth.effect_status(&operation).unwrap(),
             EffectStatus::Reconciled
         );
         return;
     }
-    assert_eq!(phase, "resumed");
+    assert!(matches!(phase.as_str(), "resumed-a" | "resumed-b"));
+    std::fs::write(root.join(&phase), []).unwrap();
+    let other = if phase == "resumed-a" {
+        "resumed-b"
+    } else {
+        "resumed-a"
+    };
+    wait_for_marker(&root.join(other));
     let committed = snapshot();
-    let report = receiver.migrate_legacy_oauth_batch_at(
-        &oauth,
-        [original(), conflict, missing, original()],
-        &trusted,
-        |_, _| panic!("retry attempted a second migration write"),
-    );
+    let (items, pending) = if phase == "resumed-b" {
+        (
+            [missing, original(), original(), conflict],
+            [missing_operation.clone(), operation.clone()],
+        )
+    } else {
+        (
+            [original(), conflict, missing, original()],
+            [operation.clone(), missing_operation.clone()],
+        )
+    };
+    let report = receiver.migrate_legacy_oauth_batch_at(&oauth, items, &trusted, |_, _| {
+        panic!("retry attempted a second migration write")
+    });
     assert_eq!(report.confirmed, [operation.clone(), operation.clone()]);
-    assert_eq!(
-        report.pending,
-        [operation.clone(), missing_operation.clone()]
-    );
+    assert_eq!(report.pending, pending);
     assert!(report.stopped.is_none());
     assert_eq!(snapshot(), committed);
     assert_eq!(

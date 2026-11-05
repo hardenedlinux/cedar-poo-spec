@@ -1439,6 +1439,19 @@ confirms only the original receipt without rewriting the image,
 retains reservations with missing evidence, and refuses a retry
 of the same delivery on a different channel.
 
+Each ordering also starts a second worker with an overlapping batch
+in a different order. Both workers pause after their acknowledged
+prefixes. After revocation and two handoffs, both suffixes are fenced,
+and their reports retain their own confirmed and pending prefixes.
+The harness checks that neither resumed suffix rewrites the shared
+checkpoint. In the takeover-first schedule, the successor binds the
+late receipt, loses its acknowledgment after directory sync, and
+hands off again. Two fresh workers then replay the original,
+conflicting, duplicate and missing receipts concurrently. All
+accepted confirmations are read-only, while every missing-evidence
+reservation remains intact. Separate retry proofs use distinct
+request identifiers for the two workers.
+
 The first clean audit durably binds the canonical identity of the
 signed outcome. A later audit of that same outcome is idempotent.
 A different signed outcome cannot replace it, even if presented

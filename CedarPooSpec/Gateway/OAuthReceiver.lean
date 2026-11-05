@@ -676,6 +676,39 @@ theorem legacyBatch_fenced_suffix_keeps_prefix (trusted : Revocation.Crash.Recei
   rw [List.foldl_cons, stopped]
   exact legacyBatch_stopped_keeps_state trusted _ tail (by simp)
 
+/-- An original receipt that is already bound, or a refused receipt, cannot
+modify the shared image when another restarted worker submits it. -/
+theorem legacyBatch_read_only_step_keeps_image (trusted : Revocation.Crash.ReceiverBinding)
+    (state : LegacyBatchState) (item : ManagedReconciliation)
+    (readOnly :
+      migrateLegacy ⟨{ item with audit := { item.audit with image := state.image } }, trusted⟩ = none ∨
+      migrateLegacy ⟨{ item with audit := { item.audit with image := state.image } }, trusted⟩ = some state.image) :
+    (state.step trusted item).image = state.image := by
+  unfold LegacyBatchState.step
+  split
+  · rfl
+  · split
+    · rfl
+    · rcases readOnly with refused | confirmed
+      · simp [refused]
+      · simp [confirmed]
+
+theorem legacyBatch_read_only_fold_keeps_image (trusted : Revocation.Crash.ReceiverBinding)
+    (image : Revocation.Crash.Image) (items : List ManagedReconciliation)
+    (readOnly : ∀ item ∈ items,
+      migrateLegacy ⟨{ item with audit := { item.audit with image } }, trusted⟩ = none ∨
+      migrateLegacy ⟨{ item with audit := { item.audit with image } }, trusted⟩ = some image)
+    (state : LegacyBatchState) (same : state.image = image) :
+    (items.foldl (LegacyBatchState.step trusted) state).image = image := by
+  induction items generalizing state with
+  | nil => exact same
+  | cons item tail ih =>
+    have current := readOnly item (by simp)
+    have unchanged := legacyBatch_read_only_step_keeps_image trusted state item
+      (by simpa only [same] using current)
+    exact ih (fun next member => readOnly next (by simp [member]))
+      (state.step trusted item) (unchanged.trans same)
+
 theorem legacyBatch_step_preserves_authority (trusted : Revocation.Crash.ReceiverBinding)
     (state : LegacyBatchState) (item : ManagedReconciliation) (operation : String) :
     let next := state.step trusted item
