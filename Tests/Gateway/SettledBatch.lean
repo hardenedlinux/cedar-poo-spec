@@ -1,4 +1,5 @@
 import CedarPooSpec.Gateway.OAuthReceiptBatch
+import Tests.Gateway.SettledLate
 
 namespace Tests.Gateway.SettledBatch
 open CedarPooSpec.Gateway.OAuth
@@ -13,6 +14,21 @@ def exercise (original : ReceiptRecovery.Input) (missing : Receiver.ManagedRecon
     { original.request.symbolic.receipt with
       commit := retained.intent
       action := { original.request.symbolic.receipt.action with operation := absent } } }
+  let some pin := original.recovery.independent | return false
+  -- Build the historical receiver checkpoint before the migration starts.
+  -- During the batch the original signed receipt is withheld, not executed again.
+  let dispatch : CedarPooSpec.Admission.DispatchBinding :=
+    ⟨⟨absent⟩, "historical-intent-digest", pin.image.cut⟩
+  let delivery : Receiver.Delivery := ⟨dispatch, "original-channel", unknown⟩
+  let receiverInput : Receiver.Input :=
+    ⟨pin.image, delivery, dispatch, delivery.channel, retained.intent, true⟩
+  let .ok recorded := Receiver.contract.invoke Receiver.prepare receiverInput | return false
+  let checkpoint := { pin with image := recorded.result }
+  let refresh := fun recovery => { recovery with
+    independent := some checkpoint, placement := checkpoint.active, replica := checkpoint.image
+    : Receiver.ManagedReconciliation }
+  let original := { original with recovery := refresh original.recovery }
+  let missing := refresh missing
   let legacy := original.image.oauth
   let ledger := { legacy.oauth.checkpoint.ledger with revoked := [] }
   let active := { legacy with
@@ -52,7 +68,23 @@ def exercise (original : ReceiptRecovery.Input) (missing : Receiver.ManagedRecon
       (by simpa [aligned] using ReceiptRecovery.persistence_records single)
     pure ()
   else return false
-  return decide (a.result.confirmed = [operation]) &&
+  let source : ReceiptIdentity.CanonicalReceipt :=
+    { symbolic := unknown, intent := retained.intent
+      intentSource := ⟨retained.intent.payload, retained.intent.signature⟩
+      outcomeSource := ⟨[5], unknown.signature⟩ }
+  let reader (op : String) : Option ReceiptIdentity.CanonicalReceipt :=
+    if op = absent then some source else original.authority.read op
+  let authority := { original.authority with read := reader }
+  let request : ReceiptIdentity.Request :=
+    { operation := absent, symbolic := unknown
+      identity := ReceiptIdentity.project authority absent source
+      intentSource := source.intentSource, outcomeSource := source.outcomeSource }
+  let late := { original with
+    authority, request
+    recovery := { original.recovery with audit := { original.recovery.audit with
+      operation := absent, actions := [unknown.receipt.action], outcomes := [unknown] } } }
+  let lateSafe := Tests.Gateway.SettledLate.exercise again.result.image late (update first) retry
+  return lateSafe && decide (a.result.confirmed = [operation]) &&
     decide (b.result.image = a.result.image) &&
     decide (suffixA.stopped = some absent) &&
     decide (suffixB.stopped = some operation) &&

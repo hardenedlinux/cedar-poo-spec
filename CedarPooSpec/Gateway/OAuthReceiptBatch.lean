@@ -66,6 +66,26 @@ theorem step_trace (state : State) (item : ReceiptRecovery.Input) :
       · rename_i receipt accepted
         exact .commit (.start _) receipt rfl .durable
 
+theorem accepted_step_binds
+    (running : state.stopped = none) (writer : item.writer = state.image.oauth.writer)
+    (replica : item.recovery.currentReplica = true)
+    (accepted : ReceiptRecovery.contract.invoke ReceiptRecovery.prepare (current state item) = .ok receipt) :
+    ReceiptRecovery.lookup (State.step state item).image.rows item.request.identity.operation =
+      some (ReceiptRecovery.Request.stored item.request) := by
+  simp only [State.step, running, Option.isSome_none, Bool.false_eq_true, ite_false,
+    writer, ne_eq, not_true_eq_false, replica, Bool.true_eq_false, or_self]
+  simp only [accepted]
+  exact ReceiptRecovery.persistence_records receipt
+
+theorem suffix_keeps_committed (items : List ReceiptRecovery.Input)
+    (bound : ReceiptRecovery.lookup state.image.rows operation = some row) :
+    ReceiptRecovery.lookup (items.foldl State.step state).image.rows operation = some row := by
+  induction items generalizing state with
+  | nil => exact bound
+  | cons item tail ih =>
+    apply ih
+    exact ReceiptRecovery.trace_preserves_original (step_trace state item) bound
+
 theorem fold_trace (items : List ReceiptRecovery.Input) (state : State) :
     ReceiptRecovery.Trace state.image (items.foldl State.step state).image := by
   induction items generalizing state with

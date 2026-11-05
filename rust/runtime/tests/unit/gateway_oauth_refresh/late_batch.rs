@@ -23,6 +23,8 @@ use std::time::{Duration, Instant};
 
 #[path = "settled_batch.rs"]
 mod settled_batch;
+#[path = "settled_late.rs"]
+mod settled_late;
 #[path = "settled_mapping.rs"]
 mod settled_mapping;
 #[path = "recovery_trace.rs"]
@@ -452,7 +454,10 @@ fn restart_worker() {
     let fixture: RestartFixture =
         serde_json::from_slice(&std::fs::read(&fixture_path).unwrap()).unwrap();
     let requested = std::env::var(PHASE).unwrap();
-    if requested.starts_with("settled-map-") || requested.starts_with("settled-batch-") {
+    if requested.starts_with("settled-map-")
+        || requested.starts_with("settled-batch-")
+        || requested.starts_with("settled-late-")
+    {
         settled_mapping::worker(root, &fixture, &requested);
         return;
     }

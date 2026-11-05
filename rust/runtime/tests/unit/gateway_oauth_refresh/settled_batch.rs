@@ -1,6 +1,6 @@
 use super::{
-    FirstCommit, OwnedWorker, RecoveryRound, RestartFixture, digest, run_worker, settlement_race,
-    takeover, trace, verified, wait_for_marker,
+    FirstCommit, OwnedWorker, RecoveryRound, RestartFixture, digest, run_worker, settled_late,
+    settlement_race, takeover, trace, verified, wait_for_marker,
 };
 use crate::gateway::Signed;
 use crate::gateway::checkpoint_store::CheckpointStage;
@@ -162,7 +162,8 @@ pub(super) fn exercise(
             "conflict_refused": true, "no_resend": true
         })
     );
-    active.cut().unwrap()
+    let delayed = active.evidence(&prefix).unwrap().unwrap();
+    settled_late::exercise(root, fixture, original, &delayed.outcome)
 }
 
 pub(super) fn worker<'a>(

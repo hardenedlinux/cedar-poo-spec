@@ -1635,6 +1635,32 @@ the original mapping remains idempotent and conflicting receipts cannot replace
 it. This fixed scenario is additional to both existing recovery workloads and
 uses the same 120-second process limit and three-second drain.
 
+Late evidence resumes the same explicit batch Contract. The historical receiver
+checkpoint must already contain the authenticated dispatch and original signed
+outcome; delaying the incoming evidence packet does not create a new receiver
+commit. A retained legacy digest is still mandatory. The Lean replay starts
+with an unbound settled item, performs two ownership handoffs, then processes
+both worker orders with a conflicting receipt before or after the original.
+=accepted_step_binds= establishes the exact accepted row;
+=suffix_keeps_committed= preserves it across every later batch suffix.
+Staged recovery leaves the row absent, while durable recovery and three further
+handoffs preserve that row and the operation burn.
+
+The Rust batch replay keeps its original workload and appends late-evidence
+recovery within the same 120-second gate. After seven prior handoffs, two
+restarted workers consume overlapping, reordered packets containing the original
+receipt, a validly signed conflicting receipt and duplicates. The first worker
+dies after durable installation without acknowledging it; its peer independently
+confirms the original row. A later read-only confirmation is lost, followed by
+three more handoffs. All resumed confirmations are read-only, the original
+digest and receipt remain unchanged, and durable discovery no longer reports
+that item as unmapped. Items still lacking evidence remain pending in the
+preceding batch checks. A receipt supplies recovery evidence only: it neither
+renews authorization nor permits the revoked operation to execute again.
+=SETTLED-LATE-OK= reports the observed handoff count and checked recovery
+invariants. These are deterministic Rust fault simulations, not claims about
+physical power-loss durability or an external storage service.
+
 The first clean audit durably binds the canonical identity of the
 signed outcome. A later audit of that same outcome is idempotent.
 A different signed outcome cannot replace it, even if presented

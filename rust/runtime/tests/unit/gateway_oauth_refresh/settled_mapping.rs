@@ -1,6 +1,6 @@
 use super::{
     FirstCommit, OwnedWorker, RecoveryRound, RestartFixture, assert_locked, run_worker,
-    settled_batch, settlement_race, takeover, trace, wait_for_marker,
+    settled_batch, settled_late, settlement_race, takeover, trace, wait_for_marker,
 };
 use crate::gateway::checkpoint_store::CheckpointStage;
 use crate::gateway::oauth_refresh_durable::{DurableEffectRecovery, DurableRefreshLedger};
@@ -251,6 +251,41 @@ pub(super) fn worker(root: &Path, fixture: &RestartFixture, phase: &str) {
             .stopped
             .is_some()
     );
+    if phase.starts_with("settled-late-") {
+        let packets: Vec<Signed> = serde_json::from_slice(
+            &std::fs::read(root.join("settled-late-receipts.json")).unwrap(),
+        )
+        .unwrap();
+        assert_eq!(packets.len(), 4);
+        let journals: Vec<ProviderJournal> = packets
+            .iter()
+            .map(|packet| {
+                let decoded: ProviderOutcome = verify(packet, provider.verifying_key()).unwrap();
+                ProviderJournal::observation(decoded.outcome.action)
+            })
+            .collect();
+        let order = if phase.ends_with("-a") {
+            [0, 1, 2, 3]
+        } else {
+            [3, 2, 0, 1]
+        };
+        let batch = order
+            .into_iter()
+            .map(|index| {
+                evidence(
+                    if index == 3 {
+                        &fixture.effect
+                    } else {
+                        &fixture.prefix
+                    },
+                    &journals[index],
+                    std::slice::from_ref(&packets[index]),
+                )
+            })
+            .collect();
+        settled_late::worker(root, fixture, phase, &receiver, &oauth, &configured, batch);
+        return;
+    }
     if phase.starts_with("settled-batch-") {
         let mut batch = vec![input()];
         if phase.ends_with("-a") {

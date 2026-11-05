@@ -973,3 +973,5 @@ end Tests.Gateway.OAuthRefresh
 #print axioms CedarPooSpec.Gateway.OAuth.ReceiptRecovery.persistence_keeps_authorization
 #print axioms CedarPooSpec.Gateway.OAuth.ReceiptRecovery.trace_preserves_intents
 #print axioms CedarPooSpec.Gateway.OAuth.ReceiptBatch.batch_cannot_resend
+#print axioms CedarPooSpec.Gateway.OAuth.ReceiptBatch.accepted_step_binds
+#print axioms CedarPooSpec.Gateway.OAuth.ReceiptBatch.suffix_keeps_committed
