@@ -5,10 +5,10 @@ import {test,expect} from 'bun:test';
 import {mkdtemp,mkdir,writeFile,readFile,unlink,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
-import {publishFigure,verifyFigure,htmlArtifact,type ExportedFiles} from '../artifacts';
+import {publishFigure,verifyFigure,htmlArtifact,receiptArtifact,type ExportedFiles} from '../artifacts';
 import {sha} from '../sources';
 const entry='dev/d2/case.d2',stem=entry.slice(0,-3);
-const output=(extension:string)=>extension==='html'?htmlArtifact(entry):stem+'.'+extension;
+const output=(extension:string)=>extension==='html'?htmlArtifact(entry):extension==='json'?receiptArtifact(entry):stem+'.'+extension;
 /** Opaque byte fixtures test filesystem integrity; real figure exports have separate integration checks. */
 function exported(sources:Record<string,string>,generation:string,source=entry):ExportedFiles{
  const inputSHA256=sha(generation+JSON.stringify(sources));
@@ -60,10 +60,10 @@ test('missing artifacts and individually mixed outputs cannot pass the renderer 
 test('complete output sets from another entry or generation cannot be relabelled',async()=>{
  await fixture(async(root,inputs)=>{
   await publishFigure(root,inputs,async()=>exported(inputs.sources,'old'));
-  const original=await readFile(join(root,stem+'.json'),'utf8');
-  const altered=JSON.parse(original);altered.entry='dev/d2/another.d2';await writeFile(join(root,stem+'.json'),JSON.stringify(altered));
+  const original=await readFile(join(root,receiptArtifact(entry)),'utf8');
+  const altered=JSON.parse(original);altered.entry='dev/d2/another.d2';await writeFile(join(root,receiptArtifact(entry)),JSON.stringify(altered));
   await expect(verifyFigure(root,entry)).rejects.toThrow('another figure');
-  await writeFile(join(root,stem+'.json'),original);const mismatch=JSON.parse(original);mismatch.receipt.inputSHA256=sha('unrelated generation');await writeFile(join(root,stem+'.json'),JSON.stringify(mismatch));
+  await writeFile(join(root,receiptArtifact(entry)),original);const mismatch=JSON.parse(original);mismatch.receipt.inputSHA256=sha('unrelated generation');await writeFile(join(root,receiptArtifact(entry)),JSON.stringify(mismatch));
   await expect(verifyFigure(root,entry)).rejects.toThrow('binding mismatch');
   await publishFigure(root,inputs,async()=>exported(inputs.sources,'current'));await writeFile(join(root,entry),'a: changed');
   await expect(verifyFigure(root,entry)).rejects.toThrow('changed');
@@ -73,7 +73,7 @@ test('missing receipt fields, inconsistent provenance and extra SVGs refuse publ
  await fixture(async(root,inputs)=>{
   await expect(publishFigure(root,inputs,async()=>exported(inputs.sources,'wrong', 'dev/d2/other.d2'))).rejects.toThrow('binding mismatch');
   const image=exported(inputs.sources,'extra');await expect(publishFigure(root,inputs,async()=>({...image,svg:[...image.svg,'<svg/>']}))).rejects.toThrow('SVG output set');
-  await publishFigure(root,inputs,async()=>image);const receipt=JSON.parse(await readFile(join(root,stem+'.json'),'utf8'));delete receipt.receipt.htmlSHA256;await writeFile(join(root,stem+'.json'),JSON.stringify(receipt));
+  await publishFigure(root,inputs,async()=>image);const receipt=JSON.parse(await readFile(join(root,receiptArtifact(entry)),'utf8'));delete receipt.receipt.htmlSHA256;await writeFile(join(root,receiptArtifact(entry)),JSON.stringify(receipt));
   await expect(verifyFigure(root,entry)).rejects.toThrow();
  });
 });
@@ -84,7 +84,7 @@ test('swapping a whole otherwise-valid output bundle cannot change the requested
   await publishFigure(root,inputs,async()=>exported(inputs.sources,'A'));
   const otherInputs={entry:other,sources:{[other]:sha('b: B')},binaries:{}};
   await publishFigure(root,otherInputs,async()=>exported(otherInputs.sources,'B',other));
-  for(const extension of ['png','svg','scene-1.svg','html','json'])await writeFile(join(root,output(extension)),await readFile(join(root,extension==='html'?htmlArtifact(other):otherStem+'.'+extension)));
+  for(const extension of ['png','svg','scene-1.svg','html','json'])await writeFile(join(root,output(extension)),await readFile(join(root,extension==='html'?htmlArtifact(other):extension==='json'?receiptArtifact(other):otherStem+'.'+extension)));
   await expect(verifyFigure(root,entry)).rejects.toThrow('another figure');
  });
 });

@@ -17,6 +17,7 @@ export interface PublicationInputs {readonly entry:string;readonly sources:Reado
 export type ExportedFiles=Pick<FigureImage,'png'|'svg'|'html'> & {readonly receipt:Pick<FigureImage['receipt'],'inputSHA256'|'htmlSHA256'|'pngSHA256'|'svgSHA256'>};
 const svgName=(index:number)=>index===0?'svg':`scene-${index}.svg`;
 export const htmlArtifact=(entry:string)=>'.cache/render/'+base(entry)+'.html';
+export const receiptArtifact=(entry:string)=>'.cache/render/'+base(entry)+'.json';
 function base(entry:string):string{
  if(!entry.endsWith('.d2'))throw new Error('Expected a D2 figure entry');
  return entry.slice(0,-3);
@@ -46,7 +47,7 @@ function checkFiles(image:ExportedFiles,receipt:v.InferOutput<typeof Receipt>){
 }
 /** Verify current sources and the existing renderer receipt; no cached admission result. */
 export async function verifyFigure(root:string,entry:string,expectedInputSHA256?:string){
- const stem=base(entry),receipt=v.parse(Receipt,JSON.parse(await readFile(await repositoryPath(root,stem+'.json'),'utf8')));
+ const stem=base(entry),receipt=v.parse(Receipt,JSON.parse(await readFile(await repositoryPath(root,receiptArtifact(entry)),'utf8')));
  if(receipt.entry!==entry||!Object.hasOwn(receipt.sources,entry))throw new Error('Receipt belongs to another figure entry');
  if(expectedInputSHA256!==undefined&&receipt.receipt.inputSHA256!==expectedInputSHA256)throw new Error('Unexpected figure input');
  await assertCurrent(root,{...receipt.sources,...receipt.binaries});
@@ -58,8 +59,9 @@ export async function verifyFigure(root:string,entry:string,expectedInputSHA256?
 }
 /** Filesystem effect only. Invalidate first, stage bytes, then commit the native receipt last. */
 export async function publishFigure<T extends PublicationInputs>(root:string,inputs:T,generate:()=>Promise<ExportedFiles>):Promise<void>{
- const stem=resolve(root,base(inputs.entry)),receiptPath=stem+'.json';
+ const stem=resolve(root,base(inputs.entry)),receiptPath=resolve(root,receiptArtifact(inputs.entry));
  await repositoryPath(root,inputs.entry);
+ await mkdir(dirname(receiptPath),{recursive:true});
  await unlink(receiptPath).catch((error:NodeJS.ErrnoException)=>{if(error.code!=='ENOENT')throw error;});
  await unlink(stem+'.html').catch((error:NodeJS.ErrnoException)=>{if(error.code!=='ENOENT')throw error;});
  let temporary:string|undefined;

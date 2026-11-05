@@ -7,7 +7,7 @@ import {tmpdir} from 'node:os';
 import {captureDefenseArtwork} from '../components/defense-flow';
 import {captureIncidentStory} from '../components/incident';
 import {captureFinancialArtwork} from '../components/financial';
-import {verifyFigure,htmlArtifact} from '../artifacts';
+import {verifyFigure,htmlArtifact,receiptArtifact} from '../artifacts';
 const root=new URL('../../../',import.meta.url);
 test('actual payment exports retain source-bound model labels and embed both original artwork assets',async()=>{
  const artwork=await captureFinancialArtwork(root.pathname);
@@ -22,9 +22,10 @@ test('actual payment exports retain source-bound model labels and embed both ori
   expect(svg).toContain('Financial services');
   expect(svg).toContain('data-heading-role');
   expect(svg).not.toContain('foreignObject');
-  const claims=JSON.parse(await readFile(new URL(stem+'.json',root),'utf8')).proofClaims;
+  const claims=JSON.parse(await readFile(new URL(receiptArtifact(entry),root),'utf8')).proofClaims;
   if(story&&defense){
    expect(story.defense).toEqual({deployment_refused:true,valid_transfer_released:true});
+   expect(claims.cards.find((card:{id:string})=>card.id==='PaymentDefenseFlow::refused')).toMatchObject({role:'Definition',symbol:'CedarPooSpec.Vertical.FinancialServices.PaymentSigning.release'});
    for(const [id,uri] of Object.entries(story.images)){expect(svg).toContain('data-incident-scene="'+id+'"');expect(svg.includes(uri)).toBe(true);}
    for(const uri of Object.values(defense.images))expect(svg.includes(uri)).toBe(true);
    expect(svg.includes('data-flow-observation="deployment_refused"')).toBe(true);
@@ -50,7 +51,7 @@ test('changing an original image invalidates a restored real scenario export and
  const temporary=await mkdtemp(join(tmpdir(),'cedar-financial-artwork-'));
  const copy=async(path:string)=>{await mkdir(dirname(join(temporary,path)),{recursive:true});await writeFile(join(temporary,path),await readFile(new URL(path,root)));};
  try{
-  for(const path of [...Object.keys(receipt.sources),...Object.keys(receipt.binaries),stem+'.json',stem+'.png',htmlArtifact(entry),...receipt.receipt.svgSHA256.map((_,index)=>stem+(index?'.scene-'+index: '')+'.svg')])await copy(path);
+  for(const path of [...Object.keys(receipt.sources),...Object.keys(receipt.binaries),receiptArtifact(entry),stem+'.png',htmlArtifact(entry),...receipt.receipt.svgSHA256.map((_,index)=>stem+(index?'.scene-'+index: '')+'.svg')])await copy(path);
   await verifyFigure(temporary,entry);
   const image='dev/assets/financial/payment.png';
   await writeFile(join(temporary,image),'unrelated image bytes');
@@ -58,4 +59,21 @@ test('changing an original image invalidates a restored real scenario export and
   await expect(captureFinancialArtwork(temporary)).rejects.toThrow('generation manifest');
   await copy(image);await verifyFigure(temporary,entry);
  }finally{await rm(temporary,{recursive:true,force:true});}
+},30000);
+
+test('compressed artwork retains alpha and source originals while reducing embedded bytes',async()=>{
+ const sharp=(await import('sharp')).default,artwork=await captureFinancialArtwork(root.pathname);
+ for(const [id,uri] of Object.entries(artwork.images)){
+  expect(uri.startsWith('data:image/webp;base64,')).toBe(true);
+  const original=await readFile(new URL('dev/assets/financial/'+id+'.png',root));
+  const compressed=Buffer.from(uri.slice(uri.indexOf(',')+1),'base64');
+  const before=await sharp(original).metadata(),after=await sharp(compressed).metadata();
+  expect(after.format).toBe('webp');expect(after.hasAlpha).toBe(before.hasAlpha);
+  expect(after.width!).toBeLessThanOrEqual(1024);expect(after.height!).toBeLessThanOrEqual(1024);
+  expect(compressed.length).toBeLessThan(original.length/4);
+ }
+ const entry='Examples/Scenarios/FinancialServices/Wallet/Binance2026.d2';
+ await verifyFigure(root.pathname,entry);
+ expect((await readFile(new URL(entry.slice(0,-3)+'.svg',root))).length).toBeLessThan(5*1024*1024);
+ expect(await Bun.file(new URL(entry.slice(0,-3)+'.json',root)).exists()).toBe(false);
 },30000);

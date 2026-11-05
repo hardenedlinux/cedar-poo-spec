@@ -132,8 +132,8 @@ package PaymentDefenseFlow {
  part released : KernelLaw;
  attribute releasedSymbol : String = "CedarPooSpec.Vertical.FinancialServices.PaymentSigning.release_returns_requested_transaction";
  attribute releasedSource : String = "CedarPooSpec/Vertical/FinancialServices/PaymentSigning.lean";
- part refused : KernelLaw;
- attribute refusedSymbol : String = "CedarPooSpec.Vertical.FinancialServices.PaymentSigning.revoked_cannot_release";
+ part refused : Definition;
+ attribute refusedSymbol : String = "CedarPooSpec.Vertical.FinancialServices.PaymentSigning.release";
  attribute refusedSource : String = "CedarPooSpec/Vertical/FinancialServices/PaymentSigning.lean";
  connection flowEdge0 connect purpose to joint;
  connection flowEdge1 connect approval to joint;

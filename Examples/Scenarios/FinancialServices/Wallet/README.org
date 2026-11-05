@@ -2,6 +2,14 @@
 #+LANGUAGE: en
 #+OPTIONS: toc:2
 
+* Illustrated walkthrough
+
+#+CAPTION: Four reported attack pivots and the modeled stolen-token refusal path. Preliminary source; the highlighted state is a synthetic Lean result.
+#+ATTR_ORG: :width 1200
+[[file:Binance2026.png]]
+
+[[file:Binance2026.svg][Scalable SVG]] · [[file:Binance2026.d2][D2 source]]
+
 * Incident evidence and scope
 
 This case was added after a source audit on 2026-11-05, starting from SPEC
@@ -289,8 +297,7 @@ No generated input is committed or imported by maintained Quint source.
 [[file:Base.svg][Wallet signing parent]] ([[file:Base.d2][D2 source]]) and
 [[file:Binance2026.svg][Binance scenario]] ([[file:Binance2026.d2][D2 source]])
 are rendered from the declared SysML views through the existing pinned
-deterministic-engineering renderer. Their adjacent JSON receipts bind actual
-source bytes and proof declarations. The reported attack chain in the incident
+deterministic-engineering renderer. Ignored build receipts bind actual source bytes and proof declarations. The reported attack chain in the incident
 caption is contextual; theorem cards refer to modeled defenses and explicitly
 retain Host premises. Unknown AI exploit mechanics remain unknown.
 
@@ -313,3 +320,15 @@ All connections are SDK-owned explanatory dependencies, not proof-term uses.
 component miniatures, exact Lean declarations and Host-premise roles for review.
 =Base.d2/svg= remains the reusable parent and the incident and appendix are
 listed explicitly by the top-level =Project.sysml=.
+
+* Reusable wallet parent
+
+#+CAPTION: The wallet parent supplies the typed current state and exact request used by the incident scenario.
+#+ATTR_ORG: :width 1000
+[[file:Base.png]]
+
+* Detailed assurance appendix
+
+#+CAPTION: Optional declaration and Host-premise detail for reviewers; the main walkthrough remains the reader entry.
+#+ATTR_ORG: :width 1200
+[[file:Binance2026Assurance.png]]

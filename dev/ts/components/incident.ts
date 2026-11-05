@@ -6,7 +6,7 @@ import {composeHeading,type FigureContext} from '@deterministic-engineering/rend
 import {repositoryPath} from '../sources';
 import {captureArtwork} from './artwork';
 const ids=['endpoint','ai-token','deployment','signer'] as const;
-const manifestPath='dev/assets/financial/binance/storyboard.json',metadataPath='dev/.generated/binance2026-metadata.json';
+const manifestPath='dev/assets/financial/artwork.json',metadataPath='dev/.generated/binance2026-metadata.json';
 const Metadata=v.object({metadata:v.object({id:v.literal('binance-2026-10-29'),kind:v.literal('reported-incident'),event:v.object({starts_on:v.string(),timezone:v.string()}),disclosures:v.array(v.object({publisher:v.string(),url:v.string(),published_on:v.string(),status:v.literal('preliminary')}))})});
 const Manifest=v.object({formatVersion:v.literal(1),assets:v.array(v.object({id:v.picklist(ids),path:v.string(),sha256:v.string()}))});
 export interface IncidentStory {

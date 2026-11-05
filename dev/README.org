@@ -199,7 +199,7 @@ this view neither replaces them nor modifies their resource limits.
 | =d2/*.png= | Hand-drawn documentation images; no external font load needed |
 | =d2/*.svg= | Vector export with embedded font notices |
 | =../.cache/render/dev/d2/*.html= | Browser verification intermediate; ignored by Git |
-| =d2/*.json= | Input/output hashes, SDK spans/model hash, input counts and observations |
+| =../.cache/render/**/*.json= | Disposable input/output and SDK acceptance receipts; ignored by Git |
 
 The source =CedarPooSpec/ZeroTrust/architecture.d2= and its RAW SVG are migrated to
 this development path. The module README displays the new PNG and links its model
@@ -217,7 +217,7 @@ New development glue uses that license and HardenedLinux project attribution.
 The renderer is installed by Bun from its reviewed upstream Git revision and
 retains LGPL-2.1-or-later. No renderer source archive is committed here. OpenSysML packages retain their own Apache-2.0 license.
 Kalam's actual 2014 Indian Type Foundry notice and OFL-1.1 are retained in exports.
-JSON and PNG use standard REUSE sidecars; comment-capable sources
+Maintained JSON source data and PNG use standard REUSE sidecars; comment-capable sources
 carry in-file SPDX headers. =../LICENSES= contains the canonical licenses this development subtree uses.
 
 * Audit and invalidation boundary
@@ -328,7 +328,7 @@ binary and its build declarations. Unrelated D2 changes and producer changes do
 not invalidate an architecture-only view. A change inside a shared referenced
 file still invalidates its consumers; granularity is per file, not per AST span.
 
-=artifacts.ts= is a filesystem adapter over the existing renderer receipt. It
+=ts/artifacts.ts= is a filesystem adapter over the existing renderer receipt. It
 removes the old active receipt before invoking the exporter, stages complete
 bytes in a temporary directory, checks current sources, renames outputs and
 commits the receipt last. Browser interruption or a mid-write filesystem error
@@ -469,8 +469,7 @@ source bindings in =CedarPooSpec/Gateway/PublicationReview.lean=:
 | Bound commit | =committed= |
 
 Scenario-local D2 declarations are explicitly listed in =Project.sysml= under
-=scenarioFigures=. The same render command publishes their SVG, PNG and JSON
-receipts beside the Lean scenarios in =Examples/Scenarios/=; =dev/sysml/= remains
+=scenarioFigures=. The same render command publishes their SVG and PNG beside the Lean scenarios in =Examples/Scenarios/=; =dev/sysml/= remains
 the owner of maintained SysML source. Undeclared figures and paths escaping the
 scenario directory are refused.
 
@@ -488,3 +487,24 @@ exported from Lean during =prepare= under the existing 120s wall-time, 3s kill
 grace and Lean memory/heartbeat limits. macOS uses GNU =gtimeout= from coreutils;
 the views workflow installs it explicitly. Generation is never part of CI: only
 the checked-in original image bytes and their prompt/hash manifests are read.
+
+* Illustrated financial scenario
+
+#+CAPTION: Follow the reported entry path and the stateful modeled defense; detailed proof cards are a separate appendix.
+#+ATTR_ORG: :width 1200
+[[file:../Examples/Scenarios/FinancialServices/Wallet/Binance2026.png]]
+
+* Compression and generated evidence
+
+=sharp= 0.35.5 compresses the illustration layer to WebP at quality 88, with
+lossless alpha, Lanczos resizing inside 1024×1024, no upscaling, and effort 4.
+Text, nodes, ports and edges remain native SVG. Original PNGs and one generation
+manifest retain the selected artwork and exact prompts. Render-time binaries
+and native output validation remain checked.
+
+Generated JSON receipts now live only under =.cache/render/= alongside the
+existing HTML intermediates, and CI uploads that ignored directory. Git owns
+maintained source and published pictures; these disposable receipts validate
+current source-to-output binding and acceptance rather than duplicating a
+scenario metadata source. Lean owns scenario metadata. No adjacent generated
+receipt JSON or per-receipt license sidecars need versioning.

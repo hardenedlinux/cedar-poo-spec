@@ -22,7 +22,7 @@ publication alongside the existing Lean/SysML/D2 source checks.
 The four original narrative illustrations in =binance/= show different actions:
 recruitment/download, lateral movement and a token, deployment to a signer,
 and unauthorized signing with residual delegation. Their exact prompts and
-hashes are in [[file:binance/storyboard.json][the storyboard manifest]]. They are conceptual illustrations of
+hashes are in [[file:artwork.json][the shared generation manifest]]. They are conceptual illustrations of
 the preliminary report, not screenshots of undisclosed exploit mechanics.
 
 =dev/ts/components/incident.ts= composes these scenes with plain-language
@@ -36,7 +36,7 @@ proof-term edges or a substitute for the exact law.
 
 The five checked-in originals under =defense/= explain purpose separation,
 independent approval, exact transfer binding, current-use rechecking and the
-native-transfer-only boundary. [[file:defense/artwork.json][Their manifest]] retains the exact built-in
+native-transfer-only boundary. [[file:artwork.json][The shared generation manifest]] retains the exact built-in
 generation prompts and binary hashes. =dev/ts/components/artwork.ts= captures
 all artwork families through the same validation function.
 

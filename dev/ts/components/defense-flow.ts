@@ -6,7 +6,7 @@ import type {IncidentStory} from './incident';
 import type {FinancialArtwork} from './financial';
 const ids=['purpose','approval','exact','freshness','transfer'] as const;
 export type DefenseArtwork=Artwork<typeof ids[number]>;
-export const captureDefenseArtwork=(root:string)=>captureArtwork(root,'dev/assets/financial/defense/artwork.json',ids,'dev/assets/financial/defense');
+export const captureDefenseArtwork=(root:string)=>captureArtwork(root,'dev/assets/financial/artwork.json',ids,'dev/assets/financial/defense');
 /** The SDK owns every node/edge. Actual Lean fixture outcomes select the visible path state. */
 export function composeDefenseFlow(context:FigureContext,artwork:DefenseArtwork,financial:FinancialArtwork,story:IncidentStory){
  if(!context.model||!story.defense.deployment_refused||!story.defense.valid_transfer_released)throw new Error('Defense flow requires the observed negative and positive Lean controls');

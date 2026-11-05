@@ -4,7 +4,7 @@
 import {test,expect,afterAll} from 'bun:test';
 import {readFile,readdir} from 'node:fs/promises';
 import {connectWasm} from '@openmbee/opensysml';
-import {verifyFigure} from '../artifacts';
+import {verifyFigure,receiptArtifact} from '../artifacts';
 import {readProofMap,leanProofCheck,type ProofMap} from '../proofs';
 const root=new URL('../../../',import.meta.url),source='dev/sysml/zero-trust-proofs.sysml';
 // One SDK-owned worker per suite; each source variant still parses and is checked.
@@ -25,15 +25,15 @@ const raw=()=>readFile(new URL(source,root),'utf8');
 test('SDK declarations, roles and proof-use references bind emitted receipts',async()=>{
  const started=performance.now(),map=await observe(await raw());expect(map.cards.length).toBeGreaterThan(0);
  for(const card of map.cards)expect((await readFile(new URL(card.source,root),'utf8')).length).toBeGreaterThan(0);
- for(const file of (await readdir(new URL('../../d2/',import.meta.url))).filter(file=>file.endsWith('.json'))){
-  const receipt:{sdk:{view:string};proofClaims?:ProofMap}=JSON.parse(await readFile(new URL('../../d2/'+file,import.meta.url),'utf8'));
+ for(const file of (await readdir(new URL('../../d2/',import.meta.url))).filter(file=>file.endsWith('.d2'))){
+  const receipt:{sdk:{view:string};proofClaims?:ProofMap}=JSON.parse(await readFile(new URL(receiptArtifact('dev/d2/'+file),root),'utf8'));
   if(receipt.sdk.view.startsWith('ZeroTrustProofs::'))expect(receipt.proofClaims).toEqual(map);
  }
  console.log('SDK-PROOF-OBSERVATION-MS',Math.round(performance.now()-started));
 },30000);
 test('native Lean validates the verified SDK proof capture within its own budget',async()=>{
  const entry='dev/d2/zero-trust-model-proofs.d2';await verifyFigure(root.pathname,entry);
- const receipt:{proofClaims:ProofMap}=JSON.parse(await readFile(new URL(entry.slice(0,-3)+'.json',root),'utf8'));
+ const receipt:{proofClaims:ProofMap}=JSON.parse(await readFile(new URL(receiptArtifact(entry),root),'utf8'));
  const started=performance.now(),result=check(receipt.proofClaims);
  console.log('NATIVE-PROOF-CHECK',JSON.stringify({milliseconds:Math.round(performance.now()-started),code:result.code,signal:result.signal}));
  expect(result).toMatchObject({code:0,stderr:''});expect(result.stdout).toContain('PROOF-FIGURES-LEAN-OK');
@@ -69,7 +69,7 @@ for(const[name,change,message]of negativeChecks)test('native Lean refuses '+name
 test('activity diagrams bind actual Lean API and Final field declarations without claiming trace extraction',async()=>{
  for(const name of ['gateway-profile-workflow','gateway-final-tasks']){
   const entry='dev/d2/'+name+'.d2';await verifyFigure(root.pathname,entry);
-  const receipt:{proofClaims:ProofMap}=JSON.parse(await readFile(new URL(entry.slice(0,-3)+'.json',root),'utf8'));
+  const receipt:{proofClaims:ProofMap}=JSON.parse(await readFile(new URL(receiptArtifact(entry),root),'utf8'));
   expect(receipt.proofClaims.cards.length).toBeGreaterThan(0);
   if(name==='gateway-final-tasks'){
    expect(receipt.proofClaims.record?.fields).toHaveLength(8);

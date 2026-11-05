@@ -6,7 +6,7 @@ import {connectWasm} from '@openmbee/opensysml';
 import {projectEntry,readProjectLayout,selectProjectModels} from '../project';
 import {captureFiles,assertCurrent,sha} from '../sources';
 import {readProofMap,leanProofCheck} from '../proofs';
-import {verifyFigure} from '../artifacts';
+import {verifyFigure,receiptArtifact} from '../artifacts';
 const root=new URL('../../../',import.meta.url);
 let connection:ReturnType<typeof connectWasm>|undefined;
 afterAll(async()=>{if(connection)await(await connection).close();});
@@ -60,7 +60,7 @@ test('every project-declared scenario publishes adjacent source-bound SVG export
  ]);
  for(const figure of declared.scenarioFigures){
   await verifyFigure(root.pathname,figure);
-  const receipt=JSON.parse(await readFile(new URL(figure.slice(0,-3)+'.json',root),'utf8'));
+  const receipt=JSON.parse(await readFile(new URL(receiptArtifact(figure),root),'utf8'));
   expect(receipt.entry).toBe(figure);
   expect(receipt.sources[projectEntry]).toBe(sha(await entry()));
   expect(receipt.receipt.readability.minimumTextSize).toBeGreaterThanOrEqual(12);
