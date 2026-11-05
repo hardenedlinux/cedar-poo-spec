@@ -775,8 +775,8 @@ fn settlement_race(case: &str, legacy_migration: bool, handoff_first: bool) {
                 }
             },
         );
-        assert_eq!(partial.confirmed, [operation.clone()]);
-        assert_eq!(partial.pending, [batch_operations[2].clone()]);
+        assert_eq!(partial.confirmed, std::slice::from_ref(&operation));
+        assert_eq!(partial.pending, std::slice::from_ref(&batch_operations[2]));
         let stopped = partial.stopped.unwrap();
         assert_eq!(stopped.operation, batch_operations[0]);
         assert_eq!(stopped.error, "batch acknowledgment lost");
@@ -801,11 +801,11 @@ fn settlement_race(case: &str, legacy_migration: bool, handoff_first: bool) {
                 batch_operations[1].clone()
             ]
         );
-        assert_eq!(resumed.pending, [batch_operations[2].clone()]);
+        assert_eq!(resumed.pending, std::slice::from_ref(&batch_operations[2]));
         assert!(resumed.stopped.is_none());
         assert_eq!(
             writer.legacy_unresolved_operations().unwrap(),
-            [batch_operations[2].clone()]
+            std::slice::from_ref(&batch_operations[2])
         );
         assert_eq!(
             current_receiver.migrate_legacy_oauth_batch_at(&writer, batch(), &trusted, |_, _| {
