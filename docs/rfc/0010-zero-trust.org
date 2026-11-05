@@ -1476,6 +1476,25 @@ read-only Contract confirmations, crashes, writer handoffs and
 revocations. It also proves that a conflicting outcome cannot replace
 that receipt and that a retained operation cannot begin again.
 
+The model-to-native conformance gate emits
+=.lake/build/gateway-recovery-plan.json= from Lean after replaying
+its typed Contracts for both sender-constraint profiles. Rust consumes
+that versioned plan directly. Three rounds vary the handoffs after
+the first worker crash, second worker crash and lost confirmation.
+For each round, both implementations check the writer and receiver
+generation advances. Rust additionally checks the three actual process
+terminations, stale-owner refusals, read-only confirmations, retained
+missing-evidence operation and denied delivery retries. Round-local
+synchronization files prevent an earlier round from releasing a later
+worker. This generated plan stays in the build directory.
+
+The Lean interpreter carries a =LegacyRecoveryTrace= proof with its
+current image. Each accepted handoff and read-only Contract confirmation
+extends that proof. The existing trace theorems therefore apply to the
+same model executions that produce the Rust replay plan. The native
+conformance test runs both commit orders under the existing 120-second
+watchdog, with the existing process-drain allowance.
+
 The first clean audit durably binds the canonical identity of the
 signed outcome. A later audit of that same outcome is idempotent.
 A different signed outcome cannot replace it, even if presented

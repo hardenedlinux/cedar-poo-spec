@@ -1,4 +1,5 @@
 import CedarPooSpec.Gateway.OAuthReceiver
+import Tests.Gateway.RecoveryPlan
 
 namespace Tests.Gateway.OAuthRefresh
 open CedarPooSpec.Gateway.OAuth
@@ -22,41 +23,62 @@ private def repeatedRecoveryExercise (input : Receiver.LegacyBatchInput)
     (retry : Revocation.Crash.BeginInput) : Bool := Id.run do
   let some start := original.independent | return false
   let some (_, outcome) := Receiver.evidence start.image ⟨original.audit.operation⟩ | return false
-  let mut image := input.image
+  let mut tracked : { image : Revocation.Crash.Image // Receiver.LegacyRecoveryTrace input.image image } :=
+    ⟨input.image, .start input.image⟩
   let mut pin := start
   let mut receipt := original
-  for label in ["second-worker-crash", "repeated-confirmation-loss"] do
-    let some standby := Revocation.Crash.handoff image image.writer | return false
-    let some active := Revocation.Crash.handoff standby standby.writer | return false
-    let promotion : Receiver.PromotionInput := ⟨some pin, pin, pin.image, label ++ "-standby"⟩
-    let .ok promoted := Receiver.promotionContract.invoke Receiver.preparePromotion promotion | return false
-    let next : Receiver.PromotionInput :=
-      ⟨some promoted.result, promoted.result, promoted.result.image, label ++ "-active"⟩
-    let .ok promotedAgain := Receiver.promotionContract.invoke Receiver.preparePromotion next | return false
-    let old := receipt
-    pin := promotedAgain.result
-    receipt := { receipt with
-      independent := some pin
-      placement := label ++ "-active"
-      replica := pin.image
-      audit := { receipt.audit with writer := active.writer } }
-    let other := { receipt with audit := { conflict.audit with writer := active.writer } }
-    let absent := { receipt with audit := { missing.audit with writer := active.writer } }
-    let retired : Receiver.LegacyBatchInput := ⟨active, input.trusted, [old, receipt]⟩
-    if retired.run.stopped != some original.audit.operation || retired.run.image != active then
+  for round in RecoveryPlan.rounds do
+    let initialWriter := tracked.1.writer
+    let initialReceiver := pin.image.cut.generation
+    for (label, handoffs) in [
+        ("first-worker-crash", round.handoffsAfterFirst),
+        ("second-worker-crash", round.handoffsAfterSecond),
+        ("repeated-confirmation-loss", round.handoffsAfterConfirmation)] do
+      let old := receipt
+      for _ in [:handoffs] do
+        let before := tracked
+        match applied : Revocation.Crash.handoff before.1 before.1.writer with
+        | none => return false
+        | some active =>
+          let next : Receiver.PromotionInput :=
+            ⟨some pin, pin, pin.image, label ++ toString active.writer⟩
+          let .ok promoted := Receiver.promotionContract.invoke Receiver.preparePromotion next | return false
+          pin := promoted.result
+          tracked := ⟨active, .handoff before.2 applied⟩
+      let image := tracked.1
+      receipt := { receipt with
+        independent := some pin
+        placement := pin.active
+        replica := pin.image
+        audit := { receipt.audit with writer := image.writer } }
+      let other := { receipt with audit := { conflict.audit with writer := image.writer } }
+      let absent := { receipt with audit := { missing.audit with writer := image.writer } }
+      let retired : Receiver.LegacyBatchInput := ⟨image, input.trusted, [old, receipt]⟩
+      if retired.run.stopped != some original.audit.operation || retired.run.image != image then
+        return false
+      let current : Receiver.LegacyBatchInput := ⟨image, input.trusted, [receipt, other, absent, receipt]⟩
+      let .ok first := Receiver.legacyBatchContract.invoke Receiver.prepareLegacyBatch current | return false
+      let reversed := { current with
+        image := first.result.image
+        items := [absent, receipt, receipt, other] }
+      let .ok second := Receiver.legacyBatchContract.invoke Receiver.prepareLegacyBatch reversed | return false
+      if first.result.confirmed != [original.audit.operation, original.audit.operation] ||
+          second.result.confirmed != first.result.confirmed ||
+          second.result.pending != [missing.audit.operation, original.audit.operation] then
+        return false
+      if firstSame : first.result.image = image then
+        if secondSame : second.result.image = image then
+          let before := tracked
+          let source : reversed.image = before.1 := by
+            change first.result.image = image
+            exact firstSame
+          tracked := ⟨_, .confirmation before.2 second source secondSame .durable⟩
+        else return false
+      else return false
+    if tracked.1.writer - initialWriter != round.advances ||
+        pin.image.cut.generation - initialReceiver != round.advances then
       return false
-    let current : Receiver.LegacyBatchInput := ⟨active, input.trusted, [receipt, other, absent, receipt]⟩
-    let .ok first := Receiver.legacyBatchContract.invoke Receiver.prepareLegacyBatch current | return false
-    let reversed := { current with
-      image := first.result.image
-      items := [absent, receipt, receipt, other] }
-    let .ok second := Receiver.legacyBatchContract.invoke Receiver.prepareLegacyBatch reversed | return false
-    if first.result.image != active || second.result.image != active ||
-        first.result.confirmed != [original.audit.operation, original.audit.operation] ||
-        second.result.confirmed != first.result.confirmed ||
-        second.result.pending != [missing.audit.operation, original.audit.operation] then
-      return false
-    image := Revocation.Crash.recoverImage .durable active second.result.image
+  let image := tracked.1
   let replay := { retry with
     image
     writer := image.writer
@@ -579,6 +601,10 @@ private def exercise (confirmation replacement : Confirmation) : Bool := Id.run 
           (Revocation.Recovery.finalize { input with durable := some persisted }).isNone &&
           (Revocation.Recovery.finalize
             ⟨before.authorityId, some persisted, renewed.toReplicaRead⟩).isNone)
+
+def recoveryPlanValidated : Bool :=
+  exercise (.dpop "key") (.dpop "replacement-key") &&
+    exercise (.mtls "cert") (.mtls "replacement-cert")
 
 /-- The identical request still passes with a pre-revocation snapshot even
 when the authoritative revocation has already committed. -/

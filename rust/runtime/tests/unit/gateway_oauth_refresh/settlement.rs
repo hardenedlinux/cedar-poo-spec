@@ -26,12 +26,12 @@ mod late_batch;
 
 #[test]
 fn concurrent_settlement_survives_lost_acknowledgment_and_handoffs() {
-    settlement_race("settlement-race", false, None);
+    settlement_race("settlement-race", false, None, &[]);
 }
 
 #[test]
 fn legacy_unresolved_requires_trusted_receiver_and_stays_spent() {
-    settlement_race("legacy-settlement-race", true, None);
+    settlement_race("legacy-settlement-race", true, None, &[]);
 }
 
 fn assert_locked(directory: &Path) {
@@ -42,7 +42,12 @@ fn assert_locked(directory: &Path) {
     ));
 }
 
-fn settlement_race(case: &str, legacy_migration: bool, first: Option<late_batch::FirstCommit>) {
+fn settlement_race(
+    case: &str,
+    legacy_migration: bool,
+    first: Option<late_batch::FirstCommit>,
+    rounds: &[late_batch::RecoveryRound],
+) {
     let handoff_first = first.is_some();
     let directory = durable_directory(case);
     let oauth_path = directory.join("oauth");
@@ -927,7 +932,7 @@ fn settlement_race(case: &str, legacy_migration: bool, first: Option<late_batch:
                 .is_none()
         );
         let writer_cut = writer.rotate_writer().unwrap();
-        let (writer_cut, successor_cut) = late_batch::replay_across_processes(
+        let (writer_cut, successor_cut, final_replica) = late_batch::replay_across_processes(
             &directory,
             late_batch::RestartFixture {
                 active: primary.clone(),
@@ -942,24 +947,26 @@ fn settlement_race(case: &str, legacy_migration: bool, first: Option<late_batch:
                 missing: batch_effects[2].clone(),
                 missing_intent: batch_intents[2].clone(),
                 grant: grant.clone(),
+                round: 0,
             },
             late_outcome.as_ref().unwrap(),
             first.unwrap(),
+            rounds,
         );
         let writer = open().for_writer(writer_cut);
         assert_eq!(
             writer.legacy_unresolved_operations().unwrap(),
             std::slice::from_ref(&batch_operations[2])
         );
-        (writer, successor_cut, &primary)
+        (writer, successor_cut, final_replica)
     } else {
-        (writer, successor_cut, &successor)
+        (writer, successor_cut, successor.clone())
     };
     let latest = writer.checkpoint().unwrap();
     let new_dispatch =
         ReceiverDispatch::sign(successor_cut, "after-revocation", &intent, &sender).unwrap();
     assert!(
-        receiver(final_replica)
+        receiver(&final_replica)
             .receive_oauth(
                 &writer,
                 use_effect(&latest, &retry),

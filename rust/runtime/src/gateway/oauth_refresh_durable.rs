@@ -55,6 +55,13 @@ struct RetainedEffect {
 #[derive(Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct WriterCut(u64);
 
+impl WriterCut {
+    /// Observe the authority-assigned incarnation for replay and diagnostics.
+    pub fn generation(self) -> u64 {
+        self.0
+    }
+}
+
 /// Actual final-use observations and the checkpoint retained at precheck.
 pub struct DurableFinalUse<'a> {
     pub checked: &'a DurableRevocationCheckpoint,

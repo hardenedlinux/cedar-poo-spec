@@ -1,4 +1,4 @@
-use super::{actual, assert_locked, digest, verified};
+use super::{actual, assert_locked, digest, settlement_race, verified};
 use crate::gateway::checkpoint_store::CheckpointStage;
 use crate::gateway::oauth::Grant;
 use crate::gateway::oauth_refresh_durable::{
@@ -21,6 +21,10 @@ use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
 use std::time::{Duration, Instant};
 
+#[path = "recovery_trace.rs"]
+mod trace;
+pub(super) use trace::RecoveryRound;
+
 const FIXTURE: &str = "CEDAR_OAUTH_LATE_BATCH_FIXTURE";
 const PHASE: &str = "CEDAR_OAUTH_LATE_BATCH_PHASE";
 const WORKER: &str = "gateway::oauth_refresh::tests::settlement::late_batch::restart_worker";
@@ -39,6 +43,7 @@ pub(super) struct RestartFixture {
     pub missing: EffectIdentity,
     pub missing_intent: Signed,
     pub grant: Grant,
+    pub round: usize,
 }
 
 #[derive(Clone, Copy)]
@@ -49,12 +54,22 @@ pub(super) enum FirstCommit {
 
 #[test]
 fn legacy_migration_takeover_first_fences_batch_suffix() {
-    super::settlement_race("legacy-handoff-first", true, Some(FirstCommit::Takeover));
+    super::settlement_race(
+        "legacy-handoff-first",
+        true,
+        Some(FirstCommit::Takeover),
+        &[RecoveryRound::baseline()],
+    );
 }
 
 #[test]
 fn legacy_migration_commit_first_survives_revoked_batch_takeover() {
-    super::settlement_race("legacy-commit-first", true, Some(FirstCommit::Migration));
+    super::settlement_race(
+        "legacy-commit-first",
+        true,
+        Some(FirstCommit::Migration),
+        &[RecoveryRound::baseline()],
+    );
 }
 
 pub(super) fn replay_across_processes(
@@ -62,7 +77,8 @@ pub(super) fn replay_across_processes(
     mut fixture: RestartFixture,
     outcome: &Signed,
     first: FirstCommit,
-) -> (WriterCut, ReceiverCut) {
+    rounds: &[RecoveryRound],
+) -> (WriterCut, ReceiverCut, PathBuf) {
     let fixture_path = root.join("restart-fixture.json");
     let write_fixture = |fixture: &RestartFixture| {
         std::fs::write(&fixture_path, serde_json::to_vec(fixture).unwrap()).unwrap();
@@ -145,51 +161,100 @@ pub(super) fn replay_across_processes(
         publish();
         run_worker(&fixture_path, "rebind");
     }
-    // The takeover-first migration may now be durable without its acknowledgment.
-    takeover(root, &mut fixture);
-    write_fixture(&fixture);
+    // Recovery starts from the committed receipt even when its acknowledgment was lost.
+    let mut cut = takeover(root, &mut fixture);
+    assert!(!rounds.is_empty());
+    for (index, round) in rounds.iter().enumerate() {
+        fixture.round = index;
+        let signals = root.join(format!("recovery-round-{index}"));
+        std::fs::create_dir(&signals).unwrap();
+        write_fixture(&fixture);
+        let before_writer = fixture.writer.generation();
+        let before_receiver = cut.generation;
+        cut = replay_round(root, &fixture_path, &mut fixture, round);
+        assert_eq!(
+            fixture.writer.generation() - before_writer,
+            round.expected_advances
+        );
+        assert_eq!(cut.generation - before_receiver, round.expected_advances);
+        eprintln!(
+            "RECOVERY-ROUND-OK {}",
+            serde_json::json!({
+                "order": match first { FirstCommit::Takeover => "takeover-first", FirstCommit::Migration => "migration-first" },
+                "round": index,
+                "writer_advances": fixture.writer.generation() - before_writer,
+                "receiver_advances": cut.generation - before_receiver,
+                "crashes": round.expected_crashes
+            })
+        );
+    }
+    (fixture.writer, cut, fixture.active)
+}
+
+fn replay_round(
+    root: &Path,
+    fixture_path: &Path,
+    fixture: &mut RestartFixture,
+    round: &RecoveryRound,
+) -> ReceiverCut {
+    let checkpoint = root.join("oauth/checkpoint.json");
+    let signals = root.join(format!("recovery-round-{}", fixture.round));
+    let write_fixture = |fixture: &RestartFixture| {
+        std::fs::write(fixture_path, serde_json::to_vec(fixture).unwrap()).unwrap();
+    };
+    let mut crashes = 0;
     let before_recovery = std::fs::read(&checkpoint).unwrap();
-    let first = spawn_worker(&fixture_path, "resumed-a");
-    let second = spawn_worker(&fixture_path, "resumed-b");
-    wait_for_marker(&root.join("recovery-paused-resumed-a"));
-    wait_for_marker(&root.join("recovery-paused-resumed-b"));
+    let first = spawn_worker(fixture_path, "resumed-a");
+    let second = spawn_worker(fixture_path, "resumed-b");
+    wait_for_marker(&signals.join("recovery-paused-resumed-a"));
+    wait_for_marker(&signals.join("recovery-paused-resumed-b"));
     assert_eq!(std::fs::read(&checkpoint).unwrap(), before_recovery);
     kill_worker(first);
+    crashes += 1;
     assert_eq!(std::fs::read(&checkpoint).unwrap(), before_recovery);
-    takeover(root, &mut fixture);
-    takeover(root, &mut fixture);
+    takeovers(root, fixture, round.handoffs_after_first);
     let after_recovery_takeover = std::fs::read(&checkpoint).unwrap();
-    std::fs::write(root.join("recovery-continue"), []).unwrap();
-    wait_for_marker(&root.join("recovery-second-fenced"));
+    std::fs::write(signals.join("recovery-continue"), []).unwrap();
+    wait_for_marker(&signals.join("recovery-second-fenced"));
     assert_eq!(std::fs::read(&checkpoint).unwrap(), after_recovery_takeover);
     kill_worker(second);
+    crashes += 1;
     assert_eq!(std::fs::read(&checkpoint).unwrap(), after_recovery_takeover);
 
-    takeover(root, &mut fixture);
-    takeover(root, &mut fixture);
-    write_fixture(&fixture);
+    takeovers(root, fixture, round.handoffs_after_second);
+    write_fixture(fixture);
     let before_confirmation = std::fs::read(&checkpoint).unwrap();
-    let confirmation = spawn_worker(&fixture_path, "ack-lost-a");
-    let peer = spawn_worker(&fixture_path, "ack-lost-b");
-    wait_for_marker(&root.join("confirmation-verified"));
+    let confirmation = spawn_worker(fixture_path, "ack-lost-a");
+    let peer = spawn_worker(fixture_path, "ack-lost-b");
+    wait_for_marker(&signals.join("confirmation-verified"));
     finish_worker(peer, "ack-lost-b");
     assert_eq!(std::fs::read(&checkpoint).unwrap(), before_confirmation);
     kill_worker(confirmation);
+    crashes += 1;
     assert_eq!(std::fs::read(&checkpoint).unwrap(), before_confirmation);
 
-    takeover(root, &mut fixture);
-    let cut = takeover(root, &mut fixture);
-    write_fixture(&fixture);
+    let cut = takeovers(root, fixture, round.handoffs_after_confirmation);
+    write_fixture(fixture);
     let after_confirmation_takeover = std::fs::read(&checkpoint).unwrap();
-    let first = spawn_worker(&fixture_path, "recovered-a");
-    let second = spawn_worker(&fixture_path, "recovered-b");
+    let first = spawn_worker(fixture_path, "recovered-a");
+    let second = spawn_worker(fixture_path, "recovered-b");
     finish_worker(first, "recovered-a");
     finish_worker(second, "recovered-b");
     assert_eq!(
         std::fs::read(&checkpoint).unwrap(),
         after_confirmation_takeover
     );
-    (fixture.writer, cut)
+    assert_eq!(crashes, round.expected_crashes);
+    cut
+}
+
+fn takeovers(root: &Path, fixture: &mut RestartFixture, count: u64) -> ReceiverCut {
+    assert!(count > 0);
+    let mut cut = takeover(root, fixture);
+    for _ in 1..count {
+        cut = takeover(root, fixture);
+    }
+    cut
 }
 
 fn takeover(root: &Path, fixture: &mut RestartFixture) -> ReceiverCut {
@@ -296,6 +361,7 @@ fn restart_worker() {
     let root = fixture_path.parent().unwrap();
     let fixture: RestartFixture =
         serde_json::from_slice(&std::fs::read(&fixture_path).unwrap()).unwrap();
+    let signals = root.join(format!("recovery-round-{}", fixture.round));
     let oauth_path = root.join("oauth");
     let pin = root.join("pin");
     let oauth =
@@ -644,10 +710,10 @@ fn restart_worker() {
         phase.as_str(),
         "resumed-a" | "resumed-b" | "recovered-a" | "recovered-b" | "ack-lost-a" | "ack-lost-b"
     ));
-    std::fs::write(root.join(&phase), []).unwrap();
+    std::fs::write(signals.join(&phase), []).unwrap();
     let (round, side) = phase.rsplit_once('-').unwrap();
     let other = format!("{round}-{}", if side == "a" { "b" } else { "a" });
-    wait_for_marker(&root.join(other));
+    wait_for_marker(&signals.join(other));
     let committed = snapshot();
     let (items, pending) = if phase.ends_with("-b") {
         (
@@ -663,8 +729,8 @@ fn restart_worker() {
     let items = items.into_iter().enumerate().map(|(index, item)| {
         let pause_after = if phase == "resumed-a" { 1 } else { 2 };
         if phase.starts_with("resumed-") && index == pause_after {
-            std::fs::write(root.join(format!("recovery-paused-{phase}")), []).unwrap();
-            wait_for_marker(&root.join("recovery-continue"));
+            std::fs::write(signals.join(format!("recovery-paused-{phase}")), []).unwrap();
+            wait_for_marker(&signals.join("recovery-continue"));
         }
         item
     });
@@ -678,8 +744,8 @@ fn restart_worker() {
         let stopped = report.stopped.unwrap();
         assert_eq!(stopped.operation, operation);
         assert_eq!(stopped.error, "OAuth writer fenced");
-        std::fs::write(root.join("recovery-second-fenced"), []).unwrap();
-        wait_for_marker(&root.join("recovery-second-acknowledgment"));
+        std::fs::write(signals.join("recovery-second-fenced"), []).unwrap();
+        wait_for_marker(&signals.join("recovery-second-acknowledgment"));
         panic!("parent did not kill the second recovery worker");
     }
     assert_eq!(report.confirmed, [operation.clone(), operation.clone()]);
@@ -708,8 +774,8 @@ fn restart_worker() {
     assert_eq!(snapshot(), committed);
     assert!(receiver.evidence(&missing_operation).unwrap().is_none());
     if phase == "ack-lost-a" {
-        std::fs::write(root.join("confirmation-verified"), []).unwrap();
-        wait_for_marker(&root.join("confirmation-acknowledgment"));
+        std::fs::write(signals.join("confirmation-verified"), []).unwrap();
+        wait_for_marker(&signals.join("confirmation-acknowledgment"));
         panic!("parent did not drop the repeated confirmation");
     }
 }
