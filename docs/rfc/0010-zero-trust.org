@@ -1330,6 +1330,25 @@ the stable operation identity. Revocation continues to govern new
 authorization, while existing signed evidence remains available
 for independent settlement.
 
+*** Late provider evidence
+
+The current OAuth writer can settle an unresolved operation when
+its original provider action and signed outcome arrive after
+receiver failover or revocation. Settlement checks the exact
+retained intent, a current independently witnessed extension of
+the original log, and the pinned provider key. Missing evidence,
+mismatched observations and competing outcomes in the evidence
+bundle leave the operation unresolved.
+
+The first clean audit durably binds the canonical identity of the
+signed outcome. A later audit of that same outcome is idempotent.
+A different signed outcome cannot replace it, even if presented
+with a matching journal entry. Older checkpoints that recorded
+settlement without the outcome identity preserve their settled
+status and operation reservation. Replaying such a settlement
+cannot establish a binding retroactively. Settlement preserves
+the OAuth checkpoint and the original operation reservation.
+
 Standalone receiver stores retain their local behavior. Managed
 stores require explicit bootstrap and cannot be reopened through
 the standalone interface. The deployment must retain independent

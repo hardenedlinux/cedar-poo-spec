@@ -60,7 +60,8 @@ impl AuditAuthority {
         }
     }
 }
-struct VerifiedOutcome {
+struct VerifiedOutcome<'a> {
+    signed: &'a Signed,
     action: super::ProviderAction,
     commit_index: usize,
 }
@@ -181,18 +182,20 @@ fn reconcile_source(
         intent,
         history.as_ref().map_err(|_| ()),
     )
+    .0
 }
 
 /// Recovery supplies one fully verified borrowed log; no second checkpoint,
-/// signature/chain pass or detached log copy is introduced here.
-pub(super) fn reconcile_recovery(
+/// signature/chain pass or detached log copy is introduced here. Scoped
+/// recovery returns the exact audited envelope with a clean report.
+pub(super) fn reconcile_recovery<'a>(
     journal: &ProviderJournal,
-    receipts: &[Signed],
+    receipts: &'a [Signed],
     history: &super::witness::VerifiedLog<'_>,
     authority: &AuditAuthority,
     provider_key: Option<&VerifyingKey>,
     intent: Option<&Signed>,
-) -> Reconciliation {
+) -> (Reconciliation, Option<&'a Signed>) {
     let verified = authority
         .check_history(history)
         .map(|()| history)
@@ -208,15 +211,15 @@ pub(super) fn reconcile_recovery(
     )
 }
 
-fn reconcile_records(
+fn reconcile_records<'a>(
     journal: &ProviderJournal,
-    receipts: &[Signed],
+    receipts: &'a [Signed],
     snapshot: super::witness::LogView<'_>,
     authority: &AuditAuthority,
     source: OutcomeSource<'_>,
     intent: Option<&Signed>,
     history: Result<&super::witness::VerifiedLog<'_>, ()>,
-) -> Reconciliation {
+) -> (Reconciliation, Option<&'a Signed>) {
     let mut report = Reconciliation {
         invalid_log: history.is_err(),
         ..Reconciliation::default()
@@ -326,6 +329,7 @@ fn reconcile_records(
             Ok(Some((receipt, commit_index))) => {
                 let operation = receipt.action.effect.operation.clone();
                 let outcome = VerifiedOutcome {
+                    signed,
                     action: receipt.action,
                     commit_index,
                 };
@@ -375,6 +379,8 @@ fn reconcile_records(
             }
         }
     }
+    let scoped =
+        operation.and_then(|operation| verified.get(operation).map(|outcome| outcome.signed));
     report
         .missing_actions
         .extend(verified.into_keys().filter(|id| !seen.contains(id)));
@@ -388,7 +394,8 @@ fn reconcile_records(
         items.sort();
         items.dedup();
     }
-    report
+    let outcome = scoped.filter(|_| report == Reconciliation::default());
+    (report, outcome)
 }
 
 #[cfg(test)]

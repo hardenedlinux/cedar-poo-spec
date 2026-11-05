@@ -563,10 +563,10 @@ fn durable_lost_effect_reply_requires_independent_settlement_and_fences_old_writ
         review_trust: None,
         prepared_publications: None,
     };
-    let alternate_use = DurableEffectUse {
+    let alternate_use = |checkpoint| DurableEffectUse {
         admission: DurableFinalUse {
-            checked: &current_checkpoint,
-            replica: &current_checkpoint,
+            checked: checkpoint,
+            replica: checkpoint,
             current: &fresh_use,
             base_allowed: true,
         },
@@ -582,7 +582,7 @@ fn durable_lost_effect_reply_requires_independent_settlement_and_fences_old_writ
         winner
             .receive_oauth(
                 &switched,
-                alternate_use,
+                alternate_use(&current_checkpoint),
                 deliver(&alternate_dispatch, "channel-two", &effect)
             )
             .unwrap()
@@ -802,15 +802,152 @@ fn durable_lost_effect_reply_requires_independent_settlement_and_fences_old_writ
     assert_eq!(recovered.outcome, acknowledged.outcome);
     assert_eq!(recovered.journal.actions, acknowledged.journal.actions);
     let recovered_outcomes = [recovered.outcome];
-    let reconciliation = evidence(&recovered.journal, &recovered_outcomes);
-    assert!(worker.reconcile_effect(reconciliation).unwrap());
+    let later_effect = EffectIdentity {
+        operation: "later-independent-effect".into(),
+        ..fresh.clone()
+    };
+    witness
+        .append(PrecommitInput {
+            current_world: "world",
+            effect: &later_effect,
+            review: &reviewed_again,
+            facts: std::slice::from_ref(&fact),
+            publications: &[],
+        })
+        .unwrap();
+    let extended_history = witness.snapshot();
+    let extended_audit = AuditAuthority {
+        gateway_key: audit.gateway_key,
+        log_key,
+        facts: audit.facts.clone(),
+        minimum_size: 4,
+        independent_frontier: Some(
+            WitnessFrontier::from_checkpoint(&extended_history.checkpoint, &log_key).unwrap(),
+        ),
+        review_trust: None,
+        prepared_publications: None,
+    };
+    let late_evidence = |journal, outcomes| DurableEffectRecovery {
+        effect: &effect,
+        journal,
+        outcomes,
+        history: &extended_history,
+        trust: ProviderAuditTrust {
+            authority: &extended_audit,
+            provider_key: &provider_key,
+        },
+    };
     assert!(
         worker
-            .reconcile_effect(evidence(&recovered.journal, &recovered_outcomes))
+            .reconcile_effect(DurableEffectRecovery {
+                history: &history,
+                ..late_evidence(&recovered.journal, &recovered_outcomes)
+            })
+            .is_err()
+    );
+
+    let mut changed: crate::gateway::ProviderOutcome =
+        crate::gateway::verify(&recovered_outcomes[0], &provider_key).unwrap();
+    changed.outcome.action.result = "conflicting-provider-result".into();
+    let conflicting_outcomes = [sign(&changed, &provider_signer).unwrap()];
+    let conflicting_journal = ProviderJournal::observation(changed.outcome.action);
+    let both = [
+        recovered_outcomes[0].clone(),
+        conflicting_outcomes[0].clone(),
+    ];
+    for rejected in [
+        late_evidence(&absent, &recovered_outcomes),
+        late_evidence(&recovered.journal, &[]),
+        late_evidence(&recovered.journal, &conflicting_outcomes),
+        late_evidence(&recovered.journal, &both),
+    ] {
+        assert!(!worker.reconcile_effect(rejected).unwrap());
+        assert_eq!(
+            worker.effect_status(&operation).unwrap(),
+            EffectStatus::Unresolved
+        );
+    }
+    assert!(
+        switched
+            .reconcile_effect(late_evidence(&recovered.journal, &recovered_outcomes))
+            .is_err()
+    );
+    assert!(
+        worker
+            .reconcile_effect(late_evidence(&recovered.journal, &recovered_outcomes))
             .unwrap()
     );
+    let settlement_writer = worker.rotate_writer().unwrap();
     let restarted =
-        DurableRefreshLedger::new(&oauth_directory, "receiver-oauth").for_writer(next_writer);
+        DurableRefreshLedger::new(&oauth_directory, "receiver-oauth").for_writer(settlement_writer);
+    let current_revoked = restarted.checkpoint().unwrap();
+    assert!(
+        worker
+            .reconcile_effect(late_evidence(&recovered.journal, &recovered_outcomes))
+            .is_err()
+    );
+    // The conflicting pair would pass an audit in isolation, but cannot
+    // replace the exact signed outcome already selected by reconciliation.
+    assert_eq!(
+        crate::gateway::reconcile_intent(
+            &conflicting_journal,
+            &conflicting_outcomes,
+            &extended_history,
+            crate::gateway::IntentAuditTrust {
+                authority: &extended_audit,
+                intent: &intent,
+                provider_key: Some(&provider_key),
+            },
+        ),
+        crate::gateway::Reconciliation::default()
+    );
+    assert!(
+        !restarted
+            .reconcile_effect(late_evidence(&conflicting_journal, &conflicting_outcomes))
+            .unwrap()
+    );
+    assert!(
+        restarted
+            .reconcile_effect(late_evidence(&recovered.journal, &recovered_outcomes))
+            .unwrap()
+    );
+    let redirected =
+        ReceiverDispatch::sign(promoted_cut.clone(), "channel-three", &reapproved, &sender)
+            .unwrap();
+    assert!(
+        promoted
+            .receive_oauth(
+                &restarted,
+                alternate_use(&current_revoked),
+                deliver(&redirected, "channel-three", &effect)
+            )
+            .unwrap()
+            .is_none()
+    );
+
+    let legacy_dir = durable_directory("receiver-legacy-settlement");
+    let mut legacy: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(oauth_directory.join("checkpoint.json")).unwrap())
+            .unwrap();
+    let retained = legacy["effects"][&operation.0].as_object_mut().unwrap();
+    assert!(retained.remove("settled_outcome").is_some());
+    std::fs::write(
+        legacy_dir.join("checkpoint.json"),
+        serde_json::to_vec(&legacy).unwrap(),
+    )
+    .unwrap();
+    let legacy_reader =
+        DurableRefreshLedger::new(&legacy_dir, "receiver-oauth").for_writer(settlement_writer);
+    assert_eq!(
+        legacy_reader.effect_status(&operation).unwrap(),
+        EffectStatus::Reconciled
+    );
+    assert!(
+        !legacy_reader
+            .reconcile_effect(late_evidence(&recovered.journal, &recovered_outcomes))
+            .unwrap()
+    );
+    std::fs::remove_dir_all(legacy_dir).unwrap();
     assert_eq!(
         restarted.effect_status(&operation).unwrap(),
         EffectStatus::Reconciled

@@ -6,8 +6,8 @@ use crate::gateway::oauth::{CurrentUse, Grant, ProofReservation};
 use crate::gateway::oauth_par::VerifiedClient;
 use crate::gateway::witness::{VerifiedLog, verify_view};
 use crate::gateway::{
-    AuditAuthority, EffectIdentity, LogSnapshot, ProviderAuditTrust, ProviderJournal,
-    Reconciliation, Signed, WitnessFrontier,
+    AuditAuthority, EffectIdentity, LogSnapshot, ProviderAuditTrust, ProviderJournal, Signed,
+    WitnessFrontier,
 };
 use cedar_poo_core::operation_identity::OperationId;
 use p256::ecdsa::VerifyingKey;
@@ -44,6 +44,8 @@ struct RetainedEffect {
     anchor: Signed,
     provider_key: Vec<u8>,
     resolved: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    settled_outcome: Option<String>,
 }
 
 /// Authority-assigned writer incarnation. Trusted configuration binds it
@@ -84,6 +86,23 @@ pub struct DurableEffectRecovery<'a> {
     pub outcomes: &'a [Signed],
     pub history: &'a LogSnapshot,
     pub trust: ProviderAuditTrust<'a>,
+}
+
+impl RetainedEffect {
+    fn matches_recovery(
+        &self,
+        input: &DurableEffectRecovery<'_>,
+        history: &VerifiedLog<'_>,
+    ) -> Result<bool, String> {
+        let prior = WitnessFrontier::from_checkpoint(&self.anchor, &input.trust.authority.log_key)?;
+        history.check_frontier(&prior)?;
+        Ok(
+            self.provider_key == input.trust.provider_key.to_encoded_point(false).as_bytes()
+                && history
+                    .intent(&self.intent)
+                    .is_some_and(|entry| &entry.effect == input.effect),
+        )
+    }
 }
 
 fn anchored_history<'a>(
@@ -332,6 +351,7 @@ impl<'a> DurableRefreshLedger<'a> {
                     .as_bytes()
                     .to_vec(),
                 resolved: false,
+                settled_outcome: None,
             },
         );
         file.persist(&image)?;
@@ -407,17 +427,10 @@ impl<'a> DurableRefreshLedger<'a> {
         let Some(effect) = image.effects.get_mut(&input.effect.operation) else {
             return Ok(false);
         };
-        let prior =
-            WitnessFrontier::from_checkpoint(&effect.anchor, &input.trust.authority.log_key)?;
-        history.check_frontier(&prior)?;
-        if effect.provider_key != input.trust.provider_key.to_encoded_point(false).as_bytes()
-            || history
-                .intent(&effect.intent)
-                .is_none_or(|entry| &entry.effect != input.effect)
-        {
+        if !effect.matches_recovery(&input, &history)? {
             return Ok(false);
         }
-        let report = reconcile_recovery(
+        let (_, outcome) = reconcile_recovery(
             input.journal,
             input.outcomes,
             &history,
@@ -425,13 +438,16 @@ impl<'a> DurableRefreshLedger<'a> {
             Some(input.trust.provider_key),
             Some(&effect.intent),
         );
-        if report != Reconciliation::default() {
+        let Some(outcome) = outcome else {
             return Ok(false);
+        };
+        let identity = outcome.source_sha256()?;
+        if effect.resolved {
+            return Ok(effect.settled_outcome.as_ref() == Some(&identity));
         }
-        if !effect.resolved {
-            effect.resolved = true;
-            file.persist(&image)?;
-        }
+        effect.resolved = true;
+        effect.settled_outcome = Some(identity);
+        file.persist(&image)?;
         Ok(true)
     }
 

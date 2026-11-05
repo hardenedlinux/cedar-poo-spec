@@ -99,6 +99,19 @@ private def crashExercise (durable : Revocation.Recovery.Store)
     newDispatch, "channel-two", intent, true⟩
   let reconcile : Revocation.Crash.ReconcileInput := ⟨live, 1, intent.operation, trust, source, history, [action], [outcome]⟩
   let .ok settled := Revocation.Crash.reconcileContract.invoke Revocation.Crash.prepareReconcile reconcile | return false
+  let unrelated : CedarPooSpec.Gateway.EffectProtocol.CommitRef := ⟨"later-effect", [9], [10]⟩
+  let extendedEntries := history.entries ++ [unrelated]
+  let extended : Revocation.Crash.History :=
+    ⟨"log", extendedEntries, true,
+      some (CedarPooSpec.Gateway.Lifecycle.WitnessFrontier.observe "log" extendedEntries)⟩
+  let late : Revocation.Crash.ReconcileInput :=
+    ⟨revokedWriter, 2, intent.operation, trust, source, extended, [action], [outcome]⟩
+  let .ok lateSettlement := Revocation.Crash.reconcileContract.invoke Revocation.Crash.prepareReconcile late
+    | return false
+  let differentAction := { action with value := "different" }
+  let conflicting := { outcome with receipt := ⟨differentAction, intent⟩ }
+  let conflictingEvidence : Revocation.Crash.ReconcileInput :=
+    ⟨lateSettlement.result, 2, intent.operation, trust, source, extended, [differentAction], [conflicting]⟩
   let revokedUse := { begin with image := live, writer := 1, checkedWriter := 1 }
   let afterTakeover : Receiver.ManagedInput :=
     ⟨some successor.result, "successor", retry, revokedUse⟩
@@ -107,6 +120,15 @@ private def crashExercise (durable : Revocation.Recovery.Store)
     !(Revocation.Crash.prepareStatus ⟨finalWriter, 0, intent.operation⟩).isOk &&
     (Receiver.evidence second.result.image dispatch.operation).isNone &&
     (Revocation.Crash.reconcile unknownReconcile).isNone &&
+    (Revocation.Crash.reconcile { late with actions := [] }).isNone &&
+    (Revocation.Crash.reconcile { late with outcomes := [outcome, conflicting] }).isNone &&
+    decide (lateSettlement.result.oauth = revokedWriter.oauth) &&
+    decide (Revocation.Crash.effectStatus lateSettlement.result intent.operation = .reconciled) &&
+    decide (lateSettlement.result.settledOutcome intent.operation = some outcome) &&
+    decide (Revocation.Crash.reconcile { late with image := lateSettlement.result } = some lateSettlement.result) &&
+    (Revocation.Crash.reconcile conflictingEvidence).isNone &&
+    (Receiver.receiveManaged { unknownRetry with authorization :=
+      { retryAuthorization with image := lateSettlement.result } }).isNone &&
     (Receiver.receiveManaged unknownRetry).isNone &&
     decide (Revocation.Crash.effectStatus settled.result intent.operation = .reconciled) &&
     decide (committed.result.receiver.image = delivered.result) &&
@@ -138,7 +160,7 @@ private def crashExercise (durable : Revocation.Recovery.Store)
     (Revocation.Crash.begin { begin with image := handed, writer := 1, checkedWriter := 1 }).isNone &&
     (Revocation.Crash.reconcile { reconcile with outcomes := [] }).isNone &&
     (Revocation.Crash.reconcile { reconcile with outcomes := [{ outcome with signature := [8] }] }).isNone &&
-    (settled.result.resolved.any (fun entry => decide (entry = intent))) &&
+    decide (settled.result.settledOutcome intent.operation = some outcome) &&
     decide (settled.result.oauth = live.oauth) &&
     (Revocation.Crash.begin { begin with image := settled.result, writer := 1, checkedWriter := 1 }).isNone
 
@@ -290,3 +312,4 @@ end Tests.Gateway.OAuthRefresh
 #print axioms CedarPooSpec.Gateway.OAuth.Revocation.Crash.missing_outcome_cannot_settle
 #print axioms CedarPooSpec.Gateway.OAuth.Revocation.Crash.effect_status_survives_failover
 #print axioms CedarPooSpec.Gateway.OAuth.Receiver.managed_retains_oauth_reservation
+#print axioms CedarPooSpec.Gateway.OAuth.Revocation.Crash.conflicting_outcome_cannot_replace_settlement

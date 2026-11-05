@@ -150,7 +150,7 @@ impl Simulator {
                 None
             }
         };
-        let report = crate::gateway::audit::reconcile_recovery(
+        let (report, _) = crate::gateway::audit::reconcile_recovery(
             evidence.provider,
             outcomes.unwrap_or(evidence.receipts),
             &history,

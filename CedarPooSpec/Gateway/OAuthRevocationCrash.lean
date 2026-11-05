@@ -17,7 +17,7 @@ structure Image where
   oauth : Recovery.Store
   writer : Nat := 0
   retained : List Retained := []
-  resolved : List CommitRef := []
+  resolved : List ProviderOutcome := []
   deriving DecidableEq
 
 inductive EffectStatus where
@@ -28,7 +28,7 @@ inductive EffectStatus where
 
 def effectStatus (image : Image) (operation : String) : EffectStatus :=
   if image.retained.any (fun entry => entry.intent.operation == operation) then
-    if image.resolved.any (fun entry => entry.operation == operation) then .reconciled
+    if image.resolved.any (fun entry => entry.receipt.commit.operation == operation) then .reconciled
     else .unresolved
   else .unreserved
 
@@ -220,6 +220,28 @@ def ReconcileInput.retained (input : ReconcileInput) : Option Retained :=
   | [entry] => some entry
   | _ => none
 
+def ReconcileInput.outcome (input : ReconcileInput) (entry : Retained) : Option ProviderOutcome :=
+  input.outcomes.find? (fun outcome => decide (outcome.receipt.commit = entry.intent))
+
+def Image.settledOutcome (image : Image) (operation : String) : Option ProviderOutcome :=
+  image.resolved.find? (fun outcome => outcome.receipt.commit.operation == operation)
+
+def Image.settle (image : Image) (outcome : ProviderOutcome) : Option Image :=
+  match image.settledOutcome outcome.receipt.commit.operation with
+  | none => some { image with resolved := outcome :: image.resolved }
+  | some prior => if prior = outcome then some image else none
+
+theorem settlement_preserves_authority {image after : Image} (applied : image.settle outcome = some after) :
+    after.oauth = image.oauth ∧ after.writer = image.writer ∧ after.retained = image.retained := by
+  unfold Image.settle at applied
+  split at applied
+  · cases applied
+    exact ⟨rfl, rfl, rfl⟩
+  · split at applied
+    · cases applied
+      exact ⟨rfl, rfl, rfl⟩
+    · contradiction
+
 def reconcile (input : ReconcileInput) : Option Image := do
   let entry ← input.retained
   if input.writer = input.image.writer ∧ input.trust.providerKey = entry.providerKey ∧
@@ -227,8 +249,8 @@ def reconcile (input : ReconcileInput) : Option Image := do
       entry.anchor.extends input.history.logKey input.history.entries = true ∧
       (reconcileProviderIntent input.trust input.source entry.intent input.actions input.outcomes
         input.history.valid input.history.entries).clean = true then
-    return { input.image with resolved :=
-      if input.image.resolved.any (fun prior => decide (prior = entry.intent)) then input.image.resolved else entry.intent :: input.image.resolved }
+    let outcome ← input.outcome entry
+    input.image.settle outcome
   else none
 
 def reconcileContract : Contract Unit ReconcileInput Image where
@@ -254,9 +276,17 @@ theorem reconciliation_preserves_burn_and_revocations
   | some entry =>
     simp only [reconcile, found, bind, Option.bind] at accepted
     split at accepted
-    · rw [← Option.some.inj accepted]
-      exact ⟨rfl, rfl, rfl⟩
+    · cases observed : input.outcome entry with
+      | none => simp [observed] at accepted
+      | some outcome =>
+        exact settlement_preserves_authority (by simpa [observed] using accepted)
     · contradiction
+
+theorem conflicting_outcome_cannot_replace_settlement (found : input.retained = some entry)
+    (observed : input.outcome entry = some outcome)
+    (pinned : input.image.settledOutcome outcome.receipt.commit.operation = some prior)
+    (different : prior ≠ outcome) : reconcile input = none := by
+  simp [reconcile, found, observed, Image.settle, pinned, different]
 
 theorem settlement_cannot_reopen_operation
     (receipt : Invocation reconcileContract prepareReconcile input) (retry : BeginInput)

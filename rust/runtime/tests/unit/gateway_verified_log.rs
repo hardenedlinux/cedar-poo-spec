@@ -37,13 +37,21 @@ fn verified_log_reuse_keeps_the_original_root_and_current_independent_floor() {
     let journal = ProviderJournal::default();
     assert_eq!(
         reconcile_recovery(&journal, &[], &history, &authority, None, None),
-        Reconciliation::default()
+        (Reconciliation::default(), None)
     );
     authority.log_key = *simulation_key(7).verifying_key();
-    assert!(reconcile_recovery(&journal, &[], &history, &authority, None, None).invalid_log);
+    assert!(
+        reconcile_recovery(&journal, &[], &history, &authority, None, None)
+            .0
+            .invalid_log
+    );
     authority.log_key = log.verifying_key();
     authority.minimum_size = 1;
-    assert!(reconcile_recovery(&journal, &[], &history, &authority, None, None).invalid_log);
+    assert!(
+        reconcile_recovery(&journal, &[], &history, &authority, None, None)
+            .0
+            .invalid_log
+    );
 
     // Two authenticated writers using the same key can produce distinct,
     // same-height branches. The independent checkpoint chooses the prefix.
@@ -93,7 +101,11 @@ fn verified_log_reuse_keeps_the_original_root_and_current_independent_floor() {
     assert!(super::reconcile(&journal, &[], &fork_snapshot, &authority).invalid_log);
     let verified_fork =
         crate::gateway::witness::verify_view(fork.view(), &authority.log_key, 1).unwrap();
-    assert!(reconcile_recovery(&journal, &[], &verified_fork, &authority, None, None).invalid_log);
+    assert!(
+        reconcile_recovery(&journal, &[], &verified_fork, &authority, None, None)
+            .0
+            .invalid_log
+    );
     append(&mut chosen, "extension");
     assert!(!super::reconcile(&journal, &[], &chosen.snapshot(), &authority).invalid_log);
 
