@@ -14,6 +14,8 @@ pub mod oauth_refresh_durable;
 mod provider;
 #[cfg(unix)]
 pub mod provider_durable;
+#[cfg(unix)]
+pub mod receipt_identity;
 mod review;
 mod simulation;
 mod sources;

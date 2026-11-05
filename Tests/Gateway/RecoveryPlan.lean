@@ -33,6 +33,13 @@ structure Step where
   oldWriterFenced : Bool := true
   oldReplicaFenced : Bool := true
   noResend : Bool := true
+  mappingAccepted : Bool := true
+  crossOperationRefused : Bool := true
+  crossAuthorityRefused : Bool := true
+  foreignProviderRefused : Bool := true
+  foreignWitnessRefused : Bool := true
+  sourceSubstitutionRefused : Bool := true
+  intentSubstitutionRefused : Bool := true
   deriving DecidableEq
 
 structure Round where
@@ -75,7 +82,14 @@ def Step.toJson (step : Step) : Lean.Json := Lean.Json.mkObj [
   ("revocation_preserved", Lean.toJson step.revocationPreserved), ("original_idempotent", Lean.toJson step.originalIdempotent),
   ("conflict_refused", Lean.toJson step.conflictRefused), ("missing_preserved", Lean.toJson step.missingPreserved),
   ("old_writer_fenced", Lean.toJson step.oldWriterFenced), ("old_replica_fenced", Lean.toJson step.oldReplicaFenced),
-  ("no_resend", Lean.toJson step.noResend)]
+  ("no_resend", Lean.toJson step.noResend),
+  ("mapping_accepted", Lean.toJson step.mappingAccepted),
+  ("cross_operation_refused", Lean.toJson step.crossOperationRefused),
+  ("cross_authority_refused", Lean.toJson step.crossAuthorityRefused),
+  ("foreign_provider_refused", Lean.toJson step.foreignProviderRefused),
+  ("foreign_witness_refused", Lean.toJson step.foreignWitnessRefused),
+  ("source_substitution_refused", Lean.toJson step.sourceSubstitutionRefused),
+  ("intent_substitution_refused", Lean.toJson step.intentSubstitutionRefused)]
 
 def Round.toJson (round : Round) : Lean.Json := Lean.Json.mkObj [
   ("first_worker", Lean.toJson round.firstWorker.name),
@@ -87,9 +101,9 @@ def Round.toJson (round : Round) : Lean.Json := Lean.Json.mkObj [
   ("steps", Lean.Json.arr (round.steps.map Step.toJson).toArray)]
 
 def fixture : Lean.Json := Lean.Json.mkObj [
-  ("format", Lean.toJson "cedar-poo-legacy-recovery-plan-v2"),
+  ("format", Lean.toJson "cedar-poo-legacy-recovery-plan-v3"),
   ("scope", Lean.toJson "settled-read-only-recovery"),
-  ("identity_mapping", Lean.toJson "symbolic-roles-to-exact-native-signed-sources"),
+  ("identity_mapping", Lean.toJson "operation-authority-provider-and-exact-signed-sources"),
   ("rounds", Lean.Json.arr (rounds.map Round.toJson).toArray)]
 
 end Tests.Gateway.RecoveryPlan

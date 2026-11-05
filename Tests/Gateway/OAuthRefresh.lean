@@ -1,4 +1,5 @@
 import CedarPooSpec.Gateway.OAuthReceiver
+import CedarPooSpec.Gateway.OAuthReceiptIdentity
 import Tests.Gateway.RecoveryPlan
 
 namespace Tests.Gateway.OAuthRefresh
@@ -26,6 +27,54 @@ private def recoveryStatusName : Revocation.Crash.EffectStatus → String
 private def receiptRole (actual expected : Option CedarPooSpec.Gateway.EffectProtocol.ProviderOutcome) : String :=
   if actual.isNone then "missing" else if actual = expected then "original" else "conflict"
 
+private structure MappingChecks where
+  accepted : Bool := false
+  crossOperation : Bool := false
+  crossAuthority : Bool := false
+  foreignProvider : Bool := false
+  foreignWitness : Bool := false
+  changedSource : Bool := false
+  changedIntent : Bool := false
+
+private def identityMappingChecks (input : Receiver.LegacyBatchInput)
+    (original missing : Receiver.ManagedReconciliation) (image : Revocation.Crash.Image)
+    (pin : Receiver.Checkpoint) : MappingChecks := Id.run do
+  let some (_, outcome) := Receiver.evidence pin.image ⟨original.audit.operation⟩ | return {}
+  if pin.binding != input.trusted then return {}
+  let source : ReceiptIdentity.CanonicalReceipt :=
+    { symbolic := outcome, intent := outcome.receipt.commit
+      intentSource := ⟨outcome.receipt.commit.payload, outcome.receipt.commit.signature⟩
+      outcomeSource := ⟨[5], outcome.signature⟩ }
+  let authority : ReceiptIdentity.Authority :=
+    { receiver := input.trusted, providerKey := original.audit.trust.providerKey
+      witnessKey := original.audit.trust.logKey
+      read := fun operation => if operation = original.audit.operation then some source else none
+      -- Deliberately colliding digests exercise the exact-source obligation.
+      digest := fun _ => "collision-control" }
+  let current := authority.forImage image
+  let request : ReceiptIdentity.Request :=
+    { symbolic := outcome, operation := original.audit.operation
+      identity := ReceiptIdentity.project authority original.audit.operation source
+      intentSource := source.intentSource, outcomeSource := source.outcomeSource }
+  let invoke := fun candidate => (ReceiptIdentity.contract.invoke ReceiptIdentity.prepare (current, candidate)).isOk
+  let wrongOperation := { request with identity := { request.identity with operation := missing.audit.operation } }
+  let wrongSymbol := { request with symbolic := { outcome with receipt :=
+    { outcome.receipt with commit := { outcome.receipt.commit with operation := missing.audit.operation } } } }
+  let foreign := { request with identity := { request.identity with receiver :=
+    { input.trusted with checkpoint := input.trusted.checkpoint ++ "-foreign" } } }
+  let provider := { request with identity := { request.identity with providerKey := "foreign-provider" } }
+  let witness := { request with identity := { request.identity with witnessKey := "foreign-witness" } }
+  let changed := { request with outcomeSource := { source.outcomeSource with payload := [6] } }
+  let changedIntent := { request with intentSource := { source.intentSource with signature := [8] } }
+  return {
+    accepted := invoke request
+    crossOperation := !invoke wrongOperation && !invoke wrongSymbol
+    crossAuthority := !invoke foreign
+    foreignProvider := !invoke provider
+    foreignWitness := !invoke witness
+    changedSource := !invoke changed
+    changedIntent := !invoke changedIntent }
+
 private def observeRecoveryStep (input : Receiver.LegacyBatchInput)
     (original conflict missing : Receiver.ManagedReconciliation) (retry : Revocation.Crash.BeginInput)
     (initialWriter initialReceiver : Nat) (image : Revocation.Crash.Image) (pin : Receiver.Checkpoint)
@@ -50,6 +99,7 @@ private def observeRecoveryStep (input : Receiver.LegacyBatchInput)
   let presentMissing := image.retained.find? (fun entry => entry.intent.operation == pendingOperation)
   let presentOriginal := image.retained.find? (fun entry => entry.intent.operation == operation)
   let replay := { retry with image, writer := image.writer, checkedWriter := image.writer }
+  let mapping := identityMappingChecks input original missing image pin
   { event, worker
     writerAdvance := image.writer - initialWriter
     receiverAdvance := pin.image.cut.generation - initialReceiver
@@ -68,7 +118,14 @@ private def observeRecoveryStep (input : Receiver.LegacyBatchInput)
       decide (Revocation.Crash.effectStatus image pendingOperation = .unresolved)
     oldWriterFenced := writerRun.run.stopped == some operation
     oldReplicaFenced := replicaRun.run.stopped == some operation
-    noResend := (Revocation.Crash.begin replay).isNone }
+    noResend := (Revocation.Crash.begin replay).isNone
+    mappingAccepted := mapping.accepted
+    crossOperationRefused := mapping.crossOperation
+    crossAuthorityRefused := mapping.crossAuthority
+    foreignProviderRefused := mapping.foreignProvider
+    foreignWitnessRefused := mapping.foreignWitness
+    sourceSubstitutionRefused := mapping.changedSource
+    intentSubstitutionRefused := mapping.changedIntent }
 
 private def repeatedRecoveryExercise (input : Receiver.LegacyBatchInput)
     (original conflict missing : Receiver.ManagedReconciliation)
@@ -774,3 +831,13 @@ end Tests.Gateway.OAuthRefresh
 #print axioms CedarPooSpec.Gateway.OAuth.Receiver.legacyBatch_read_only_crash_survives_takeovers
 #print axioms CedarPooSpec.Gateway.OAuth.Receiver.legacyRecoveryTrace_keeps_original_receipt
 #print axioms CedarPooSpec.Gateway.OAuth.Receiver.legacyRecoveryTrace_cannot_reopen_operation
+
+#print axioms CedarPooSpec.Gateway.OAuth.ReceiptIdentity.accepted_mapping
+#print axioms CedarPooSpec.Gateway.OAuth.ReceiptIdentity.wrong_operation_refused
+#print axioms CedarPooSpec.Gateway.OAuth.ReceiptIdentity.wrong_symbolic_operation_refused
+#print axioms CedarPooSpec.Gateway.OAuth.ReceiptIdentity.foreign_receiver_refused
+#print axioms CedarPooSpec.Gateway.OAuth.ReceiptIdentity.foreign_provider_refused
+#print axioms CedarPooSpec.Gateway.OAuth.ReceiptIdentity.changed_source_refused
+#print axioms CedarPooSpec.Gateway.OAuth.ReceiptIdentity.changed_intent_refused
+#print axioms CedarPooSpec.Gateway.OAuth.ReceiptIdentity.mapping_survives_recovery
+#print axioms CedarPooSpec.Gateway.OAuth.ReceiptIdentity.foreign_witness_refused

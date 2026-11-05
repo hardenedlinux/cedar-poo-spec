@@ -55,6 +55,14 @@ impl ReceiverDispatch {
 pub struct LegacyReceiverTrust(ReceiverBinding);
 
 impl LegacyReceiverTrust {
+    /// Project the configured receiver identity for a source-bound receipt mapping.
+    pub fn receipt_authority(&self) -> super::receipt_identity::ReceiptAuthority {
+        super::receipt_identity::ReceiptAuthority {
+            checkpoint: self.0.checkpoint.clone(),
+            scope: self.0.scope.clone(),
+        }
+    }
+
     pub fn from_config(checkpoint: &Path, scope: &str) -> Result<Self, String> {
         if scope.is_empty() {
             return Err("missing legacy receiver scope".into());

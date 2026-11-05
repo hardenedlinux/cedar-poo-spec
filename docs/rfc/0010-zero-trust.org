@@ -1495,7 +1495,7 @@ same model executions that produce the Rust replay plan. The native
 conformance test runs both commit orders under the existing 120-second
 watchdog, with the existing process-drain allowance.
 
-Version 2 of the generated recovery plan contains an ordered state
+Version 3 of the generated recovery plan contains an ordered state
 projection after each worker crash, lost confirmation, fencing result,
 completed takeover and final recovery. The first crashing worker alternates
 between A and B across rounds. Each projection includes both incarnation
@@ -1514,6 +1514,31 @@ final-use attempt. Full checkpoint bytes must remain unchanged by these
 observations. Native trace rows retain the actual source digests in build
 logs. The Lean interpreter computes the matching projections from its
 typed images and Contract operations before the plan is emitted.
+
+The =OAuth.ReceiptIdentity= Contract binds the symbolic outcome to the
+configured receiver authority, provider key, witness key, operation, exact signed
+intent source and exact signed outcome source. Its digests are computed
+by the configured native adapter. The Contract also compares the full
+source bytes with the independently selected canonical sources. The
+rejection theorems therefore require no digest-injectivity premise for
+cross-operation, cross-authority or exact-source substitution.
+
+The Rust adapter verifies the witness and provider signatures, protocol
+versions, provider domain, full effect identity and signed intent linkage
+before preparing an immutable =VerifiedReceiptIdentity=. Candidate checks
+compare the complete authority, key, operation, digest and source tuple.
+The trusted context is selected from deployment configuration, the retained
+intent and independent receiver evidence. A mapping result carries source
+identity information; execution uses the current authorization Contract.
+
+Every generated recovery step checks the positive mapping and rejection
+of a valid receipt for another operation, the same sources under another
+receiver authority, and a same-operation receipt validly signed by another
+provider. Native recovery ports also reject those cross-operation and
+cross-authority inputs. Lean uses a deliberately colliding digest function
+in its exact-source negative controls. The mapping-survival theorem uses
+the finite recovery trace to keep the same settled symbolic source selected
+through crashes, handoffs and revocation.
 
 The first clean audit durably binds the canonical identity of the
 signed outcome. A later audit of that same outcome is idempotent.

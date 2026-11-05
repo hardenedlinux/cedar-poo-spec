@@ -3,6 +3,7 @@ use crate::gateway::oauth_refresh_durable::{
     DurableEffectRecovery, DurableFinalUse, DurableRefreshLedger, EffectStatus,
 };
 use crate::gateway::provider_durable::{DurableReceiver, LegacyReceiverTrust, ReceiverTrust};
+use crate::gateway::receipt_identity::ReceiptIdentityContext;
 use crate::gateway::wire::{sign, simulation_key};
 use crate::gateway::{
     AuditAuthority, FactAuthority, ProviderAuditTrust, ProviderJournal, ProviderOutcome, Signed,
@@ -59,6 +60,13 @@ pub(crate) struct Step {
     old_writer_fenced: bool,
     old_replica_fenced: bool,
     no_resend: bool,
+    mapping_accepted: bool,
+    cross_operation_refused: bool,
+    cross_authority_refused: bool,
+    foreign_provider_refused: bool,
+    foreign_witness_refused: bool,
+    source_substitution_refused: bool,
+    intent_substitution_refused: bool,
 }
 
 #[derive(Clone, Deserialize, Serialize)]
@@ -102,11 +110,11 @@ fn lean_plan_drives_both_native_commit_orders() {
     let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../../.lake/build/gateway-recovery-plan.json");
     let plan: RecoveryPlan = serde_json::from_slice(&std::fs::read(path).unwrap()).unwrap();
-    assert_eq!(plan.format, "cedar-poo-legacy-recovery-plan-v2");
+    assert_eq!(plan.format, "cedar-poo-legacy-recovery-plan-v3");
     assert_eq!(plan.scope, "settled-read-only-recovery");
     assert_eq!(
         plan.identity_mapping,
-        "symbolic-roles-to-exact-native-signed-sources"
+        "operation-authority-provider-and-exact-signed-sources"
     );
     assert_eq!(plan.rounds.len(), 3);
     for round in &plan.rounds {
@@ -166,6 +174,7 @@ impl RoundObserver {
         receiver: u64,
         original: &Signed,
     ) -> Self {
+        std::fs::create_dir_all(root.join("identity-foreign-authority")).unwrap();
         let provider = simulation_key(8);
         let original = original.clone();
         let mut conflict: ProviderOutcome = verify(&original, provider.verifying_key()).unwrap();
@@ -283,6 +292,98 @@ impl RoundObserver {
             &trusted,
             |_, _| panic!("missing evidence changed an operation"),
         );
+        let context = ReceiptIdentityContext {
+            receiver: &trusted,
+            provider_key: provider.verifying_key(),
+            witness_key: &log_key,
+            effect: &fixture.effect,
+            intent: &expected.outcome.commit,
+            outcome: &received.outcome,
+        };
+        let mapping = context.prepare().unwrap();
+        let candidate = mapping.candidate();
+        assert_eq!(candidate.identity.outcome_sha256, original_id);
+        assert_eq!(candidate.identity.intent_sha256, original.intent_identity);
+        let prefix_operation = OperationId(fixture.prefix.operation.clone());
+        let prefix = receiver.evidence(&prefix_operation).unwrap().unwrap();
+        let prefix_outcome: ProviderOutcome =
+            verify(&prefix.outcome, provider.verifying_key()).unwrap();
+        let prefix_mapping = ReceiptIdentityContext {
+            effect: &fixture.prefix,
+            intent: &prefix_outcome.outcome.commit,
+            outcome: &prefix.outcome,
+            ..context
+        }
+        .prepare()
+        .unwrap();
+        let mut disguised_operation = prefix_mapping.candidate();
+        disguised_operation.identity.operation = operation.clone();
+        let cross_operation = receiver.migrate_legacy_oauth_batch_at(
+            &oauth,
+            [DurableEffectRecovery {
+                journal: &prefix.journal,
+                outcomes: std::slice::from_ref(&prefix.outcome),
+                ..original_input()
+            }],
+            &trusted,
+            |_, _| panic!("cross-operation receipt replaced the original"),
+        );
+        let cross_pending = receiver.migrate_legacy_oauth_batch_at(
+            &oauth,
+            [DurableEffectRecovery {
+                effect: &fixture.missing,
+                ..original_input()
+            }],
+            &trusted,
+            |_, _| panic!("cross-operation receipt bound a missing operation"),
+        );
+        let foreign = LegacyReceiverTrust::from_config(
+            &self.root.join("identity-foreign-authority"),
+            "settlement-race",
+        )
+        .unwrap();
+        let foreign_mapping = ReceiptIdentityContext {
+            receiver: &foreign,
+            ..context
+        }
+        .prepare()
+        .unwrap();
+        let foreign_authority =
+            receiver.migrate_legacy_oauth_batch_at(&oauth, [original_input()], &foreign, |_, _| {
+                panic!("cross-authority receipt replaced the original")
+            });
+        let foreign_provider = simulation_key(9);
+        let foreign_source = sign(&expected, &foreign_provider).unwrap();
+        let foreign_provider_mapping = ReceiptIdentityContext {
+            provider_key: foreign_provider.verifying_key(),
+            outcome: &foreign_source,
+            ..context
+        }
+        .prepare()
+        .unwrap();
+        let foreign_key_recovery = receiver.migrate_legacy_oauth_batch_at(
+            &oauth,
+            [DurableEffectRecovery {
+                outcomes: std::slice::from_ref(&foreign_source),
+                trust: ProviderAuditTrust {
+                    provider_key: foreign_provider.verifying_key(),
+                    ..audit
+                },
+                ..original_input()
+            }],
+            &trusted,
+            |_, _| panic!("another provider authority replaced the original receipt"),
+        );
+        let mut foreign_witness = candidate.clone();
+        foreign_witness.identity.witness_key = foreign_provider
+            .verifying_key()
+            .to_encoded_point(false)
+            .as_bytes()
+            .to_vec();
+        let mut changed_source = candidate.clone();
+        changed_source.outcome.payload[0] ^= 1;
+        let mut changed_intent = candidate.clone();
+        changed_intent.intent.signature[0] ^= 1;
         let old = oauth.for_writer(fixture.retired_writer.unwrap());
         let old_writer = receiver.migrate_legacy_oauth_batch(&old, [original_input()], &trusted);
         let old_replica = retired.migrate_legacy_oauth_batch(&oauth, [original_input()], &trusted);
@@ -335,10 +436,43 @@ impl RoundObserver {
                 stop.error == "receiver replica differs from the independent checkpoint"
             }),
             no_resend,
+            mapping_accepted: mapping.check(&candidate) == Some(candidate.identity.clone()),
+            cross_operation_refused: mapping.check(&prefix_mapping.candidate()).is_none()
+                && mapping.check(&disguised_operation).is_none()
+                && cross_operation.confirmed.is_empty()
+                && cross_operation.pending == [operation.clone()]
+                && cross_operation.stopped.is_none()
+                && cross_pending.confirmed.is_empty()
+                && cross_pending.pending == [OperationId(fixture.missing.operation.clone())]
+                && cross_pending.stopped.is_none(),
+            cross_authority_refused: mapping.check(&foreign_mapping.candidate()).is_none()
+                && foreign_authority.confirmed.is_empty()
+                && foreign_authority.pending == [operation.clone()]
+                && foreign_authority.stopped.is_none(),
+            foreign_provider_refused: mapping
+                .check(&foreign_provider_mapping.candidate())
+                .is_none()
+                && foreign_key_recovery.confirmed.is_empty()
+                && foreign_key_recovery.pending == [operation.clone()]
+                && foreign_key_recovery.stopped.is_none(),
+            foreign_witness_refused: mapping.check(&foreign_witness).is_none(),
+            source_substitution_refused: mapping.check(&changed_source).is_none(),
+            intent_substitution_refused: mapping.check(&changed_intent).is_none(),
         };
         assert!(actual.intent_bound && actual.missing_intent_bound && actual.revocation_preserved);
         assert!(actual.original_idempotent && actual.conflict_refused && actual.missing_preserved);
         assert!(actual.old_writer_fenced && actual.old_replica_fenced && actual.no_resend);
+        assert!(
+            actual.mapping_accepted
+                && actual.cross_operation_refused
+                && actual.cross_authority_refused
+        );
+        assert!(
+            actual.foreign_provider_refused
+                && actual.foreign_witness_refused
+                && actual.source_substitution_refused
+                && actual.intent_substitution_refused
+        );
         if !self.expected.is_empty() {
             assert_eq!(
                 self.expected.get(self.next),

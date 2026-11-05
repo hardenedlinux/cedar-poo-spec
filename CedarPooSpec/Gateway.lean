@@ -17,3 +17,4 @@ import CedarPooSpec.Gateway.OAuthRevocation
 import CedarPooSpec.Gateway.OAuthRevocationRecovery
 import CedarPooSpec.Gateway.OAuthRevocationCrash
 import CedarPooSpec.Gateway.OAuthReceiver
+import CedarPooSpec.Gateway.OAuthReceiptIdentity
