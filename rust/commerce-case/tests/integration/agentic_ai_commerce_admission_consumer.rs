@@ -626,3 +626,92 @@ fn two_hop_admission_rechecks_intermediate_mandate() {
     );
     assert_eq!(admit(&host), Err(AdmissionError::RevokedMandate));
 }
+
+#[test]
+fn delegated_admission_rejects_nonadjacent_identity_reuse() {
+    // Each child is signed by its immediate parent. Only the complete
+    // lineage reveals reuse of the root or an earlier non-root identity.
+    for ancestor in [0usize, 1] {
+        for reused_field in ["none", "mandate", "agent", "key"] {
+            let fixture = DelegatedFixture::new();
+            let mut mandates = vec![fixture.root.mandate.clone(), fixture.child.clone()];
+            let keys = [signer(2), signer(4), signer(5), signer(6)];
+            for index in 2..=3 {
+                mandates.push(MandatePayload {
+                    mandate_id: format!("descendant-{index}").into(),
+                    agent_id: format!("agent-{index}").into(),
+                    agent_public_key: key_hex(&keys[index]).into(),
+                    ..mandates[index - 1].clone()
+                });
+            }
+            let prior = mandates[ancestor].clone();
+            match reused_field {
+                "mandate" => mandates[3].mandate_id = prior.mandate_id,
+                "agent" => mandates[3].agent_id = prior.agent_id,
+                "key" => mandates[3].agent_public_key = prior.agent_public_key,
+                _ => {}
+            }
+            let root_signature: Signature = fixture
+                .root
+                .principal_key
+                .sign(&mandates[0].signing_bytes());
+            let (mut lineage, offer) = fixture.claims();
+            for mandate in &mandates[2..] {
+                let mut claims = lineage[1].clone();
+                claims.mandate_id = mandate.mandate_id.clone();
+                claims.agent_id = mandate.agent_id.clone();
+                claims.agent_public_key = mandate.agent_public_key.clone();
+                lineage.push(claims);
+            }
+            let signatures: Vec<Signature> = mandates
+                .windows(2)
+                .enumerate()
+                .map(|(index, pair)| {
+                    keys[index].sign(&delegation_signing_bytes(&pair[0], &pair[1]))
+                })
+                .collect();
+            let signature_bytes: Vec<_> = signatures.iter().map(Signature::to_bytes).collect();
+            let delegations: Vec<_> = mandates[1..]
+                .iter()
+                .zip(&signature_bytes)
+                .map(|(child, signature)| SignedDelegation {
+                    child: child.clone(),
+                    signature: signature.as_slice(),
+                })
+                .collect();
+            let offer_signature: Signature = fixture
+                .root
+                .merchant_key
+                .sign(&fixture.root.offer.signing_bytes());
+            let host = fixture.root.host();
+            let mut policy_called = false;
+            let result = host.admit_delegated(
+                DelegatedAdmissionRequest {
+                    root: mandates[0].clone(),
+                    root_signature: root_signature.to_bytes().as_slice(),
+                    delegations: &delegations,
+                    offer: fixture.root.offer.clone(),
+                    checkout_bytes: &fixture.root.checkout,
+                    offer_signature: offer_signature.to_bytes().as_slice(),
+                    lean_lineage: &lineage,
+                    lean_offer: &offer,
+                    now: 10,
+                },
+                |actual, actual_offer| {
+                    policy_called = true;
+                    actual == lineage && actual_offer == &offer
+                },
+            );
+            if reused_field == "none" {
+                assert!(result.is_ok(), "{result:?}");
+                assert!(policy_called);
+            } else {
+                assert!(
+                    matches!(result, Err(AdmissionError::DelegationVerification(_))),
+                    "accepted repeated {reused_field} from ancestor {ancestor}: {result:?}"
+                );
+                assert!(!policy_called);
+            }
+        }
+    }
+}

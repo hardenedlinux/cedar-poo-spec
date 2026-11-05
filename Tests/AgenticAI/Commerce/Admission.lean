@@ -408,4 +408,69 @@ theorem wrongPaymentBudgetScopeDenied :
     ({ cardProfile with budgetScope := "other-root" }).binds credentialBudget envelope =
       false := by native_decide
 
+
+/-- General laws are consumed with the same root/child/grandchild Cases as
+the existing semantic and native signature-admission controls. -/
+theorem completeLineageHasUniqueIdentities :
+    (mandate.mandateId :: [grant, secondGrant].map (·.child.mandateId)).Nodup ∧
+    (mandate.agentId :: [grant, secondGrant].map (·.child.agentId)).Nodup ∧
+    (mandate.agentPublicKey :: [grant, secondGrant].map (·.child.agentPublicKey)).Nodup :=
+  Delegation.resolvedLineageUnique twoHopAttenuationAccepted
+
+theorem siblingReservationsRetainExactRootAndDebits :
+    sharedBudget.retains sharedAfterSiblings :=
+  SharedBudget.retains_trans
+    (sharedReservationRetainsHistory sharedChildReserves)
+    (sharedReservationRetainsHistory siblingsChargeOneRoot)
+
+theorem siblingReservationCannotRefundChild :
+    sharedAfterChild.spentUnder child.mandateId ≤
+      sharedAfterSiblings.spentUnder child.mandateId :=
+  SharedBudget.retained_ancestor_spend
+    (sharedReservationRetainsHistory siblingsChargeOneRoot) _
+
+theorem revokedAncestorAfterEveryFiniteHistory
+    (framework : CedarPooSpec.ZeroTrust.Framework Unit SharedBudget)
+    (run : CedarPooSpec.ZeroTrust.Run framework (SharedBudget.Step Unit)
+      (sharedAfterChild.revoke child.mandateId) current) :
+    current.reserve current.revision [grant, secondGrant]
+      { offer with terms := grandchildTerms } grandchildPurchase = none :=
+  SharedBudget.revoked_ancestor_blocks_run (mandate := child) framework run
+    (by simp [SharedBudget.revoke]) (by simp [grant])
+
+def contractedSharedProposal : Option SharedBudget := do
+  let .ok receipt := SharedBudget.reservationContract.invoke SharedBudget.prepareReservation {
+    state := sharedBudget, expectedRevision := 0,
+    steps := [grant], offer, purchase := childPurchase } | none
+  pure receipt.result
+
+theorem contractUsesActualSharedAllocator :
+    contractedSharedProposal = some sharedAfterChild := by decide
+
+
+def revokedContractProposal : Option SharedBudget := do
+  let .ok receipt := SharedBudget.reservationContract.invoke SharedBudget.prepareReservation {
+    state := sharedBudget.revoke child.mandateId, expectedRevision := 1,
+    steps := [grant], offer, purchase := childPurchase } | none
+  pure receipt.result
+
+theorem contractRefusesRevokedChild : revokedContractProposal = none := by decide
+
+/-- A syntactically fresh ledger is not a recovery successor of a spent head. -/
+theorem oldCheckpointCannotRefundSibling :
+    ¬ sharedAfterSiblings.retains sharedAfterChild := by
+  intro retained
+  have spend := SharedBudget.retained_spend retained
+  simp [SharedBudget.spentMinor, sharedAfterSiblings, sharedAfterChild,
+    sharedBudget, siblingPurchase, siblingTerms, childPurchase, purchase, terms] at spend
+
+#print axioms Delegation.resolvedLineageUnique
+#print axioms SharedBudget.run_retains
+#print axioms SharedBudget.retained_ancestor_spend
+#print axioms SharedBudget.run_preserves_root_cap
+#print axioms SharedBudget.revoked_ancestor_blocks_run
+#print axioms SharedBudget.reservation_receipt_retains
+#print axioms SharedBudget.reservation_receipt_lineage_unique
+#print axioms SharedBudget.reservation_receipt_root_cap
+
 end CedarPooSpec.AgenticAI.CommerceTest

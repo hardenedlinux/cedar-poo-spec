@@ -132,6 +132,47 @@ both DPoP and mTLS. Old grants remain refused while the unrelated live grant
 can still execute. The original recovery schedules, resource limits and complete
 51-domain consumer gate remain unchanged.
 
+* Stateful delegation and cumulative accounting
+
+Reviewed on 2026-11-06. The
+[[https://www.ietf.org/ietf-ftp/internet-drafts/draft-niyikiza-oauth-attenuating-agent-tokens-02.txt][AAT individual draft -02]],
+Section 9.8, leaves revocation to another mechanism. Appendix E.4 points to
+[[https://github.com/udaykishore-resu/arcp/blob/7acde164d4885715f6ba44956894407b7f099816/docs/ARCP-00.md][ARCP-00 at 7acde164]],
+an experimental runtime-controls profile. Its Sections 7 and 7.3 require
+cumulative ancestor balances and atomic multi-level debit; Sections 6 and 13.5
+require refusal when security-state stores are unavailable. Its implementation
+status describes the budget ledger as in-memory at one enforcement point.
+These are useful engineering assumptions, not distributed crash-recovery proofs.
+
+Our existing shared allocator already charges the root and every ancestor.
+The new =SharedBudget.retains= relation additionally anchors exact root contents,
+reservation multiplicity and historical revocations to a prior independently
+selected head. =SharedBudget.Step= uses the existing reserve/revoke functions;
+its unchanged projection allows an observation/owner change only when the budget
+itself is unchanged. The shared Zero Trust =Run= law proves retention over every
+finite admitted history. Root spend and each ancestor's spend cannot decrease,
+the root cap remains bounded, and a historically revoked ancestor cannot
+authorize a new reservation. Sibling grants cannot reset these balances.
+
+=reservationContract= uses the existing POO typed invocation API over the exact
+allocator. Result equality yields cap and retention proofs; it is not a durable
+commit certificate. A concrete counterexample refuses a same-root older
+checkpoint that would erase a sibling debit. No parser or snapshot signature
+alone establishes that a recovered head is current.
+
+=Delegation.resolvedLineageUnique= proves whole-chain identity uniqueness for
+arbitrary length. Rust already carries ancestor identities inside private
+=VerifiedMandate= values; the new native admission control exercises signed
+three-hop chains, separately reusing a root or non-root mandate ID, agent ID or
+holder key. Unique chains still pass; reuse is rejected before the policy callback.
+The existing refusal is retained; these controls deepen cross-language coverage
+rather than establish a newly exploitable admission defect.
+
+This contribution is deterministic finite-history safety. It establishes no
+eventual receipt delivery, no external transaction atomicity and no discounted
+utility theorem. The 51-domain consumer gate remains unchanged; it does not
+claim a separate complete application invariant for each domain.
+
 * Integrated next research obligations
 
 | Layer | Existing owner to reuse | Concrete next obligation |
