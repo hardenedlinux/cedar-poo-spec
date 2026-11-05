@@ -1349,6 +1349,14 @@ status and operation reservation. Replaying such a settlement
 cannot establish a binding retroactively. Settlement preserves
 the OAuth checkpoint and the original operation reservation.
 
+Concurrent workers use the same OAuth lock for the read, audit
+and checkpoint write. Only the first accepted outcome can bind the
+operation. A stop before checkpoint installation leaves the prior
+reservation unresolved. Once the new checkpoint is durable, the
+binding survives acknowledgment loss, writer handoffs, receiver
+promotions and revocation. The current writer can re-audit the
+original receipt without another write or provider action.
+
 Standalone receiver stores retain their local behavior. Managed
 stores require explicit bootstrap and cannot be reopened through
 the standalone interface. The deployment must retain independent

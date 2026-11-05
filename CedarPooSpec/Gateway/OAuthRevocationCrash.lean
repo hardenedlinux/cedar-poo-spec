@@ -242,6 +242,24 @@ theorem settlement_preserves_authority {image after : Image} (applied : image.se
       exact ⟨rfl, rfl, rfl⟩
     · contradiction
 
+theorem settlement_pins_outcome {image after : Image} (applied : image.settle outcome = some after) :
+    after.settledOutcome outcome.receipt.commit.operation = some outcome := by
+  unfold Image.settle at applied
+  split at applied
+  · cases applied
+    simp [Image.settledOutcome]
+  · rename_i prior pinned
+    split at applied
+    · rename_i equal
+      cases applied
+      simpa [equal] using pinned
+    · contradiction
+
+theorem pinned_outcome_is_idempotent {image : Image}
+    (pinned : image.settledOutcome outcome.receipt.commit.operation = some outcome) :
+    image.settle outcome = some image := by
+  simp [Image.settle, pinned]
+
 def reconcile (input : ReconcileInput) : Option Image := do
   let entry ← input.retained
   if input.writer = input.image.writer ∧ input.trust.providerKey = entry.providerKey ∧
@@ -282,11 +300,50 @@ theorem reconciliation_preserves_burn_and_revocations
         exact settlement_preserves_authority (by simpa [observed] using accepted)
     · contradiction
 
+theorem reconciliation_pins_outcome
+    (receipt : Invocation reconcileContract prepareReconcile input)
+    (found : input.retained = some entry) (observed : input.outcome entry = some outcome) :
+    receipt.result.settledOutcome outcome.receipt.commit.operation = some outcome := by
+  have accepted := receipt.logic
+  change reconcile input = some receipt.result at accepted
+  simp only [reconcile, found, bind, Option.bind] at accepted
+  split at accepted
+  · exact settlement_pins_outcome (by simpa [observed] using accepted)
+  · contradiction
+
 theorem conflicting_outcome_cannot_replace_settlement (found : input.retained = some entry)
     (observed : input.outcome entry = some outcome)
     (pinned : input.image.settledOutcome outcome.receipt.commit.operation = some prior)
     (different : prior ≠ outcome) : reconcile input = none := by
   simp [reconcile, found, observed, Image.settle, pinned, different]
+
+/-- The authority serializes contenders. The losing worker sees the
+winner's committed image even if the winner never received its acknowledgment. -/
+theorem serialized_conflict_cannot_win
+    (winner : Invocation reconcileContract prepareReconcile input)
+    (found : input.retained = some entry) (selected : input.outcome entry = some accepted)
+    (loser : ReconcileInput) (current : loser.image = recoverImage .durable input.image winner.result)
+    (loserFound : loser.retained = some other) (candidate : loser.outcome other = some conflicting)
+    (same : conflicting.receipt.commit.operation = accepted.receipt.commit.operation)
+    (different : accepted ≠ conflicting) : reconcile loser = none := by
+  apply conflicting_outcome_cannot_replace_settlement loserFound candidate _ different
+  rw [current, same]
+  exact reconciliation_pins_outcome winner found selected
+
+theorem committed_settlement_survives_recovery
+    (receipt : Invocation reconcileContract prepareReconcile input)
+    (found : input.retained = some entry) (selected : input.outcome entry = some outcome)
+    (first : handoff (recoverImage .durable input.image receipt.result) writer = some standby)
+    (revoked : revoke standby standbyWriter verified = some revokedImage)
+    (second : handoff revokedImage standbyWriter = some after) :
+    after.settledOutcome outcome.receipt.commit.operation = some outcome ∧
+      after.settle outcome = some after := by
+  have preserved := (handoff_preserves_effect_state second).2.trans
+    ((revocation_preserves_effect_state revoked).2.trans (handoff_preserves_effect_state first).2)
+  have pinned : after.settledOutcome outcome.receipt.commit.operation = some outcome := by
+    simpa only [Image.settledOutcome, preserved, recoverImage] using
+      reconciliation_pins_outcome receipt found selected
+  exact ⟨pinned, pinned_outcome_is_idempotent pinned⟩
 
 theorem settlement_cannot_reopen_operation
     (receipt : Invocation reconcileContract prepareReconcile input) (retry : BeginInput)

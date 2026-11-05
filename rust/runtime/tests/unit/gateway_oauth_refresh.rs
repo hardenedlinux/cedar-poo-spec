@@ -677,3 +677,7 @@ fn staged_and_durable_revoke_crashes_restore_the_correct_image() {
 #[cfg(unix)]
 #[path = "gateway_oauth_refresh/receiver.rs"]
 mod receiver;
+
+#[cfg(unix)]
+#[path = "gateway_oauth_refresh/settlement.rs"]
+mod settlement;

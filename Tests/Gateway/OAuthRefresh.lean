@@ -112,6 +112,13 @@ private def crashExercise (durable : Revocation.Recovery.Store)
   let conflicting := { outcome with receipt := ⟨differentAction, intent⟩ }
   let conflictingEvidence : Revocation.Crash.ReconcileInput :=
     ⟨lateSettlement.result, 2, intent.operation, trust, source, extended, [differentAction], [conflicting]⟩
+  let .ok beforeRevoke := Revocation.Crash.reconcileContract.invoke Revocation.Crash.prepareReconcile
+    { late with image := finalWriter } | return false
+  let durableWithoutAck := Revocation.Crash.recoverImage .durable finalWriter beforeRevoke.result
+  let some postStandby := Revocation.Crash.handoff durableWithoutAck 2 | return false
+  let some postRevoked := Revocation.Crash.revoke postStandby 3 (verified digest) | return false
+  let some postActive := Revocation.Crash.handoff postRevoked 3 | return false
+  let confirmed : Revocation.Crash.ReconcileInput := { late with image := postActive, writer := 4 }
   let revokedUse := { begin with image := live, writer := 1, checkedWriter := 1 }
   let afterTakeover : Receiver.ManagedInput :=
     ⟨some successor.result, "successor", retry, revokedUse⟩
@@ -127,6 +134,11 @@ private def crashExercise (durable : Revocation.Recovery.Store)
     decide (lateSettlement.result.settledOutcome intent.operation = some outcome) &&
     decide (Revocation.Crash.reconcile { late with image := lateSettlement.result } = some lateSettlement.result) &&
     (Revocation.Crash.reconcile conflictingEvidence).isNone &&
+    (Revocation.Crash.reconcile { conflictingEvidence with image := durableWithoutAck }).isNone &&
+    decide (Revocation.Crash.reconcile confirmed = some postActive) &&
+    (Revocation.Crash.reconcile { conflictingEvidence with image := postActive, writer := 4 }).isNone &&
+    (Receiver.receiveManaged { unknownRetry with authorization :=
+      { retryAuthorization with image := postActive, writer := 4, checkedWriter := 4 } }).isNone &&
     (Receiver.receiveManaged { unknownRetry with authorization :=
       { retryAuthorization with image := lateSettlement.result } }).isNone &&
     (Receiver.receiveManaged unknownRetry).isNone &&
@@ -313,3 +325,6 @@ end Tests.Gateway.OAuthRefresh
 #print axioms CedarPooSpec.Gateway.OAuth.Revocation.Crash.effect_status_survives_failover
 #print axioms CedarPooSpec.Gateway.OAuth.Receiver.managed_retains_oauth_reservation
 #print axioms CedarPooSpec.Gateway.OAuth.Revocation.Crash.conflicting_outcome_cannot_replace_settlement
+
+#print axioms CedarPooSpec.Gateway.OAuth.Revocation.Crash.serialized_conflict_cannot_win
+#print axioms CedarPooSpec.Gateway.OAuth.Revocation.Crash.committed_settlement_survives_recovery

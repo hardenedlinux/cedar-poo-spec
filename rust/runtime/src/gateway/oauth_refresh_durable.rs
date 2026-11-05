@@ -421,6 +421,14 @@ impl<'a> DurableRefreshLedger<'a> {
     /// Settle a retained intent only from its independent provider evidence.
     /// Settlement preserves the operation burn and current OAuth state.
     pub fn reconcile_effect(&self, input: DurableEffectRecovery<'_>) -> Result<bool, String> {
+        self.reconcile_effect_at(input, |_| Ok(()))
+    }
+
+    pub(super) fn reconcile_effect_at(
+        &self,
+        input: DurableEffectRecovery<'_>,
+        observe: impl FnMut(CheckpointStage) -> Result<(), String>,
+    ) -> Result<bool, String> {
         let history = anchored_history(input.history, input.trust.authority)?;
         let file = LockedCheckpoint::open(self.directory)?;
         let mut image = self.read(&file)?;
@@ -447,7 +455,7 @@ impl<'a> DurableRefreshLedger<'a> {
         }
         effect.resolved = true;
         effect.settled_outcome = Some(identity);
-        file.persist(&image)?;
+        file.persist_at(&image, observe)?;
         Ok(true)
     }
 
