@@ -10,6 +10,7 @@ use crate::gateway::{
     Witness, WitnessFrontier, verify,
 };
 use cedar_poo_core::operation_identity::OperationId;
+use p256::ecdsa::SigningKey;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 
@@ -162,6 +163,8 @@ pub(super) struct RoundObserver {
     original: Signed,
     conflict: Signed,
     conflict_journal: ProviderJournal,
+    foreign_provider: SigningKey,
+    foreign_source: Signed,
     audit: AuditAuthority,
     ledger: serde_json::Value,
     initial_writer: u64,
@@ -181,7 +184,10 @@ impl RoundObserver {
         std::fs::create_dir_all(root.join("identity-foreign-authority")).unwrap();
         let provider = simulation_key(8);
         let original = original.clone();
-        let mut conflict: ProviderOutcome = verify(&original, provider.verifying_key()).unwrap();
+        let expected: ProviderOutcome = verify(&original, provider.verifying_key()).unwrap();
+        let foreign_provider = simulation_key(9);
+        let foreign_source = sign(&expected, &foreign_provider).unwrap();
+        let mut conflict = expected;
         conflict.outcome.action.result = "different completion".into();
         let signed_conflict = sign(&conflict, &provider).unwrap();
         assert_ne!(
@@ -216,6 +222,8 @@ impl RoundObserver {
             original,
             conflict: signed_conflict,
             conflict_journal: ProviderJournal::observation(conflict.outcome.action),
+            foreign_provider,
+            foreign_source,
             audit,
             ledger: checkpoint.get("ledger").unwrap().clone(),
             initial_writer: fixture.writer.generation(),
@@ -393,11 +401,9 @@ impl RoundObserver {
             &history,
             |_, _| panic!("cross-authority receipt replaced the original"),
         );
-        let foreign_provider = simulation_key(9);
-        let foreign_source = sign(&expected, &foreign_provider).unwrap();
         let foreign_provider_mapping = ReceiptIdentityContext {
-            provider_key: foreign_provider.verifying_key(),
-            outcome: &foreign_source,
+            provider_key: self.foreign_provider.verifying_key(),
+            outcome: &self.foreign_source,
             ..context
         }
         .prepare()
@@ -405,9 +411,9 @@ impl RoundObserver {
         let foreign_key_recovery = receiver.migrate_legacy_oauth_batch_with_history_at(
             &oauth,
             [DurableEffectRecovery {
-                outcomes: std::slice::from_ref(&foreign_source),
+                outcomes: std::slice::from_ref(&self.foreign_source),
                 trust: ProviderAuditTrust {
-                    provider_key: foreign_provider.verifying_key(),
+                    provider_key: self.foreign_provider.verifying_key(),
                     ..audit
                 },
                 ..original_input()
@@ -417,7 +423,8 @@ impl RoundObserver {
             |_, _| panic!("another provider authority replaced the original receipt"),
         );
         let mut foreign_witness = (*candidate).clone();
-        foreign_witness.identity.witness_key = foreign_provider
+        foreign_witness.identity.witness_key = self
+            .foreign_provider
             .verifying_key()
             .to_encoded_point(false)
             .as_bytes()
