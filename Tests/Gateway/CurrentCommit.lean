@@ -140,6 +140,29 @@ private def expected (boundary : CommitBoundary) : PaymentCrashPlan :=
 def paymentCrashPlan : Lean.Json :=
   Lean.toJson [expected .staged, expected .durable]
 
+structure PaymentConcurrentPlan where
+  boundary : String
+  order : String
+  snapshots : List PaymentSnapshot
+  deriving Lean.ToJson
+
+private def concurrentExpected (boundary : CommitBoundary) (conflictFirst : Bool) : PaymentConcurrentPlan :=
+  let committed := match boundary with | .staged => false | .durable => true
+  let settled := if committed then "reconciled" else "unresolved"
+  let firstStatus := if committed && !conflictFirst then "reconciled" else "unresolved"
+  ⟨if committed then "receiver-durable" else "oauth-reserved",
+    if conflictFirst then "conflict-first" else "original-first",
+    [⟨"winner-crash", "winner", 0, 0, 60, committed, "unresolved"⟩,
+     ⟨"handoff", "a", 1, 1, 60, committed, "unresolved"⟩,
+     ⟨"revoked-handoff", "both", 2, 2, 60, committed, "unresolved"⟩,
+     ⟨"first", if conflictFirst then "a" else "b", 2, 2, 60, committed, firstStatus⟩,
+     ⟨"second", if conflictFirst then "b" else "a", 2, 2, 60, committed, settled⟩,
+     ⟨"repeat", "both", 2, 2, 60, committed, settled⟩]⟩
+
+def paymentConcurrentPlan : Lean.Json :=
+  Lean.toJson [concurrentExpected .staged true, concurrentExpected .staged false,
+    concurrentExpected .durable true, concurrentExpected .durable false]
+
 private def observe (state : Image × SharedBudget) (pin : Receiver.Checkpoint)
     (operation event worker : String) : PaymentSnapshot :=
   ⟨event, worker, state.1.writer, pin.image.cut.generation, state.2.spentMinor,
@@ -207,6 +230,52 @@ def paymentCrashExercise (managed : Receiver.ManagedInput) (committed : Receiver
       observe recovered last operation "stale-restart" "a",
       observe recovered last operation "independent-check" "parent"] = (expected boundary).snapshots)
 
+def paymentConcurrentExercise (managed : Receiver.ManagedInput) (committed : Receiver.ManagedResult)
+    (audit : ReconcileInput) (grant : PAR.VerifiedClient Refresh.RefreshDigest)
+    (conflict : ProviderOutcome) (boundary : CommitBoundary) (conflictFirst : Bool) : Bool := Id.run do
+  let some primary := managed.independent | return false
+  let operation := managed.authorization.operation
+  let input := paymentInput managed.authorization
+  let .ok charged := delegatedCommitContract.invoke prepareDelegatedCommit input | return false
+  if charged.result.1 != committed.oauth then return false
+  let initial := charged.result
+  let pin := recoverImage boundary primary committed.receiver
+  let recover (state : Image × SharedBudget) (command : DelegatedRecoveryCommand) :=
+    delegatedRecoveryContract.invoke prepareDelegatedRecovery ⟨state, command⟩
+  let .ok first := recover initial (.handoff 0) | return false
+  let .ok firstPin := Receiver.promotionContract.invoke Receiver.preparePromotion
+    ⟨some pin, pin, pin.image, "standby"⟩ | return false
+  let .ok revoked := recover first.result (.revoke 1 grant initial.2.root.mandateId) | return false
+  let .ok second := recover revoked.result (.handoff 1) | return false
+  let next := firstPin.result
+  let .ok finalPin := Receiver.promotionContract.invoke Receiver.preparePromotion
+    ⟨some next, next, next.image, "successor"⟩ | return false
+  let current := finalPin.result
+  let observation (state : Image × SharedBudget) : Receiver.ManagedReconciliation :=
+    ⟨some current, current.active, current.image, { audit with image := state.1, writer := 2 }⟩
+  let reject (state : Image × SharedBudget) := recover state (.reconcile { observation state with audit :=
+    { (observation state).audit with actions := [conflict.receipt.action], outcomes := [conflict] } })
+  let accept (state : Image × SharedBudget) := recover state (.reconcile (observation state))
+  if (reject second.result).isOk then return false
+  let settled ← match boundary, accept second.result with
+    | .staged, .error _ => pure second.result
+    | .durable, .ok receipt => pure receipt.result
+    | _, _ => return false
+  if (reject settled).isOk then return false
+  match boundary, accept settled with
+  | .staged, .error _ => pure ()
+  | .durable, .ok again => if again.result != settled then return false
+  | _, _ => return false
+  let retry := { managed.authorization with image := settled.1, writer := 2, checkedWriter := 2 }
+  if (begin retry).isSome then return false
+  let firstState := if conflictFirst then second.result else settled
+  return decide ([observe initial pin operation "winner-crash" "winner",
+    observe first.result next operation "handoff" "a",
+    observe second.result current operation "revoked-handoff" "both",
+    observe firstState current operation "first" (if conflictFirst then "a" else "b"),
+    observe settled current operation "second" (if conflictFirst then "b" else "a"),
+    observe settled current operation "repeat" "both"] = (concurrentExpected boundary conflictFirst).snapshots)
+
 def paymentCrashFixture (durable : Revocation.Recovery.Store)
     (read : Revocation.ReplicaRead) (grant : PAR.VerifiedClient Refresh.RefreshDigest) : Bool := Id.run do
   let image : Image := { oauth := durable }
@@ -230,8 +299,9 @@ def paymentCrashFixture (durable : Revocation.Recovery.Store)
   let .ok committed := Receiver.managedContract.invoke Receiver.prepareManaged managed | return false
   let audit : ReconcileInput := ⟨image, 0, intent.operation, trust, source, history, [action], [outcome]⟩
   let conflict := { outcome with receipt := ⟨{ action with value := "different" }, intent⟩ }
-  return [CommitBoundary.staged, .durable].all
-    (paymentCrashExercise managed committed.result audit grant conflict)
+  return [CommitBoundary.staged, .durable].all (fun boundary =>
+    paymentCrashExercise managed committed.result audit grant conflict boundary &&
+    [true, false].all (paymentConcurrentExercise managed committed.result audit grant conflict boundary))
 
 private def profile (audience : String) (schema : Cedar.Validation.Schema)
     (case : Lean.Json) : Except String Lean.Json := do
@@ -262,3 +332,4 @@ end Tests.Gateway.CurrentCommit
 #print axioms CedarPooSpec.Vertical.FinancialServices.delegated_recovery_cannot_reopen_operation
 #print axioms CedarPooSpec.Vertical.FinancialServices.delegated_recovery_two_steps_preserve_reservations
 #print axioms CedarPooSpec.Vertical.FinancialServices.delegated_recovery_two_steps_cannot_reopen
+#print axioms CedarPooSpec.Vertical.FinancialServices.delegated_recovery_refuses_unobserved_outcome

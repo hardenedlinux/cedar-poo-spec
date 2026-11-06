@@ -11,6 +11,9 @@ use std::path::Path;
 use std::process::{Command, Stdio};
 use std::time::{Duration, Instant};
 
+#[path = "payment_concurrent.rs"]
+mod concurrent;
+
 const CHILD: &str =
     "gateway::oauth_refresh::tests::current_commit::payment_crash::payment_crash_worker";
 const ROOT: &str = "CEDAR_PAYMENT_CRASH_ROOT";

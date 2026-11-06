@@ -307,5 +307,16 @@ theorem delegated_recovery_two_steps_cannot_reopen
   apply burned_operation_cannot_begin
   simpa only [same, (delegated_recovery_two_steps_preserve_reservations first second joined).1] using burned
 
+/-- A worker cannot substitute an audit outcome for the independently
+    committed receiver outcome, including when it arrives first. -/
+theorem delegated_recovery_refuses_unobserved_outcome
+    (state : Image × SharedBudget) (observation : Receiver.ManagedReconciliation)
+    (present : observation.independent = some pin)
+    (committed : Receiver.evidence pin.image ⟨observation.audit.operation⟩ = some (action, outcome))
+    (missing : outcome ∉ observation.audit.outcomes) :
+    (DelegatedRecoveryInput.mk state (.reconcile observation)).apply = none := by
+  have refused := Receiver.conflict_first_cannot_settle present committed missing
+  simp [DelegatedRecoveryInput.apply, refused]
+
 
 end CedarPooSpec.Vertical.FinancialServices

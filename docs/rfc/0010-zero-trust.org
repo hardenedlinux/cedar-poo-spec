@@ -54,6 +54,15 @@ event and worker identity at each step, are compared for each crash boundary,
 retaining the original charge and operation hold. These
 process tests use local simulated persistence and SIGKILL.
 
+The concurrent recovery replay additionally restarts two worker processes after
+revocation and two receiver/writer takeovers. Both independently read receiver
+evidence. Two controlled schedules put a correctly signed conflicting receipt
+first or the original receipt first; a shared release then lets both repeat
+reconciliation and attempt duplicate submission concurrently. Each crash
+boundary and order is compared with six Lean-generated snapshots. Missing
+receiver evidence remains unresolved; a committed receipt is retained exactly.
+The scheduler explores these two finite orders, not all possible interleavings.
+
 The native gate feeds Lean-produced AgentCore and FHIR policies, schemas and
 requests through the same guarded API using DPoP and mTLS respectively. It
 also runs a signed payment race, writer takeover, lost-reply recovery and

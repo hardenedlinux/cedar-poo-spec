@@ -9,4 +9,6 @@ def main : IO Unit := do
   IO.FS.writeFile ".lake/build/gateway-current-commit-profiles.json" profiles.compress
   IO.FS.writeFile ".lake/build/gateway-payment-crash-plan.json"
     Tests.Gateway.CurrentCommit.paymentCrashPlan.compress
+  IO.FS.writeFile ".lake/build/gateway-payment-concurrent-plan.json"
+    Tests.Gateway.CurrentCommit.paymentConcurrentPlan.compress
   (← IO.getStdout).putStrLn Tests.Gateway.RecoveryPlan.fixture.compress
