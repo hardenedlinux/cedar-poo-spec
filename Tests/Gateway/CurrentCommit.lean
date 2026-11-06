@@ -44,6 +44,10 @@ def joinedExercise (request : BeginInput) (reserved : Image) : Bool := Id.run do
   let debited := joined.result.2
   let sibling := purchase debited "child-b" "other-operation"
   let revoked := budget.revoke root.mandateId
+  let contender := purchase budget "child-b" "other-operation"
+  let some otherWinner := budget.reserve contender.expectedRevision contender.steps
+    contender.offer contender.purchase | return false
+  let afterOther := purchase otherWinner "child-a" request.operation
   decide (hold.result = reserved ∧ joined.result.1 = reserved ∧ debited.spentMinor = 60) &&
     (currentCommitContract.invoke prepareCurrentCommit { current with actualGeneration := 1 }).isOk == false &&
     (currentCommitContract.invoke prepareCurrentCommit
@@ -51,6 +55,8 @@ def joinedExercise (request : BeginInput) (reserved : Image) : Bool := Id.run do
           image := { reserved with retained := request.image.retained } } }).isOk == false &&
     (delegatedCommitContract.invoke prepareDelegatedCommit { input with independentBudget := debited }).isOk == false &&
     (debited.reserve sibling.expectedRevision sibling.steps sibling.offer sibling.purchase).isNone &&
+    decide (otherWinner.spentMinor = 60) &&
+    (otherWinner.reserve afterOther.expectedRevision afterOther.steps afterOther.offer afterOther.purchase).isNone &&
     (delegatedCommitContract.invoke prepareDelegatedCommit
       { input with budget := purchase revoked "child-a" request.operation, independentBudget := revoked }).isOk == false
 
@@ -181,5 +187,6 @@ end Tests.Gateway.CurrentCommit
 #print axioms CedarPooSpec.Gateway.OAuth.Revocation.Crash.current_commit_rejects_older_image
 #print axioms CedarPooSpec.Gateway.OAuth.Revocation.Crash.current_commit_binds_oauth_target
 #print axioms CedarPooSpec.Vertical.FinancialServices.delegated_commit_preserves_debits
+#print axioms CedarPooSpec.Vertical.FinancialServices.delegated_commit_refuses_losing_revision
 
 #print axioms CedarPooSpec.Vertical.FinancialServices.delegated_recovery_cannot_reopen_operation

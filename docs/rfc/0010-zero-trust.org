@@ -53,6 +53,16 @@ common transaction authority across all writers for a budget. The simulation
 assumes an independently selected Commerce authority and does not model an
 external payment rail.
 
+The shared-revision law also rejects a losing prepared payment after a winning
+reservation, including when the loser reloads the winning budget but retains
+its old expected revision. This is conditional on the Host serializing the
+comparison and write. A native two-thread race combines a lost receiver reply
+with two successive receiver promotions and writer rotations, rejects both old
+generations, and reconciles the winner from the promoted receiver's independent
+evidence. Missing and conflicting signed evidence are refused; repeated original
+evidence is idempotent. This race uses local simulated storage and does not
+itself kill either racing worker.
+
 * Primary sources and what is actually reused
 
 | Source | Inspected contribution | Use here | Evidence boundary |

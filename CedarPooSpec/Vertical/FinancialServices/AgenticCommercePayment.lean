@@ -154,6 +154,23 @@ theorem delegated_commit_refuses_stale_budget (input : DelegatedCommitInput)
     (stale : input.independentBudget ≠ input.budget.state) : input.commit = none := by
   simp [DelegatedCommitInput.commit, DelegatedCommitInput.current, stale]
 
+/-- A worker prepared against the same budget revision cannot commit after
+    another worker wins, even if it reloads the winning budget. The Host must
+    serialize the actual comparison and write; this theorem models that order. -/
+theorem delegated_commit_refuses_losing_revision
+    (winner loser : DelegatedCommitInput)
+    (receipt : Invocation delegatedCommitContract prepareDelegatedCommit winner)
+    (sameRevision : loser.budget.expectedRevision = winner.budget.state.revision) :
+    (let budget := { loser.budget with state := receipt.result.2 }
+     let rebound := { loser with budget := budget, independentBudget := receipt.result.2 }
+     rebound.commit = none) := by
+  have advanced := sharedReservationAdvancesRevision _ _ _ _ _ _
+    (delegated_commit_exact receipt).2
+  have stale : loser.budget.expectedRevision ≠ receipt.result.2.revision := by
+    rw [sameRevision, advanced]
+    omega
+  simp [DelegatedCommitInput.commit, sharedStaleRevisionCannotReserve, stale]
+
 open CedarPooSpec.Gateway.OAuth
 
 /-- Recovery uses the same OAuth operation inventory and shared budget as

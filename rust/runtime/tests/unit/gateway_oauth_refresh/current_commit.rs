@@ -411,6 +411,8 @@ fn payment_simulator(
 fn delegated_payment_serializes_charge_and_hold_across_lost_reply_and_takeover() {
     let path = durable_directory("current-payment");
     let receiver_path = durable_directory("current-payment-receiver");
+    let successor_path = durable_directory("current-payment-successor");
+    let final_path = durable_directory("current-payment-final");
     let receiver_pin = durable_directory("current-payment-pin");
     let ledger = DurableRefreshLedger::new(&path, "authority");
     ledger.initialize().unwrap();
@@ -557,20 +559,61 @@ fn delegated_payment_serializes_charge_and_hold_across_lost_reply_and_takeover()
         EffectStatus::Unresolved
     );
     assert!(receiver.evidence(&calls[loser].id()).unwrap().is_none());
+    let before_promotion = receiver.evidence(&calls[winner].id()).unwrap().unwrap();
 
     let next_writer = ledger.rotate_writer().unwrap();
     let ledger_next = DurableRefreshLedger::new(&path, "authority").for_writer(next_writer);
-    let next_cut = receiver.advance(&cut).unwrap();
+    let pin0 = receiver.acknowledged_checkpoint().unwrap();
+    std::fs::copy(
+        receiver_path.join("checkpoint.json"),
+        successor_path.join("checkpoint.json"),
+    )
+    .unwrap();
+    let successor = DurableReceiver::managed(
+        &successor_path,
+        &receiver_pin,
+        ReceiverTrust {
+            scope: "payments",
+            sender: signer.verifying_key(),
+            witness: &witness,
+            provider: &provider,
+        },
+    )
+    .unwrap();
+    successor.promote(&pin0).unwrap();
     assert!(ledger.effect_checkpoint().is_err());
+    assert!(receiver.cut().is_err());
+    let pin1 = successor.acknowledged_checkpoint().unwrap();
+    std::fs::copy(
+        successor_path.join("checkpoint.json"),
+        final_path.join("checkpoint.json"),
+    )
+    .unwrap();
+    let final_receiver = DurableReceiver::managed(
+        &final_path,
+        &receiver_pin,
+        ReceiverTrust {
+            scope: "payments",
+            sender: signer.verifying_key(),
+            witness: &witness,
+            provider: &provider,
+        },
+    )
+    .unwrap();
+    let final_writer = ledger_next.rotate_writer().unwrap();
+    let ledger_final = ledger.for_writer(final_writer);
+    let next_cut = final_receiver.promote(&pin1).unwrap();
+    assert!(ledger_next.checkpoint().is_err());
+    assert!(successor.cut().is_err());
     let retry = |index: usize, writer: &DurableRefreshLedger<'_>, host: &CommerceAdmissionHost| {
         let (call, prepared) = Intent::prepare(&simulators[index]);
         let current = oauth_current(&grant, "changed-worker");
-        let checked = ledger_next.checkpoint().unwrap();
-        let pin = ledger_next.effect_checkpoint().unwrap();
+        let checked = ledger_final.checkpoint().unwrap();
+        let pin = ledger_final.effect_checkpoint().unwrap();
         let dispatch =
             ReceiverDispatch::sign(next_cut.clone(), "second", &call.signed, &signer).unwrap();
         let facts = call.audit.facts.accepts(&call.envelope.facts).unwrap();
-        let result = receiver.receive_current_oauth(
+        let result = final_receiver.receive_current_oauth(
             writer,
             call.input(
                 prepared,
@@ -589,34 +632,75 @@ fn delegated_payment_serializes_charge_and_hold_across_lost_reply_and_takeover()
                 publications: &[],
             },
         );
-        assert!(ledger_next.recover_effects(&pin).unwrap());
+        assert!(ledger_final.recover_effects(&pin).unwrap());
         result
     };
 
     assert!(retry(loser, &ledger, &host).unwrap_err().contains("writer"));
-    assert!(retry(loser, &ledger_next, &host).unwrap().is_none());
-    assert!(retry(winner, &ledger_next, &host).unwrap().is_none());
+    assert!(
+        retry(loser, &ledger_next, &host)
+            .unwrap_err()
+            .contains("writer")
+    );
+    assert!(retry(loser, &ledger_final, &host).unwrap().is_none());
+    assert!(retry(winner, &ledger_final, &host).unwrap().is_none());
     host.revoke_mandate(
         purchases[0].root.principal.clone(),
         purchases[0].root.mandate_id.clone(),
     );
     assert!(
-        retry(loser, &ledger_next, &host)
+        retry(loser, &ledger_final, &host)
             .unwrap_err()
             .contains("RevokedMandate")
     );
-    assert!(ledger_next.revoke(verified(digest())).unwrap());
+    assert!(ledger_final.revoke(verified(digest())).unwrap());
     assert!(
-        retry(winner, &ledger_next, &host)
+        retry(winner, &ledger_final, &host)
             .unwrap_err()
             .contains("RevokedMandate")
     );
 
     let original = calls[winner];
-    let proof = receiver.evidence(&original.id()).unwrap().unwrap();
+    let proof = final_receiver.evidence(&original.id()).unwrap().unwrap();
+    assert_eq!(proof.outcome.payload, before_promotion.outcome.payload);
+    assert_eq!(proof.outcome.signature, before_promotion.outcome.signature);
+    let absent = crate::gateway::ProviderJournal::default();
+    let recovery = |journal: &crate::gateway::ProviderJournal, outcomes: &[Signed]| {
+        final_receiver.reconcile_oauth(
+            &ledger_final,
+            DurableEffectRecovery {
+                effect: &original.envelope.effect,
+                journal,
+                outcomes,
+                history: &original.history,
+                trust: ProviderAuditTrust {
+                    authority: &original.audit,
+                    provider_key: provider.verifying_key(),
+                },
+            },
+        )
+    };
+    assert!(!recovery(&absent, &[]).unwrap());
+    assert_eq!(
+        ledger_final.effect_status(&original.id()).unwrap(),
+        EffectStatus::Unresolved
+    );
+    let mut conflicting: crate::gateway::ProviderOutcome =
+        crate::gateway::verify(&proof.outcome, provider.verifying_key()).unwrap();
+    conflicting.outcome.action.result = "conflicting-result".into();
+    let conflicting_journal =
+        crate::gateway::ProviderJournal::observation(conflicting.outcome.action.clone());
+    let conflicting_signed = crate::gateway::wire::sign(&conflicting, &provider).unwrap();
+    assert!(
+        !recovery(
+            &conflicting_journal,
+            std::slice::from_ref(&conflicting_signed)
+        )
+        .unwrap()
+    );
     let recover = || {
-        receiver.reconcile_oauth(
-            &ledger_next,
+        final_receiver.reconcile_oauth(
+            &ledger_final,
             DurableEffectRecovery {
                 effect: &original.envelope.effect,
                 journal: &proof.journal,
@@ -631,12 +715,19 @@ fn delegated_payment_serializes_charge_and_hold_across_lost_reply_and_takeover()
     };
     assert!(recover().unwrap());
     assert!(recover().unwrap());
+    assert!(
+        !recovery(
+            &conflicting_journal,
+            std::slice::from_ref(&conflicting_signed)
+        )
+        .unwrap()
+    );
     assert_eq!(
-        ledger_next.effect_status(&original.id()).unwrap(),
+        ledger_final.effect_status(&original.id()).unwrap(),
         EffectStatus::Reconciled
     );
     assert_eq!(
-        ledger_next.effect_status(&calls[loser].id()).unwrap(),
+        ledger_final.effect_status(&calls[loser].id()).unwrap(),
         EffectStatus::Unreserved
     );
     let image: serde_json::Value =
@@ -649,6 +740,8 @@ fn delegated_payment_serializes_charge_and_hold_across_lost_reply_and_takeover()
     );
     std::fs::remove_dir_all(path).unwrap();
     std::fs::remove_dir_all(receiver_path).unwrap();
+    std::fs::remove_dir_all(successor_path).unwrap();
+    std::fs::remove_dir_all(final_path).unwrap();
     std::fs::remove_dir_all(receiver_pin).unwrap();
 }
 
