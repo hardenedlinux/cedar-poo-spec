@@ -8,6 +8,7 @@ use super::provider::ProviderRequest;
 pub use super::receipt_identity::LegacyReceiverTrust;
 use super::receipt_identity::ReceiptAuthority as ReceiverBinding;
 use super::wire::sign;
+use super::witness::VerifiedLog;
 use super::{
     EffectIdentity, FactBinding, ProviderAction, ProviderJournal, Signed, Version, verify,
 };
@@ -630,7 +631,7 @@ impl<'a> DurableReceiver<'a> {
         trusted: &LegacyReceiverTrust,
         observe: impl FnMut(&OperationId, CheckpointStage) -> Result<(), String>,
     ) -> LegacyMigrationReport {
-        self.migrate_oauth_batch_at(oauth, inputs, trusted, false, observe)
+        self.migrate_oauth_batch_at(oauth, inputs, trusted, false, None, observe)
     }
 
     /// Explicitly backfill settled legacy records using the current independent
@@ -651,7 +652,19 @@ impl<'a> DurableReceiver<'a> {
         trusted: &LegacyReceiverTrust,
         observe: impl FnMut(&OperationId, CheckpointStage) -> Result<(), String>,
     ) -> LegacyMigrationReport {
-        self.migrate_oauth_batch_at(oauth, inputs, trusted, true, observe)
+        self.migrate_oauth_batch_at(oauth, inputs, trusted, true, None, observe)
+    }
+
+    #[cfg(test)]
+    pub(super) fn migrate_legacy_oauth_batch_with_history_at<'e>(
+        &self,
+        oauth: &DurableRefreshLedger<'_>,
+        inputs: impl IntoIterator<Item = DurableEffectRecovery<'e>>,
+        trusted: &LegacyReceiverTrust,
+        history: &VerifiedLog<'_>,
+        observe: impl FnMut(&OperationId, CheckpointStage) -> Result<(), String>,
+    ) -> LegacyMigrationReport {
+        self.migrate_oauth_batch_at(oauth, inputs, trusted, false, Some(history), observe)
     }
 
     fn migrate_oauth_batch_at<'e>(
@@ -660,14 +673,20 @@ impl<'a> DurableReceiver<'a> {
         inputs: impl IntoIterator<Item = DurableEffectRecovery<'e>>,
         trusted: &LegacyReceiverTrust,
         settled: bool,
+        verified_history: Option<&VerifiedLog<'_>>,
         mut observe: impl FnMut(&OperationId, CheckpointStage) -> Result<(), String>,
     ) -> LegacyMigrationReport {
         let mut report = LegacyMigrationReport::default();
         for input in inputs {
             let operation = OperationId(input.effect.operation.clone());
-            match self.reconcile_oauth_mode_at(oauth, input, Some(trusted), settled, |stage| {
-                observe(&operation, stage)
-            }) {
+            match self.reconcile_oauth_mode_at(
+                oauth,
+                input,
+                Some(trusted),
+                settled,
+                verified_history,
+                |stage| observe(&operation, stage),
+            ) {
                 Ok(true) => report.confirmed.push(operation),
                 Ok(false) => report.pending.push(operation),
                 Err(error) => {
@@ -686,7 +705,7 @@ impl<'a> DurableReceiver<'a> {
         legacy: Option<&LegacyReceiverTrust>,
         observe: impl FnMut(CheckpointStage) -> Result<(), String>,
     ) -> Result<bool, String> {
-        self.reconcile_oauth_mode_at(oauth, input, legacy, false, observe)
+        self.reconcile_oauth_mode_at(oauth, input, legacy, false, None, observe)
     }
 
     fn reconcile_oauth_mode_at(
@@ -695,6 +714,7 @@ impl<'a> DurableReceiver<'a> {
         input: DurableEffectRecovery<'_>,
         legacy: Option<&LegacyReceiverTrust>,
         settled: bool,
+        verified_history: Option<&VerifiedLog<'_>>,
         observe: impl FnMut(CheckpointStage) -> Result<(), String>,
     ) -> Result<bool, String> {
         let authority = oauth.receiver_authority()?;
@@ -715,6 +735,7 @@ impl<'a> DurableReceiver<'a> {
             input,
             &authority,
             request,
+            verified_history,
             || {
                 let files = self.lock()?;
                 let (image, checkpoint) = self.current(&files)?;

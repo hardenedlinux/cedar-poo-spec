@@ -1,6 +1,6 @@
 use super::{FirstCommit, RestartFixture, actual, settlement_race};
 use crate::gateway::oauth_refresh_durable::{
-    DurableEffectRecovery, DurableFinalUse, DurableRefreshLedger, EffectStatus,
+    DurableEffectRecovery, DurableFinalUse, DurableRefreshLedger, EffectStatus, anchored_history,
 };
 use crate::gateway::provider_durable::{DurableReceiver, LegacyReceiverTrust, ReceiverTrust};
 use crate::gateway::receipt_identity::ReceiptIdentityContext;
@@ -226,6 +226,8 @@ impl RoundObserver {
     }
 
     pub fn observe(&mut self, fixture: &RestartFixture, event: &str, worker: &str) {
+        // The fixture and its witness anchor are immutable for this observation.
+        let history = anchored_history(&fixture.history, &self.audit).unwrap();
         let provider = simulation_key(8);
         let sender = simulation_key(4);
         let log_key = Witness::simulation().verifying_key();
@@ -270,11 +272,35 @@ impl RoundObserver {
             history: &fixture.history,
             trust: audit,
         };
-        let confirmed =
-            receiver.migrate_legacy_oauth_batch_at(&oauth, [original_input()], &trusted, |_, _| {
-                panic!("step observation wrote a checkpoint")
-            });
-        let conflicting = receiver.migrate_legacy_oauth_batch_at(
+        if self.next == 0 {
+            let mut changed_history = fixture.history.clone();
+            changed_history.entries[0].signature[0] ^= 1;
+            let rejected = receiver.migrate_legacy_oauth_batch_with_history_at(
+                &oauth,
+                [DurableEffectRecovery {
+                    history: &changed_history,
+                    ..original_input()
+                }],
+                &trusted,
+                &history,
+                |_, _| panic!("substituted witness history reached the checkpoint write"),
+            );
+            assert!(rejected.confirmed.is_empty() && rejected.pending.is_empty());
+            let stopped = rejected.stopped.unwrap();
+            assert_eq!(stopped.operation, operation);
+            assert_eq!(
+                stopped.error,
+                "verified recovery history differs from the supplied signed bytes"
+            );
+        }
+        let confirmed = receiver.migrate_legacy_oauth_batch_with_history_at(
+            &oauth,
+            [original_input()],
+            &trusted,
+            &history,
+            |_, _| panic!("step observation wrote a checkpoint"),
+        );
+        let conflicting = receiver.migrate_legacy_oauth_batch_with_history_at(
             &oauth,
             [DurableEffectRecovery {
                 journal: &self.conflict_journal,
@@ -282,10 +308,11 @@ impl RoundObserver {
                 ..original_input()
             }],
             &trusted,
+            &history,
             |_, _| panic!("conflict replaced the original receipt"),
         );
         let empty = ProviderJournal::default();
-        let absent = receiver.migrate_legacy_oauth_batch_at(
+        let absent = receiver.migrate_legacy_oauth_batch_with_history_at(
             &oauth,
             [DurableEffectRecovery {
                 effect: &fixture.missing,
@@ -294,6 +321,7 @@ impl RoundObserver {
                 ..original_input()
             }],
             &trusted,
+            &history,
             |_, _| panic!("missing evidence changed an operation"),
         );
         let context = ReceiptIdentityContext {
@@ -326,7 +354,7 @@ impl RoundObserver {
         .unwrap();
         let mut disguised_operation = prefix_mapping.candidate();
         disguised_operation.identity.operation = operation.clone();
-        let cross_operation = receiver.migrate_legacy_oauth_batch_at(
+        let cross_operation = receiver.migrate_legacy_oauth_batch_with_history_at(
             &oauth,
             [DurableEffectRecovery {
                 journal: &prefix.journal,
@@ -334,15 +362,17 @@ impl RoundObserver {
                 ..original_input()
             }],
             &trusted,
+            &history,
             |_, _| panic!("cross-operation receipt replaced the original"),
         );
-        let cross_pending = receiver.migrate_legacy_oauth_batch_at(
+        let cross_pending = receiver.migrate_legacy_oauth_batch_with_history_at(
             &oauth,
             [DurableEffectRecovery {
                 effect: &fixture.missing,
                 ..original_input()
             }],
             &trusted,
+            &history,
             |_, _| panic!("cross-operation receipt bound a missing operation"),
         );
         let foreign = LegacyReceiverTrust::from_config(
@@ -356,10 +386,13 @@ impl RoundObserver {
         }
         .prepare()
         .unwrap();
-        let foreign_authority =
-            receiver.migrate_legacy_oauth_batch_at(&oauth, [original_input()], &foreign, |_, _| {
-                panic!("cross-authority receipt replaced the original")
-            });
+        let foreign_authority = receiver.migrate_legacy_oauth_batch_with_history_at(
+            &oauth,
+            [original_input()],
+            &foreign,
+            &history,
+            |_, _| panic!("cross-authority receipt replaced the original"),
+        );
         let foreign_provider = simulation_key(9);
         let foreign_source = sign(&expected, &foreign_provider).unwrap();
         let foreign_provider_mapping = ReceiptIdentityContext {
@@ -369,7 +402,7 @@ impl RoundObserver {
         }
         .prepare()
         .unwrap();
-        let foreign_key_recovery = receiver.migrate_legacy_oauth_batch_at(
+        let foreign_key_recovery = receiver.migrate_legacy_oauth_batch_with_history_at(
             &oauth,
             [DurableEffectRecovery {
                 outcomes: std::slice::from_ref(&foreign_source),
@@ -380,6 +413,7 @@ impl RoundObserver {
                 ..original_input()
             }],
             &trusted,
+            &history,
             |_, _| panic!("another provider authority replaced the original receipt"),
         );
         let mut foreign_witness = (*candidate).clone();
@@ -393,8 +427,20 @@ impl RoundObserver {
         let mut changed_intent = (*candidate).clone();
         changed_intent.intent.signature[0] ^= 1;
         let old = oauth.for_writer(fixture.retired_writer.unwrap());
-        let old_writer = receiver.migrate_legacy_oauth_batch(&old, [original_input()], &trusted);
-        let old_replica = retired.migrate_legacy_oauth_batch(&oauth, [original_input()], &trusted);
+        let old_writer = receiver.migrate_legacy_oauth_batch_with_history_at(
+            &old,
+            [original_input()],
+            &trusted,
+            &history,
+            |_, _| Ok(()),
+        );
+        let old_replica = retired.migrate_legacy_oauth_batch_with_history_at(
+            &oauth,
+            [original_input()],
+            &trusted,
+            &history,
+            |_, _| Ok(()),
+        );
         let checkpoint = oauth.checkpoint().unwrap();
         let current = actual(
             fixture.grant.clone(),

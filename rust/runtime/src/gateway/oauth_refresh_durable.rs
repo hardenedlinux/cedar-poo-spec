@@ -357,16 +357,36 @@ impl RetainedEffect {
     }
 }
 
-fn anchored_history<'a>(
+pub(super) fn anchored_history<'a>(
     history: &'a LogSnapshot,
     authority: &AuditAuthority,
 ) -> Result<VerifiedLog<'a>, String> {
     let verified = verify_view(history.view(), &authority.log_key, authority.minimum_size)?;
-    authority.check_history(&verified)?;
+    check_recovery_anchor(&verified, authority)?;
+    Ok(verified)
+}
+
+fn check_recovery_history(
+    verified: &VerifiedLog<'_>,
+    history: &LogSnapshot,
+    authority: &AuditAuthority,
+) -> Result<(), String> {
+    let view = verified.view();
+    if view.checkpoint != &history.checkpoint || view.entries != history.entries.as_slice() {
+        return Err("verified recovery history differs from the supplied signed bytes".into());
+    }
+    check_recovery_anchor(verified, authority)
+}
+
+fn check_recovery_anchor(
+    verified: &VerifiedLog<'_>,
+    authority: &AuditAuthority,
+) -> Result<(), String> {
+    authority.check_history(verified)?;
     if authority.independent_frontier.as_ref() != Some(&verified.frontier()) {
         return Err("OAuth effect lacks an exact independent witness frontier".into());
     }
-    Ok(verified)
+    Ok(())
 }
 
 /// Receiver pin for the trusted OAuth checkpoint. Writer rotations retain it.
@@ -803,6 +823,7 @@ impl<'a> DurableRefreshLedger<'a> {
         self.reconcile_effect_at(
             input,
             RecoveryRequest::Detached,
+            None,
             || Ok(Some(())),
             |_, _, _| Ok(true),
             |_| Ok(()),
@@ -814,6 +835,7 @@ impl<'a> DurableRefreshLedger<'a> {
         input: DurableEffectRecovery<'_>,
         authority: &ReceiverAuthority,
         request: RecoveryRequest,
+        verified_history: Option<&VerifiedLog<'_>>,
         receiver: impl FnOnce() -> Result<Option<G>, String>,
         committed: impl FnOnce(&G, &Signed, &Signed) -> Result<bool, String>,
         observe: impl FnMut(CheckpointStage) -> Result<(), String>,
@@ -823,18 +845,34 @@ impl<'a> DurableRefreshLedger<'a> {
             authority: self.authority,
             writer: self.writer,
         };
-        ledger.reconcile_effect_at(input, request, receiver, committed, observe)
+        ledger.reconcile_effect_at(
+            input,
+            request,
+            verified_history,
+            receiver,
+            committed,
+            observe,
+        )
     }
 
     fn reconcile_effect_at<G>(
         &self,
         input: DurableEffectRecovery<'_>,
         request: RecoveryRequest,
+        verified_history: Option<&VerifiedLog<'_>>,
         receiver: impl FnOnce() -> Result<Option<G>, String>,
         committed: impl FnOnce(&G, &Signed, &Signed) -> Result<bool, String>,
         observe: impl FnMut(CheckpointStage) -> Result<(), String>,
     ) -> Result<bool, String> {
-        let history = anchored_history(input.history, input.trust.authority)?;
+        // Reuse authenticates only the immutable log, never the current stores or receipt.
+        let fresh;
+        let history = if let Some(verified) = verified_history {
+            check_recovery_history(verified, input.history, input.trust.authority)?;
+            verified
+        } else {
+            fresh = anchored_history(input.history, input.trust.authority)?;
+            &fresh
+        };
         let file = LockedCheckpoint::open(self.directory)?;
         let mut image = self.read(&file)?;
         // Even a missing or unqualified item must stop at a retired replica.
@@ -845,13 +883,13 @@ impl<'a> DurableRefreshLedger<'a> {
         let Some(effect) = image.effects.get_mut(&input.effect.operation) else {
             return Ok(false);
         };
-        if !effect.matches_origin(&request) || !effect.matches_recovery(&input, &history)? {
+        if !effect.matches_origin(&request) || !effect.matches_recovery(&input, history)? {
             return Ok(false);
         }
         let (_, outcome) = reconcile_recovery(
             input.journal,
             input.outcomes,
-            &history,
+            history,
             input.trust.authority,
             Some(input.trust.provider_key),
             Some(&effect.intent),
