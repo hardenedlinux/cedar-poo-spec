@@ -110,6 +110,60 @@ impl AdmittedDelegation {
     }
 }
 
+/// Accounting evidence retained with an already reserved operation.
+/// Restoring this value does not authenticate a new mandate or offer.
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct PurchaseCharge {
+    lineage: Vec<LeanMandateClaims>,
+    terms: crate::projection::LeanPurchaseTermsClaims,
+}
+
+impl AdmittedDelegation {
+    /// Compute one charge from current verified claims and retained prior charges.
+    /// The caller serializes this calculation with operation reservation and commit.
+    pub fn charge<'a>(
+        &self,
+        prior: impl IntoIterator<Item = &'a PurchaseCharge>,
+    ) -> Option<PurchaseCharge> {
+        let root = self.lineage.first()?;
+        let mut spent = vec![0u64; self.lineage.len()];
+        for row in prior {
+            let old_root = row.lineage.first()?;
+            if old_root.principal != root.principal || old_root.mandate_id != root.mandate_id {
+                continue;
+            }
+            if old_root != root
+                || (row.terms.merchant_id == self.offer.terms.merchant_id
+                    && row.terms.offer_id == self.offer.terms.offer_id)
+            {
+                return None;
+            }
+            for (ancestor, total) in self.lineage.iter().zip(&mut spent) {
+                if let Some(old) = row
+                    .lineage
+                    .iter()
+                    .find(|m| m.mandate_id == ancestor.mandate_id)
+                {
+                    if old != ancestor {
+                        return None;
+                    }
+                    *total = total.checked_add(row.terms.amount_minor)?;
+                }
+            }
+        }
+        for (ancestor, total) in self.lineage.iter().zip(spent) {
+            if total.checked_add(self.offer.terms.amount_minor)? > ancestor.total_cap {
+                return None;
+            }
+        }
+        Some(PurchaseCharge {
+            lineage: self.lineage.clone(),
+            terms: self.offer.terms.clone(),
+        })
+    }
+}
+
 /// Host-controlled, process-local admission state. The key sets track current
 /// active status; re-enrollment rotates a key and old signatures fail on use.
 #[derive(Default)]

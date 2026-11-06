@@ -32,7 +32,8 @@ pub struct Grant {
 }
 
 /// Identity, audience, and permissions required by the actual resource request.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Target {
     pub identity: Identity,
     pub audience: String,

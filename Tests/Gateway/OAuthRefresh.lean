@@ -2,6 +2,7 @@ import CedarPooSpec.Gateway.OAuthReceiver
 import CedarPooSpec.Gateway.OAuthReceiptRecovery
 import Tests.Gateway.RecoveryPlan
 import Tests.Gateway.SettledBatch
+import Tests.Gateway.CurrentCommit
 
 namespace Tests.Gateway.OAuthRefresh
 open CedarPooSpec.Gateway.OAuth
@@ -452,6 +453,7 @@ private def crashExercise (durable : Revocation.Recovery.Store)
   let begin : Revocation.Crash.BeginInput :=
     ⟨openRevocation, 0, 0, read, intent.operation, intent, "provider", history, none⟩
   let .ok started := Revocation.Crash.beginContract.invoke Revocation.Crash.prepareBegin begin | return false
+  unless CurrentCommit.joinedExercise begin started.result do return false
   let rows := started.result.retained.map (fun entry => (entry.intent.operation, entry))
   let .ok restored := Revocation.Crash.retainedInventoryContract.invoke
     Revocation.Crash.prepareRetainedInventory (some rows) | return false

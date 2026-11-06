@@ -350,4 +350,4 @@ pub(crate) fn check_case<'input>(
 
 #[cfg(test)]
 #[path = "../tests/unit/bridge.rs"]
-mod tests;
+pub(crate) mod tests;

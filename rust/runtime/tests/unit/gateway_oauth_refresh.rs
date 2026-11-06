@@ -45,6 +45,15 @@ fn enroll_named_with(
     token_hash: &str,
     commit: impl FnOnce(RefreshEnrollment) -> bool,
 ) -> Grant {
+    enroll_for_audience(confirmation, token_hash, "fhir", commit)
+}
+
+fn enroll_for_audience(
+    confirmation: Confirmation,
+    token_hash: &str,
+    audience: &str,
+    commit: impl FnOnce(RefreshEnrollment) -> bool,
+) -> Grant {
     let session = oauth_code::Session {
         issuer: "issuer".into(),
         client: "client".into(),
@@ -59,8 +68,15 @@ fn enroll_named_with(
             client: session.client.clone(),
             subject: "subject".into(),
         },
-        audiences: vec!["fhir".into()],
-        scopes: vec!["patient.read".into()],
+        audiences: vec![audience.into()],
+        scopes: vec![
+            match audience {
+                "agentcore" => "tool.invoke",
+                "payments" => "purchase.submit",
+                _ => "patient.read",
+            }
+            .into(),
+        ],
         token_hash: token_hash.into(),
         not_before: 10,
         expires_at: 15,
@@ -859,3 +875,7 @@ fn durable_access_recovery_rejects_ambiguous_checkpoint_without_repair() {
 #[cfg(unix)]
 #[path = "gateway_oauth_refresh/inventory.rs"]
 mod inventory;
+
+#[cfg(unix)]
+#[path = "gateway_oauth_refresh/current_commit.rs"]
+mod current_commit;

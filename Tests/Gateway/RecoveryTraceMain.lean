@@ -5,4 +5,6 @@ def main : IO Unit := do
     throw (IO.userError "OAuth recovery plan failed its typed Contract replay")
   IO.FS.writeFile ".lake/build/gateway-settled-late-plan.json"
     Tests.Gateway.SettledLatePlan.fixture.compress
+  let profiles ← IO.ofExcept (Tests.Gateway.CurrentCommit.profiles.mapError IO.userError)
+  IO.FS.writeFile ".lake/build/gateway-current-commit-profiles.json" profiles.compress
   (← IO.getStdout).putStrLn Tests.Gateway.RecoveryPlan.fixture.compress

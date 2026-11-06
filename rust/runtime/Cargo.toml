@@ -8,13 +8,14 @@ description = "Official Cedar validation and receipt replay"
 
 [dependencies]
 cedar-poo-core.workspace = true
+cedar-poo-commerce = { workspace = true, features = ["admission"], optional = true }
 serde.workspace = true
 serde_json.workspace = true
 sha2.workspace = true
 cedar-policy = { workspace = true, features = ["ipaddr", "decimal", "datetime"] }
 
 [features]
-gateway = ["dep:p256", "dep:base64"]
+gateway = ["dep:p256", "dep:base64", "dep:cedar-poo-commerce"]
 
 [dependencies.base64]
 workspace = true

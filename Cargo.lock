@@ -481,6 +481,7 @@ dependencies = [
  "asp-rust",
  "base64",
  "cedar-policy",
+ "cedar-poo-commerce",
  "cedar-poo-core",
  "p256",
  "serde",

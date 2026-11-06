@@ -13,6 +13,36 @@ research question, precise model, explicit premises, proof/counterexample,
 public API, then implementation refinement. Preserve the distinction between
 a theorem, a solver report, a finite test and an unimplemented Host obligation.
 
+* Current authorization at the effect boundary
+
+A prepared effect carries the generation of its Cedar decision. The final
+mediator checks that generation, the live Cedar result, the witnessed
+effect, review, fact inventory, publication prefix and configured OAuth target under the same simulator lock used by the authority writers. The OAuth writer checks the
+current token and replay reservation against its protected store. An
+independent full pin also binds the operation inventory. A replica can retain
+the exact OAuth token and family checkpoint while losing a DPoP reservation
+or a held operation, so equality of the OAuth projection alone is insufficient.
+
+For delegated payment, the typed Commerce Contract checks the same operation,
+offer terms, mandate lineage, release epoch and clock. The native managed
+receiver path reauthenticates the signed delegation and offer bound into the
+Cedar request. The deciding OAuth store writes the replay reservation,
+operation hold and charge together. A held or reconciled charge continues
+to count against the root and every ancestor after a lost confirmation,
+writer takeover or revocation. Reconciliation matches independent receiver
+evidence to the original intent and does not release another effect.
+
+The native gate feeds Lean-produced AgentCore and FHIR policies, schemas and
+requests through the same guarded API using DPoP and mTLS respectively. It
+also runs a signed payment race, writer takeover, lost-reply recovery and
+negative controls for stale facts, a missing hold, and legacy dispatch of a
+guarded intent. The Lean Contract describes the accepted state transition.
+The Rust simulation exercises its realization on protected local storage.
+Production adapters are responsible for independent pin custody and for a
+common transaction authority across all writers for a budget. The simulation
+assumes an independently selected Commerce authority and does not model an
+external payment rail.
+
 * Primary sources and what is actually reused
 
 | Source | Inspected contribution | Use here | Evidence boundary |

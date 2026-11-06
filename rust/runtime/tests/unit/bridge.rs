@@ -12,7 +12,7 @@ use crate::{
 use serde_json::json;
 use std::ops::Deref;
 
-fn receipt() -> Case {
+pub(crate) fn receipt() -> Case {
     serde_json::from_value(json!({
             "name": "allow-all",
             "revision": "published",
@@ -167,7 +167,7 @@ fn validated_sources_bind_one_schema_and_entity_snapshot_for_permit_and_forbid()
     );
 }
 
-fn validated(case: Case) -> ValidatedManifest {
+pub(crate) fn validated(case: Case) -> ValidatedManifest {
     ValidatedManifest {
         schema: serde_json::from_value(json!({"": {
             "entityTypes": {

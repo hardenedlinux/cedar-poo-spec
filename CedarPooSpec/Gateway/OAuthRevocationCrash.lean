@@ -279,6 +279,70 @@ def prepareBegin (input : BeginInput) : Except String (Image × Unit) :=
   | some image => .ok (image, ())
   | none => .error "OAuth durable effect refused"
 
+/-- Structural full-image equality in the model. The native pin pairs the
+OAuth checkpoint with a commitment to proof reservations and effect records. -/
+structure CurrentCommitInput where
+  preparedGeneration : Nat
+  actualGeneration : Nat
+  envelope : Envelope
+  actual : Current
+  cedarAllowed : Bool
+  independent : Image
+  oauthTarget : Target
+  request : BeginInput
+
+def CurrentCommitInput.current (input : CurrentCommitInput) : Prop :=
+  input.preparedGeneration = input.actualGeneration ∧
+  input.independent = input.request.image ∧
+  input.envelope.effect.operation = input.request.operation ∧
+  input.envelope.effect.audience = input.oauthTarget.audience ∧
+  input.oauthTarget = input.request.read.attempt.target ∧
+  input.request.read.authority.now = input.actual.authority.now ∧
+  accepts input.actual input.envelope input.cedarAllowed = true
+
+instance (input : CurrentCommitInput) : Decidable input.current := by
+  unfold CurrentCommitInput.current
+  infer_instance
+
+def CurrentCommitInput.reserve (input : CurrentCommitInput) : Option Image :=
+  if input.current then begin input.request else none
+
+def currentCommitContract : Contract Unit CurrentCommitInput Image where
+  input := ⟨"current-Cedar-effect-and-independent-full-image", CurrentCommitInput.current,
+    fun _ => inferInstance⟩
+  output := ⟨"reserved-current-effect", fun _ => True, fun _ => inferInstance⟩
+  meaning := fun _ input result => input.reserve = some result
+  decide := fun _ _ _ => inferInstance
+  rule := .atom ()
+
+def prepareCurrentCommit (input : CurrentCommitInput) : Except String (Image × Unit) :=
+  match input.reserve with
+  | some image => .ok (image, ())
+  | none => .error "Current effect reservation refused"
+
+theorem current_commit_rejects_stale_generation (input : CurrentCommitInput)
+    (stale : input.preparedGeneration ≠ input.actualGeneration) : input.reserve = none := by
+  simp [CurrentCommitInput.reserve, CurrentCommitInput.current, stale]
+
+theorem current_commit_rejects_older_image (input : CurrentCommitInput)
+    (older : input.independent ≠ input.request.image) : input.reserve = none := by
+  simp [CurrentCommitInput.reserve, CurrentCommitInput.current, older]
+
+theorem current_commit_binds_oauth_target
+    (receipt : Invocation currentCommitContract prepareCurrentCommit input) :
+    input.oauthTarget = input.request.read.attempt.target ∧
+    input.request.read.authority.now = input.actual.authority.now := by
+  have bound : input.current := receipt.input
+  exact ⟨bound.2.2.2.2.1, bound.2.2.2.2.2.1⟩
+
+theorem current_commit_uses_actual_begin
+    (receipt : Invocation currentCommitContract prepareCurrentCommit input) :
+    begin input.request = some receipt.result := by
+  have accepted := receipt.logic
+  change input.reserve = some receipt.result at accepted
+  have current : input.current := receipt.input
+  simpa [CurrentCommitInput.reserve, current] using accepted
+
 theorem stale_writer_cannot_begin (input : BeginInput) (stale : input.writer ≠ input.image.writer) :
     begin input = none := by
   cases anchored : input.history.independent <;> simp [begin, anchored, stale]

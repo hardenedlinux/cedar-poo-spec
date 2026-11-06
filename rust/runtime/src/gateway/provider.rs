@@ -55,7 +55,7 @@ pub(super) struct ProviderRequest<'a> {
 }
 
 impl ProviderRequest<'_> {
-    pub(super) fn validate(&self) -> Result<(), String> {
+    pub(super) fn validate(&self) -> Result<Commit, String> {
         let commit: Commit = verify(self.commit, self.log_key)?;
         if commit.version != (Version { major: 1, minor: 0 })
             || commit.effect != *self.effect
@@ -74,7 +74,7 @@ impl ProviderRequest<'_> {
         {
             return Err("provider input differs from the witnessed intent".into());
         }
-        Ok(())
+        Ok(commit)
     }
 
     pub(super) fn sign_outcome(

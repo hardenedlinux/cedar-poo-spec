@@ -13,6 +13,10 @@ use crate::gateway::{
     AuditAuthority, EffectIdentity, LogSnapshot, ProviderAuditTrust, ProviderJournal, Signed,
     WitnessFrontier,
 };
+use crate::gateway::{Envelope, PreparedEffect, Simulator};
+use cedar_poo_commerce::admission::{
+    AdmittedDelegation, CommerceAdmissionHost, DelegatedAdmissionRequest, PurchaseCharge,
+};
 use cedar_poo_core::operation_identity::OperationId;
 use p256::ecdsa::VerifyingKey;
 use serde::{Deserialize, Serialize};
@@ -53,6 +57,8 @@ struct RetainedEffect {
     recovery_origin: Option<RecoveryOrigin>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     receipt_identity: Option<StoredReceiptIdentity>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    purchase_charge: Option<PurchaseCharge>,
 }
 
 /// Missing inventory must not erase a prior reservation. Decode each key before
@@ -127,6 +133,130 @@ pub struct DurableEffectUse<'a> {
     pub intent: &'a Signed,
     pub history: &'a LogSnapshot,
     pub trust: ProviderAuditTrust<'a>,
+}
+
+/// A full checkpoint selected by the independent authority. OAuth replica
+/// identity and the complete reservation/outcome inventory are both bound.
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct EffectCheckpoint {
+    oauth: DurableRevocationCheckpoint,
+    inventory: String,
+}
+
+impl Image {
+    fn effect_checkpoint(&self) -> Result<EffectCheckpoint, String> {
+        Ok(EffectCheckpoint {
+            oauth: self.checkpoint.clone(),
+            inventory: self.inventory_identity()?,
+        })
+    }
+
+    fn inventory_identity(&self) -> Result<String, String> {
+        crate::json_sha256(&(
+            "cedar-poo-effect-inventory-v1",
+            &self.reserved,
+            &self.effects,
+        ))
+    }
+}
+
+/// Live, independently selected commerce authority and exact signed request.
+pub struct DelegatedPaymentUse<'a> {
+    pub authority: &'a CommerceAdmissionHost,
+    pub request: DelegatedAdmissionRequest<'a>,
+}
+
+/// Join a live simulator assessment to the durable deciding write. The
+/// checkpoint comes from independent custody, as do the two authority inputs.
+pub struct CurrentEffectUse<'a> {
+    pub simulator: &'a Simulator,
+    pub prepared: PreparedEffect,
+    pub envelope: &'a Envelope,
+    pub checkpoint: &'a EffectCheckpoint,
+    pub authorization: DurableEffectUse<'a>,
+    pub payment: Option<DelegatedPaymentUse<'a>>,
+}
+
+impl DelegatedPaymentUse<'_> {
+    /// Bind the exact commerce claims into the validated Cedar request context.
+    /// Signature and current authority checks run during final mediation.
+    pub fn commitment(&self) -> Result<String, String> {
+        crate::json_sha256(&(
+            "cedar-poo-delegated-purchase-v1",
+            self.request.lean_lineage,
+            self.request.lean_offer,
+        ))
+    }
+}
+
+pub(super) struct BoundCommit<'a> {
+    checkpoint: &'a EffectCheckpoint,
+    payment: Option<AdmittedDelegation>,
+}
+
+impl<'a> CurrentEffectUse<'a> {
+    pub(super) fn mediate<T>(
+        self,
+        apply: impl FnOnce(DurableEffectUse<'a>, BoundCommit<'a>) -> Result<T, String>,
+    ) -> Result<T, String> {
+        let Self {
+            simulator,
+            prepared,
+            envelope,
+            checkpoint,
+            mut authorization,
+            payment,
+        } = self;
+        let target = authorization.admission.current.target.clone();
+        simulator.with_current_intent(
+            prepared,
+            envelope,
+            authorization.intent,
+            &target,
+            |now, context| {
+                if authorization.effect != &envelope.effect
+                    || authorization.admission.current.now != now
+                {
+                    return Err("OAuth use differs from the current effect or clock".into());
+                }
+                let commitment = context.get("commerceCommitment");
+                let payment = match (commitment, payment) {
+                    (None, None) => None,
+                    (Some(commitment), Some(mut payment)) => {
+                        payment.request.now = now;
+                        if payment.request.root.policy_epoch != envelope.review.epoch {
+                            return Err("mandate is not on the current release epoch".into());
+                        }
+                        let expected = payment.commitment()?;
+                        if commitment.as_str() != Some(expected.as_str()) {
+                            return Err("delegated purchase differs from the Cedar request".into());
+                        }
+                        // The live Cedar check already admitted this exact commitment.
+                        Some(
+                            payment
+                                .authority
+                                .admit_delegated(payment.request, |_, _| true)
+                                .map_err(|error| {
+                                    format!("current delegated payment refused: {error:?}")
+                                })?,
+                        )
+                    }
+                    _ => {
+                        return Err("commerce commitment requires exact delegated authority".into());
+                    }
+                };
+                authorization.admission.base_allowed = true;
+                apply(
+                    authorization,
+                    BoundCommit {
+                        checkpoint,
+                        payment,
+                    },
+                )
+            },
+        )
+    }
 }
 
 /// Durable OAuth view of an operation. Only independent evidence can
@@ -411,6 +541,37 @@ impl<'a> DurableRefreshLedger<'a> {
         Ok(self.checkpoint()? == *replica)
     }
 
+    /// Read a full state pin from the current protected store.
+    pub fn effect_checkpoint(&self) -> Result<EffectCheckpoint, String> {
+        let file = LockedCheckpoint::open(self.directory)?;
+        self.read(&file)?.effect_checkpoint()
+    }
+
+    /// Compare a complete image with the independently retained full pin.
+    pub fn recover_effects(&self, independent: &EffectCheckpoint) -> Result<bool, String> {
+        Ok(self.effect_checkpoint()? == *independent)
+    }
+
+    /// Validate current Cedar evidence and persist a matching effect reservation.
+    pub fn execute_current(
+        &self,
+        input: CurrentEffectUse<'_>,
+        observe_effect: impl FnOnce(&EffectIdentity) -> Result<(), String>,
+    ) -> Result<bool, String> {
+        if input.payment.is_some() {
+            return Err("delegated payment requires a managed receiver".into());
+        }
+        input.mediate(|input, bound| {
+            self.execute_effect_at(
+                input,
+                RecoveryOrigin::Detached,
+                Some(bound),
+                || Ok(()),
+                observe_effect,
+            )
+        })
+    }
+
     fn reserve(image: &mut Image, input: DurableFinalUse<'_>) -> Result<bool, String> {
         if input.checked != &image.checkpoint
             || input.replica != &image.checkpoint
@@ -430,13 +591,20 @@ impl<'a> DurableRefreshLedger<'a> {
         input: DurableEffectUse<'_>,
         observe_effect: impl FnOnce(&EffectIdentity) -> Result<(), String>,
     ) -> Result<bool, String> {
-        self.execute_effect_at(input, RecoveryOrigin::Detached, || Ok(()), observe_effect)
+        self.execute_effect_at(
+            input,
+            RecoveryOrigin::Detached,
+            None,
+            || Ok(()),
+            observe_effect,
+        )
     }
 
     fn execute_effect_at(
         &self,
         input: DurableEffectUse<'_>,
         origin: RecoveryOrigin,
+        bound: Option<BoundCommit<'_>>,
         after_reservation: impl FnOnce() -> Result<(), String>,
         observe_effect: impl FnOnce(&EffectIdentity) -> Result<(), String>,
     ) -> Result<bool, String> {
@@ -446,6 +614,7 @@ impl<'a> DurableRefreshLedger<'a> {
             .ok_or("OAuth effect intent is not witnessed")?;
         let operation = &commit.effect.operation;
         if operation.is_empty()
+            || commit.oauth_target.is_some() != bound.is_some()
             || &commit.effect != input.effect
             || commit.effect.audience != input.admission.current.target.audience
             || history
@@ -459,6 +628,28 @@ impl<'a> DurableRefreshLedger<'a> {
         }
         let file = LockedCheckpoint::open(self.directory)?;
         let mut image = self.read(&file)?;
+        let purchase_charge = if let Some(bound) = bound {
+            if image.checkpoint != bound.checkpoint.oauth
+                || image.inventory_identity()? != bound.checkpoint.inventory
+            {
+                return Ok(false);
+            }
+            if let Some(payment) = bound.payment {
+                let Some(charge) = payment.charge(
+                    image
+                        .effects
+                        .values()
+                        .filter_map(|retained| retained.purchase_charge.as_ref()),
+                ) else {
+                    return Ok(false);
+                };
+                Some(charge)
+            } else {
+                None
+            }
+        } else {
+            None
+        };
         if image.effects.contains_key(operation) || !Self::reserve(&mut image, input.admission)? {
             return Ok(false);
         }
@@ -477,6 +668,7 @@ impl<'a> DurableRefreshLedger<'a> {
                 settled_outcome: None,
                 recovery_origin: Some(origin),
                 receipt_identity: None,
+                purchase_charge,
             },
         );
         file.persist(&image)?;
@@ -511,6 +703,7 @@ impl<'a> DurableRefreshLedger<'a> {
         input: DurableEffectUse<'_>,
         authority: &ReceiverAuthority,
         binding: ReceiverBinding,
+        bound: Option<BoundCommit<'_>>,
         after_reservation: impl FnOnce() -> Result<(), String>,
         receive: impl FnOnce(ReceiverAuthorization<'_>) -> Result<Option<Signed>, String>,
     ) -> Result<Option<Signed>, String> {
@@ -528,6 +721,7 @@ impl<'a> DurableRefreshLedger<'a> {
         ledger.execute_effect_at(
             input,
             RecoveryOrigin::Receiver(binding),
+            bound,
             after_reservation,
             |_| {
                 outcome = receive(permission)?;

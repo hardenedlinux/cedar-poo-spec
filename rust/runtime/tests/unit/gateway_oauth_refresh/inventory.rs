@@ -132,6 +132,17 @@ fn retained_effect_inventory_is_unique_bound_and_never_reopens_unknown_work() {
             authority: &audit,
             provider_key: provider.verifying_key(),
         };
+        let before_case = crate::bridge::tests::receipt();
+        let schema = crate::bridge::tests::validated(before_case.clone()).schema;
+        let (_, before) = crate::ValidatedProgram::prepare(&schema, &before_case).unwrap();
+        let mut after_case = before_case;
+        let mut policies = (*after_case.policies).clone();
+        policies["staticPolicies"]["base"]["effect"] = json!("forbid");
+        after_case.policies = serde_json::from_value(policies).unwrap();
+        after_case.expected = "deny".into();
+        let (_, after) = crate::ValidatedProgram::prepare(&schema, &after_case).unwrap();
+        assert!(before.replay.error_free_allow);
+        assert!(!after.replay.error_free_allow);
         let first_current = actual(grant.clone(), 14, "first");
         let retry_current = actual(grant.clone(), 14, "fresh-retry");
         let admission = |current| DurableEffectUse {
@@ -139,7 +150,7 @@ fn retained_effect_inventory_is_unique_bound_and_never_reopens_unknown_work() {
                 checked: &checked,
                 replica: &checked,
                 current,
-                base_allowed: true,
+                base_allowed: before.replay.error_free_allow,
             },
             effect: &effect,
             intent: &intent,
@@ -160,6 +171,26 @@ fn retained_effect_inventory_is_unique_bound_and_never_reopens_unknown_work() {
             ledger.effect_status(&operation).unwrap(),
             EffectStatus::Unresolved
         );
+        assert_eq!(dispatched, 1, "captured Allow survived the changed policy");
+        let stale = durable_directory("stale-effect-projection");
+        let stale_ledger = DurableRefreshLedger::new(&stale, "authority");
+        stale_ledger.initialize().unwrap();
+        enroll_with(grant.confirmation.clone(), |input| {
+            stale_ledger.enroll(input).unwrap()
+        });
+        assert!(ledger.recover(&stale_ledger.checkpoint().unwrap()).unwrap());
+        assert_eq!(
+            stale_ledger.effect_status(&operation).unwrap(),
+            EffectStatus::Unreserved
+        );
+        assert_eq!(
+            ledger.effect_status(&operation).unwrap(),
+            EffectStatus::Unresolved
+        );
+        eprintln!(
+            "P0-COUNTEREXAMPLES stale SDK Allow dispatched and OAuth projection aliased a missing hold"
+        );
+        std::fs::remove_dir_all(stale).unwrap();
         let original_identity = ledger
             .effect_observation(&operation)
             .unwrap()

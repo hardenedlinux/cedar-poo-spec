@@ -1,8 +1,8 @@
 //! Receiver-owned cut, operation reservation, and signed simulated effect.
 use super::checkpoint_store::{CheckpointStage, LockedCheckpoint};
 use super::oauth_refresh_durable::{
-    DurableEffectRecovery, DurableEffectUse, DurableRefreshLedger, ReceiverAuthority,
-    ReceiverAuthorization, RecoveryRequest,
+    BoundCommit, CurrentEffectUse, DurableEffectRecovery, DurableEffectUse, DurableRefreshLedger,
+    ReceiverAuthority, ReceiverAuthorization, RecoveryRequest,
 };
 use super::provider::ProviderRequest;
 pub use super::receipt_identity::LegacyReceiverTrust;
@@ -477,14 +477,28 @@ impl<'a> DurableReceiver<'a> {
         input: DurableEffectUse<'_>,
         delivery: ReceiverDelivery<'_>,
     ) -> Result<Option<Signed>, String> {
-        self.receive_oauth_at(oauth, input, delivery, |_| Ok(()))
+        self.receive_oauth_at(oauth, input, delivery, None, |_| Ok(()))
     }
 
-    fn receive_oauth_at(
+    /// Current Cedar mediation and delegated accounting share the OAuth write
+    /// before the receiver rechecks its cut and records the signed outcome.
+    pub fn receive_current_oauth(
+        &self,
+        oauth: &DurableRefreshLedger<'_>,
+        input: CurrentEffectUse<'_>,
+        delivery: ReceiverDelivery<'_>,
+    ) -> Result<Option<Signed>, String> {
+        input.mediate(|use_effect, bound| {
+            self.receive_oauth_at(oauth, use_effect, delivery, Some(bound), |_| Ok(()))
+        })
+    }
+
+    pub(super) fn receive_oauth_at(
         &self,
         oauth: &DurableRefreshLedger<'_>,
         input: DurableEffectUse<'_>,
         delivery: ReceiverDelivery<'_>,
+        bound: Option<BoundCommit<'_>>,
         observe: impl Fn(ManagedDeliveryStage) -> Result<(), String>,
     ) -> Result<Option<Signed>, String> {
         if input.effect != delivery.effect {
@@ -496,6 +510,7 @@ impl<'a> DurableReceiver<'a> {
             input,
             &authority,
             binding,
+            bound,
             || observe(ManagedDeliveryStage::OAuthReserved),
             |permission| {
                 self.receive_at(delivery, Some(permission), |stage| {
@@ -520,8 +535,9 @@ impl<'a> DurableReceiver<'a> {
         let (mut image, checkpoint) = self.current(&files)?;
         let dispatch: ReceiverDispatch = verify(input.authorization, self.trust.sender)?;
         if let Some(pin) = &checkpoint {
-            let permission =
-                permission.ok_or("managed receiver requires current OAuth authorization")?;
+            let permission = permission
+                .as_ref()
+                .ok_or("managed receiver requires current OAuth authorization")?;
             if !permission.matches(
                 pin.oauth.as_ref(),
                 &dispatch.intent,
@@ -549,7 +565,10 @@ impl<'a> DurableReceiver<'a> {
             facts: input.facts,
             publications: input.publications,
         };
-        request.validate()?;
+        let intent = request.validate()?;
+        if intent.oauth_target.is_some() && permission.is_none() {
+            return Ok(None);
+        }
         let action = ProviderAction {
             effect: input.effect.clone(),
             result: format!("provider-{}", id.0),
@@ -755,7 +774,7 @@ impl<'a> DurableReceiver<'a> {
         delivery: ReceiverDelivery<'_>,
         crash: ManagedDeliveryStage,
     ) -> Result<Option<Signed>, String> {
-        self.receive_oauth_at(oauth, input, delivery, |stage| {
+        self.receive_oauth_at(oauth, input, delivery, None, |stage| {
             if stage == crash {
                 Err("simulated managed delivery crash".into())
             } else {

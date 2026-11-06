@@ -36,6 +36,7 @@ check-gateway:
     lake build CedarPooSpec.Gateway Tests.Gateway.Contracts Tests.Gateway.OAuth Tests.Gateway.OAuthCode Tests.Gateway.OAuthPAR Tests.Gateway.OAuthRefresh Tests.Gateway.RecoveryTraceMain Tests.Gateway.Counterexamples Tests.Gateway.Objects Tests.Gateway.Publication Tests.Gateway.Delta Tests.Gateway.ZeroTrust Tests.Gateway.PublicationReview Tests.ZeroTrust.UsageControl Tests.ZeroTrust.ImportBoundary Tests.ZeroTrust.Functional
     cargo test --locked -p cedar-poo-runtime --features gateway --lib gateway::oauth
     timeout --signal=TERM --kill-after=3s 120s lake env lean -M 2048 -T 10000000 --run Tests/Gateway/RecoveryTraceMain.lean > .lake/build/gateway-recovery-plan.json
+    timeout --signal=TERM --kill-after=3s 120s cargo test --locked -p cedar-poo-runtime --features gateway --lib lean_current_commit_profiles -- --ignored --nocapture
     timeout --signal=TERM --kill-after=3s 120s cargo test --locked -p cedar-poo-runtime --features gateway --lib gateway::oauth_refresh::tests::settlement::late_batch::trace:: -- --ignored --nocapture
     timeout --signal=TERM --kill-after=3s 120s cargo test --locked -p cedar-poo-runtime --features gateway --lib gateway::oauth_refresh::tests::settlement::late_batch::settled_mapping:: -- --ignored --nocapture
     timeout --signal=TERM --kill-after=3s 120s cargo test --locked -p cedar-poo-runtime --features gateway --lib gateway::oauth_refresh::tests::settlement::late_batch::settled_batch:: -- --ignored --nocapture
