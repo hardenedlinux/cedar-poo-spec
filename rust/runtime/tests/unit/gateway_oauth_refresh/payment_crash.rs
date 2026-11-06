@@ -13,6 +13,8 @@ use std::time::{Duration, Instant};
 
 #[path = "payment_concurrent.rs"]
 mod concurrent;
+#[path = "payment_recrash.rs"]
+mod recrash;
 
 const CHILD: &str =
     "gateway::oauth_refresh::tests::current_commit::payment_crash::payment_crash_worker";

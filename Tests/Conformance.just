@@ -39,6 +39,7 @@ check-gateway:
     timeout --signal=TERM --kill-after=3s 120s cargo test --locked -p cedar-poo-runtime --features gateway --lib lean_current_commit_profiles -- --ignored --nocapture
     timeout --signal=TERM --kill-after=3s 120s cargo test --locked -p cedar-poo-runtime --features gateway --lib lean_payment_crash_windows -- --ignored --nocapture
     timeout --signal=TERM --kill-after=3s 120s cargo test --locked -p cedar-poo-runtime --features gateway --lib lean_concurrent_payment_recovery -- --ignored --nocapture
+    timeout --signal=TERM --kill-after=3s 120s cargo test --locked -p cedar-poo-runtime --features gateway --lib lean_concurrent_payment_recrash -- --ignored --nocapture
     timeout --signal=TERM --kill-after=3s 120s cargo test --locked -p cedar-poo-runtime --features gateway --lib gateway::oauth_refresh::tests::settlement::late_batch::trace:: -- --ignored --nocapture
     timeout --signal=TERM --kill-after=3s 120s cargo test --locked -p cedar-poo-runtime --features gateway --lib gateway::oauth_refresh::tests::settlement::late_batch::settled_mapping:: -- --ignored --nocapture
     timeout --signal=TERM --kill-after=3s 120s cargo test --locked -p cedar-poo-runtime --features gateway --lib gateway::oauth_refresh::tests::settlement::late_batch::settled_batch:: -- --ignored --nocapture

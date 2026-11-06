@@ -63,6 +63,19 @@ boundary and order is compared with six Lean-generated snapshots. Missing
 receiver evidence remains unresolved; a committed receipt is retained exactly.
 The scheduler explores these two finite orders, not all possible interleavings.
 
+A further replay stops worker B inside reconciliation after the staged file
+sync or after the durable rename and directory sync. While B holds the OAuth
+writer lock, worker A confirms that the lock is held and attempts a conflicting
+provider-signed outcome; B is then killed. A third writer/receiver takeover
+rejects the old writer and replica. The restarted workers exercise both
+conflict-first and original-first orders and a shared concurrent retry phase.
+Each of the four staged/durable and order combinations is checked against eight
+Lean snapshots. The staged image leaves the operation unresolved, while the
+durable image retains the original outcome. A Lean theorem preserves the
+independently observed outcome through a subsequent handoff. These checks use
+local process scheduling and SIGKILL and do not establish physical power-loss
+atomicity or all possible schedules.
+
 The native gate feeds Lean-produced AgentCore and FHIR policies, schemas and
 requests through the same guarded API using DPoP and mTLS respectively. It
 also runs a signed payment race, writer takeover, lost-reply recovery and

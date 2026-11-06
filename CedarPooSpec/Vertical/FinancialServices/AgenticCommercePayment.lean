@@ -318,5 +318,31 @@ theorem delegated_recovery_refuses_unobserved_outcome
   have refused := Receiver.conflict_first_cannot_settle present committed missing
   simp [DelegatedRecoveryInput.apply, refused]
 
+/-- A durably completed managed reconciliation keeps its independently
+    committed outcome through a subsequent writer handoff. -/
+theorem delegated_reconciliation_survives_handoff
+    (receipt : Invocation delegatedRecoveryContract prepareDelegatedRecovery
+      ⟨state, .reconcile observation⟩)
+    (present : observation.independent = some pin)
+    (committed : Receiver.evidence pin.image ⟨observation.audit.operation⟩ = some (action, outcome))
+    (advanced : handoff receipt.result.1 writer = some after) :
+    after.settledOutcome outcome.receipt.commit.operation = some outcome := by
+  have applied := receipt.logic
+  change (DelegatedRecoveryInput.mk state (.reconcile observation)).apply = some receipt.result at applied
+  have matched : Receiver.reconcileManaged observation = some receipt.result.1 := by
+    by_cases equal : observation.audit.image = state.1
+    · cases result : Receiver.reconcileManaged observation with
+      | none => simp [DelegatedRecoveryInput.apply, equal, result] at applied
+      | some image =>
+        simp [DelegatedRecoveryInput.apply, equal, result] at applied
+        have same : image = receipt.result.1 := congrArg Prod.fst applied
+        simpa [same] using result
+    · simp [DelegatedRecoveryInput.apply, equal] at applied
+  let managed : Invocation Receiver.managedReconciliationContract Receiver.prepareManagedReconciliation observation :=
+    ⟨receipt.result.1, (), by simp [Receiver.prepareManagedReconciliation, matched], trivial, trivial, matched⟩
+  have pinned := Receiver.managed_reconciliation_pins_committed_outcome managed present committed
+  have preserved := (handoff_preserves_effect_state advanced).2
+  simpa only [Image.settledOutcome, preserved] using pinned
+
 
 end CedarPooSpec.Vertical.FinancialServices

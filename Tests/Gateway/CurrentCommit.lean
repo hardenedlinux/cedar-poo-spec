@@ -163,6 +163,30 @@ def paymentConcurrentPlan : Lean.Json :=
   Lean.toJson [concurrentExpected .staged true, concurrentExpected .staged false,
     concurrentExpected .durable true, concurrentExpected .durable false]
 
+structure PaymentRecrashPlan where
+  boundary : String
+  order : String
+  snapshots : List PaymentSnapshot
+  deriving Lean.ToJson
+
+private def recrashExpected (boundary : CommitBoundary) (conflictFirst : Bool) : PaymentRecrashPlan :=
+  let durable := match boundary with | .staged => false | .durable => true
+  let afterCrash := if durable then "reconciled" else "unresolved"
+  let firstStatus := if durable || !conflictFirst then "reconciled" else "unresolved"
+  ⟨if durable then "durable" else "staged", if conflictFirst then "conflict-first" else "original-first",
+    [⟨"winner-crash", "winner", 0, 0, 60, true, "unresolved"⟩,
+     ⟨"handoff", "a", 1, 1, 60, true, "unresolved"⟩,
+     ⟨"revoked-handoff", "both", 2, 2, 60, true, "unresolved"⟩,
+     ⟨"reconcile-crash", "b", 2, 2, 60, true, afterCrash⟩,
+     ⟨"handoff", "both", 3, 3, 60, true, afterCrash⟩,
+     ⟨"first", if conflictFirst then "a" else "b", 3, 3, 60, true, firstStatus⟩,
+     ⟨"second", if conflictFirst then "b" else "a", 3, 3, 60, true, "reconciled"⟩,
+     ⟨"repeat", "both", 3, 3, 60, true, "reconciled"⟩]⟩
+
+def paymentRecrashPlan : Lean.Json :=
+  Lean.toJson [recrashExpected .staged true, recrashExpected .staged false,
+    recrashExpected .durable true, recrashExpected .durable false]
+
 private def observe (state : Image × SharedBudget) (pin : Receiver.Checkpoint)
     (operation event worker : String) : PaymentSnapshot :=
   ⟨event, worker, state.1.writer, pin.image.cut.generation, state.2.spentMinor,
@@ -276,6 +300,56 @@ def paymentConcurrentExercise (managed : Receiver.ManagedInput) (committed : Rec
     observe settled current operation "second" (if conflictFirst then "b" else "a"),
     observe settled current operation "repeat" "both"] = (concurrentExpected boundary conflictFirst).snapshots)
 
+def paymentRecrashExercise (managed : Receiver.ManagedInput) (committed : Receiver.ManagedResult)
+    (audit : ReconcileInput) (grant : PAR.VerifiedClient Refresh.RefreshDigest)
+    (conflict : ProviderOutcome) (boundary : CommitBoundary) (conflictFirst : Bool) : Bool := Id.run do
+  let operation := managed.authorization.operation
+  let input := paymentInput managed.authorization
+  let .ok charged := delegatedCommitContract.invoke prepareDelegatedCommit input | return false
+  if charged.result.1 != committed.oauth then return false
+  let initial := charged.result
+  let pin := committed.receiver
+  let recover (state : Image × SharedBudget) (command : DelegatedRecoveryCommand) :=
+    delegatedRecoveryContract.invoke prepareDelegatedRecovery ⟨state, command⟩
+  let .ok first := recover initial (.handoff 0) | return false
+  let .ok firstPin := Receiver.promotionContract.invoke Receiver.preparePromotion
+    ⟨some pin, pin, pin.image, "standby"⟩ | return false
+  let .ok revoked := recover first.result (.revoke 1 grant initial.2.root.mandateId) | return false
+  let .ok second := recover revoked.result (.handoff 1) | return false
+  let next := firstPin.result
+  let .ok secondPin := Receiver.promotionContract.invoke Receiver.preparePromotion
+    ⟨some next, next, next.image, "successor"⟩ | return false
+  let middle := secondPin.result
+  let middleObservation : Receiver.ManagedReconciliation :=
+    ⟨some middle, middle.active, middle.image, { audit with image := second.result.1, writer := 2 }⟩
+  let .ok committedReconcile := recover second.result (.reconcile middleObservation) | return false
+  let crashed := recoverImage boundary second.result committedReconcile.result
+  let .ok final := recover crashed (.handoff 2) | return false
+  let .ok thirdPin := Receiver.promotionContract.invoke Receiver.preparePromotion
+    ⟨some middle, middle, middle.image, "last"⟩ | return false
+  let current := thirdPin.result
+  let observation (state : Image × SharedBudget) : Receiver.ManagedReconciliation :=
+    ⟨some current, current.active, current.image, { audit with image := state.1, writer := 3 }⟩
+  let reject (state : Image × SharedBudget) := recover state (.reconcile { observation state with audit :=
+    { (observation state).audit with actions := [conflict.receipt.action], outcomes := [conflict] } })
+  let accept (state : Image × SharedBudget) := recover state (.reconcile (observation state))
+  if (reject final.result).isOk then return false
+  let .ok settled := accept final.result | return false
+  if (reject settled.result).isOk then return false
+  let .ok repeated := accept settled.result | return false
+  if repeated.result != settled.result then return false
+  let retry := { managed.authorization with image := settled.result.1, writer := 3, checkedWriter := 3 }
+  if (begin retry).isSome || (recover final.result (.handoff 2)).isOk then return false
+  let firstState := if conflictFirst then final.result else settled.result
+  return decide ([observe initial pin operation "winner-crash" "winner",
+    observe first.result next operation "handoff" "a",
+    observe second.result middle operation "revoked-handoff" "both",
+    observe crashed middle operation "reconcile-crash" "b",
+    observe final.result current operation "handoff" "both",
+    observe firstState current operation "first" (if conflictFirst then "a" else "b"),
+    observe settled.result current operation "second" (if conflictFirst then "b" else "a"),
+    observe settled.result current operation "repeat" "both"] = (recrashExpected boundary conflictFirst).snapshots)
+
 def paymentCrashFixture (durable : Revocation.Recovery.Store)
     (read : Revocation.ReplicaRead) (grant : PAR.VerifiedClient Refresh.RefreshDigest) : Bool := Id.run do
   let image : Image := { oauth := durable }
@@ -301,7 +375,9 @@ def paymentCrashFixture (durable : Revocation.Recovery.Store)
   let conflict := { outcome with receipt := ⟨{ action with value := "different" }, intent⟩ }
   return [CommitBoundary.staged, .durable].all (fun boundary =>
     paymentCrashExercise managed committed.result audit grant conflict boundary &&
-    [true, false].all (paymentConcurrentExercise managed committed.result audit grant conflict boundary))
+    [true, false].all (fun order =>
+      paymentConcurrentExercise managed committed.result audit grant conflict boundary order &&
+      paymentRecrashExercise managed committed.result audit grant conflict boundary order))
 
 private def profile (audience : String) (schema : Cedar.Validation.Schema)
     (case : Lean.Json) : Except String Lean.Json := do
@@ -333,3 +409,4 @@ end Tests.Gateway.CurrentCommit
 #print axioms CedarPooSpec.Vertical.FinancialServices.delegated_recovery_two_steps_preserve_reservations
 #print axioms CedarPooSpec.Vertical.FinancialServices.delegated_recovery_two_steps_cannot_reopen
 #print axioms CedarPooSpec.Vertical.FinancialServices.delegated_recovery_refuses_unobserved_outcome
+#print axioms CedarPooSpec.Vertical.FinancialServices.delegated_reconciliation_survives_handoff

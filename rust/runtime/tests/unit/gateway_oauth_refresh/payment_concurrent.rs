@@ -11,9 +11,9 @@ use std::path::Path;
 use std::process::{Child, Command};
 use std::time::{Duration, Instant};
 
-const RACE_CHILD: &str =
+pub(super) const RACE_CHILD: &str =
     "gateway::oauth_refresh::tests::current_commit::payment_crash::concurrent::concurrent_worker";
-const PHASE: &str = "CEDAR_PAYMENT_RACE_WORKER";
+pub(super) const PHASE: &str = "CEDAR_PAYMENT_RACE_WORKER";
 
 #[derive(serde::Deserialize)]
 struct Plan {
@@ -22,7 +22,7 @@ struct Plan {
     snapshots: Vec<Snapshot>,
 }
 
-fn wait_marker(root: &Path, marker: &str) {
+pub(super) fn wait_marker(root: &Path, marker: &str) {
     let start = Instant::now();
     while !root.join(marker).exists() {
         assert!(
@@ -33,7 +33,7 @@ fn wait_marker(root: &Path, marker: &str) {
     }
 }
 
-fn spawn(root: &Path, test: &str, phase_key: &str, phase: &str) -> Child {
+pub(super) fn spawn(root: &Path, test: &str, phase_key: &str, phase: &str) -> Child {
     Command::new(std::env::current_exe().unwrap())
         .args(["--ignored", "--exact", test])
         .env(ROOT, root)
@@ -48,7 +48,7 @@ fn spawn(root: &Path, test: &str, phase_key: &str, phase: &str) -> Child {
         .unwrap()
 }
 
-fn finish(mut child: Child, phase: &str, root: &Path) {
+pub(super) fn finish(mut child: Child, phase: &str, root: &Path) {
     let status = child.wait().unwrap();
     assert!(status.success(), "{phase}: {status}; evidence at {root:?}");
 }
@@ -59,11 +59,17 @@ fn concurrent_worker() {
     let root = std::path::PathBuf::from(std::env::var_os(ROOT).unwrap());
     let worker = std::env::var(PHASE).unwrap();
     assert!(worker == "a" || worker == "b");
+    let third = root.join("writer3.json").exists();
+    let writer_file = if third {
+        "writer3.json"
+    } else {
+        "writer2.json"
+    };
     let writer: WriterCut =
-        serde_json::from_slice(&std::fs::read(root.join("writer2.json")).unwrap()).unwrap();
+        serde_json::from_slice(&std::fs::read(root.join(writer_file)).unwrap()).unwrap();
     let oauth_path = root.join("oauth");
     let ledger = DurableRefreshLedger::new(&oauth_path, "authority").for_writer(writer);
-    let receiver_path = root.join("receiver2");
+    let receiver_path = root.join(if third { "receiver3" } else { "receiver2" });
     let pin_path = root.join("receiver-pin");
     let signer = simulation_key(4);
     let provider = simulation_key(8);
