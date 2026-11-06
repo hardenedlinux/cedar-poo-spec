@@ -58,7 +58,12 @@ def joinedExercise (request : BeginInput) (reserved : Image) : Bool := Id.run do
   let otherIntent := { request.intent with operation := "other-operation" }
   let otherEntries := [otherIntent]
   let otherHistory := { request.history with entries := otherEntries, independent := some (Gateway.Lifecycle.WitnessFrontier.observe request.history.logKey otherEntries) }
-  let otherRequest := { request with operation := "other-operation", intent := otherIntent, history := otherHistory }
+  let freshSender := match request.read.attempt.sender with
+    | .dpop proof => .dpop { proof with proofId := proof.proofId ++ "-second" }
+    | .mtls peer => .mtls peer
+  let freshAttempt := { request.read.attempt with sender := freshSender }
+  let freshRead := { request.read with checked := firstReceipt.result.1.oauth.checkpoint, replica := firstReceipt.result.1.oauth.checkpoint, attempt := freshAttempt }
+  let otherRequest := { request with image := firstReceipt.result.1, read := freshRead, operation := "other-operation", intent := otherIntent, history := otherHistory }
   let otherInput := paymentInput otherRequest
   let newBudget := purchase afterFirst "child-b" "other-operation"
   let loserBudget := { newBudget with expectedRevision := ample.revision }
@@ -67,6 +72,30 @@ def joinedExercise (request : BeginInput) (reserved : Image) : Bool := Id.run do
   if afterFirst.spentMinor + loserBudget.purchase.terms.amountMinor > afterFirst.root.totalCap ||
       (delegatedCommitContract.invoke prepareDelegatedCommit staleLoser).isOk ||
       !(delegatedCommitContract.invoke prepareDelegatedCommit freshLoser).isOk then return false
+  -- Two new contenders start from the same post-winner OAuth image and budget.
+  let .ok second := delegatedCommitContract.invoke prepareDelegatedCommit freshLoser | return false
+  let thirdIntent := { request.intent with operation := "third-operation" }
+  let thirdEntries := [thirdIntent]
+  let thirdHistory := { request.history with entries := thirdEntries, independent := some (Gateway.Lifecycle.WitnessFrontier.observe request.history.logKey thirdEntries) }
+  let thirdSender := match request.read.attempt.sender with
+    | .dpop proof => .dpop { proof with proofId := proof.proofId ++ "-third" }
+    | .mtls peer => .mtls peer
+  let thirdAttempt := { request.read.attempt with sender := thirdSender }
+  let thirdInitialRead := { request.read with checked := firstReceipt.result.1.oauth.checkpoint, replica := firstReceipt.result.1.oauth.checkpoint, attempt := thirdAttempt }
+  let thirdInitialRequest := { request with image := firstReceipt.result.1, read := thirdInitialRead, operation := "third-operation", intent := thirdIntent, history := thirdHistory }
+  let thirdInitialInput := paymentInput thirdInitialRequest
+  let thirdPrepared := purchase afterFirst "child-c" "third-operation"
+  let thirdInitial := { thirdInitialInput with budget := thirdPrepared, independentBudget := afterFirst, authorizedLineage := afterFirst.root :: thirdPrepared.steps.map (·.child), authorizedPurchase := thirdPrepared.purchase }
+  if !(delegatedCommitContract.invoke prepareDelegatedCommit thirdInitial).isOk then return false
+  let thirdRead := { request.read with checked := second.result.1.oauth.checkpoint, replica := second.result.1.oauth.checkpoint, attempt := thirdAttempt }
+  let thirdRequest := { request with image := second.result.1, read := thirdRead, operation := "third-operation", intent := thirdIntent, history := thirdHistory }
+  let thirdInput := paymentInput thirdRequest
+  let thirdBudget := purchase second.result.2 "child-c" "third-operation"
+  let thirdStaleBudget := { thirdBudget with expectedRevision := thirdPrepared.expectedRevision }
+  let third := { thirdInput with budget := thirdStaleBudget, independentBudget := second.result.2, authorizedLineage := second.result.2.root :: thirdStaleBudget.steps.map (·.child), authorizedPurchase := thirdStaleBudget.purchase }
+  let thirdCurrent := { third with budget := thirdBudget }
+  if (delegatedCommitContract.invoke prepareDelegatedCommit third).isOk ||
+      !(delegatedCommitContract.invoke prepareDelegatedCommit thirdCurrent).isOk then return false
   decide (hold.result = reserved ∧ joined.result.1 = reserved ∧ debited.spentMinor = 60) &&
     (currentCommitContract.invoke prepareCurrentCommit { current with actualGeneration := 1 }).isOk == false &&
     (currentCommitContract.invoke prepareCurrentCommit
@@ -206,6 +235,8 @@ end Tests.Gateway.CurrentCommit
 #print axioms CedarPooSpec.Gateway.OAuth.Revocation.Crash.current_commit_rejects_older_image
 #print axioms CedarPooSpec.Gateway.OAuth.Revocation.Crash.current_commit_binds_oauth_target
 #print axioms CedarPooSpec.Vertical.FinancialServices.delegated_commit_preserves_debits
+#print axioms CedarPooSpec.Vertical.FinancialServices.delegated_commit_preserves_prior_hold
 #print axioms CedarPooSpec.Vertical.FinancialServices.delegated_commit_refuses_losing_revision
+#print axioms CedarPooSpec.Vertical.FinancialServices.delegated_commit_refuses_losing_revision_with_current_oauth
 
 #print axioms CedarPooSpec.Vertical.FinancialServices.delegated_recovery_cannot_reopen_operation

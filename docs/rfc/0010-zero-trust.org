@@ -68,6 +68,18 @@ are refused without changing the protected effect inventory. The Lean fixture
 also compares a stale expected budget revision with a refreshed revision under
 the same adequate-capacity state; only the refreshed revision is admitted.
 
+The post-winner fixture refreshes both the complete OAuth image and the shared
+budget before preparing two distinct later operations and proofs. Lean checks
+that both are individually admissible on the first winner's state, that a
+losing old budget revision remains refused after the second winner even when
+the OAuth image is refreshed, and that the current revision is admissible when
+capacity permits. In the native replay a first 30-unit charge loses its receiver
+acknowledgment, then two threads compete for two 60-unit charges against the
+same current pin and a 100-unit root cap. Exactly one succeeds; a retry with
+the updated pin is refused by the remaining budget. The first receipt remains
+independently available and reconciles idempotently. These are finite model and
+local simulated-store observations, not a proof of physical I/O atomicity.
+
 * Primary sources and what is actually reused
 
 | Source | Inspected contribution | Use here | Evidence boundary |

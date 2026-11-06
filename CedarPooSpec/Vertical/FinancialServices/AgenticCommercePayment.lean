@@ -150,6 +150,21 @@ theorem delegated_commit_preserves_debits
   exact ⟨sharedReservationRetainsHistory applied,
     sharedReservationPreservesRootCap _ _ _ _ _ _ applied⟩
 
+/-- A later admitted delegated payment keeps every previously burned OAuth
+    operation in the image on which its final admission actually ran. -/
+theorem delegated_commit_preserves_prior_hold
+    (receipt : Invocation delegatedCommitContract prepareDelegatedCommit input)
+    (burned : (input.effect.request.image.retained.any fun row =>
+      row.intent.operation == operation) = true) :
+    (receipt.result.1.retained.any fun row => row.intent.operation == operation) = true := by
+  have applied := (delegated_commit_exact receipt).1
+  unfold CurrentCommitInput.reserve at applied
+  split at applied
+  · let prior : Invocation beginContract prepareBegin input.effect.request :=
+      ⟨receipt.result.1, (), by simp [prepareBegin, applied], trivial, trivial, applied⟩
+    exact begin_preserves_prior_burn prior burned
+  · contradiction
+
 theorem delegated_commit_refuses_stale_budget (input : DelegatedCommitInput)
     (stale : input.independentBudget ≠ input.budget.state) : input.commit = none := by
   simp [DelegatedCommitInput.commit, DelegatedCommitInput.current, stale]
@@ -163,6 +178,23 @@ theorem delegated_commit_refuses_losing_revision
     (sameRevision : loser.budget.expectedRevision = winner.budget.state.revision) :
     (let budget := { loser.budget with state := receipt.result.2 }
      let rebound := { loser with budget := budget, independentBudget := receipt.result.2 }
+     rebound.commit = none) := by
+  have advanced := sharedReservationAdvancesRevision _ _ _ _ _ _
+    (delegated_commit_exact receipt).2
+  have stale : loser.budget.expectedRevision ≠ receipt.result.2.revision := by
+    rw [sameRevision, advanced]
+    omega
+  simp [DelegatedCommitInput.commit, sharedStaleRevisionCannotReserve, stale]
+
+/-- Refreshing the OAuth view does not make a losing budget revision current.
+    The effect parameter may contain the winner's exact committed image and a
+    new proof; the revision check remains independent of effect admission. -/
+theorem delegated_commit_refuses_losing_revision_with_current_oauth
+    (winner loser : DelegatedCommitInput) (currentEffect : CurrentCommitInput)
+    (receipt : Invocation delegatedCommitContract prepareDelegatedCommit winner)
+    (sameRevision : loser.budget.expectedRevision = winner.budget.state.revision) :
+    (let budget := { loser.budget with state := receipt.result.2 }
+     let rebound := { loser with effect := currentEffect, budget := budget, independentBudget := receipt.result.2 }
      rebound.commit = none) := by
   have advanced := sharedReservationAdvancesRevision _ _ _ _ _ _
     (delegated_commit_exact receipt).2
