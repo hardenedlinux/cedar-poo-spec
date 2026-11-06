@@ -5,6 +5,7 @@ use crate::gateway::oauth_refresh_durable::{
 use crate::gateway::provider_durable::{DurableReceiver, LegacyReceiverTrust, ReceiverTrust};
 use crate::gateway::receipt_identity::ReceiptIdentityContext;
 use crate::gateway::wire::{sign, simulation_key};
+use crate::gateway::witness::VerifiedLog;
 use crate::gateway::{
     AuditAuthority, FactAuthority, ProviderAuditTrust, ProviderJournal, ProviderOutcome, Signed,
     Witness, WitnessFrontier, verify,
@@ -13,6 +14,7 @@ use cedar_poo_core::operation_identity::OperationId;
 use p256::ecdsa::SigningKey;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 #[derive(Clone, Copy, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
@@ -165,7 +167,7 @@ pub(super) struct RoundObserver {
     conflict_journal: ProviderJournal,
     foreign_provider: SigningKey,
     foreign_source: Signed,
-    audit: AuditAuthority,
+    pub(super) audit: Arc<AuditAuthority>,
     ledger: serde_json::Value,
     initial_writer: u64,
     initial_receiver: u64,
@@ -224,7 +226,7 @@ impl RoundObserver {
             conflict_journal: ProviderJournal::observation(conflict.outcome.action),
             foreign_provider,
             foreign_source,
-            audit,
+            audit: Arc::new(audit),
             ledger: checkpoint.get("ledger").unwrap().clone(),
             initial_writer: fixture.writer.generation(),
             initial_receiver: receiver,
@@ -234,8 +236,21 @@ impl RoundObserver {
     }
 
     pub fn observe(&mut self, fixture: &RestartFixture, event: &str, worker: &str) {
-        // The fixture and its witness anchor are immutable for this observation.
-        let history = anchored_history(&fixture.history, &self.audit).unwrap();
+        let audit = Arc::clone(&self.audit);
+        let history = anchored_history(&fixture.history, &audit).unwrap();
+        self.observe_with_history(fixture, event, worker, &history);
+    }
+
+    pub fn observe_with_history(
+        &mut self,
+        fixture: &RestartFixture,
+        event: &str,
+        worker: &str,
+        history: &VerifiedLog<'_>,
+    ) {
+        // The prepared log is usable only for the exact signed fixture bytes.
+        assert_eq!(history.view().checkpoint, &fixture.history.checkpoint);
+        assert_eq!(history.view().entries, fixture.history.entries.as_slice());
         let provider = simulation_key(8);
         let sender = simulation_key(4);
         let log_key = Witness::simulation().verifying_key();
@@ -281,31 +296,37 @@ impl RoundObserver {
             trust: audit,
         };
         if self.next == 0 {
-            let mut changed_history = fixture.history.clone();
-            changed_history.entries[0].signature[0] ^= 1;
-            let rejected = receiver.migrate_legacy_oauth_batch_with_history_at(
-                &oauth,
-                [DurableEffectRecovery {
-                    history: &changed_history,
-                    ..original_input()
-                }],
-                &trusted,
-                &history,
-                |_, _| panic!("substituted witness history reached the checkpoint write"),
-            );
-            assert!(rejected.confirmed.is_empty() && rejected.pending.is_empty());
-            let stopped = rejected.stopped.unwrap();
-            assert_eq!(stopped.operation, operation);
-            assert_eq!(
-                stopped.error,
-                "verified recovery history differs from the supplied signed bytes"
-            );
+            for checkpoint in [false, true] {
+                let mut changed_history = fixture.history.clone();
+                if checkpoint {
+                    changed_history.checkpoint.signature[0] ^= 1;
+                } else {
+                    changed_history.entries[0].signature[0] ^= 1;
+                }
+                let rejected = receiver.migrate_legacy_oauth_batch_with_history_at(
+                    &oauth,
+                    [DurableEffectRecovery {
+                        history: &changed_history,
+                        ..original_input()
+                    }],
+                    &trusted,
+                    history,
+                    |_, _| panic!("substituted witness history reached the checkpoint write"),
+                );
+                assert!(rejected.confirmed.is_empty() && rejected.pending.is_empty());
+                let stopped = rejected.stopped.unwrap();
+                assert_eq!(stopped.operation, operation);
+                assert_eq!(
+                    stopped.error,
+                    "verified recovery history differs from the supplied signed bytes"
+                );
+            }
         }
         let confirmed = receiver.migrate_legacy_oauth_batch_with_history_at(
             &oauth,
             [original_input()],
             &trusted,
-            &history,
+            history,
             |_, _| panic!("step observation wrote a checkpoint"),
         );
         let conflicting = receiver.migrate_legacy_oauth_batch_with_history_at(
@@ -316,7 +337,7 @@ impl RoundObserver {
                 ..original_input()
             }],
             &trusted,
-            &history,
+            history,
             |_, _| panic!("conflict replaced the original receipt"),
         );
         let empty = ProviderJournal::default();
@@ -329,7 +350,7 @@ impl RoundObserver {
                 ..original_input()
             }],
             &trusted,
-            &history,
+            history,
             |_, _| panic!("missing evidence changed an operation"),
         );
         let context = ReceiptIdentityContext {
@@ -370,7 +391,7 @@ impl RoundObserver {
                 ..original_input()
             }],
             &trusted,
-            &history,
+            history,
             |_, _| panic!("cross-operation receipt replaced the original"),
         );
         let cross_pending = receiver.migrate_legacy_oauth_batch_with_history_at(
@@ -380,7 +401,7 @@ impl RoundObserver {
                 ..original_input()
             }],
             &trusted,
-            &history,
+            history,
             |_, _| panic!("cross-operation receipt bound a missing operation"),
         );
         let foreign = LegacyReceiverTrust::from_config(
@@ -398,7 +419,7 @@ impl RoundObserver {
             &oauth,
             [original_input()],
             &foreign,
-            &history,
+            history,
             |_, _| panic!("cross-authority receipt replaced the original"),
         );
         let foreign_provider_mapping = ReceiptIdentityContext {
@@ -419,7 +440,7 @@ impl RoundObserver {
                 ..original_input()
             }],
             &trusted,
-            &history,
+            history,
             |_, _| panic!("another provider authority replaced the original receipt"),
         );
         let mut foreign_witness = (*candidate).clone();
@@ -438,14 +459,14 @@ impl RoundObserver {
             &old,
             [original_input()],
             &trusted,
-            &history,
+            history,
             |_, _| Ok(()),
         );
         let old_replica = retired.migrate_legacy_oauth_batch_with_history_at(
             &oauth,
             [original_input()],
             &trusted,
-            &history,
+            history,
             |_, _| Ok(()),
         );
         let checkpoint = oauth.checkpoint().unwrap();

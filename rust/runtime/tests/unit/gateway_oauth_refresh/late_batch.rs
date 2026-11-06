@@ -3,13 +3,14 @@ use crate::gateway::checkpoint_store::CheckpointStage;
 use crate::gateway::oauth::Grant;
 use crate::gateway::oauth_refresh_durable::{
     DurableEffectRecovery, DurableEffectUse, DurableFinalUse, DurableRefreshLedger, EffectStatus,
-    WriterCut,
+    WriterCut, anchored_history,
 };
 use crate::gateway::provider_durable::{
     DurableReceiver, LegacyReceiverTrust, ReceiverCheckpoint, ReceiverCut, ReceiverDelivery,
     ReceiverDispatch, ReceiverTrust,
 };
 use crate::gateway::wire::{sign, simulation_key};
+use crate::gateway::witness::VerifiedLog;
 use crate::gateway::{
     AuditAuthority, EffectIdentity, FactAuthority, FactBinding, IntentAuditTrust, LogSnapshot,
     ProviderAuditTrust, ProviderJournal, ProviderOutcome, Reconciliation, Signed, Witness,
@@ -210,7 +211,17 @@ pub(super) fn replay_across_processes(
         let before_receiver = cut.generation;
         let mut observer =
             trace::RoundObserver::new(root, &fixture, round, before_receiver, outcome);
-        cut = replay_round(root, &fixture_path, &mut fixture, round, &mut observer);
+        let history_bytes = fixture.history.clone();
+        let audit = observer.audit.clone();
+        let history = anchored_history(&history_bytes, &audit).unwrap();
+        cut = replay_round(
+            root,
+            &fixture_path,
+            &mut fixture,
+            round,
+            &mut observer,
+            &history,
+        );
         observer.finish();
         assert_eq!(
             fixture.writer.generation() - before_writer,
@@ -240,6 +251,7 @@ fn replay_round(
     fixture: &mut RestartFixture,
     round: &RecoveryRound,
     observer: &mut trace::RoundObserver,
+    history: &VerifiedLog<'_>,
 ) -> ReceiverCut {
     let checkpoint = root.join("oauth/checkpoint.json");
     let signals = root.join(format!("recovery-round-{}", fixture.round));
@@ -248,7 +260,7 @@ fn replay_round(
     };
     let mut crashes = 0;
     let before_recovery = std::fs::read(&checkpoint).unwrap();
-    observer.observe(fixture, "ready", "both");
+    observer.observe_with_history(fixture, "ready", "both", history);
     let first_phase = fixture.first_worker.phase("resumed");
     let second_phase = fixture.first_worker.other().phase("resumed");
     let first = spawn_worker(fixture_path, &first_phase);
@@ -259,19 +271,40 @@ fn replay_round(
     kill_worker(first);
     crashes += 1;
     assert_eq!(std::fs::read(&checkpoint).unwrap(), before_recovery);
-    observer.observe(fixture, "worker-crash", fixture.first_worker.name());
-    takeovers(root, fixture, round.handoffs_after_first, observer);
+    observer.observe_with_history(
+        fixture,
+        "worker-crash",
+        fixture.first_worker.name(),
+        history,
+    );
+    takeovers(root, fixture, round.handoffs_after_first, observer, history);
     let after_recovery_takeover = std::fs::read(&checkpoint).unwrap();
     std::fs::write(signals.join("recovery-continue"), []).unwrap();
     wait_for_marker(&signals.join("recovery-second-fenced"));
     assert_eq!(std::fs::read(&checkpoint).unwrap(), after_recovery_takeover);
-    observer.observe(fixture, "fenced", fixture.first_worker.other().name());
+    observer.observe_with_history(
+        fixture,
+        "fenced",
+        fixture.first_worker.other().name(),
+        history,
+    );
     kill_worker(second);
     crashes += 1;
     assert_eq!(std::fs::read(&checkpoint).unwrap(), after_recovery_takeover);
-    observer.observe(fixture, "worker-crash", fixture.first_worker.other().name());
+    observer.observe_with_history(
+        fixture,
+        "worker-crash",
+        fixture.first_worker.other().name(),
+        history,
+    );
 
-    takeovers(root, fixture, round.handoffs_after_second, observer);
+    takeovers(
+        root,
+        fixture,
+        round.handoffs_after_second,
+        observer,
+        history,
+    );
     write_fixture(fixture);
     let before_confirmation = std::fs::read(&checkpoint).unwrap();
     let confirmation_phase = fixture.first_worker.phase("ack-lost");
@@ -281,13 +314,24 @@ fn replay_round(
     wait_for_marker(&signals.join("confirmation-verified"));
     finish_worker(peer, &peer_phase);
     assert_eq!(std::fs::read(&checkpoint).unwrap(), before_confirmation);
-    observer.observe(fixture, "confirmed", "both");
+    observer.observe_with_history(fixture, "confirmed", "both", history);
     kill_worker(confirmation);
     crashes += 1;
     assert_eq!(std::fs::read(&checkpoint).unwrap(), before_confirmation);
-    observer.observe(fixture, "confirmation-lost", fixture.first_worker.name());
+    observer.observe_with_history(
+        fixture,
+        "confirmation-lost",
+        fixture.first_worker.name(),
+        history,
+    );
 
-    let cut = takeovers(root, fixture, round.handoffs_after_confirmation, observer);
+    let cut = takeovers(
+        root,
+        fixture,
+        round.handoffs_after_confirmation,
+        observer,
+        history,
+    );
     write_fixture(fixture);
     let after_confirmation_takeover = std::fs::read(&checkpoint).unwrap();
     let first = spawn_worker(fixture_path, "recovered-a");
@@ -298,7 +342,7 @@ fn replay_round(
         std::fs::read(&checkpoint).unwrap(),
         after_confirmation_takeover
     );
-    observer.observe(fixture, "recovered", "both");
+    observer.observe_with_history(fixture, "recovered", "both", history);
     assert_eq!(crashes, round.expected_crashes);
     cut
 }
@@ -308,13 +352,14 @@ fn takeovers(
     fixture: &mut RestartFixture,
     count: u64,
     observer: &mut trace::RoundObserver,
+    history: &VerifiedLog<'_>,
 ) -> ReceiverCut {
     assert!(count > 0);
     let mut cut = takeover(root, fixture);
-    observer.observe(fixture, "handoff", "authority");
+    observer.observe_with_history(fixture, "handoff", "authority", history);
     for _ in 1..count {
         cut = takeover(root, fixture);
-        observer.observe(fixture, "handoff", "authority");
+        observer.observe_with_history(fixture, "handoff", "authority", history);
     }
     cut
 }
