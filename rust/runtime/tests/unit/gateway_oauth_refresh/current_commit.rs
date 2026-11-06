@@ -281,6 +281,16 @@ struct SignedPurchase {
 
 impl SignedPurchase {
     fn new(principal: &SigningKey, agent: &SigningKey, merchant: &SigningKey, branch: u8) -> Self {
+        Self::with_amount(principal, agent, merchant, branch, 60)
+    }
+
+    fn with_amount(
+        principal: &SigningKey,
+        agent: &SigningKey,
+        merchant: &SigningKey,
+        branch: u8,
+        amount: u64,
+    ) -> Self {
         let checkout = format!("checkout-{branch}");
         let root = MandatePayload {
             mandate_id: "payment-root".into(),
@@ -311,7 +321,7 @@ impl SignedPurchase {
             product_id: "item".into(),
             offer_id: format!("offer-{branch}").into(),
             checkout_sha256: sha256_hex(checkout.as_bytes()),
-            amount_minor: 60,
+            amount_minor: amount,
             asset: "HKD".into(),
             expires_at: 25,
         };
@@ -644,6 +654,63 @@ fn delegated_payment_serializes_charge_and_hold_across_lost_reply_and_takeover()
     );
     assert!(retry(loser, &ledger_final, &host).unwrap().is_none());
     assert!(retry(winner, &ledger_final, &host).unwrap().is_none());
+    // Isolate OAuth revocation: the new purchase is valid, unreserved, and fits
+    // the remaining root budget; the Commerce mandate is still active.
+    let fresh_purchase = SignedPurchase::with_amount(&principal, &agent, &merchant, 9, 30);
+    let fresh_steps = fresh_purchase.steps();
+    let fresh_payment = fresh_purchase.use_payment(&host, &fresh_steps);
+    assert!(
+        host.admit_delegated(
+            fresh_purchase.use_payment(&host, &fresh_steps).request,
+            |_, _| true
+        )
+        .is_ok()
+    );
+    assert_eq!(purchases[0].root.total_cap, 100);
+    assert!(60 + fresh_purchase.offer.amount_minor <= purchases[0].root.total_cap);
+    let fresh_simulator = payment_simulator("fresh-after-oauth-revocation", &fresh_payment, &grant);
+    let (fresh, prepared) = Intent::prepare(&fresh_simulator);
+    assert_eq!(
+        ledger_final.effect_status(&fresh.id()).unwrap(),
+        EffectStatus::Unreserved
+    );
+    assert!(ledger_final.revoke(verified(digest())).unwrap());
+    let checked = ledger_final.checkpoint().unwrap();
+    let pin = ledger_final.effect_checkpoint().unwrap();
+    let current = oauth_current(&grant, "fresh-proof-after-oauth-revocation");
+    let dispatch =
+        ReceiverDispatch::sign(next_cut.clone(), "second", &fresh.signed, &signer).unwrap();
+    let facts = fresh.audit.facts.accepts(&fresh.envelope.facts).unwrap();
+    assert!(
+        final_receiver
+            .receive_current_oauth(
+                &ledger_final,
+                fresh.input(
+                    prepared,
+                    &current,
+                    &checked,
+                    &pin,
+                    provider.verifying_key(),
+                    Some(fresh_payment)
+                ),
+                ReceiverDelivery {
+                    authorization: &dispatch,
+                    channel: "second",
+                    effect: &fresh.envelope.effect,
+                    bindings: &facts,
+                    facts: &fresh.envelope.facts,
+                    publications: &[]
+                },
+            )
+            .unwrap()
+            .is_none()
+    );
+    assert_eq!(
+        ledger_final.effect_status(&fresh.id()).unwrap(),
+        EffectStatus::Unreserved
+    );
+    assert!(final_receiver.evidence(&fresh.id()).unwrap().is_none());
+    assert!(ledger_final.recover_effects(&pin).unwrap());
     host.revoke_mandate(
         purchases[0].root.principal.clone(),
         purchases[0].root.mandate_id.clone(),
@@ -653,7 +720,6 @@ fn delegated_payment_serializes_charge_and_hold_across_lost_reply_and_takeover()
             .unwrap_err()
             .contains("RevokedMandate")
     );
-    assert!(ledger_final.revoke(verified(digest())).unwrap());
     assert!(
         retry(winner, &ledger_final, &host)
             .unwrap_err()

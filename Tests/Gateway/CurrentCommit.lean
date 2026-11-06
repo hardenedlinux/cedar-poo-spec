@@ -48,6 +48,25 @@ def joinedExercise (request : BeginInput) (reserved : Image) : Bool := Id.run do
   let some otherWinner := budget.reserve contender.expectedRevision contender.steps
     contender.offer contender.purchase | return false
   let afterOther := purchase otherWinner "child-a" request.operation
+  -- Both workers start with a larger shared cap, so the loser still fits
+  -- after the winner; the revision, rather than the cap, must refuse it.
+  let ample := { budget with root := { root with totalCap := 180 } }
+  let firstBudget := purchase ample "child-a" request.operation
+  let firstInput := { input with budget := firstBudget, independentBudget := ample, authorizedLineage := ample.root :: firstBudget.steps.map (·.child) }
+  let .ok firstReceipt := delegatedCommitContract.invoke prepareDelegatedCommit firstInput | return false
+  let afterFirst := firstReceipt.result.2
+  let otherIntent := { request.intent with operation := "other-operation" }
+  let otherEntries := [otherIntent]
+  let otherHistory := { request.history with entries := otherEntries, independent := some (Gateway.Lifecycle.WitnessFrontier.observe request.history.logKey otherEntries) }
+  let otherRequest := { request with operation := "other-operation", intent := otherIntent, history := otherHistory }
+  let otherInput := paymentInput otherRequest
+  let newBudget := purchase afterFirst "child-b" "other-operation"
+  let loserBudget := { newBudget with expectedRevision := ample.revision }
+  let staleLoser := { otherInput with budget := loserBudget, independentBudget := afterFirst, authorizedLineage := afterFirst.root :: loserBudget.steps.map (·.child), authorizedPurchase := loserBudget.purchase }
+  let freshLoser := { staleLoser with budget := { loserBudget with expectedRevision := afterFirst.revision } }
+  if afterFirst.spentMinor + loserBudget.purchase.terms.amountMinor > afterFirst.root.totalCap ||
+      (delegatedCommitContract.invoke prepareDelegatedCommit staleLoser).isOk ||
+      !(delegatedCommitContract.invoke prepareDelegatedCommit freshLoser).isOk then return false
   decide (hold.result = reserved ∧ joined.result.1 = reserved ∧ debited.spentMinor = 60) &&
     (currentCommitContract.invoke prepareCurrentCommit { current with actualGeneration := 1 }).isOk == false &&
     (currentCommitContract.invoke prepareCurrentCommit

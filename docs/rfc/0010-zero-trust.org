@@ -62,6 +62,11 @@ generations, and reconciles the winner from the promoted receiver's independent
 evidence. Missing and conflicting signed evidence are refused; repeated original
 evidence is idempotent. This race uses local simulated storage and does not
 itself kill either racing worker.
+An isolated OAuth-revocation control keeps the Commerce mandate active and
+leaves enough budget for a fresh signed purchase. A new operation and proof
+are refused without changing the protected effect inventory. The Lean fixture
+also compares a stale expected budget revision with a refreshed revision under
+the same adequate-capacity state; only the refreshed revision is admitted.
 
 * Primary sources and what is actually reused
 
