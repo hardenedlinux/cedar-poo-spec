@@ -1,5 +1,5 @@
 import CedarPooSpec.AgenticAI.Commerce.Credential
-import CedarPooSpec.Gateway.OAuthRevocationCrash
+import CedarPooSpec.Gateway.OAuthReceiver
 import CedarPooSpec.Vertical.FinancialServices.PaymentOperation
 
 /-!
@@ -153,5 +153,87 @@ theorem delegated_commit_preserves_debits
 theorem delegated_commit_refuses_stale_budget (input : DelegatedCommitInput)
     (stale : input.independentBudget ≠ input.budget.state) : input.commit = none := by
   simp [DelegatedCommitInput.commit, DelegatedCommitInput.current, stale]
+
+open CedarPooSpec.Gateway.OAuth
+
+/-- Recovery uses the same OAuth operation inventory and shared budget as
+final submission. Receiver evidence is read from its independent checkpoint. -/
+inductive DelegatedRecoveryCommand where
+  | handoff (writer : Nat)
+  | revoke (writer : Nat) (grant : PAR.VerifiedClient Refresh.RefreshDigest) (mandate : String)
+  | reconcile (input : Receiver.ManagedReconciliation)
+
+structure DelegatedRecoveryInput where
+  state : Image × SharedBudget
+  command : DelegatedRecoveryCommand
+
+def DelegatedRecoveryInput.apply (input : DelegatedRecoveryInput) : Option (Image × SharedBudget) := do
+  let (image, budget) := input.state
+  match input.command with
+  | .handoff writer => return (← handoff image writer, budget)
+  | .revoke writer grant mandate => return (← revoke image writer grant, budget.revoke mandate)
+  | .reconcile observation =>
+    if observation.audit.image = image then
+      return (← Receiver.reconcileManaged observation, budget)
+    else none
+
+def delegatedRecoveryContract : Contract Unit DelegatedRecoveryInput (Image × SharedBudget) where
+  input := ⟨"retained-payment-state-and-recovery-command", fun _ => True, fun _ => inferInstance⟩
+  output := ⟨"recovery-preserves-payment-hold", fun _ => True, fun _ => inferInstance⟩
+  meaning := fun _ input result => input.apply = some result
+  decide := fun _ _ _ => inferInstance
+  rule := .atom ()
+
+def prepareDelegatedRecovery (input : DelegatedRecoveryInput) :
+    Except String ((Image × SharedBudget) × Unit) :=
+  match input.apply with
+  | some state => .ok (state, ())
+  | none => .error "Delegated payment recovery refused"
+
+theorem delegated_recovery_preserves_reservations
+    (receipt : Invocation delegatedRecoveryContract prepareDelegatedRecovery input) :
+    receipt.result.1.retained = input.state.1.retained ∧
+    receipt.result.2.reservations = input.state.2.reservations := by
+  have accepted : input.apply = some receipt.result := receipt.logic
+  obtain ⟨⟨image, budget⟩, command⟩ := input
+  cases command with
+  | handoff writer =>
+    cases step : handoff image writer with
+    | none => simp [DelegatedRecoveryInput.apply, step] at accepted
+    | some after =>
+      simp [DelegatedRecoveryInput.apply, step] at accepted
+      rw [← accepted]
+      exact ⟨(handoff_preserves_effect_state step).1, rfl⟩
+  | revoke writer grant mandate =>
+    cases step : revoke image writer grant with
+    | none => simp [DelegatedRecoveryInput.apply, step] at accepted
+    | some after =>
+      simp [DelegatedRecoveryInput.apply, step] at accepted
+      rw [← accepted]
+      exact ⟨(revocation_preserves_effect_state step).1, rfl⟩
+  | reconcile observation =>
+    by_cases actual : observation.audit.image = image
+    · cases step : Receiver.reconcileManaged observation with
+      | none => simp [DelegatedRecoveryInput.apply, actual, step] at accepted
+      | some after =>
+        simp [DelegatedRecoveryInput.apply, actual, step] at accepted
+        rw [← accepted]
+        obtain ⟨evidence, observed⟩ : ∃ evidence, observation.observation = some evidence := by
+          cases observed : observation.observation with
+          | none => simp [Receiver.reconcileManaged, observed] at step
+          | some evidence => exact ⟨evidence, rfl⟩
+        have applied : reconcileFrom observation.audit (some evidence) = some after := by
+          simpa [Receiver.reconcileManaged, observed] using step
+        exact ⟨(reconciliation_from_preserves_authority applied).2.2.trans (congrArg Image.retained actual), rfl⟩
+    · simp [DelegatedRecoveryInput.apply, actual] at accepted
+
+theorem delegated_recovery_cannot_reopen_operation
+    (receipt : Invocation delegatedRecoveryContract prepareDelegatedRecovery input)
+    (same : retry.image = receipt.result.1)
+    (burned : (input.state.1.retained.any fun row => row.intent.operation == retry.operation) = true) :
+    begin retry = none := by
+  apply burned_operation_cannot_begin
+  simpa only [same, (delegated_recovery_preserves_reservations receipt).1] using burned
+
 
 end CedarPooSpec.Vertical.FinancialServices

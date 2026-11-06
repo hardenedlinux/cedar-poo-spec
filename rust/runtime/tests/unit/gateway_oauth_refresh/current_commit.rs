@@ -765,3 +765,6 @@ fn lean_current_commit_profiles() {
         std::fs::remove_dir_all(path).unwrap();
     }
 }
+
+#[path = "payment_crash.rs"]
+mod payment_crash;

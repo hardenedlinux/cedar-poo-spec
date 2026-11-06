@@ -874,7 +874,8 @@ private def exercise (confirmation replacement : Confirmation) : Bool := Id.run 
         let senderAcceptsReplay := match confirmation with
           | .dpop _ => replay.isNone
           | .mtls _ => replay.isSome
-        crashExercise durable read.toReplicaRead && senderAcceptsReplay &&
+        CurrentCommit.paymentCrashFixture durable read.toReplicaRead (verified digest) &&
+          crashExercise durable read.toReplicaRead && senderAcceptsReplay &&
           (Revocation.Recovery.finalize { input with durable := some persisted }).isNone &&
           (Revocation.Recovery.finalize
             ⟨before.authorityId, some persisted, renewed.toReplicaRead⟩).isNone)

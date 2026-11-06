@@ -32,6 +32,16 @@ to count against the root and every ancestor after a lost confirmation,
 writer takeover or revocation. Reconciliation matches independent receiver
 evidence to the original intent and does not release another effect.
 
+The delegated recovery Contract preserves the existing hold and budget across
+writer handoff, revocation and independent receiver reconciliation. Its finite
+trace covers the point after the OAuth reservation is durable and the point
+after the receiver checkpoint is durable. The Rust replay kills a subprocess
+at each point, then compares each reopened state with the Lean trace through
+two receiver promotions and writer handoffs. A missing outcome remains
+unresolved. A recovered signed outcome is reconciled idempotently, while a
+different signed outcome cannot replace it. Both paths retain the charge and
+refuse a further send after revocation.
+
 The native gate feeds Lean-produced AgentCore and FHIR policies, schemas and
 requests through the same guarded API using DPoP and mTLS respectively. It
 also runs a signed payment race, writer takeover, lost-reply recovery and

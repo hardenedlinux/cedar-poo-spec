@@ -7,4 +7,6 @@ def main : IO Unit := do
     Tests.Gateway.SettledLatePlan.fixture.compress
   let profiles ← IO.ofExcept (Tests.Gateway.CurrentCommit.profiles.mapError IO.userError)
   IO.FS.writeFile ".lake/build/gateway-current-commit-profiles.json" profiles.compress
+  IO.FS.writeFile ".lake/build/gateway-payment-crash-plan.json"
+    Tests.Gateway.CurrentCommit.paymentCrashPlan.compress
   (← IO.getStdout).putStrLn Tests.Gateway.RecoveryPlan.fixture.compress
