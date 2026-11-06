@@ -72,6 +72,9 @@ fn receiver<'a>(
 fn payment_crash_worker() {
     let root = std::path::PathBuf::from(std::env::var_os(ROOT).unwrap());
     let window = std::env::var(WINDOW).unwrap();
+    if window.starts_with("restart-") || window.starts_with("preflight-") {
+        return payment_restart_worker(&root, &window);
+    }
     let ledger_path = root.join("oauth");
     let receiver_path = root.join("receiver0");
     let pin_path = root.join("receiver-pin");
@@ -135,6 +138,83 @@ fn payment_crash_worker() {
             )
         });
     panic!("worker passed the requested crash point: {result:?}");
+}
+
+fn payment_restart_worker(root: &Path, phase: &str) {
+    use crate::gateway::oauth_refresh_durable::WriterCut;
+    let (directory, writer_file) = match phase {
+        "preflight-a" | "preflight-b" => ("receiver0", "writer0.json"),
+        "restart-a" => ("receiver1", "writer1.json"),
+        "restart-b" => ("receiver2", "writer2.json"),
+        "restart-a-stale" => ("receiver2", "writer1.json"),
+        _ => panic!("unknown restart phase"),
+    };
+    let writer: WriterCut =
+        serde_json::from_slice(&std::fs::read(root.join(writer_file)).unwrap()).unwrap();
+    let oauth_path = root.join("oauth");
+    let ledger = DurableRefreshLedger::new(&oauth_path, "authority").for_writer(writer);
+    let receiver_path = root.join(directory);
+    let pin = root.join("receiver-pin");
+    let signer = simulation_key(4);
+    let provider = simulation_key(8);
+    let witness = Witness::simulation().verifying_key();
+    let receiver = receiver(&receiver_path, &pin, &signer, &witness, &provider);
+    let grant: crate::gateway::oauth::Grant =
+        serde_json::from_slice(&std::fs::read(root.join("grant.json")).unwrap()).unwrap();
+    let (purchase, host) = commerce();
+    let steps = purchase.steps();
+    let simulator = payment_simulator(
+        "crash-payment",
+        &purchase.use_payment(&host, &steps),
+        &grant,
+    );
+    let (intent, _) = Intent::prepare(&simulator);
+    let original = receiver.evidence(&intent.id()).unwrap();
+    if phase.starts_with("preflight-") {
+        assert_eq!(
+            ledger.effect_status(&intent.id()).unwrap(),
+            EffectStatus::Unresolved
+        );
+        std::fs::write(root.join(format!("{phase}-ready")), b"observed").unwrap();
+        loop {
+            std::thread::park();
+        }
+    }
+    let absent = ProviderJournal::default();
+    let (journal, outcomes) = match &original {
+        Some(proof) => (&proof.journal, std::slice::from_ref(&proof.outcome)),
+        None => (&absent, &[][..]),
+    };
+    let marker = root.join(format!("{phase}-ready"));
+    let result = receiver.reconcile_oauth_at(
+        &ledger,
+        evidence(&intent, &provider, journal, outcomes),
+        None,
+        |stage| {
+            if phase == "restart-a" && stage == CheckpointStage::Durable {
+                std::fs::write(&marker, b"durable").unwrap();
+                loop {
+                    std::thread::park();
+                }
+            }
+            Ok(())
+        },
+    );
+    if phase == "restart-a-stale" {
+        assert!(result.unwrap_err().contains("writer fenced"));
+    } else {
+        assert_eq!(result.unwrap(), original.is_some());
+    }
+    if phase == "restart-a" {
+        assert!(
+            original.is_none(),
+            "committed reconciliation must stop at its durable point"
+        );
+        std::fs::write(marker, b"missing").unwrap();
+        loop {
+            std::thread::park();
+        }
+    }
 }
 
 fn snapshot(
@@ -259,6 +339,58 @@ fn lean_payment_crash_windows() {
         // The snapshots compare the protected stores with Lean's finite trace.
         let mut observed = vec![snapshot(&root, &ledger, &first, &intent.id(), 0)];
         let original = first.evidence(&intent.id()).unwrap();
+        let before_restart = ledger.effect_checkpoint().unwrap();
+        let initial_writer = crate::gateway::oauth_refresh_durable::WriterCut::default();
+        std::fs::write(
+            root.join("writer0.json"),
+            serde_json::to_vec(&initial_writer).unwrap(),
+        )
+        .unwrap();
+        let mut workers: Vec<_> = ["preflight-a", "preflight-b"]
+            .into_iter()
+            .map(|phase| {
+                Command::new(std::env::current_exe().unwrap())
+                    .args(["--ignored", "--exact", CHILD])
+                    .env(ROOT, &root)
+                    .env(WINDOW, phase)
+                    .stdout(Stdio::from(
+                        std::fs::File::create(root.join(format!("{phase}.stdout"))).unwrap(),
+                    ))
+                    .stderr(Stdio::from(
+                        std::fs::File::create(root.join(format!("{phase}.stderr"))).unwrap(),
+                    ))
+                    .spawn()
+                    .unwrap()
+            })
+            .collect();
+        assert_ne!(workers[0].id(), workers[1].id());
+        let started = Instant::now();
+        while !["preflight-a-ready", "preflight-b-ready"]
+            .iter()
+            .all(|name| root.join(name).exists())
+        {
+            for worker in &mut workers {
+                if let Some(status) = worker.try_wait().unwrap() {
+                    panic!(
+                        "worker exited before restart preparation: {status}, evidence at {root:?}"
+                    );
+                }
+            }
+            if started.elapsed() >= Duration::from_secs(10) {
+                for worker in &mut workers {
+                    worker.kill().unwrap();
+                    worker.wait().unwrap();
+                }
+                panic!("workers did not reach restart preparation, evidence at {root:?}");
+            }
+            std::thread::sleep(Duration::from_millis(10));
+        }
+        for worker in &mut workers {
+            worker.kill().unwrap();
+            assert_eq!(worker.wait().unwrap().signal(), Some(9));
+        }
+        assert!(ledger.recover_effects(&before_restart).unwrap());
+        observed.push(snapshot(&root, &ledger, &first, &intent.id(), 0));
         let pin0 = first.acknowledged_checkpoint().unwrap();
         std::fs::copy(
             initial_path.join("checkpoint.json"),
@@ -278,6 +410,46 @@ fn lean_payment_crash_windows() {
             &intent.id(),
             writer1.generation(),
         ));
+        std::fs::write(
+            root.join("writer1.json"),
+            serde_json::to_vec(&writer1).unwrap(),
+        )
+        .unwrap();
+        let mut restarted_a = Command::new(std::env::current_exe().unwrap())
+            .args(["--ignored", "--exact", CHILD])
+            .env(ROOT, &root)
+            .env(WINDOW, "restart-a")
+            .stdout(Stdio::from(
+                std::fs::File::create(root.join("restart-a.stdout")).unwrap(),
+            ))
+            .stderr(Stdio::from(
+                std::fs::File::create(root.join("restart-a.stderr")).unwrap(),
+            ))
+            .spawn()
+            .unwrap();
+        let started = Instant::now();
+        while !root.join("restart-a-ready").exists() {
+            if let Some(status) = restarted_a.try_wait().unwrap() {
+                panic!(
+                    "worker A exited before reconciliation point: {status}, evidence at {root:?}"
+                );
+            }
+            if started.elapsed() >= Duration::from_secs(10) {
+                restarted_a.kill().unwrap();
+                restarted_a.wait().unwrap();
+                panic!("worker A did not reach reconciliation point, evidence at {root:?}");
+            }
+            std::thread::sleep(Duration::from_millis(10));
+        }
+        restarted_a.kill().unwrap();
+        assert_eq!(restarted_a.wait().unwrap().signal(), Some(9));
+        observed.push(snapshot(
+            &root,
+            &active1,
+            &second,
+            &intent.id(),
+            writer1.generation(),
+        ));
         assert!(active1.revoke(verified(digest())).unwrap());
         let pin1 = second.acknowledged_checkpoint().unwrap();
         std::fs::copy(
@@ -289,6 +461,11 @@ fn lean_payment_crash_windows() {
         let writer2 = active1.rotate_writer().unwrap();
         let active2 = ledger.for_writer(writer2);
         third.promote(&pin1).unwrap();
+        std::fs::write(
+            root.join("writer2.json"),
+            serde_json::to_vec(&writer2).unwrap(),
+        )
+        .unwrap();
         assert!(active1.checkpoint().is_err());
         assert!(second.cut().is_err());
         observed.push(snapshot(
@@ -298,6 +475,26 @@ fn lean_payment_crash_windows() {
             &intent.id(),
             writer2.generation(),
         ));
+        for phase in ["restart-b", "restart-a-stale"] {
+            let output = Command::new(std::env::current_exe().unwrap())
+                .args(["--ignored", "--exact", CHILD])
+                .env(ROOT, &root)
+                .env(WINDOW, phase)
+                .output()
+                .unwrap();
+            assert!(
+                output.status.success(),
+                "{phase} failed: {}",
+                String::from_utf8_lossy(&output.stderr)
+            );
+            observed.push(snapshot(
+                &root,
+                &active2,
+                &third,
+                &intent.id(),
+                writer2.generation(),
+            ));
+        }
         let checked = active2.checkpoint().unwrap();
         let pin = active2.effect_checkpoint().unwrap();
         let current = oauth_current(&grant, "retry-after-revocation");

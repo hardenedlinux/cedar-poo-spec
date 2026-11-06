@@ -42,6 +42,17 @@ unresolved. A recovered signed outcome is reconciled idempotently, while a
 different signed outcome cannot replace it. Both paths retain the charge and
 refuse a further send after revocation.
 
+The payment crash trace also stops two separately identified worker processes
+after they observe the winner's protected state. After the first receiver and
+writer takeover, restarted worker A reads the independent receiver evidence. If
+it exists, A is killed after reconciliation is durable and before its reply;
+if it is missing, the operation remains unresolved. Following revocation and a
+second takeover, restarted worker B independently reads the promoted receiver
+and reconciles idempotently or preserves the missing outcome. A further restart
+with A's old writer is fenced. Eight Lean-derived snapshots are compared for
+each crash boundary, retaining the original charge and operation hold. These
+process tests use local simulated persistence and SIGKILL.
+
 The native gate feeds Lean-produced AgentCore and FHIR policies, schemas and
 requests through the same guarded API using DPoP and mTLS respectively. It
 also runs a signed payment race, writer takeover, lost-reply recovery and

@@ -126,8 +126,12 @@ structure PaymentCrashPlan where
 private def expected (boundary : CommitBoundary) : PaymentCrashPlan :=
   let committed := match boundary with | .staged => false | .durable => true
   ⟨if committed then "receiver-durable" else "oauth-reserved",
-    [⟨0, 0, 60, committed, "unresolved"⟩, ⟨1, 1, 60, committed, "unresolved"⟩,
-     ⟨2, 2, 60, committed, "unresolved"⟩,
+    [⟨0, 0, 60, committed, "unresolved"⟩, ⟨0, 0, 60, committed, "unresolved"⟩,
+     ⟨1, 1, 60, committed, "unresolved"⟩,
+     ⟨1, 1, 60, committed, if committed then "reconciled" else "unresolved"⟩,
+     ⟨2, 2, 60, committed, if committed then "reconciled" else "unresolved"⟩,
+     ⟨2, 2, 60, committed, if committed then "reconciled" else "unresolved"⟩,
+     ⟨2, 2, 60, committed, if committed then "reconciled" else "unresolved"⟩,
      ⟨2, 2, 60, committed, if committed then "reconciled" else "unresolved"⟩]⟩
 
 def paymentCrashPlan : Lean.Json :=
@@ -157,9 +161,16 @@ def paymentCrashExercise (managed : Receiver.ManagedInput) (committed : Receiver
   let .ok first := recover state (.handoff 0) | return false
   let .ok firstPin := Receiver.promotionContract.invoke Receiver.preparePromotion
     ⟨some pin, pin, pin.image, "standby"⟩ | return false
-  let .ok revoked := recover first.result (.revoke 1 grant state.2.root.mandateId) | return false
-  let .ok final := recover revoked.result (.handoff 1) | return false
   let next := firstPin.result
+  let firstObservation : Receiver.ManagedReconciliation :=
+    ⟨some next, next.active, next.image, { audit with image := first.result.1, writer := 1 }⟩
+  let firstAttempt := recover first.result (.reconcile firstObservation)
+  let firstRecovered ← match boundary, firstAttempt with
+    | .staged, .error _ => pure first.result
+    | .durable, .ok settled => pure settled.result
+    | _, _ => return false
+  let .ok revoked := recover firstRecovered (.revoke 1 grant state.2.root.mandateId) | return false
+  let .ok final := recover revoked.result (.handoff 1) | return false
   let .ok finalPin := Receiver.promotionContract.invoke Receiver.preparePromotion
     ⟨some next, next, next.image, "successor"⟩ | return false
   let last := finalPin.result
@@ -184,8 +195,9 @@ def paymentCrashExercise (managed : Receiver.ManagedInput) (committed : Receiver
       pure settled.result
     | _, _ => return false
   return decide (recovered.2.reservations = state.2.reservations) &&
-    decide ([observe state pin operation, observe first.result next operation,
-      observe final.result last operation, observe recovered last operation] = (expected boundary).snapshots)
+    decide ([observe state pin operation, observe state pin operation, observe first.result next operation,
+      observe firstRecovered next operation, observe final.result last operation, observe recovered last operation,
+      observe recovered last operation, observe recovered last operation] = (expected boundary).snapshots)
 
 def paymentCrashFixture (durable : Revocation.Recovery.Store)
     (read : Revocation.ReplicaRead) (grant : PAR.VerifiedClient Refresh.RefreshDigest) : Bool := Id.run do
@@ -240,3 +252,5 @@ end Tests.Gateway.CurrentCommit
 #print axioms CedarPooSpec.Vertical.FinancialServices.delegated_commit_refuses_losing_revision_with_current_oauth
 
 #print axioms CedarPooSpec.Vertical.FinancialServices.delegated_recovery_cannot_reopen_operation
+#print axioms CedarPooSpec.Vertical.FinancialServices.delegated_recovery_two_steps_preserve_reservations
+#print axioms CedarPooSpec.Vertical.FinancialServices.delegated_recovery_two_steps_cannot_reopen

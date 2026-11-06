@@ -284,5 +284,28 @@ theorem delegated_recovery_cannot_reopen_operation
   apply burned_operation_cannot_begin
   simpa only [same, (delegated_recovery_preserves_reservations receipt).1] using burned
 
+/-- Two accepted recovery commands, including handoff and independent
+    reconciliation, cannot erase the payment hold between worker incarnations. -/
+theorem delegated_recovery_two_steps_preserve_reservations
+    (first : Invocation delegatedRecoveryContract prepareDelegatedRecovery before)
+    (second : Invocation delegatedRecoveryContract prepareDelegatedRecovery after)
+    (joined : after.state = first.result) :
+    second.result.1.retained = before.state.1.retained ∧
+    second.result.2.reservations = before.state.2.reservations := by
+  have left := delegated_recovery_preserves_reservations first
+  have right := delegated_recovery_preserves_reservations second
+  rw [joined] at right
+  exact ⟨right.1.trans left.1, right.2.trans left.2⟩
+
+theorem delegated_recovery_two_steps_cannot_reopen
+    (first : Invocation delegatedRecoveryContract prepareDelegatedRecovery before)
+    (second : Invocation delegatedRecoveryContract prepareDelegatedRecovery after)
+    (joined : after.state = first.result)
+    (same : retry.image = second.result.1)
+    (burned : (before.state.1.retained.any fun row => row.intent.operation == retry.operation) = true) :
+    begin retry = none := by
+  apply burned_operation_cannot_begin
+  simpa only [same, (delegated_recovery_two_steps_preserve_reservations first second joined).1] using burned
+
 
 end CedarPooSpec.Vertical.FinancialServices
