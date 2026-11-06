@@ -288,6 +288,11 @@ pub struct DurableEffectRecovery<'a> {
     pub trust: ProviderAuditTrust<'a>,
 }
 
+pub(super) struct RecoveryEvidence<'e, 'h> {
+    pub(super) input: DurableEffectRecovery<'e>,
+    pub(super) verified_history: Option<&'h VerifiedLog<'e>>,
+}
+
 #[derive(PartialEq, Eq, Serialize, Deserialize)]
 enum RecoveryOrigin {
     Detached,
@@ -832,10 +837,9 @@ impl<'a> DurableRefreshLedger<'a> {
 
     pub(super) fn reconcile_receiver_effect<G>(
         &self,
-        input: DurableEffectRecovery<'_>,
+        evidence: RecoveryEvidence<'_, '_>,
         authority: &ReceiverAuthority,
         request: RecoveryRequest,
-        verified_history: Option<&VerifiedLog<'_>>,
         receiver: impl FnOnce() -> Result<Option<G>, String>,
         committed: impl FnOnce(&G, &Signed, &Signed) -> Result<bool, String>,
         observe: impl FnMut(CheckpointStage) -> Result<(), String>,
@@ -846,9 +850,9 @@ impl<'a> DurableRefreshLedger<'a> {
             writer: self.writer,
         };
         ledger.reconcile_effect_at(
-            input,
+            evidence.input,
             request,
-            verified_history,
+            evidence.verified_history,
             receiver,
             committed,
             observe,

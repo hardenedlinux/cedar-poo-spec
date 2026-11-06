@@ -2,7 +2,7 @@
 use super::checkpoint_store::{CheckpointStage, LockedCheckpoint};
 use super::oauth_refresh_durable::{
     BoundCommit, CurrentEffectUse, DurableEffectRecovery, DurableEffectUse, DurableRefreshLedger,
-    ReceiverAuthority, ReceiverAuthorization, RecoveryRequest,
+    ReceiverAuthority, ReceiverAuthorization, RecoveryEvidence, RecoveryRequest,
 };
 use super::provider::ProviderRequest;
 pub use super::receipt_identity::LegacyReceiverTrust;
@@ -732,10 +732,12 @@ impl<'a> DurableReceiver<'a> {
         };
         let operation = OperationId(input.effect.operation.clone());
         oauth.reconcile_receiver_effect(
-            input,
+            RecoveryEvidence {
+                input,
+                verified_history,
+            },
             &authority,
             request,
-            verified_history,
             || {
                 let files = self.lock()?;
                 let (image, checkpoint) = self.current(&files)?;
