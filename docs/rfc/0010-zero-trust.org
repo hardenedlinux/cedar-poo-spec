@@ -49,8 +49,9 @@ it exists, A is killed after reconciliation is durable and before its reply;
 if it is missing, the operation remains unresolved. Following revocation and a
 second takeover, restarted worker B independently reads the promoted receiver
 and reconciles idempotently or preserves the missing outcome. A further restart
-with A's old writer is fenced. Eight Lean-derived snapshots are compared for
-each crash boundary, retaining the original charge and operation hold. These
+with A's old writer is fenced. Eight Lean-derived snapshots, including the
+event and worker identity at each step, are compared for each crash boundary,
+retaining the original charge and operation hold. These
 process tests use local simulated persistence and SIGKILL.
 
 The native gate feeds Lean-produced AgentCore and FHIR policies, schemas and

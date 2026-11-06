@@ -111,6 +111,8 @@ def joinedExercise (request : BeginInput) (reserved : Image) : Bool := Id.run do
 open CedarPooSpec.Gateway.OAuth
 
 structure PaymentSnapshot where
+  event : String
+  worker : String
   writer : Nat
   cut : Nat
   charge : Nat
@@ -126,20 +128,21 @@ structure PaymentCrashPlan where
 private def expected (boundary : CommitBoundary) : PaymentCrashPlan :=
   let committed := match boundary with | .staged => false | .durable => true
   ⟨if committed then "receiver-durable" else "oauth-reserved",
-    [⟨0, 0, 60, committed, "unresolved"⟩, ⟨0, 0, 60, committed, "unresolved"⟩,
-     ⟨1, 1, 60, committed, "unresolved"⟩,
-     ⟨1, 1, 60, committed, if committed then "reconciled" else "unresolved"⟩,
-     ⟨2, 2, 60, committed, if committed then "reconciled" else "unresolved"⟩,
-     ⟨2, 2, 60, committed, if committed then "reconciled" else "unresolved"⟩,
-     ⟨2, 2, 60, committed, if committed then "reconciled" else "unresolved"⟩,
-     ⟨2, 2, 60, committed, if committed then "reconciled" else "unresolved"⟩]⟩
+    [⟨"winner-crash", "winner", 0, 0, 60, committed, "unresolved"⟩,
+     ⟨"workers-stopped", "both", 0, 0, 60, committed, "unresolved"⟩,
+     ⟨"handoff", "a", 1, 1, 60, committed, "unresolved"⟩,
+     ⟨"reconcile-stop", "a", 1, 1, 60, committed, if committed then "reconciled" else "unresolved"⟩,
+     ⟨"handoff", "b", 2, 2, 60, committed, if committed then "reconciled" else "unresolved"⟩,
+     ⟨"reconcile", "b", 2, 2, 60, committed, if committed then "reconciled" else "unresolved"⟩,
+     ⟨"stale-restart", "a", 2, 2, 60, committed, if committed then "reconciled" else "unresolved"⟩,
+     ⟨"independent-check", "parent", 2, 2, 60, committed, if committed then "reconciled" else "unresolved"⟩]⟩
 
 def paymentCrashPlan : Lean.Json :=
   Lean.toJson [expected .staged, expected .durable]
 
 private def observe (state : Image × SharedBudget) (pin : Receiver.Checkpoint)
-    (operation : String) : PaymentSnapshot :=
-  ⟨state.1.writer, pin.image.cut.generation, state.2.spentMinor,
+    (operation event worker : String) : PaymentSnapshot :=
+  ⟨event, worker, state.1.writer, pin.image.cut.generation, state.2.spentMinor,
     (Receiver.evidence pin.image ⟨operation⟩).isSome,
     match effectStatus state.1 operation with
     | .unreserved => "unreserved"
@@ -195,9 +198,14 @@ def paymentCrashExercise (managed : Receiver.ManagedInput) (committed : Receiver
       pure settled.result
     | _, _ => return false
   return decide (recovered.2.reservations = state.2.reservations) &&
-    decide ([observe state pin operation, observe state pin operation, observe first.result next operation,
-      observe firstRecovered next operation, observe final.result last operation, observe recovered last operation,
-      observe recovered last operation, observe recovered last operation] = (expected boundary).snapshots)
+    decide ([observe state pin operation "winner-crash" "winner",
+      observe state pin operation "workers-stopped" "both",
+      observe first.result next operation "handoff" "a",
+      observe firstRecovered next operation "reconcile-stop" "a",
+      observe final.result last operation "handoff" "b",
+      observe recovered last operation "reconcile" "b",
+      observe recovered last operation "stale-restart" "a",
+      observe recovered last operation "independent-check" "parent"] = (expected boundary).snapshots)
 
 def paymentCrashFixture (durable : Revocation.Recovery.Store)
     (read : Revocation.ReplicaRead) (grant : PAR.VerifiedClient Refresh.RefreshDigest) : Bool := Id.run do

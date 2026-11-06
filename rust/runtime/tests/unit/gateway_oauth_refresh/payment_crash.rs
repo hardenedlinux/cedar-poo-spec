@@ -24,6 +24,8 @@ struct Plan {
 
 #[derive(Debug, serde::Deserialize, PartialEq, Eq)]
 struct Snapshot {
+    event: String,
+    worker: String,
     writer: u64,
     cut: u64,
     charge: u64,
@@ -223,6 +225,8 @@ fn snapshot(
     receiver: &DurableReceiver<'_>,
     operation: &OperationId,
     writer: u64,
+    event: &str,
+    worker: &str,
 ) -> Snapshot {
     let image: serde_json::Value =
         serde_json::from_slice(&std::fs::read(root.join("oauth/checkpoint.json")).unwrap())
@@ -236,6 +240,8 @@ fn snapshot(
         EffectStatus::Reconciled => "reconciled",
     };
     Snapshot {
+        event: event.into(),
+        worker: worker.into(),
         writer,
         cut: receiver.cut().unwrap().generation,
         charge,
@@ -337,7 +343,15 @@ fn lean_payment_crash_windows() {
         use std::os::unix::process::ExitStatusExt;
         assert_eq!(killed.signal(), Some(9));
         // The snapshots compare the protected stores with Lean's finite trace.
-        let mut observed = vec![snapshot(&root, &ledger, &first, &intent.id(), 0)];
+        let mut observed = vec![snapshot(
+            &root,
+            &ledger,
+            &first,
+            &intent.id(),
+            0,
+            "winner-crash",
+            "winner",
+        )];
         let original = first.evidence(&intent.id()).unwrap();
         let before_restart = ledger.effect_checkpoint().unwrap();
         let initial_writer = crate::gateway::oauth_refresh_durable::WriterCut::default();
@@ -390,7 +404,15 @@ fn lean_payment_crash_windows() {
             assert_eq!(worker.wait().unwrap().signal(), Some(9));
         }
         assert!(ledger.recover_effects(&before_restart).unwrap());
-        observed.push(snapshot(&root, &ledger, &first, &intent.id(), 0));
+        observed.push(snapshot(
+            &root,
+            &ledger,
+            &first,
+            &intent.id(),
+            0,
+            "workers-stopped",
+            "both",
+        ));
         let pin0 = first.acknowledged_checkpoint().unwrap();
         std::fs::copy(
             initial_path.join("checkpoint.json"),
@@ -409,6 +431,8 @@ fn lean_payment_crash_windows() {
             &second,
             &intent.id(),
             writer1.generation(),
+            "handoff",
+            "a",
         ));
         std::fs::write(
             root.join("writer1.json"),
@@ -449,6 +473,8 @@ fn lean_payment_crash_windows() {
             &second,
             &intent.id(),
             writer1.generation(),
+            "reconcile-stop",
+            "a",
         ));
         assert!(active1.revoke(verified(digest())).unwrap());
         let pin1 = second.acknowledged_checkpoint().unwrap();
@@ -474,6 +500,8 @@ fn lean_payment_crash_windows() {
             &third,
             &intent.id(),
             writer2.generation(),
+            "handoff",
+            "b",
         ));
         for phase in ["restart-b", "restart-a-stale"] {
             let output = Command::new(std::env::current_exe().unwrap())
@@ -493,6 +521,12 @@ fn lean_payment_crash_windows() {
                 &third,
                 &intent.id(),
                 writer2.generation(),
+                if phase == "restart-b" {
+                    "reconcile"
+                } else {
+                    "stale-restart"
+                },
+                if phase == "restart-b" { "b" } else { "a" },
             ));
         }
         let checked = active2.checkpoint().unwrap();
@@ -610,6 +644,8 @@ fn lean_payment_crash_windows() {
             &third,
             &intent.id(),
             writer2.generation(),
+            "independent-check",
+            "parent",
         ));
         assert_eq!(
             observed, plan.snapshots,
