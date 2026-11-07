@@ -64,6 +64,60 @@ pub struct ReceiptIdentityCandidate {
     pub outcome: Signed,
 }
 
+/// Decoded model receipt and its complete independently selected authority frame.
+/// It is an untrusted proposal until a verified source context accepts it.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ReceiptSymbol {
+    pub receipt: ProviderOutcome,
+    pub provider_signature: Vec<u8>,
+    pub version: Version,
+    pub authority: ReceiptAuthority,
+    pub provider_key: Vec<u8>,
+    pub witness_key: Vec<u8>,
+    pub operation: OperationId,
+}
+
+impl ReceiptSymbol {
+    fn matches(&self, binding: &ReceiptIdentityBinding) -> bool {
+        self.version == binding.version
+            && self.authority == binding.authority
+            && self.provider_key == binding.provider_key
+            && self.witness_key == binding.witness_key
+            && self.operation == binding.operation
+    }
+}
+
+/// Transport proposal: a symbolic receipt and the complete native signed-source binding.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ReceiptRealizationCandidate {
+    pub symbol: ReceiptSymbol,
+    pub native: ReceiptIdentityCandidate,
+}
+
+/// A checked association borrows both immutable inputs; construction grants no authorization.
+pub struct VerifiedReceiptRealization<'a> {
+    symbol: &'a ReceiptSymbol,
+    native: &'a VerifiedReceiptIdentity,
+}
+
+impl VerifiedReceiptRealization<'_> {
+    /// Explicit transport materialization; ordinary checks borrow the prepared sources.
+    pub fn candidate(&self) -> ReceiptRealizationCandidate {
+        ReceiptRealizationCandidate {
+            symbol: self.symbol.clone(),
+            native: self.native.candidate(),
+        }
+    }
+
+    /// The model scope, decoded receipt, digests and raw signed sources must all agree.
+    pub fn check(&self, candidate: &ReceiptRealizationCandidate) -> Option<ReceiptIdentityBinding> {
+        (candidate.symbol == *self.symbol).then_some(())?;
+        self.native.check(&candidate.native)
+    }
+}
+
 /// Durable source binding; the retained effect already owns the signed intent.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -123,6 +177,58 @@ pub struct VerifiedReceiptIdentity {
 }
 
 impl VerifiedReceiptIdentity {
+    /// Decode the symbolic receipt and scope from already authenticated sources.
+    pub fn symbol(&self) -> Result<ReceiptSymbol, String> {
+        let identity = &self.original.identity;
+        Ok(ReceiptSymbol {
+            receipt: serde_json::from_slice(&self.original.outcome.payload)
+                .map_err(|error| error.to_string())?,
+            provider_signature: self.original.outcome.signature.clone(),
+            version: identity.version.clone(),
+            authority: identity.authority.clone(),
+            provider_key: identity.provider_key.clone(),
+            witness_key: identity.witness_key.clone(),
+            operation: identity.operation.clone(),
+        })
+    }
+
+    /// Bind a full symbolic receipt only inside this authenticated source context.
+    /// The body is decoded from already verified bytes; signatures are not verified again.
+    pub fn realize<'a>(
+        &'a self,
+        symbol: &'a ReceiptSymbol,
+    ) -> Result<VerifiedReceiptRealization<'a>, String> {
+        if !symbol.matches(&self.original.identity) {
+            return Err("symbolic receipt scope differs from verified identity".into());
+        }
+        let decoded: ProviderOutcome = serde_json::from_slice(&self.original.outcome.payload)
+            .map_err(|error| error.to_string())?;
+        if symbol.receipt != decoded || symbol.provider_signature != self.original.outcome.signature
+        {
+            return Err("symbolic receipt differs from verified outcome".into());
+        }
+        Ok(VerifiedReceiptRealization {
+            symbol,
+            native: self,
+        })
+    }
+
+    /// Re-establish trust in an optional deserialized mapping using this independently
+    /// prepared context. Missing rows and any symbol/source substitution fail closed.
+    /// This is historical receipt recovery; current authorization and fencing remain
+    /// with the locked OAuth/receiver transaction.
+    pub fn restore<'a>(
+        &'a self,
+        candidate: Option<&'a ReceiptRealizationCandidate>,
+    ) -> Result<VerifiedReceiptRealization<'a>, String> {
+        let candidate = candidate.ok_or("missing recovered receipt mapping")?;
+        let realized = self.realize(&candidate.symbol)?;
+        realized
+            .check(candidate)
+            .ok_or("recovered receipt mapping differs from independently verified sources")?;
+        Ok(realized)
+    }
+
     /// Return the source-bound candidate for transport or subsequent comparisons.
     pub fn candidate(&self) -> ReceiptIdentityCandidate {
         self.original.clone()

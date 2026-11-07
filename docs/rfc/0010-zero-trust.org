@@ -13,6 +13,108 @@ research question, precise model, explicit premises, proof/counterexample,
 public API, then implementation refinement. Preserve the distinction between
 a theorem, a solver report, a finite test and an unimplemented Host obligation.
 
+* Current authorization at the effect boundary
+
+A prepared effect carries the generation of its Cedar decision. The final
+mediator checks that generation, the live Cedar result, the witnessed
+effect, review, fact inventory, publication prefix and configured OAuth target under the same simulator lock used by the authority writers. The OAuth writer checks the
+current token and replay reservation against its protected store. An
+independent full pin also binds the operation inventory. A replica can retain
+the exact OAuth token and family checkpoint while losing a DPoP reservation
+or a held operation, so equality of the OAuth projection alone is insufficient.
+
+For delegated payment, the typed Commerce Contract checks the same operation,
+offer terms, mandate lineage, release epoch and clock. The native managed
+receiver path reauthenticates the signed delegation and offer bound into the
+Cedar request. The deciding OAuth store writes the replay reservation,
+operation hold and charge together. A held or reconciled charge continues
+to count against the root and every ancestor after a lost confirmation,
+writer takeover or revocation. Reconciliation matches independent receiver
+evidence to the original intent and does not release another effect.
+
+The delegated recovery Contract preserves the existing hold and budget across
+writer handoff, revocation and independent receiver reconciliation. Its finite
+trace covers the point after the OAuth reservation is durable and the point
+after the receiver checkpoint is durable. The Rust replay kills a subprocess
+at each point, then compares each reopened state with the Lean trace through
+two receiver promotions and writer handoffs. A missing outcome remains
+unresolved. A recovered signed outcome is reconciled idempotently, while a
+different signed outcome cannot replace it. Both paths retain the charge and
+refuse a further send after revocation.
+
+The payment crash trace also stops two separately identified worker processes
+after they observe the winner's protected state. After the first receiver and
+writer takeover, restarted worker A reads the independent receiver evidence. If
+it exists, A is killed after reconciliation is durable and before its reply;
+if it is missing, the operation remains unresolved. Following revocation and a
+second takeover, restarted worker B independently reads the promoted receiver
+and reconciles idempotently or preserves the missing outcome. A further restart
+with A's old writer is fenced. Eight Lean-derived snapshots, including the
+event and worker identity at each step, are compared for each crash boundary,
+retaining the original charge and operation hold. These
+process tests use local simulated persistence and SIGKILL.
+
+The concurrent recovery replay additionally restarts two worker processes after
+revocation and two receiver/writer takeovers. Both independently read receiver
+evidence. Two controlled schedules put a correctly signed conflicting receipt
+first or the original receipt first; a shared release then lets both repeat
+reconciliation and attempt duplicate submission concurrently. Each crash
+boundary and order is compared with six Lean-generated snapshots. Missing
+receiver evidence remains unresolved; a committed receipt is retained exactly.
+The scheduler explores these two finite orders, not all possible interleavings.
+
+A further replay stops worker B inside reconciliation after the staged file
+sync or after the durable rename and directory sync. While B holds the OAuth
+writer lock, worker A confirms that the lock is held and attempts a conflicting
+provider-signed outcome; B is then killed. A third writer/receiver takeover
+rejects the old writer and replica. The restarted workers exercise both
+conflict-first and original-first orders and a shared concurrent retry phase.
+Each of the four staged/durable and order combinations is checked against eight
+Lean snapshots. The staged image leaves the operation unresolved, while the
+durable image retains the original outcome. A Lean theorem preserves the
+independently observed outcome through a subsequent handoff. These checks use
+local process scheduling and SIGKILL and do not establish physical power-loss
+atomicity or all possible schedules.
+
+The native gate feeds Lean-produced AgentCore and FHIR policies, schemas and
+requests through the same guarded API using DPoP and mTLS respectively. It
+also runs a signed payment race, writer takeover, lost-reply recovery and
+negative controls for stale facts, a missing hold, and legacy dispatch of a
+guarded intent. The Lean Contract describes the accepted state transition.
+The Rust simulation exercises its realization on protected local storage.
+Production adapters are responsible for independent pin custody and for a
+common transaction authority across all writers for a budget. The simulation
+assumes an independently selected Commerce authority and does not model an
+external payment rail.
+
+The shared-revision law also rejects a losing prepared payment after a winning
+reservation, including when the loser reloads the winning budget but retains
+its old expected revision. This is conditional on the Host serializing the
+comparison and write. A native two-thread race combines a lost receiver reply
+with two successive receiver promotions and writer rotations, rejects both old
+generations, and reconciles the winner from the promoted receiver's independent
+evidence. Missing and conflicting signed evidence are refused; repeated original
+evidence is idempotent. This race uses local simulated storage and does not
+itself kill either racing worker.
+An isolated OAuth-revocation control keeps the Commerce mandate active and
+leaves enough budget for a fresh signed purchase. A new operation and proof
+are refused without changing the protected effect inventory. The Lean fixture
+also compares a stale expected budget revision with a refreshed revision under
+the same adequate-capacity state; only the refreshed revision is admitted.
+
+The post-winner fixture refreshes both the complete OAuth image and the shared
+budget before preparing two distinct later operations and sender observations,
+including fresh DPoP proof IDs when applicable. Lean checks
+that both are individually admissible on the first winner's state, that a
+losing old budget revision remains refused after the second winner even when
+the OAuth image is refreshed, and that the current revision is admissible when
+capacity permits. In the native replay a first 30-unit charge loses its receiver
+acknowledgment, then two threads compete for two 60-unit charges against the
+same current pin and a 100-unit root cap. Exactly one succeeds; a retry with
+the updated pin is refused by the remaining budget. The first receipt remains
+independently available and reconciles idempotently. These are finite model and
+local simulated-store observations, not a proof of physical I/O atomicity.
+
 * Primary sources and what is actually reused
 
 | Source | Inspected contribution | Use here | Evidence boundary |
@@ -24,6 +126,11 @@ a theorem, a solver report, a finite test and an unimplemented Host obligation.
 | Cutler et al., [[https://arxiv.org/abs/2403.04651][Cedar language paper]]; [[https://github.com/cedar-policy/cedar-spec/tree/main/cedar-lean][official executable Lean specification]] | Defined authorization, validation and symbolic reasoning | Direct imports through existing SPEC Gateway and Delta APIs | Cedar does not authenticate Host facts or atomically perform external IO |
 | Disselkoen et al., [[https://arxiv.org/abs/2407.01688][How We Built Cedar: A Verification-Guided Approach]] | Executable models, proofs, differential testing and PBT | Separate model reasoning from implementation conformance | Passing examples do not establish full implementation refinement |
 | Collina et al., [[https://arxiv.org/abs/2609.15803][Delegating Authorization to Misaligned Agents]] | Sequential safety under its utility/MDP and reviewer-alignment assumptions | Retain RFC 0004's distinction between same-world Delta and trajectory safety | We do not implement its reviewer model or inherit its safety theorem |
+
+The [[file:../agent-authorization-research.org][agent authorization research review]] connects continuation-aware review,
+FAPI protocol goals, delegated-token attenuation and semantic evidence to a
+shared admission-aware invariant proof. It records the exact missing premises
+and countermodels without inheriting the papers' broader guarantees.
 
 The official Cedar repository provides executable definitions and theorem
 artifacts. A GitHub repository mentioning Zero Trust is not equivalent evidence.
@@ -1700,6 +1807,74 @@ It emits actual source SHA-256 values and the stored native identity in each
 =SETTLED-LATE-STEP-OK= record. Abstract Lean digest names are not compared with
 native digest strings. Exact signed-source checks remain required even when
 model digest values collide.
+
+The shared =ReceiptIdentity.realizationContract= now makes the association a
+typed value. =ReceiptSymbol= contains the complete decoded model receipt and
+its operation, receiver, provider, witness and version frame. =Realization=
+contains that symbol, the native identity and both exact signed sources. Preparing
+a realization first invokes the existing verified-source identity relation, then
+checks the complete symbol frame and receipt. It cannot associate a different
+operation or authority, or a different symbolic result, with those sources.
+
+=realized_source_digests= proves that both output digests equal the configured
+digest function applied to the exact output sources. Rust instantiates this
+boundary with =Signed.source_sha256= after signature verification. The model does
+not implement or prove SHA-256 itself. Exact source equality remains mandatory;
+the fixture deliberately retains colliding abstract digest names.
+=Realization.check= accepts only the complete original association.
+=Image.receiptRealization= derives it from the existing durable row, and
+=trace_preserves_realization= proves that recovery, handoff and revocation do
+not replace an already bound association. No additional mapping journal is used.
+
+The public Rust =VerifiedReceiptIdentity.symbol= and =realize= APIs mirror this
+boundary. The symbol includes the decoded provider outcome, the provider
+signature and its complete native scope. =realize= borrows the checked source
+context and symbol; ordinary identity preparation retains no extra decoded
+object. An explicit =candidate= call materializes transport data. Checking a
+transport proposal compares both the complete symbol and the existing native
+source binding. It grants no authorization and performs no persistence.
+
+A recovered row is still an untrusted proposal. The shared
+=ReceiptIdentity.restorationContract= requires a present candidate and resolves
+its symbol again against the independently selected source context. It accepts
+only equality of the complete realization, including exact signed bytes.
+=restoration_requires_sources= proves that the accepted result is both the
+recovered candidate and the independently resolved value. Missing mappings,
+changed versions, source substitutions and cross-operation or cross-authority
+mappings fail closed, including substitutions retaining plausible digest fields.
+=Image.restoreReceipt= applies this boundary to the existing durable row;
+=trace_preserves_restoration= preserves its result along the finite recovery
+trace when the independent source context is fixed.
+
+The public Rust =VerifiedReceiptIdentity.restore= returns the existing borrowed
+verified-realization type only after these checks. Restarted workers use it on
+the deserialized mapping; all 22 observations exercise the same path, including
+a serialized transport round trip and missing/substituted proposals. The plan
+format is =cedar-poo-settled-late-plan-v3=; only its predicates change, with no
+extra fault rounds or relaxed acceptance controls. No storage format or extra
+mapping journal is introduced.
+
+This recovery Contract authenticates historical settlement. It neither proves
+that a cached source context is current nor permits a new effect. Source-context
+selection remains with the independent reader; writer incarnation, live replica,
+revocation and final-use ordering remain with the existing locked OAuth/receiver
+transaction. This separation is consistent with RFC 9700's token replay
+protections and RFC 9449's sender constraints: a valid signature or past
+settlement cannot replace current authorization. The historical restoration rule
+is this library's explicit composition boundary, not a claim that those RFCs
+specify application receipt recovery.
+
+
+The late-recovery fixture uses version 3 with eight explicit
+realization/restoration predicates; its 22-step schedule and all acceptance budgets remain
+unchanged. At every step, a valid signed sibling-operation receipt and a source
+context under another receiver authority are rejected by the target realization.
+Rewriting their operation labels cannot hide the different symbolic body or raw
+sources. Provider/witness changes, symbolic-result changes, signature changes and
+source changes with recomputed hostile digests are also refused. Each observation
+records a native symbolic-receipt digest and, once persisted, the complete
+realization digest. Fresh verified contexts reconstruct the same association
+after worker crashes and handoffs from the existing durable signed evidence.
 
 The agreement concerns this finite projection and its frame conditions.
 Logical target and missing-receipt roles identify different native operations.

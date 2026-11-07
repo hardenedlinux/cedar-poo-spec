@@ -7,8 +7,8 @@
 //! a purchase. This process-local reference is not a durable authority store.
 
 use crate::projection::{
-    LeanMandateClaims, LeanOfferClaims, mandate_claims, mandate_matches, offer_claims,
-    offer_matches,
+    LeanMandateClaims, LeanOfferClaims, LeanPurchaseTermsClaims, mandate_claims, mandate_matches,
+    offer_claims, offer_matches,
 };
 use crate::signatures::{
     AgentPublicKey, MandateId, MandateOfferTrust, MandatePayload, MerchantId, OfferId,
@@ -107,6 +107,75 @@ impl AdmittedDelegation {
 
     pub fn offer(&self) -> &LeanOfferClaims {
         &self.offer
+    }
+}
+
+/// Accounting evidence retained with an already reserved operation.
+/// Restoring this value does not authenticate a new mandate or offer.
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct PurchaseCharge {
+    lineage: Vec<LeanMandateClaims>,
+    terms: LeanPurchaseTermsClaims,
+}
+
+impl AdmittedDelegation {
+    /// Compute one charge from current verified claims and retained prior charges.
+    /// The caller serializes this calculation with operation reservation and commit.
+    pub fn charge<'a>(
+        &self,
+        prior: impl IntoIterator<Item = &'a PurchaseCharge>,
+    ) -> Option<PurchaseCharge> {
+        let root = self.lineage.first()?;
+        let mut ancestors: HashMap<_, _> = self
+            .lineage
+            .iter()
+            .map(|mandate| (mandate.mandate_id.as_str(), (mandate, 0u64)))
+            .collect();
+        for row in prior {
+            row.accumulate(root, &self.offer.terms, &mut ancestors)?;
+        }
+        if !ancestors.values().all(|(mandate, total)| {
+            total
+                .checked_add(self.offer.terms.amount_minor)
+                .is_some_and(|next| next <= mandate.total_cap)
+        }) {
+            return None;
+        }
+        Some(PurchaseCharge {
+            lineage: self.lineage.clone(),
+            terms: self.offer.terms.clone(),
+        })
+    }
+}
+
+impl PurchaseCharge {
+    fn accumulate(
+        &self,
+        root: &LeanMandateClaims,
+        offer: &LeanPurchaseTermsClaims,
+        ancestors: &mut HashMap<&str, (&LeanMandateClaims, u64)>,
+    ) -> Option<()> {
+        let old_root = self.lineage.first()?;
+        if old_root.principal != root.principal || old_root.mandate_id != root.mandate_id {
+            return Some(());
+        }
+        if old_root != root
+            || (self.terms.merchant_id == offer.merchant_id
+                && self.terms.offer_id == offer.offer_id)
+        {
+            return None;
+        }
+        for prior in &self.lineage {
+            let Some((mandate, total)) = ancestors.get_mut(prior.mandate_id.as_str()) else {
+                continue;
+            };
+            if *mandate != prior {
+                return None;
+            }
+            *total = total.checked_add(self.terms.amount_minor)?;
+        }
+        Some(())
     }
 }
 

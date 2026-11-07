@@ -126,8 +126,8 @@ def projectPermit : Policy :=
 def purposePermit : Policy :=
   queryPolicy "project-subscription" .permit
     (.and projectMatches (.and subscriptionActive analyticsPurpose))
-def legacyPermit : Policy :=
-  queryPolicy "legacy-subscription" .permit subscriptionActive
+def subscriptionPermit : Policy :=
+  queryPolicy "subscription-query" .permit subscriptionActive
 
 /-- Owner-local vetoes use the public Cedar-backed control object. -/
 def ownerControl : Veto :=
@@ -149,21 +149,21 @@ def regionVeto : Policy := complianceControl.policy
 
 def base : Module :=
   { name := "Base", suffix := true,
-    edits := [.extend projectPermit, .extend legacyPermit] }
+    edits := [.extend projectPermit, .extend subscriptionPermit] }
 def dataOwner : Module := ownerControl.module "DataOwner" "Base" .introduce
 def platform : Module := platformControl.module "Platform" "Base" .introduce
 def platformFreshness : Module := platformControlFreshness.module "PlatformFreshness" "Platform" .revise
 def compliance : Module := complianceControl.module "Compliance" "Base" .introduce
 
 /-- A governed view owns its C4 precedence. Every view performs the same
-    purpose overlay and legacy-grant removal after its owners are resolved. -/
+    purpose overlay and baseline-grant removal after its owners are resolved. -/
 structure GovernanceView where
   name : String
   owners : List String
 
 def GovernanceView.module (view : GovernanceView) : Module :=
   { name := view.name, parentOrders := [view.owners],
-    edits := [.overlay purposePermit, .remove legacyPermit.id] }
+    edits := [.overlay purposePermit, .remove subscriptionPermit.id] }
 
 def GovernanceView.reviseOwner (view : GovernanceView) (name oldOwner newOwner : String)
     (_present : oldOwner ∈ view.owners) : GovernanceView :=
@@ -353,7 +353,7 @@ def compositionTraceConforms : Bool :=
     some ["FreshAttestation", "DataOwner", "PlatformFreshness", "Platform", "Compliance", "Base"] &&
   compilation.applied.length == 8 &&
   (match compilation.applied.getLast? with
-   | some { moduleName := "FreshAttestation", edit := .remove "legacy-subscription" } => true
+   | some { moduleName := "FreshAttestation", edit := .remove "subscription-query" } => true
    | _ => false) &&
   (match compilation.policies.find? (fun item => item.policy.id == "attested-platform") with
    | some item => item.introducedBy == "Platform" && item.lastEditedBy == "PlatformFreshness"

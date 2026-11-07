@@ -35,6 +35,7 @@ struct RefreshSnapshot {
     program: Option<ValidatedProgram>,
     now: u64,
     payload: String,
+    audience: String,
 }
 pub(super) struct Sources {
     pub generation: u64,
@@ -46,6 +47,7 @@ pub(super) fn prepare_facts(
     case: &Case,
     keys: &BTreeMap<String, SigningKey>,
     window: SourceWindow,
+    audience: &str,
 ) -> Result<Sources, String> {
     if window.expires_at <= window.now {
         return Err("source lease is not current".into());
@@ -63,7 +65,7 @@ pub(super) fn prepare_facts(
             }
             .into(),
             subject: case.request.principal.clone(),
-            audience: "gateway".into(),
+            audience: audience.into(),
             source: world.clone(),
             field,
             value,
@@ -191,6 +193,7 @@ impl Simulator {
                 now: snapshot.now,
                 expires_at,
             },
+            &snapshot.audience,
         )?;
         Ok((snapshot.generation, cedar, sources))
     }
@@ -225,6 +228,7 @@ impl Simulator {
             program: snapshot.program.clone(),
             now: snapshot.authority.now,
             payload: snapshot.effect.payload.clone(),
+            audience: snapshot.effect.audience.clone(),
         })
     }
     fn install_refresh(

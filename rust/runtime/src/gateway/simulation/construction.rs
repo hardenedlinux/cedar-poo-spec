@@ -11,6 +11,26 @@ use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 impl Simulator {
     pub fn new(case: &Case, schema: Option<&SchemaSourceJson>) -> Result<Self, String> {
+        Self::new_with_target(case, schema, None)
+    }
+
+    /// Bind the trusted OAuth routing and identity projection to this Cedar operation.
+    pub fn new_for_oauth(
+        case: &Case,
+        schema: &SchemaSourceJson,
+        target: crate::gateway::oauth::Target,
+    ) -> Result<Self, String> {
+        if target.audience.is_empty() {
+            return Err("missing effect audience".into());
+        }
+        Self::new_with_target(case, Some(schema), Some(target))
+    }
+
+    fn new_with_target(
+        case: &Case,
+        schema: Option<&SchemaSourceJson>,
+        oauth_target: Option<crate::gateway::oauth::Target>,
+    ) -> Result<Self, String> {
         let (program, cedar) = if let Some(schema) = schema {
             let (program, receipt) = ValidatedProgram::prepare(schema, case)?;
             (Some(program), receipt.replay)
@@ -23,18 +43,22 @@ impl Simulator {
                 .remove(0),
             )
         };
-        Self::bind_simulated_sources(case, program, cedar)
+        Self::bind_simulated_sources(case, program, cedar, oauth_target)
     }
 
     pub(super) fn with_program(case: &Case, program: &ValidatedProgram) -> Result<Self, String> {
         let receipt = program.replay(case)?;
-        Self::bind_simulated_sources(case, Some(program.clone()), receipt.replay)
+        Self::bind_simulated_sources(case, Some(program.clone()), receipt.replay, None)
     }
     fn bind_simulated_sources(
         case: &Case,
         program: Option<ValidatedProgram>,
         cedar: ReplayReceipt,
+        oauth_target: Option<crate::gateway::oauth::Target>,
     ) -> Result<Self, String> {
+        let audience = oauth_target
+            .as_ref()
+            .map_or("gateway", |target| target.audience.as_str());
         static SOURCES: std::sync::LazyLock<Arc<BTreeMap<String, p256::ecdsa::SigningKey>>> =
             std::sync::LazyLock::new(|| {
                 Arc::new(
@@ -61,6 +85,7 @@ impl Simulator {
                 now: 10,
                 expires_at: 100,
             },
+            audience,
         )?;
         let policy_id = value_sha256(&case.policies)?;
         // Identity revisions have a reflexive no-gain proof. Nonidentity review
@@ -83,7 +108,7 @@ impl Simulator {
             generation: 7,
             payload: cedar.request_sha256.clone(),
             action_schema: schema_id,
-            audience: "gateway".into(),
+            audience: audience.into(),
         };
         let initial = Envelope {
             current_world: sources.world.clone(),
@@ -133,6 +158,7 @@ impl Simulator {
                 original,
                 unknown: false,
                 spent: false,
+                oauth_target,
                 retained_intent: None,
                 witness_frontier: None,
             })),

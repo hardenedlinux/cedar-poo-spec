@@ -53,6 +53,7 @@ pub(super) struct State {
         deserialize_with = "deserialize_families"
     )]
     families: HashMap<FamilyKey, Family>,
+    #[serde(deserialize_with = "deserialize_access")]
     access: HashMap<String, Access>,
 }
 
@@ -197,6 +198,45 @@ fn deserialize_families<'de, D: serde::Deserializer<'de>>(
         return Err(serde::de::Error::custom("duplicate OAuth refresh family"));
     }
     Ok(records)
+}
+
+// Deserialize before constructing the map: collecting first would erase duplicate
+// digests and disagree with the model's unique accessEntry lookup.
+fn deserialize_access<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> Result<HashMap<String, Access>, D::Error> {
+    struct AccessVisitor;
+    impl<'de> serde::de::Visitor<'de> for AccessVisitor {
+        type Value = HashMap<String, Access>;
+
+        fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            formatter.write_str("unique OAuth access digests matching their grants")
+        }
+
+        fn visit_map<M: serde::de::MapAccess<'de>>(
+            self,
+            mut map: M,
+        ) -> Result<Self::Value, M::Error> {
+            let mut records = HashMap::new();
+            while let Some((digest, access)) = map.next_entry::<String, Access>()? {
+                if digest.is_empty() || digest != access.grant.token_hash {
+                    return Err(serde::de::Error::custom(
+                        "OAuth access digest differs from its grant",
+                    ));
+                }
+                match records.entry(digest) {
+                    std::collections::hash_map::Entry::Vacant(slot) => {
+                        slot.insert(access);
+                    }
+                    std::collections::hash_map::Entry::Occupied(_) => {
+                        return Err(serde::de::Error::custom("duplicate OAuth access digest"));
+                    }
+                }
+            }
+            Ok(records)
+        }
+    }
+    deserializer.deserialize_map(AccessVisitor)
 }
 
 /// Refresh metadata attached to a successful PAR redemption.

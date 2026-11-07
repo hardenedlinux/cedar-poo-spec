@@ -132,8 +132,8 @@ def restrictedControllerProfile : ControllerReleaseProfile.Object :=
 
 def restrictedControllerPolicy : Policy :=
   (ControllerReleaseProfile.policy? restrictedControllerProfile).get (by native_decide)
-def legacyBypass : Policy :=
-  policy "legacy-matched-release" .permit release .any matched
+def matchedReleaseBypass : Policy :=
+  policy "matched-release" .permit release .any matched
 
 def dutiesControl : SeparationOfDuties :=
   { policyId := "separate-preparer-and-releaser",
@@ -148,11 +148,11 @@ def riskVeto : Policy :=
 def modelResult : Except LeanPoo.C4.Error Model := do
   let base : Model := { modules := [
     { name := "Base", edits := [.extend preparePermit, controllerRelease.introduce,
-        .extend legacyBypass] }] }
+        .extend matchedReleaseBypass] }] }
   let threshold ← base.extend "Threshold" "Base" [.overlay controllerPolicy]
   let duties ← threshold.extend "Duties" "Base" [dutiesControl.edit .introduce]
   let risk ← duties.extend "Risk" "Base" [.extend riskVeto]
-  let retired ← risk.extend "Retired" "Base" [.remove legacyBypass.id]
+  let retired ← risk.extend "Retired" "Base" [.remove matchedReleaseBypass.id]
   let integrated ← retired.mix "Integrated" ["Threshold", "Duties", "Risk", "Retired"]
   integrated.extend "Restricted" "Integrated" [.overlay restrictedControllerPolicy]
 
@@ -254,9 +254,9 @@ def integratedPolicyIdsExact : Bool :=
   ids.length == 4 &&
   ["prepare-matched-payment", "controller-release",
    "separate-preparer-and-releaser", "block-frozen-payment"].all ids.contains &&
-  !ids.contains "legacy-matched-release"
+  !ids.contains "matched-release"
 
-theorem legacyRetired : integratedPolicyIdsExact = true := by native_decide
+theorem matchedBypassRemoved : integratedPolicyIdsExact = true := by native_decide
 
 theorem validatedIntegrated :
     (program.publish "Integrated").isOk = true := by

@@ -3,7 +3,7 @@
 import * as v from 'valibot';
 import type {FigureContext} from '@deterministic-engineering/render';
 import {composeFinancial,type FinancialArtwork} from './financial';
-export const PaymentComponentSchema=v.object({component:v.optional(v.strictObject({kind:v.literal('payment'),variant:v.picklist(['base','incident','assurance'])}))});
+export const PaymentComponentSchema=v.object({component:v.optional(v.strictObject({kind:v.literal('payment'),variant:v.picklist(['base','incident','assurance','host','replay'])}))});
 export type PaymentComponent=NonNullable<v.InferOutput<typeof PaymentComponentSchema>['component']>;
 /** Payment specializes the shared financial frame without copying any model or proof cards. */
 export function composePayment(context:FigureContext,artwork:FinancialArtwork,selection:PaymentComponent){

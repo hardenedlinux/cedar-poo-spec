@@ -119,3 +119,27 @@ outcomes. A crash between claim and dispatch, or known non-release after consumi
 the permit, can leave the purchase blocked. Recovery never mints another permit.
 A production adapter needs a separately verified fenced, idempotent retry protocol
 before claiming eventual delivery or exactly-once economic execution.
+
+* Finite shared-budget histories
+
+=SharedBudget.Step= projects the existing reserve/revoke algorithms and an
+unchanged budget observation into the shared Zero Trust finite-run relation.
+=run_retains= preserves the complete root, all exact prior
+reservations, in order and with multiplicity, all committed revocations, and monotone revisions/time.
+=retained_spend= and =retained_ancestor_spend= exclude implicit refunds.
+=run_preserves_root_cap= keeps the original root cap, and
+=revoked_ancestor_blocks_run= refuses a fresh reservation through any historically
+revoked ancestor after an arbitrary finite modeled history.
+
+=reservationContract= invokes the same allocator and binds its exact result.
+Its typed invocation yields history, cap and complete-lineage uniqueness proofs. This is a proposal Contract:
+it does not attest persistence, authenticate a recovered head, reserve an external
+effect, or grant a dispatch permit. The Host must still serialize and authenticate
+the current shared head as specified above. An old checkpoint cannot establish
+the retention relation by merely presenting validly encoded fields.
+
+=Delegation.resolvedLineageUnique= proves unique mandate IDs, agent IDs and
+holder keys for every resolved chain length. Native =VerifiedMandate= already
+retains ancestor identity; the end-to-end control checks root and non-root reuse
+at depth three, with positive unique-chain controls and refusal before policy.
+No replacement signature implementation or new token wire format is introduced.

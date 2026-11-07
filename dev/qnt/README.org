@@ -45,3 +45,33 @@ bounded Apalache verification, not =quint run= or unbounded temporal/liveness
 verification. The finite domains and corresponding Lean laws are described in
 the [[file:../../Examples/Scenarios/FinancialServices/Wallet/README.org][financial audit]]. No deployed Host behavior, cryptographic protocol,
 consensus guarantee or Lean/Quint transition-refinement theorem is established.
+
+* Composed wallet containment
+
+=financial/WalletContainment.qnt= independently explores the composed financial
+containment protocol. It does not duplicate the incident's acquisition graph.
+The same canonical wallet threat-model command requires the original nine
+signing traces plus nine containment traces, both depth-12 safety checks, the
+original depth-4 stale-signing counterexample and new depth-4 recovery/false-clear
+counterexamples. Source-only checks and exact ITF variable/failure predicates
+remain enforced. All command timeouts and solver pins are unchanged.
+
+Finite matching/finality bits abstract trusted Host observations; Lean uses the
+actual typed wallet/network/nonce fields. This is complementary exploration,
+not a refinement proof or evidence of EVM/consensus behavior.
+
+=financial/WalletHost.qnt= independently explores the checked Host adapter:
+nine additional deterministic traces, depth-12 safety, and required depth-4
+no-durability / old-state-replay counterexamples. The runner checks actual ITF
+unsafe states (including a second handoff for rollback). Existing signing and
+containment gates remain mandatory: 27 traces, three depth-12 positive checks,
+five negative countermodels. Trusted bits abstract real verifiers/readers and
+storage; no Lean/Quint refinement or deployed Host qualification is claimed.
+
+=financial/WalletReplay.qnt= receives the same Lean-selected graph through an
+ignored generated instance. It adds ten deterministic controls (including a
+legitimate positive control), depth-12 interleaving safety and two depth-4
+refutations of false containment claims. Those witnesses retain zero new signing
+intents while an old settlement or delegation survives pause; they are not
+hardened-invariant violations. Total: 37 deterministic controls, four positive
+depth-12 checks, five broken-boundary countermodels and two false-claim witnesses.

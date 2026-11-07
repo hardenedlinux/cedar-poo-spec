@@ -169,7 +169,7 @@ structure Roots where
   delegation : String
   origin : String
 
-def legacy : Roots := ⟨"ToolBase", "DelegationBase", "OriginBase"⟩
+def baselineRoots : Roots := ⟨"ToolBase", "DelegationBase", "OriginBase"⟩
 def governed : Roots := ⟨"ToolHardened", "DelegationBounded", "OriginBounded"⟩
 def revoked : Roots := { governed with origin := "OriginRevoked" }
 def unsafeRoots : Roots := { governed with origin := "OriginUnsafe" }
@@ -191,7 +191,7 @@ def authorizeFlow
   | .ok receipts => CedarPooSpec.Authorization.Compound.layersAllowed receipts
 
 def flowCases : List (String × Roots × EntityUID × EntityUID × EntityUID × Int64 × String × Bool) := [
-  ("legacy-support-delete", legacy, dataBot, deleteRecords, support, 2, "delete_records", true),
+  ("baseline-support-delete", baselineRoots, dataBot, deleteRecords, support, 2, "delete_records", true),
   ("governed-admin", governed, dataBot, deleteRecords, admin, 2, "delete_records", true),
   ("governed-support", governed, dataBot, deleteRecords, support, 2, "delete_records", false),
   ("governed-admin-no-mfa", governed, dataBot, deleteRecords, adminNoMfa, 2, "delete_records", false),

@@ -3,8 +3,9 @@ use super::{OwnedWorker, RestartFixture, run_worker, takeover, wait_for_marker};
 use crate::gateway::checkpoint_store::CheckpointStage;
 use crate::gateway::oauth_refresh_durable::{DurableEffectRecovery, DurableRefreshLedger};
 use crate::gateway::provider_durable::{DurableReceiver, LegacyReceiverTrust, ReceiverCut};
+use crate::gateway::receipt_identity::{ReceiptIdentityContext, ReceiptRealizationCandidate};
 use crate::gateway::wire::{sign, simulation_key};
-use crate::gateway::{ProviderOutcome, Signed, verify};
+use crate::gateway::{ProviderOutcome, Signed, Witness, verify};
 use cedar_poo_core::operation_identity::OperationId;
 use std::path::Path;
 
@@ -253,6 +254,42 @@ pub(super) fn worker<'a>(
         std::fs::read(root.join("oauth/checkpoint.json")).unwrap(),
         before
     );
+    // Every freshly restarted worker reconstructs the model/native association
+    // from independently selected evidence and the existing durable mapping.
+    let provider = simulation_key(8);
+    let witness = Witness::simulation().verifying_key();
+    let selected = receiver
+        .evidence(&OperationId(fixture.prefix.operation.clone()))
+        .unwrap()
+        .unwrap();
+    let decoded: ProviderOutcome = verify(&selected.outcome, provider.verifying_key()).unwrap();
+    let identity = ReceiptIdentityContext {
+        receiver: trusted,
+        provider_key: provider.verifying_key(),
+        witness_key: &witness,
+        effect: &fixture.prefix,
+        intent: &decoded.outcome.commit,
+        outcome: &selected.outcome,
+    }
+    .prepare()
+    .unwrap();
+    let symbol = identity.symbol().unwrap();
+    let stored = oauth
+        .effect_observation(&OperationId(fixture.prefix.operation.clone()))
+        .unwrap()
+        .unwrap()
+        .receipt_identity
+        .unwrap();
+    let recovered = ReceiptRealizationCandidate {
+        symbol: symbol.clone(),
+        native: stored,
+    };
+    let realized = identity.restore(Some(&recovered)).unwrap();
+    assert_eq!(
+        realized.check(&recovered),
+        Some(recovered.native.identity.clone())
+    );
+
     if phase.starts_with("settled-late-ack-") {
         std::fs::write(root.join(format!("{phase}-confirmed")), []).unwrap();
         loop {

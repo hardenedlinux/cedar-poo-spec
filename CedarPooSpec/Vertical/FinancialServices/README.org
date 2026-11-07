@@ -60,3 +60,26 @@ reassesses a reserved payment without resetting its nonce. The
 [[file:../../../Examples/Scenarios/FinancialServices/Wallet/README.org][wallet-signing acceptance audit]] maps the motivating attack chain, negative
 controls and Host assumptions. Chain codecs, signing keys, IO mediation and
 authenticated finalized delegation-clearing observations remain adapter duties.
+
+* Composed wallet containment
+
+[[file:PaymentContainment.lean][PaymentContainment]] binds the existing signing contract to the same wallet's
+exposure. Pause revokes the modeled gateway, outstanding delegation quarantines
+new signing, recovery retains the archived attempts/nonces, and verified final
+clearing does not resume withdrawals. Its finite-control-trace law keeps a
+paused wallet closed across recovery and clearing observations. Real signer
+mediation, atomic snapshot persistence and authentic chain/current readers remain
+Host duties; no emergency clearing signer or resumption service is implemented.
+
+=PaymentHost= strengthens the existing signing/containment profile using shared
+RegistrarAuthority, FactAuthority and Lean POO Contract. Exact journal/byte/cut
+bindings, current-use reassessment, consumed pending slots and retained unknown
+exposure narrow Host freedom. Cryptographic roots, canonical decoding, native
+atomic persistence and complete physical mediation remain explicit premises;
+see [[file:../../../Examples/Scenarios/FinancialServices/Wallet/HostTrustAudit.org][the per-item wallet Host audit]]. No signer backend or second Cedar evaluator is added.
+
+=PaymentContainment.observeSettlement= delegates to the existing ledger/lifecycle
+reconciliation and preserves exposure. The generic no-signing-after-pause law
+now also covers settlement observations in finite control traces. A delayed
+outcome can be observed after pause without another signature or resumed grant.
+The [[file:../../../Examples/Scenarios/FinancialServices/Wallet/Binance2026Replay.org][differential replay]] distinguishes these channels and retains native limits.

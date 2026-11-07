@@ -222,7 +222,7 @@ def authorizeFlow
   | .ok receipts => CedarPooSpec.Authorization.Compound.layersAllowed receipts
 
 def cases : List (String × String × String × EntityUID × EntityUID × EntityUID × EntityUID × Bool × Bool) := [
-  ("legacy-internal-to-public", "ReadBase", "PublishBase", internalDoc, publicRepo, admin, support, false, true),
+  ("independent-checks-internal-to-public", "ReadBase", "PublishBase", internalDoc, publicRepo, admin, support, false, true),
   ("read-foreign-tenant", "ReadTenant", "PublishBase", foreignDoc, internalRepo, admin, reviewer, true, false),
   ("scoped-internal-to-public", "ReadTenant", "PublishScoped", internalDoc, publicRepo, admin, reviewer, true, true),
   ("classified-internal-to-public", "ReadTenant", "PublishClassified", internalDoc, publicRepo, admin, reviewer, true, false),

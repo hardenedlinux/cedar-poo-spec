@@ -50,11 +50,11 @@ flowchart LR
   Platform --> Host[Host effect admission]
 #+end_src
 
-The integrated POO root removes a legacy broad agent permit and strengthens
+The integrated POO root removes a baseline broad agent permit and strengthens
 the disclosure slot. An agent incident adds one veto while preserving the
 consumer read and purge paths. Recovery removes that incident veto; the
 revocation owner is reused. The Lean theorems check the affected policy ID,
-restoration, and legacy-permit removal. These are concrete reasons to compose
+restoration, and baseline-permit removal. These are concrete reasons to compose
 owners rather than copy a complete Cedar policy set for each state.
 
 * Lifecycle and verification

@@ -60,3 +60,21 @@ substitutions, current-use/refusal/replay controls, outstanding delegation after
 local suspension, and a permissive-verifier trust counterexample. Run
 =just example scenarios financial-services wallet binance=; the
 [[file:../Examples/Scenarios/FinancialServices/Wallet/README.org][adjacent audit]] records the exact model and Host boundaries.
+
+=Enterprise/Payment/WalletContainment.lean= verifies the composed signing/exposure
+boundary, archived nonce retention, exact clearing observations and sticky pause
+through recovery. It retains the former isolated-exposure counterexample and
+uses the same admitted LeanPoo attacker family for the executable chain.
+
+=Enterprise/Payment/WalletHost.lean= checks the composed Host adapter's credential,
+fact inventory/expiry, physical byte projection, exact durable plan, current cut
+and lost-response refusals. It also retains successful counterexamples under a
+lying acknowledgment verifier and replayed old immutable state, and a conflicting
+codec interpretation. These fixtures do not qualify native cryptography/storage.
+
+=Enterprise/Payment/WalletReplay.lean= covers source-classified complete replay,
+three initial/control lanes, legitimate single dispatch, unchanged capability
+roots under an unsafe writer, late settlement without new signing, exact clearing,
+refresh, invalid provenance and forged/foreign/incomplete settlement evidence.
+Generic replay/settlement laws and fixture-dependent graph results retain
+separate axiom audits; no fixture theorem is promoted to a universal kernel law.

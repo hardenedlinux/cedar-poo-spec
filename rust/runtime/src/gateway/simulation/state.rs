@@ -120,6 +120,7 @@ pub(super) struct Current {
     pub(super) original: AuthorityLedger<EffectIdentity>,
     pub(super) unknown: bool,
     pub(super) spent: bool,
+    pub(super) oauth_target: Option<crate::gateway::oauth::Target>,
     pub(super) retained_intent: Option<RetainedIntent>,
     pub(super) witness_frontier: Option<crate::gateway::witness::WitnessFrontier>,
 }
@@ -287,21 +288,92 @@ impl Simulator {
         }
         Ok(facts)
     }
+    /// Witness the exact prepared intent. Final mediation repeats the
+    /// generation, Cedar and fact checks before reserving this operation.
+    pub fn precommit(
+        &self,
+        handle: &PreparedEffect,
+        envelope: &Envelope,
+        witness: &mut Witness,
+    ) -> Result<Signed, String> {
+        let current = self.current.lock().map_err(|_| "poisoned authority")?;
+        self.check_handle(&current, handle)?;
+        let facts = self.check(&current, envelope)?;
+        let target = current
+            .oauth_target
+            .clone()
+            .ok_or("missing trusted OAuth target")?;
+        witness.append_with_target(
+            PrecommitInput {
+                current_world: &current.world,
+                effect: &current.effect,
+                review: &current.review,
+                facts: &facts,
+                publications: &current.publications,
+            },
+            Some(target),
+        )
+    }
+
+    fn check_handle(&self, current: &Current, handle: &PreparedEffect) -> Result<(), String> {
+        if !Arc::ptr_eq(&handle.owner, &self.owner) {
+            return Err("foreign handle".into());
+        }
+        if handle.generation != current.generation || handle.identity != current.effect {
+            return Err("stale effect handle".into());
+        }
+        Ok(())
+    }
+
+    #[cfg(unix)]
+    pub(in crate::gateway) fn with_current_intent<T>(
+        &self,
+        handle: PreparedEffect,
+        envelope: &Envelope,
+        intent: &Signed,
+        target: &crate::gateway::oauth::Target,
+        use_current: impl FnOnce(u64, &serde_json::Value) -> Result<T, String>,
+    ) -> Result<T, String> {
+        let current = self.current.lock().map_err(|_| "poisoned authority")?;
+        self.check_handle(&current, &handle)?;
+        let facts = self.check(&current, envelope)?;
+        let commit: crate::gateway::Commit =
+            serde_json::from_slice(&intent.payload).map_err(|e| e.to_string())?;
+        let facts = facts
+            .iter()
+            .map(json_sha256)
+            .collect::<Result<Vec<_>, _>>()?;
+        let publications = current
+            .publications
+            .iter()
+            .map(Signed::source_sha256)
+            .collect::<Result<Vec<_>, _>>()?;
+        if current.oauth_target.as_ref() != Some(target)
+            || commit.oauth_target.as_ref() != Some(target)
+            || commit.effect != current.effect
+            || commit.current_world != current.world
+            || commit.review != current.review
+            || commit.facts != facts
+            || commit.publications != publications
+        {
+            return Err("witnessed intent differs from current Cedar admission".into());
+        }
+        use_current(current.authority.now, &current.case.request.context)
+    }
+
     pub fn execute(
         &self,
         handle: PreparedEffect,
         envelope: &Envelope,
         io: EffectIo<'_>,
     ) -> Result<(Outcome, Option<Signed>), String> {
-        if !Arc::ptr_eq(&handle.owner, &self.owner) {
-            return Err("foreign handle".into());
-        }
         let mut current = self.current.lock().map_err(|_| "poisoned authority")?;
-        if handle.generation != current.generation || handle.identity != current.effect {
-            return Err("stale effect handle".into());
-        }
+        self.check_handle(&current, &handle)?;
         let facts = self.check(&current, envelope)?;
         self.check_owner(&current)?;
+        if current.oauth_target.is_some() {
+            return Err("effect uses the durable deciding store".into());
+        }
         let next = current
             .generation
             .checked_add(1)

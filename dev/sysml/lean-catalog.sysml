@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
 // SPDX-License-Identifier: Apache-2.0
-// Generated from native Lean catalog SHA256 c6856fdb9e8b2d36407b8605756659e8a1c02fca09ce628bc41c845f0e376657; expectations are not issued decisions.
+// Generated from native Lean catalog SHA256 4bdd7ceadba7dc2772fca1bb91cc270af9cc61730b87aec65a99866efd75cf06; expectations are not issued decisions.
 package LeanCatalog {
  private import ScalarValues::*;
  part def CatalogueGroup;
- attribute sourceSHA256 : String = "c6856fdb9e8b2d36407b8605756659e8a1c02fca09ce628bc41c845f0e376657";
+ attribute sourceSHA256 : String = "4bdd7ceadba7dc2772fca1bb91cc270af9cc61730b87aec65a99866efd75cf06";
  attribute entryCount : Integer = 51;
  attribute caseCount : Integer = 1292;
  part group0 : CatalogueGroup;

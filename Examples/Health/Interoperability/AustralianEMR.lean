@@ -70,8 +70,8 @@ def uploadProfile : EMRUpload :=
     principalKind := "hospital", documentKind := "discharge",
     purpose := "care-continuity" }
 def boundedUpload : Policy := uploadProfile.policy
-def legacyAgentUpload : Policy :=
-  { broadUpload with id := "legacy-agent-upload" }
+def unrestrictedAgentUpload : Policy :=
+  { broadUpload with id := "unrestricted-agent-upload" }
 
 def identityControl : Veto :=
   (PatientBinding.control {
@@ -88,7 +88,7 @@ def incidentControl : Veto :=
 
 def modelResult : Except LeanPoo.C4.Error Model := do
   let base : Model := { modules := [
-    { name := "Base", edits := [.extend broadUpload, .extend legacyAgentUpload] }] }
+    { name := "Base", edits := [.extend broadUpload, .extend unrestrictedAgentUpload] }] }
   let identity ← base.extend "Identity" "Base" [identityControl.edit .introduce]
   let instruction ← identity.extend "PatientInstruction" "Base"
     [instructionControl.edit .introduce]
@@ -96,7 +96,7 @@ def modelResult : Except LeanPoo.C4.Error Model := do
     [evidenceControl.edit .introduce]
   let governed ← evidence.mix "Governed"
     ["Identity", "PatientInstruction", "DeliveryEvidence"]
-    [uploadProfile.strengthen, .remove legacyAgentUpload.id]
+    [uploadProfile.strengthen, .remove unrestrictedAgentUpload.id]
   let incident ← governed.extend "Incident" "Governed"
     [incidentControl.edit .introduce]
   incident.extend "Recovered" "Incident" [incidentControl.edit .withdraw]
@@ -126,7 +126,7 @@ def request (actor document : EntityUID) (facts : Facts := {}) : Request :=
     ("sourceDigestMatches", .prim (.bool facts.sourceDigestMatches))]⟩
 
 def cases : List (String × String × Request × Decision) := [
-  ("legacy-agent-risk", "Base", request agent dischargeA, .allow),
+  ("unrestricted-agent-upload-baseline", "Base", request agent dischargeA, .allow),
   ("governed-discharge", "Governed", request hospital dischargeA, .allow),
   ("other-patient", "Governed", request hospital dischargeB, .deny),
   ("ihi-unverified", "Governed", request hospital dischargeA
@@ -154,9 +154,9 @@ def casesConform
   | .ok answer =>
       answer.decision == expected && answer.erroringPolicies.isEmpty
 theorem casesConformFully : casesConform = true := by native_decide
-theorem legacyAgentRemoved :
+theorem unrestrictedAgentUploadRemoved :
     ((model.compile "Governed").toOption.get (by native_decide)).all
-      (fun policy => policy.id != legacyAgentUpload.id) = true := by native_decide
+      (fun policy => policy.id != unrestrictedAgentUpload.id) = true := by native_decide
 theorem incidentChangesOnePolicy :
     ((model.compileRevision "Governed" "Incident").toOption.get
       (by native_decide)).changedPolicyIds = ["emr-upload-incident"] := by native_decide

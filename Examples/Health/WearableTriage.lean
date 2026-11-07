@@ -159,7 +159,7 @@ def authorizeFlow
   | .ok receipts => CedarPooSpec.Authorization.Compound.layersAllowed receipts
 
 def cases : List (String × String × EntityUID × Facts × Bool) := [
-  ("legacy-withdrawn-consent", "Base", vitalWithdrawn, {}, true),
+  ("baseline-withdrawn-consent", "Base", vitalWithdrawn, {}, true),
   ("integrated-vitals", "Integrated", vitalA, {}, true),
   ("withdrawn-consent", "Integrated", vitalWithdrawn, {}, false),
   ("untrusted-device", "Integrated", vitalA, { deviceTrusted := false }, false),

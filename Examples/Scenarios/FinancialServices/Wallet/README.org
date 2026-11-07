@@ -237,7 +237,7 @@ prove that a deployed exchange would have prevented the historical incident.
 * Initial local qualification receipt (before Scenario migration)
 
 The final plural =Attackers/= sources were qualified in checkout
-=37364c5cb5c18d946284002b86f4d32f483dac61= plus this uncommitted change. The
+=37364c5cb5c18d946284002b86f4d32f483dac61= plus the then-uncommitted change. The
 initial audit baseline above predates concurrent receipt-recovery commits;
 those changes were preserved. Exact threat-model input hashes, versions,
 arguments and logs are retained in
@@ -256,8 +256,9 @@ remote-CI acceptance.
 | Hardened Apalache check | No safety violation found through depth 12. This is bounded evidence. |
 | Deliberately stale boundary | Required unsafe-signature counterexample found through depth 4; ITF evidence retained separately. |
 
-Financial-services CI now invokes both focused recipes. It has not been run
-remotely for this uncommitted patch. Full =just check=, native wallet signing,
+At that qualification stage, the patch had not been run remotely. This
+historical receipt does not qualify later revisions. Financial-services CI
+invokes both focused recipes. Full =just check=, native wallet signing,
 real chain execution and deployed Host qualification were not performed.
 
 * Source/build boundary correction
@@ -332,3 +333,82 @@ listed explicitly by the top-level =Project.sysml=.
 #+CAPTION: Optional declaration and Host-premise detail for reviewers; the main walkthrough remains the reader entry.
 #+ATTR_ORG: :width 1200
 [[file:Binance2026Assurance.png]]
+
+* Composed containment acceptance
+
+The reported wallet-abuse/clearing window above remains 29–30 October. The
+publisher also places the internal-AI/endpoint pivot on 20 October. The picture's
+stage dates and badges distinguish those reported claims from executable model
+observations: the initial endpoint is an assumed foothold; the following
+capabilities come from prefixes of the same admitted LeanPoo acquisition graph.
+The final prefix reaches the signing boundary and records one refusal, with no
+signature. Undisclosed AI exploit mechanics remain unknown.
+
+The first composition audit retained a concrete negative control: calling
+=exposure.pause= alone does not update a separate =PaymentSigning.Current=.
+An otherwise valid request can still pass that separate signing image. The new
+[[file:../../../../CedarPooSpec/Vertical/FinancialServices/PaymentContainment.lean][PaymentContainment]] boundary therefore composes the actual current signer and
+wallet/network-bound exposure in one snapshot. It is a stricter consumer of the
+existing payment signing contract, not an alternative policy evaluator.
+
+| Boundary | Checked behavior | Remaining Host obligation |
+|----------+------------------+---------------------------|
+| Already delegated wallet | Refuse new signing, including an otherwise approved transfer | Authenticated current chain code and correct wallet/network projection |
+| Local pause | Couple pause to gateway revocation; refuse signing | Atomic publication of the whole snapshot; every real signer route must use it |
+| Recovery/restart | Retain pause, submitted attempts and consumed nonces; accept no replacement journal from a stale live image | Durable archived snapshot, single-writer fencing and authentic fresh clock/policy facts |
+| Clearing submission | Require a paused/revoked exposure; record a separately authorized recovery operation | Actually authorize, submit and track that emergency operation; this module emits no clearing signature |
+| Clearing observation | Match wallet, network and the exact advancing nonce; require verified finalized absence of delegation | Authentic canonical-chain reader, finality/reorg interpretation and real observation delivery |
+| After successful clearing | Remove modeled exposure while retaining pause and revocation | Fresh operational review and an independently authorized resumption design; no automatic resume API is provided |
+
+The kernel law =PaymentContainment.no_signing_after_pause= covers arbitrary
+finite sequences of the supplied pause/recover/submit/observe controls. Successful
+contained releases retain the original signing checks and bind the request to
+the exposure wallet and network. These laws assume authentic Host inputs and
+complete mediation; they do not implement persistence or chain consensus.
+
+[[file:../../../../Tests/Enterprise/Payment/WalletContainment.lean][Composed negative controls]] retain the isolated-pause gap, a valid clean-wallet
+positive control, borrowed wallet/network refusal, stale-journal replay refusal,
+unverified/unfinalized/foreign/incorrect-nonce clearing refusal, and no automatic
+resume after clearing or recovery. The same admitted attacker surface now uses
+the composed writer, advances the actual returned ledger and still permits only
+one dispatch of the positive-control payment.
+
+The maintained [[file:../../../../dev/qnt/financial/WalletContainment.qnt][finite containment model]] adds nine deterministic traces, depth-12 safety,
+and two deliberate depth-4 countermodels: recovery that erases revocation before
+signing, and invented clearing without a matching verified observation. The
+original nine signing traces, depth-12 invariant and stale-authorization
+counterexample remain mandatory. There is no claimed Lean/Quint refinement or
+physical wallet reproduction.
+
+* Host assumptions: per-item audit and composed adapter
+
+[[file:HostTrustAudit.org][The Host trust audit]] maps each of the eight original premises to existing
+Lean POO owners, new executable constraints, refusal controls and required native
+evidence. [[file:../../../../CedarPooSpec/Vertical/FinancialServices/PaymentHost.lean][PaymentHost]] composes pinned registrar/fact/decoder interpretations with
+an exact prepare/commit/handoff journal. It rechecks at use, consumes the pending
+slot and retains unknown exposure; no physical signer or durable store is added.
+
+#+CAPTION: Checked Host adapter and the remaining physical trust boundary. Outcomes come from the same Scenario's Lean observations.
+#+ATTR_ORG: :width 1500
+[[file:Binance2026Host.png]]
+
+[[file:Binance2026Host.d2][D2 source]] and [[file:Binance2026Host.svg][SVG export]]. A lying receipt verifier, an old-state replay and a
+conflicting codec interpretation remain explicit counterexamples. They prevent
+treating pure checks as cryptography, antirollback storage or physical mediation.
+
+* Disclosed-chain differential replay
+
+[[file:Binance2026Replay.org][The executable replay]] compares the same admitted Attackers family under an
+unchecked relay countermodel, a guarded clean wallet and a guarded wallet with
+prior exposure. Fourteen checkpoints retain reported/assumed/probe provenance.
+Existing lifecycle reconciliation makes late settlement visible without creating
+a signing grant. Persistent delegation, local pause and verified clearing remain
+separate; the replay promises neither retroactive cancellation nor native chain
+execution. Run =just example scenarios financial-services wallet binance-replay=.
+
+#+CAPTION: Computed three-lane replay. New signing intents, existing delegated activity and settlement observations are separate effects.
+#+ATTR_ORG: :width 1700
+[[file:Binance2026Replay.png]]
+
+[[file:Binance2026Replay.d2][D2 source]] · [[file:Binance2026Replay.svg][SVG export]]. A certified acquisition graph alone does not certify an
+unchecked application writer; the older assurance captions now state that scope.

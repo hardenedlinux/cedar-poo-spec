@@ -37,6 +37,23 @@ fn enroll_with(
     confirmation: Confirmation,
     commit: impl FnOnce(RefreshEnrollment) -> bool,
 ) -> Grant {
+    enroll_named_with(confirmation, "initial", commit)
+}
+
+fn enroll_named_with(
+    confirmation: Confirmation,
+    token_hash: &str,
+    commit: impl FnOnce(RefreshEnrollment) -> bool,
+) -> Grant {
+    enroll_for_audience(confirmation, token_hash, "fhir", commit)
+}
+
+fn enroll_for_audience(
+    confirmation: Confirmation,
+    token_hash: &str,
+    audience: &str,
+    commit: impl FnOnce(RefreshEnrollment) -> bool,
+) -> Grant {
     let session = oauth_code::Session {
         issuer: "issuer".into(),
         client: "client".into(),
@@ -51,9 +68,16 @@ fn enroll_with(
             client: session.client.clone(),
             subject: "subject".into(),
         },
-        audiences: vec!["fhir".into()],
-        scopes: vec!["patient.read".into()],
-        token_hash: "initial".into(),
+        audiences: vec![audience.into()],
+        scopes: vec![
+            match audience {
+                "agentcore" => "tool.invoke",
+                "payments" => "purchase.submit",
+                _ => "patient.read",
+            }
+            .into(),
+        ],
+        token_hash: token_hash.into(),
         not_before: 10,
         expires_at: 15,
         confirmation,
@@ -681,3 +705,177 @@ mod receiver;
 #[cfg(unix)]
 #[path = "gateway_oauth_refresh/settlement.rs"]
 mod settlement;
+
+#[test]
+fn access_mapping_restore_rejects_duplicate_and_miskeyed_digests() {
+    for confirmation in [
+        Confirmation::Dpop("key".into()),
+        Confirmation::Mtls("cert".into()),
+    ] {
+        let ledger = RefreshLedger::default();
+        let grant = enroll(&ledger, confirmation);
+        let snapshot = ledger.checkpoint().unwrap();
+        let value = serde_json::to_value(&*snapshot.image).unwrap();
+        let original = &value["access"]["initial"];
+        let mut conflicting = original.clone();
+        conflicting["family"]["refresh"] = "foreign-refresh".into();
+        for (first, second) in [
+            (original, &conflicting),
+            (&conflicting, original),
+            (original, original),
+        ] {
+            // Escaped and literal spellings denote the same JSON member name.
+            let wire = format!(
+                r#"{{"position":{},"families":{},"access":{{"initial":{},"\u0069nitial":{}}}}}"#,
+                value["position"], value["families"], first, second
+            );
+            assert!(
+                serde_json::from_str::<super::State>(&wire).is_err(),
+                "ambiguous historical token digest was accepted"
+            );
+        }
+        let mut miskeyed = value.clone();
+        let entry = miskeyed["access"]
+            .as_object_mut()
+            .unwrap()
+            .remove("initial")
+            .unwrap();
+        miskeyed["access"]
+            .as_object_mut()
+            .unwrap()
+            .insert("other-digest".into(), entry);
+        assert!(serde_json::from_value::<super::State>(miskeyed).is_err());
+
+        let restored: super::State = serde_json::from_value(value).unwrap();
+        assert!(restored.contains_active(&actual(grant, 14, "restored-original")));
+    }
+}
+
+#[cfg(unix)]
+#[test]
+fn historical_access_lineage_survives_issuance_revocation_and_takeovers() {
+    for (index, confirmation) in [
+        Confirmation::Dpop("key".into()),
+        Confirmation::Mtls("cert".into()),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let directory = durable_directory(&format!("lineage-{index}"));
+        let initial_writer = DurableRefreshLedger::new(&directory, "authority");
+        initial_writer.initialize().unwrap();
+        let original = enroll_with(confirmation.clone(), |input| {
+            initial_writer.enroll(input).unwrap()
+        });
+        let issued = initial_writer
+            .refresh(exchange(&original, "historical-issued", 13))
+            .unwrap()
+            .unwrap();
+        let before = serde_json::to_value(initial_writer.checkpoint().unwrap()).unwrap();
+        initial_writer.revoke(verified(digest())).unwrap();
+        let other_digest = RefreshDigest("other-refresh-family".into());
+        let other = enroll_named_with(confirmation, "other-initial", |mut input| {
+            input.digest = other_digest.clone();
+            initial_writer.enroll(input).unwrap()
+        });
+        let mut cut = initial_writer.rotate_writer().unwrap();
+        for round in 0..3 {
+            let worker = DurableRefreshLedger::new(&directory, "authority").for_writer(cut);
+            assert!(initial_writer.checkpoint().is_err());
+            let mut replacement = exchange(&other, &issued.token_hash, 14);
+            replacement.verified.request.digest = other_digest.clone();
+            assert!(worker.refresh(replacement).unwrap().is_none());
+            assert!(
+                worker
+                    .refresh(exchange(&original, "revoked-retry", 14))
+                    .unwrap()
+                    .is_none()
+            );
+            let current = worker.checkpoint().unwrap();
+            let recovered = serde_json::to_value(&current).unwrap();
+            for grant in [&original, &issued] {
+                assert_eq!(
+                    recovered["ledger"]["access"][&grant.token_hash],
+                    before["ledger"]["access"][&grant.token_hash]
+                );
+                assert!(
+                    !worker
+                        .execute_final(
+                            DurableFinalUse {
+                                checked: &current,
+                                replica: &current,
+                                current: &actual(grant.clone(), 14, &format!("old-{round}")),
+                                base_allowed: true,
+                            },
+                            || panic!("revoked historical grant executed"),
+                        )
+                        .unwrap()
+                );
+            }
+            assert!(
+                worker
+                    .execute_final(
+                        DurableFinalUse {
+                            checked: &current,
+                            replica: &current,
+                            current: &actual(other.clone(), 14, &format!("live-{round}")),
+                            base_allowed: true,
+                        },
+                        || {},
+                    )
+                    .unwrap()
+            );
+            cut = worker.rotate_writer().unwrap();
+        }
+        std::fs::remove_dir_all(directory).unwrap();
+    }
+}
+
+#[cfg(unix)]
+#[test]
+fn durable_access_recovery_rejects_ambiguous_checkpoint_without_repair() {
+    for (index, confirmation) in [
+        Confirmation::Dpop("key".into()),
+        Confirmation::Mtls("cert".into()),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let directory = durable_directory(&format!("ambiguous-access-{index}"));
+        let writer = DurableRefreshLedger::new(&directory, "authority");
+        writer.initialize().unwrap();
+        enroll_with(confirmation, |input| writer.enroll(input).unwrap());
+        let cut = writer.rotate_writer().unwrap();
+        let reopened = DurableRefreshLedger::new(&directory, "authority").for_writer(cut);
+        assert!(reopened.checkpoint().is_ok());
+        let path = directory.join("checkpoint.json");
+        let original = std::fs::read_to_string(&path).unwrap();
+        let document: serde_json::Value = serde_json::from_str(&original).unwrap();
+        let record = &document["checkpoint"]["ledger"]["access"]["initial"];
+        let needle = format!(r#""access":{{"initial":{record}}}"#);
+        assert_eq!(original.matches(&needle).count(), 1);
+        let duplicate = format!(r#""access":{{"initial":{record},"\u0069nitial":{record}}}"#);
+        let ambiguous = original.replacen(&needle, &duplicate, 1);
+        std::fs::write(&path, &ambiguous).unwrap();
+        for _ in 0..2 {
+            let worker = DurableRefreshLedger::new(&directory, "authority").for_writer(cut);
+            let error = worker
+                .checkpoint()
+                .err()
+                .expect("ambiguous checkpoint accepted");
+            assert!(error.contains("duplicate OAuth access digest"), "{error}");
+            assert_eq!(std::fs::read_to_string(&path).unwrap(), ambiguous);
+        }
+        std::fs::write(&path, original).unwrap();
+        assert!(reopened.checkpoint().is_ok());
+        std::fs::remove_dir_all(directory).unwrap();
+    }
+}
+
+#[cfg(unix)]
+#[path = "gateway_oauth_refresh/inventory.rs"]
+mod inventory;
+
+#[cfg(unix)]
+#[path = "gateway_oauth_refresh/current_commit.rs"]
+mod current_commit;

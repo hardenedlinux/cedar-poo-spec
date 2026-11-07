@@ -36,7 +36,7 @@ impl Default for ProviderJournal {
 pub(super) const PROVIDER_OUTCOME_DOMAIN: &str = "cedar-poo/provider-outcome";
 
 /// A provider signature has a distinct domain and independently pinned key.
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ProviderOutcome {
     pub version: Version,
@@ -55,7 +55,7 @@ pub(super) struct ProviderRequest<'a> {
 }
 
 impl ProviderRequest<'_> {
-    pub(super) fn validate(&self) -> Result<(), String> {
+    pub(super) fn validate(&self) -> Result<Commit, String> {
         let commit: Commit = verify(self.commit, self.log_key)?;
         if commit.version != (Version { major: 1, minor: 0 })
             || commit.effect != *self.effect
@@ -74,7 +74,7 @@ impl ProviderRequest<'_> {
         {
             return Err("provider input differs from the witnessed intent".into());
         }
-        Ok(())
+        Ok(commit)
     }
 
     pub(super) fn sign_outcome(
@@ -135,7 +135,7 @@ impl ProviderJournal {
 }
 /// Unsigned effect outcome. Gateway signs it directly; providers sign the
 /// explicitly domain-separated ProviderOutcome wrapper.
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Receipt {
     pub version: Version,

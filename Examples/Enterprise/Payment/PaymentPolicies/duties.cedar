@@ -8,7 +8,7 @@ permit(
   true
 };
 
-// POO policy ID: legacy-matched-release
+// POO policy ID: matched-release
 permit(
   principal,
   action == Action::"release",

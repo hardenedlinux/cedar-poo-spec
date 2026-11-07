@@ -1,0 +1,232 @@
+#+TITLE: Agent Authorization Research: From Local Admission to Safe Histories
+#+LANGUAGE: en
+#+OPTIONS: toc:2
+
+* Research question and evidence
+
+Reviewed on 2026-11-05 against the shared Zero Trust, Authorization Delta,
+OAuth and Gateway models. The question is how current authorization can
+preserve an application invariant as agent choices change future state.
+Cryptographic identity, authorization non-expansion, semantic fact correctness
+and trajectory safety are separate obligations.
+
+| Primary source inspected | Exact useful result or mechanism | Boundary for SPEC |
+|--------------------------+----------------------------------+-------------------|
+| Collina, Goel, Roth and Sengupta, [[https://arxiv.org/abs/2609.15803][Delegating Authorization to Misaligned Agents]], Sections 4.1–4.2, Theorem 2; Section 5, Theorem 3 | Continuation-aware baseline advantages connect statewise authorization to expected discounted utility. Strategic guarantees require additional coalition conditions. | No reward model, transition kernel, reviewer alignment or baseline-value estimator has been established here. Approval count alone supplies none of these premises. |
+| Hosseyni, Küsters and Würtele, [[https://eprint.iacr.org/2024/1540][Formal Security Analysis of the OpenID FAPI 2.0 Family of Protocols]], Sections 2.6–2.7 and 4 | Formal authorization, authentication and session-integrity goals under an explicit Web attacker model. | Our protocol bindings must remain separate from application-state preservation and external-effect ordering. The paper is not a storage-recovery or application-invariant theorem. |
+| [[https://www.ietf.org/archive/id/draft-niyikiza-oauth-attenuating-agent-tokens-02.txt][Attenuating Authorization Tokens]], individual Internet-Draft -02, 26 October 2026, Section 9.8 | Offline delegation-chain verification with narrowed authority; revocation remains a separate mechanism. | This is work in progress. Offline chain validity cannot replace our independently ordered current revocation frontier or allocate a shared sibling budget. No draft wire format is adopted. |
+| Ma et al., [[https://arxiv.org/abs/2609.31039v1][MetaPermit]], Section 4.5 | Separates inferred semantic attributes from deterministic policy evaluation; its stated semantic-correctness limitation is explicit. | Reproducible evaluation does not establish attribute truth. Inference remains source-bound evidence; signatures and confidence values cannot certify its meaning. |
+
+The local contribution below is qualitative inductive safety over the existing
+transition relation. It does not implement the discounted-MDP theorem or
+reproduce a paper's experimental results. No universal decision procedure for
+future agent behavior is claimed.
+
+* Shared model improvement
+
+Previously, =run_preserves= required every raw transition to preserve the
+invariant independently of authorization. That rule remains valid. It is too
+strong for an application whose raw action space includes dangerous actions
+that its authorization boundary is intended to exclude.
+
+=run_preserves_mediated= exposes the actual mediated-step premise in the
+preservation law. =preservesInvariant step invariant= then supplies a statewise
+requirement:
+
+#+begin_example
+invariant before AND
+  for every after:
+    step before (some effect) after -> invariant after
+#+end_example
+
+=Framework.atInvariant= adds this requirement through the existing strengthening
+operation. =invariant_guard_preserves_framework= retains all original identity,
+authorization, currentness, consumption, unknown-retention, revocation and
+mediation requirements. =unsafe_successor_blocks= refuses an effect whenever
+one possible successor violates the invariant. =unsafe_source_blocks= also
+refuses an already unsafe observed state, even if the proposed target is safe;
+source safety cannot disappear through a vacuous implication.
+
+=invariant_guard_preserves_run= proves safety after every finite admitted
+history from a safe initial state, given a separate preservation law for
+unmarked transitions. Recovery, publication, fact updates and owner handoff
+cannot disappear from this premise by being labeled maintenance.
+
+The universal successor condition matters for nondeterminism: one favorable
+sample cannot discharge it. An adapter must establish that its transition model
+covers every actual successor. Omitting a dangerous outcome would invalidate the
+implementation refinement. An empty transition relation establishes no progress.
+The predicate is a Lean proof obligation, not a new Rust runtime analyzer.
+
+The [[file:../CedarPooSpec/ZeroTrust/Continuous.lean][shared implementation]] extends the existing framework.
+It adds no state store, token format, scheduler or alternative Cedar evaluator.
+
+* Countermodels and scope
+
+The existing [[file:../Tests/ZeroTrust/Functional.lean][functional model tests]] retain four distinct failures:
+
+1. Identical authorization before and after a revision still admits a two-action
+   path to an unsafe state. Same-world no-expansion alone cannot rule it out.
+2. An action has both a safe and an unsafe successor. The invariant guard rejects
+   it even though a favorable sample exists.
+3. An unmarked rollback reaches an unsafe state despite effect guarding. This
+   witnesses why the maintenance preservation premise cannot be omitted.
+4. Conditional preservation is vacuous at an already unsafe starting state.
+   The source-invariant check refuses a new effect even if its target is safe.
+
+The positive law refuses an unsafe observed starting state, accepts a harmless
+first action, refuses the newly dangerous
+second action, and quantifies over arbitrary finite guarded runs. It does not
+prove liveness, fairness, unbounded probabilistic value, semantic intent or
+physical IO refinement. No new axiom or native decision oracle is needed.
+
+Existing 51-domain Rust replay remains a consumer regression gate. It is not a
+claim that each domain has already supplied a complete transition model and
+proved this new invariant. Such an instantiation must name its actual states,
+invariant, effect relation, maintenance relation and native coverage argument.
+
+* Concrete OAuth lineage and recovery instantiation
+
+The shared =Refresh.LedgerStep= relation already records actual enrollment,
+sender-constrained refresh, revocation and unchanged-ledger transitions.
+=Ledger.retains= now anchors two concrete obligations to an independently
+selected historical ledger: every uniquely resolved access token keeps its
+exact family and grant, and every committed family revocation remains present.
+
+=step_retains_lineage= proves these obligations for every constructor, using
+the real issuance freshness guards. =protectLineage= instantiates the shared
+statewise invariant guard with this relation. =protected_lineage_preserves_run=
+and =committed_run_retains_lineage= cover arbitrary finite histories.
+=committed_historical_access_refused= needs the original token/family lookup;
+it derives the later lookup instead of assuming the final reader supplies the
+same association. A live unrelated family cannot adopt a revoked token digest.
+
+The maintenance projection is concrete as well. Successful durable final-use
+reservation retains the OAuth checkpoint. Actual revoke installation preserves
+lineage; receiver handoff and confirmation preserve it, and
+=ReceiptRecovery.trace_retains_oauth_lineage= covers both crash boundaries,
+mapping commits and the existing receiver recovery trace. The real DPoP and
+mTLS model exercises consume the typed issuance/revocation proof, and the
+22-step receipt-recovery fixture retains this lineage law.
+
+** Native representation boundary
+
+Audit found a model/decoder mismatch: Lean =accessEntry= refuses a digest with
+multiple matching rows, while default Rust =HashMap= deserialization silently
+collapses duplicate JSON member names. The regression first reproduces that
+acceptance, then checks the shared decoder's strict rejection before map
+construction. Literal and escaped spellings of the same digest, either arrival
+order, identical duplicates, and keys that differ from their grant digest are
+refused. Valid serialized state keeps the same wire representation.
+
+[[https://www.rfc-editor.org/rfc/rfc8259.html#section-4][RFC 8259, Section 4]]
+recommends unique object names and describes inconsistent receiver behavior
+for duplicates. This library deliberately adopts strict refusal to preserve
+its unique-lookup semantics. The decoder checks representation consistency;
+it does not authenticate arbitrary checkpoint contents or prove storage durability.
+
+Rust controls exercise the actual persisted reader, reject ambiguous checkpoint
+bytes without repairing them, and preserve historical token mappings through
+issuance of an unrelated family, revocation and three writer takeovers under
+both DPoP and mTLS. Old grants remain refused while the unrelated live grant
+can still execute. The original recovery schedules, resource limits and complete
+51-domain consumer gate remain unchanged.
+
+* Stateful delegation and cumulative accounting
+
+Reviewed on 2026-11-06. The
+[[https://www.ietf.org/ietf-ftp/internet-drafts/draft-niyikiza-oauth-attenuating-agent-tokens-02.txt][AAT individual draft -02]],
+Section 9.8, leaves revocation to another mechanism. Appendix E.4 points to
+[[https://github.com/udaykishore-resu/arcp/blob/7acde164d4885715f6ba44956894407b7f099816/docs/ARCP-00.md][ARCP-00 at 7acde164]],
+an experimental runtime-controls profile. Its Sections 7 and 7.3 require
+cumulative ancestor balances and atomic multi-level debit; Sections 6 and 13.5
+require refusal when security-state stores are unavailable. Its implementation
+status describes the budget ledger as in-memory at one enforcement point.
+These are useful engineering assumptions, not distributed crash-recovery proofs.
+
+Our existing shared allocator already charges the root and every ancestor.
+The new =SharedBudget.retains= relation additionally anchors exact root contents,
+reservation multiplicity and historical revocations to a prior independently
+selected head. =SharedBudget.Step= uses the existing reserve/revoke functions;
+its unchanged projection allows an observation/owner change only when the budget
+itself is unchanged. The shared Zero Trust =Run= law proves retention over every
+finite admitted history. Root spend and each ancestor's spend cannot decrease,
+the root cap remains bounded, and a historically revoked ancestor cannot
+authorize a new reservation. Sibling grants cannot reset these balances.
+
+=reservationContract= uses the existing POO typed invocation API over the exact
+allocator. Result equality yields cap and retention proofs; it is not a durable
+commit certificate. A concrete counterexample refuses a same-root older
+checkpoint that would erase a sibling debit. No parser or snapshot signature
+alone establishes that a recovered head is current.
+
+=Delegation.resolvedLineageUnique= proves whole-chain identity uniqueness for
+arbitrary length. Rust already carries ancestor identities inside private
+=VerifiedMandate= values; the new native admission control exercises signed
+three-hop chains, separately reusing a root or non-root mandate ID, agent ID or
+holder key. Unique chains still pass; reuse is rejected before the policy callback.
+The existing refusal is retained; these controls deepen cross-language coverage
+rather than establish a newly exploitable admission defect.
+
+This contribution is deterministic finite-history safety. It establishes no
+eventual receipt delivery, no external transaction atomicity and no discounted
+utility theorem. The 51-domain consumer gate remains unchanged; it does not
+claim a separate complete application invariant for each domain.
+
+* Unresolved effects, retry identity and recovery metadata
+
+Reviewed on 2026-11-06 against
+[[https://web.stanford.edu/~ouster/cgi-bin/papers/rifl.pdf][Lee et al., RIFL, SOSP 2015]],
+Sections 3 and 4.1--4.2. RIFL separates stable RPC identity, durable completion
+records, retry rendezvous and reclamation; completion metadata must be durable
+atomically with the effect. Its reclamation protocol relies on RPC-client
+acknowledgments and leases. SPEC does not adopt that protocol or inherit an
+exactly-once delivery theorem.
+
+The resulting SPEC obligation is narrower: renewing or revoking authorization
+does not prove that an unknown effect can be forgotten. A new worker must still
+find the original operation. Token expiry, a missing reply or a parser default
+cannot serve as completion evidence. This is a conservative safety inference,
+not a new OAuth requirement attributed to RFC 9700 or AAT.
+
+Native regressions reproduce two unsafe defaults: an omitted =effects= map was
+accepted as no prior operations, and an omitted writer cut reactivated writer
+zero after takeover. The reader now requires both fields. Its existing map also
+needs unique operation keys and exact key-to-retained-intent binding; duplicate
+literal/escaped keys and malformed or mismatched rows are refused. Valid encoding
+and the explicit bootstrap format are unchanged. Decoder checks do not certify
+that arbitrary replacement bytes are authentic or current.
+
+The new =retainedInventoryContract= uses the existing POO invocation API to bind
+the structural restore result.
+Lean proves unique restored operation identity and derives no-begin/no-resend
+from membership of the original inventory. =ReceiptRecovery.History= interleaves
+fresh typed reservations with the actual =ReceiptRecovery.Trace=, including its
+reconciliation, handoff, revocation and staged/durable branches. Prior holds and
+operation uniqueness survive every finite interleaving; the complete inventory
+need not remain fixed. The status invocation separately
+witnesses the current writer equality. These obligations apply at the shared
+boundary rather than introducing another per-domain recovery engine.
+
+Native controls use real persisted reservations with lost completion replies
+under both sender constraints. Reopened workers reject every malformed variant
+without rewriting it. Valid restoration, an unrelated new reservation, three handoffs and revocation
+retain the original unknown operation and exact signed-intent identity without
+calling that effect again. Existing independent
+receipt/migration schedules and the 51-domain consumer gate remain mandatory.
+No lease-based deletion, new backend, wire envelope or signature algorithm is
+introduced, and no arbitrary-content authentication theorem is claimed.
+
+* Integrated next research obligations
+
+| Layer | Existing owner to reuse | Concrete next obligation |
+|-------+-------------------------+--------------------------|
+| Statewise effect safety | =ZeroTrust.Continuous= and =UsageControl= | Instantiate the actual domain invariant, including spent authority and unresolved exposure, and prove every permitted effect and maintenance step preserves it. |
+| Current semantic evidence | =FactBinding=, =FactAuthority= and current Cedar assessment | Bind extraction/model version, original task and exact inputs; distinguish authentic statements from justified semantic predicates and refuse unsupported upgrades. |
+| Delegated authority | Existing Commerce delegation/shared-budget and OAuth sender constraints | Compose ancestor scope checks with the current revocation frontier and the same shared budget; chain validity alone must not reset consumption or bypass a revoked ancestor. |
+| Governed policy change | Delta review/publication and current-release binding | Keep the same-world comparison, then separately prove the publication and fact-update transitions preserve the chosen invariant. |
+| Native refinement | Existing Gateway final-use and receipt/recovery paths | Show that actual native transitions and failure outcomes are covered by the model; retain original timeouts, counterexamples and full consumer replay. |
+
+These obligations form one authorization-to-effect proof path. A paper's claim,
+an LLM review vote or a successful trace is not substituted for a missing step law.
+Changes continue on the existing draft PR without merging.

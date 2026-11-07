@@ -5,7 +5,10 @@ use crate::gateway::oauth_refresh_durable::{
     EffectStatus,
 };
 use crate::gateway::provider_durable::{DurableReceiver, LegacyReceiverTrust, ReceiverTrust};
-use crate::gateway::receipt_identity::ReceiptIdentityContext;
+use crate::gateway::receipt_identity::{
+    ReceiptIdentityCandidate, ReceiptIdentityContext, ReceiptRealizationCandidate,
+    VerifiedReceiptIdentity,
+};
 use crate::gateway::wire::{sign, simulation_key};
 use crate::gateway::{
     AuditAuthority, FactAuthority, ProviderAuditTrust, ProviderJournal, ProviderOutcome, Signed,
@@ -37,6 +40,14 @@ struct Step {
     intents_preserved: bool,
     revocation_preserved: bool,
     no_resend: bool,
+    realization_bound: bool,
+    realization_digests_bound: bool,
+    cross_operation_refused: bool,
+    cross_authority_refused: bool,
+    symbolic_receipt_refused: bool,
+    source_substitution_refused: bool,
+    missing_mapping_refused: bool,
+    recovered_substitution_refused: bool,
 }
 
 #[derive(Deserialize)]
@@ -76,6 +87,126 @@ fn retained_intents(path: &Path) -> serde_json::Value {
     intents.into()
 }
 
+struct RealizationChecks {
+    bound: bool,
+    digests: bool,
+    cross_operation: bool,
+    cross_authority: bool,
+    wrong_receipt: bool,
+    changed_source: bool,
+    missing_mapping: bool,
+    recovered_substitution: bool,
+    symbol_sha256: String,
+    realization_sha256: Option<String>,
+}
+
+fn realization_checks(
+    mapping: &VerifiedReceiptIdentity,
+    stored: Option<&ReceiptIdentityCandidate>,
+    sibling: &VerifiedReceiptIdentity,
+    foreign: &VerifiedReceiptIdentity,
+) -> RealizationChecks {
+    let symbol = mapping.symbol().unwrap();
+    let prepared = mapping.realize(&symbol).unwrap();
+    let expected = prepared.candidate();
+    assert_eq!(
+        prepared.check(&expected),
+        Some(expected.native.identity.clone())
+    );
+    let recovered = stored.map(|native| ReceiptRealizationCandidate {
+        symbol: symbol.clone(),
+        native: native.clone(),
+    });
+    // A restarted consumer must restore the serialized proposal through the
+    // same public API, rather than trusting a digest or a decoded row.
+    let recovered: Option<ReceiptRealizationCandidate> =
+        serde_json::from_slice(&serde_json::to_vec(&recovered).unwrap()).unwrap();
+    let bound = mapping.restore(recovered.as_ref()).is_ok();
+    let sibling_symbol = sibling.symbol().unwrap();
+    let sibling_mapping = sibling.realize(&sibling_symbol).unwrap();
+    let mut disguised = sibling_mapping.candidate();
+    disguised.symbol.operation = symbol.operation.clone();
+    disguised.native.identity.operation = symbol.operation.clone();
+    let mut laundered = sibling_mapping.candidate();
+    laundered.symbol = symbol.clone();
+    laundered.native.identity = expected.native.identity.clone();
+    let cross_operation = mapping.realize(&sibling_symbol).is_err()
+        && prepared.check(&sibling_mapping.candidate()).is_none()
+        && mapping.realize(&disguised.symbol).is_err()
+        && prepared.check(&disguised).is_none()
+        && prepared.check(&laundered).is_none();
+    let foreign_symbol = foreign.symbol().unwrap();
+    let foreign_mapping = foreign.realize(&foreign_symbol).unwrap();
+    let mut wrong_provider = symbol.clone();
+    wrong_provider.provider_key[0] ^= 1;
+    let mut wrong_witness = symbol.clone();
+    wrong_witness.witness_key[0] ^= 1;
+    let cross_authority = mapping.realize(&foreign_symbol).is_err()
+        && prepared.check(&foreign_mapping.candidate()).is_none()
+        && mapping.realize(&wrong_provider).is_err()
+        && mapping.realize(&wrong_witness).is_err();
+    let mut wrong_body = symbol.clone();
+    wrong_body
+        .receipt
+        .outcome
+        .action
+        .result
+        .push_str("-substituted");
+    let mut wrong_signature = symbol.clone();
+    wrong_signature.provider_signature[0] ^= 1;
+    let wrong_receipt = mapping.realize(&wrong_body).is_err()
+        && mapping.realize(&wrong_signature).is_err()
+        && prepared
+            .check(&ReceiptRealizationCandidate {
+                symbol: wrong_body,
+                native: expected.native.clone(),
+            })
+            .is_none();
+    let mut changed_outcome = expected.clone();
+    changed_outcome.native.outcome.signature[0] ^= 1;
+    changed_outcome.native.identity.outcome_sha256 =
+        changed_outcome.native.outcome.source_sha256().unwrap();
+    let mut changed_intent = expected.clone();
+    changed_intent.native.intent.signature[0] ^= 1;
+    changed_intent.native.identity.intent_sha256 =
+        changed_intent.native.intent.source_sha256().unwrap();
+    let changed_source =
+        prepared.check(&changed_outcome).is_none() && prepared.check(&changed_intent).is_none();
+    let mut changed_version = expected.clone();
+    changed_version.native.identity.version.major = 99;
+    let recovered_substitution = [
+        &changed_outcome,
+        &changed_intent,
+        &changed_version,
+        &disguised,
+        &laundered,
+        &sibling_mapping.candidate(),
+        &foreign_mapping.candidate(),
+    ]
+    .into_iter()
+    .all(|candidate| mapping.restore(Some(candidate)).is_err());
+    let restored_original = mapping.restore(Some(&expected)).unwrap();
+    assert_eq!(
+        restored_original.check(&expected),
+        Some(expected.native.identity.clone())
+    );
+    RealizationChecks {
+        bound,
+        digests: expected.native.identity.intent_sha256
+            == expected.native.intent.source_sha256().unwrap()
+            && expected.native.identity.outcome_sha256
+                == expected.native.outcome.source_sha256().unwrap(),
+        cross_operation,
+        cross_authority,
+        wrong_receipt,
+        changed_source,
+        missing_mapping: mapping.restore(None).is_err(),
+        recovered_substitution,
+        symbol_sha256: crate::json_sha256(&symbol).unwrap(),
+        realization_sha256: bound.then(|| crate::json_sha256(&expected).unwrap()),
+    }
+}
+
 fn readonly(_: &OperationId, _: CheckpointStage) -> Result<(), String> {
     panic!("step observation wrote a checkpoint")
 }
@@ -85,13 +216,14 @@ impl Observer {
         let path = Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("../../.lake/build/gateway-settled-late-plan.json");
         let plan: Plan = serde_json::from_slice(&std::fs::read(path).unwrap()).unwrap();
-        assert_eq!(plan.format, "cedar-poo-settled-late-plan-v1");
+        assert_eq!(plan.format, "cedar-poo-settled-late-plan-v3");
         assert_eq!(plan.scope, "late-settled-receipt-step-alignment");
         assert_eq!(
             plan.identity_mapping,
-            "operation-authority-version-and-exact-signed-sources"
+            "scoped-symbolic-receipt-and-native-signed-source-identity"
         );
         assert_eq!(plan.steps.len(), 22);
+        std::fs::create_dir_all(root.join("symbol-foreign-authority")).unwrap();
         let provider = simulation_key(8);
         let mut conflicting: ProviderOutcome = verify(original, provider.verifying_key()).unwrap();
         conflicting.outcome.action.result = "conflicting delayed completion".into();
@@ -275,6 +407,30 @@ impl Observer {
             substituted.identity.authority.scope = "foreign-authority".into();
             assert!(mapping.check(&substituted).is_none());
         }
+        let sibling_operation = OperationId(fixture.effect.operation.clone());
+        let sibling_evidence = receiver.evidence(&sibling_operation).unwrap().unwrap();
+        let sibling_outcome: ProviderOutcome =
+            verify(&sibling_evidence.outcome, provider.verifying_key()).unwrap();
+        let sibling = ReceiptIdentityContext {
+            effect: &fixture.effect,
+            intent: &sibling_outcome.outcome.commit,
+            outcome: &sibling_evidence.outcome,
+            ..context
+        }
+        .prepare()
+        .unwrap();
+        let foreign_trust = LegacyReceiverTrust::from_config(
+            &self.root.join("symbol-foreign-authority"),
+            "settlement-race",
+        )
+        .unwrap();
+        let foreign = ReceiptIdentityContext {
+            receiver: &foreign_trust,
+            ..context
+        }
+        .prepare()
+        .unwrap();
+        let realization = realization_checks(&mapping, candidate, &sibling, &foreign);
         let actual = Step {
             event: event.into(),
             worker: worker.into(),
@@ -332,6 +488,14 @@ impl Observer {
             revocation_preserved: serde_json::to_value(&checkpoint).unwrap()["ledger"]
                 == self.ledger,
             no_resend,
+            realization_bound: realization.bound,
+            realization_digests_bound: realization.digests,
+            cross_operation_refused: realization.cross_operation,
+            cross_authority_refused: realization.cross_authority,
+            symbolic_receipt_refused: realization.wrong_receipt,
+            source_substitution_refused: realization.changed_source,
+            missing_mapping_refused: realization.missing_mapping,
+            recovered_substitution_refused: realization.recovered_substitution,
         };
         let receiver_advance = receiver.cut().unwrap().generation - self.initial_receiver;
         assert_eq!(receiver_advance, actual.writer_advance);
@@ -353,6 +517,8 @@ impl Observer {
                 "native_intent_sha256": target.intent_identity,
                 "native_outcome_sha256": target.outcome_identity,
                 "native_conflict_sha256": self.conflict.source_sha256().unwrap(),
+                "native_symbol_sha256": realization.symbol_sha256,
+                "native_realization_sha256": realization.realization_sha256,
             })
         );
         self.next += 1;

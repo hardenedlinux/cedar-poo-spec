@@ -16,6 +16,9 @@ pub struct Commit {
     pub review: ReviewBinding,
     pub facts: Vec<String>,
     pub publications: Vec<String>,
+    /// Requires the composed current-use path at the durable receiver.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub oauth_target: Option<super::oauth::Target>,
 }
 /// Signed witness head; currentness requires an independent minimum size.
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -282,6 +285,13 @@ impl Witness {
         verify_view(self.view(), &self.verifying_key(), self.head.size).map(|_| ())
     }
     pub(super) fn append(&mut self, input: PrecommitInput<'_>) -> Result<Signed, String> {
+        self.append_with_target(input, None)
+    }
+    pub(super) fn append_with_target(
+        &mut self,
+        input: PrecommitInput<'_>,
+        oauth_target: Option<super::oauth::Target>,
+    ) -> Result<Signed, String> {
         let PrecommitInput {
             current_world,
             effect,
@@ -310,6 +320,7 @@ impl Witness {
                 .iter()
                 .map(Signed::source_sha256)
                 .collect::<Result<_, _>>()?,
+            oauth_target,
         };
         let signed = sign(&entry, &self.key)?;
         let committed_root = signed.source_sha256()?;

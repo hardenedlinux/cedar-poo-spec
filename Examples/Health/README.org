@@ -66,20 +66,20 @@ The Emergency owner instantiates the public
 [[file:../../CedarPooSpec/Vertical/Health/EmergencyAccess.lean][Vertical.Health.EmergencyAccess]] object. Its provisional and bounded
 policies occupy one Cedar policy slot. =Model.extend= stages the three
 independent owners, and =Model.mix= applies the emergency overlay and
-legacy-grant removal at the integrated root.
+baseline-grant removal at the integrated root.
 
 ** Why POO is needed
 
 The clinical base, privacy rule, device rule, and emergency rule have separate
 owners. A C4 diamond composes those branches once. The integrated module
 overlays the emergency rule with patient, session, treatment-purpose, and
-device conditions, then removes a legacy broad permit. The executable
+device conditions, then removes a baseline broad permit. The executable
 =preIntegrationRiskDetected= theorem shows why the removal matters: before
 integration, the inherited broad permit allows a cross-site read without a
 break-glass grant; after integration it is denied.
 
 =compileWithTrace= records all seven applied edits, including removal of the
-legacy permit; its surviving-policy projection reports who introduced and
+baseline permit; its surviving-policy projection reports who introduced and
 last edited each policy. These APIs close a diagnostics gap exposed by the
 case: a materialized Cedar policy set alone did not explain why a permit was
 absent or how an emergency policy reached the final set.
@@ -168,7 +168,7 @@ the example does not claim those products or vulnerabilities are identical.
 
 ** POO scenario and checked behavior
 
-=Base= permits vital-sign analysis and same-facility alert release. A legacy
+=Base= permits vital-sign analysis and same-facility alert release. A baseline
 baseline would even allow a withdrawn-consent observation. =Privacy= adds a
 consent veto, =DeviceSecurity= adds a device-trust veto, and =ClinicalAI=
 overlays the two inherited permits with model-approval and clinician-review

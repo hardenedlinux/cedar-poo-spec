@@ -83,6 +83,22 @@ theorem persisted_revocation_marks_family {store next : Store}
     rw [← successor, Store.install_ledger]
     exact (Refresh.revocation_retains_lineage receipt).1
 
+/-- The actual durable revoke realizes the existing ledger transition, so it
+cannot erase historical token lineage while installing the new checkpoint. -/
+theorem persisted_revocation_retains_lineage {store next : Store}
+    (applied : store.revoke verified = some next) :
+    store.checkpoint.ledger.retains next.checkpoint.ledger := by
+  let input : Refresh.RevocationInput := ⟨store.checkpoint.ledger, verified⟩
+  change (Refresh.revoke input).map store.install = some next at applied
+  cases revoked : Refresh.revoke input with
+  | none => simp [revoked] at applied
+  | some ledger =>
+    have successor : store.install ledger = next := by simpa [revoked] using applied
+    let receipt : Invocation Refresh.revokeContract Refresh.prepareRevoke input :=
+      ⟨ledger, (), by simp [Refresh.prepareRevoke, revoked], trivial, trivial, revoked⟩
+    rw [← successor, Store.install_ledger]
+    exact Refresh.step_retains_lineage (Refresh.LedgerStep.revoked (E := Unit) receipt)
+
 structure FinalInput where
   authorityId : String
   durable : Option Store
@@ -129,6 +145,17 @@ theorem final_retains_checkpoint_and_reservation
       simp [finalize, restored, checked] at accepted
       rw [← accepted]
       exact ⟨store, authority, rfl, checked, rfl, rfl⟩
+
+theorem final_retains_original_checkpoint {input : FinalInput} {before after : Store}
+    (accepted : finalize input = some after) (present : input.durable = some before) :
+    after.checkpoint = before.checkpoint := by
+  let receipt : Invocation finalContract prepareFinal input :=
+    ⟨after, (), by simp [prepareFinal, accepted], trivial, trivial, accepted⟩
+  obtain ⟨store, authority, restored, checked, checkpoint, reserved⟩ :=
+    final_retains_checkpoint_and_reservation receipt
+  have source := (recovery_retains_independent_store restored).1
+  have same : store = before := Option.some.inj (source.symm.trans present)
+  exact checkpoint.trans (congrArg Store.checkpoint same)
 
 theorem cannot_finalize_from_failed_recovery (input : FinalInput)
     (refused : recover input.recovery = none) : finalize input = none := by

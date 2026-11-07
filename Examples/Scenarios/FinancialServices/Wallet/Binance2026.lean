@@ -1,4 +1,5 @@
 import CedarPooSpec.Attackers.ProfileObject
+import CedarPooSpec.Vertical.FinancialServices.PaymentContainment
 import Examples.Scenarios.FinancialServices.Wallet.Base
 
 /-! Attacker capabilities and executable traces for the financial case.
@@ -137,5 +138,73 @@ theorem attacker_outputs_are_checked (actions : List (Action Capability PaymentS
     ∀ event ∈ (run surface foothold actions).outputs, event.safe = true :=
   run_preserves_outputs surface (fun event => event.safe = true) (fun world input next event observed => invoke_is_checked world next input event observed) foothold
     (by simp [foothold, ProfileObject.Certified.initialState]) actions
+
+namespace Containment
+open CedarPooSpec.Vertical.FinancialServices
+
+def clean : PaymentContainment.Snapshot :=
+  ⟨scenario.model.1.1, { exposure with code := none }⟩
+def exposed : PaymentContainment.Snapshot := ⟨scenario.model.1.1, exposure⟩
+def paused := PaymentContainment.pause exposed
+def submitted := (PaymentContainment.submitClear paused).get (by native_decide)
+def cleared := (PaymentContainment.observeClear submitted clearObservation).get (by native_decide)
+def recovered := PaymentContainment.recover cleared scenario.model.1.1
+
+/-- Reuse the admitted object family's application surface with the stricter
+composed writer. A successful dispatch retains exposure and advances the actual
+existing ledger; no second payment or attacker model is introduced. -/
+def invoke (world : PaymentContainment.Snapshot) (input : PaymentSigning.Request) :
+    Option (PaymentContainment.Snapshot × SigningEvent) := do
+  let result ← PaymentContainment.release world input
+  pure ({ world with current := { world.current with ledger := result.ledger } },
+    ⟨world.current, input, result⟩)
+
+def surface := model.surface reachable invoke
+
+def foothold : State Capability PaymentContainment.Snapshot SigningEvent := model.initialState clean
+
+structure Observation where
+  id : String
+  paused : Bool
+  delegated : Bool
+  revoked : Bool
+  signatureReleased : Bool
+  deriving Repr
+
+def observe (id : String) (state : PaymentContainment.Snapshot) : Observation :=
+  { id, paused := state.exposure.withdrawalsPaused, delegated := state.exposure.code.isSome,
+    revoked := state.current.gateway.revoked,
+    signatureReleased := (PaymentContainment.release state scenario.model.1.2).isSome }
+
+def observations : List Observation := [observe "exposed" exposed, observe "paused" paused,
+  observe "submitted" submitted, observe "cleared" cleared, observe "recovered" recovered]
+
+end Containment
+
+/-- Actual prefixes of the same admitted POO graph; no second acquisition graph.
+The initial compromised endpoint is an assumption, not a simulated infection. -/
+structure ReplayStage where
+  id : String
+  reportedOn : Option String
+  reached : Bool
+  signerReachable : Bool
+  signatures : Nat
+  refused : Nat
+  deriving Repr
+
+private def replayStage (id : String) (reportedOn : Option String) (actions : List (Action Capability PaymentSigning.Request))
+    (goal : Capability) : ReplayStage :=
+  let observed := CedarPooSpec.Attackers.run Containment.surface Containment.foothold actions
+  { id, reportedOn, reached := decide (goal ∈ observed.known),
+    signerReachable := reachable observed.known deploymentRequest,
+    signatures := observed.outputs.length, refused := observed.refused }
+
+def replayStages : List ReplayStage := [
+  replayStage "endpoint" none [] .engineerBEndpoint,
+  replayStage "ai-token" (some "2026-10-20") (path.take 4) .deploymentToken,
+  replayStage "deployment" (some "2026-10-29") (path.take 5) .container,
+  replayStage "signer" (some "2026-10-29") (path ++ [.call deploymentRequest]) .signerNetwork]
+
+
 
 end CedarPooSpec.Binance2026Scenario

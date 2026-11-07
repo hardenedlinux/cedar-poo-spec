@@ -3,7 +3,7 @@ use super::{LogSnapshot, Signed, WitnessFrontier};
 use p256::ecdsa::VerifyingKey;
 use serde::{Serialize, de::DeserializeOwned};
 use std::fs::{self, File, OpenOptions};
-use std::io::{self, Write};
+use std::io::{self, BufReader, Write};
 use std::path::Path;
 
 /// A separate, trusted directory owned by the checkpoint authority.
@@ -69,7 +69,7 @@ impl<'a> LockedCheckpoint<'a> {
 
     pub(super) fn read<T: DeserializeOwned>(&self) -> Result<T, String> {
         let file = File::open(self.directory.join("checkpoint.json")).map_err(|e| e.to_string())?;
-        serde_json::from_reader(file).map_err(|e| e.to_string())
+        serde_json::from_reader(BufReader::new(file)).map_err(|e| e.to_string())
     }
 
     pub(super) fn open(directory: &'a Path) -> Result<Self, String> {

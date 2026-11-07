@@ -18,6 +18,8 @@ package CedarProject {
   "Examples/Scenarios/FinancialServices/Wallet/Base.d2",
   "Examples/Scenarios/FinancialServices/Wallet/Binance2026.d2",
   "Examples/Scenarios/FinancialServices/Wallet/Binance2026Assurance.d2",
+  "Examples/Scenarios/FinancialServices/Wallet/Binance2026Host.d2",
+  "Examples/Scenarios/FinancialServices/Wallet/Binance2026Replay.d2",
   "Examples/Scenarios/TenantDevicePolicyEvolution.d2"
  );
  part def SharedDefinitions; part def ProductionProfile; part def Scenario;

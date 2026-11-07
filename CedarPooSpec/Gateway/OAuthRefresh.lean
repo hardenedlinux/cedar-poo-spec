@@ -253,6 +253,126 @@ theorem committed_run_preserves_revocation (framework : CedarPooSpec.ZeroTrust.F
     (fun _ _ _ step marked => step_preserves_revocation step marked)
     (revocation_retains_lineage receipt).1 run
 
+/-- A successful lookup names exactly one retained token, not a last-writer winner. -/
+theorem access_lookup_singleton {ledger : Ledger} {digest : String} {entry : Access}
+    (found : ledger.accessEntry digest = some entry) :
+    ledger.access.filter (fun item => item.grant.tokenHash == digest) = [entry] := by
+  unfold Ledger.accessEntry at found
+  split at found
+  · rename_i actual selected
+    have same := Option.some.inj found
+    simpa [same] using selected
+  · contradiction
+
+theorem fresh_access_keeps_original {ledger : Ledger} {next entry : Access} {digest : String}
+    (fresh : ledger.unissued next.grant.tokenHash = true)
+    (found : ledger.accessEntry digest = some entry) :
+    ({ ledger with access := next :: ledger.access } : Ledger).accessEntry digest = some entry := by
+  have selected := access_lookup_singleton found
+  have member : entry ∈ ledger.access.filter (fun item => item.grant.tokenHash == digest) := by
+    rw [selected]
+    simp
+  have retained := List.mem_filter.mp member
+  by_cases same : next.grant.tokenHash = digest
+  · have present : (ledger.access.any fun item => item.grant.tokenHash == next.grant.tokenHash) = true :=
+      List.any_eq_true.mpr ⟨entry, retained.1, by simpa [same] using retained.2⟩
+    simp [Ledger.unissued, present] at fresh
+  · simp [Ledger.accessEntry, same, selected]
+
+/-- Retain exact historical token-to-family/grant associations and every
+revocation. New unrelated families and tokens may still be issued. -/
+def Ledger.retains (original current : Ledger) : Prop :=
+  (∀ digest entry, original.accessEntry digest = some entry →
+    current.accessEntry digest = some entry) ∧
+  (∀ key ∈ original.revoked, key ∈ current.revoked)
+
+theorem Ledger.retains_refl (ledger : Ledger) : ledger.retains ledger :=
+  ⟨fun _ _ linked => linked, fun _ marked => marked⟩
+
+theorem Ledger.retains_trans {a b c : Ledger} (first : a.retains b) (second : b.retains c) : a.retains c :=
+  ⟨fun digest entry linked => second.1 digest entry (first.1 digest entry linked),
+    fun key marked => second.2 key (first.2 key marked)⟩
+
+theorem step_retains_lineage (step : LedgerStep E before effect after) : before.retains after := by
+  constructor
+  · intro digest entry linked
+    cases step with
+    | unchanged => exact linked
+    | enrolled receipt =>
+      rename_i redemption input
+      have accepted := receipt.logic
+      change enroll input = some receipt.result at accepted
+      dsimp only [enroll] at accepted
+      split at accepted
+      · rename_i valid
+        simp only [Bool.and_eq_true_iff, decide_eq_true_eq] at valid
+        have fresh := valid.1.1.2
+        simpa only [Ledger.accessEntry, (enrollment_retains_sender receipt).2.1] using
+          fresh_access_keeps_original
+            (next := ⟨⟨input.receipt.result.1.identity.issuer, input.refreshDigest⟩,
+              input.receipt.result.1⟩) fresh linked
+      · contradiction
+    | refreshed receipt =>
+      rename_i input
+      cases found : input.ledger.family input.key with
+      | none =>
+        have accepted := receipt.logic
+        change refresh input = some receipt.result at accepted
+        simp [refresh, found] at accepted
+      | some family =>
+        have accepted := receipt.logic
+        change refresh input = some receipt.result at accepted
+        simp only [refresh, found, bind, Option.bind] at accepted
+        split at accepted
+        · rename_i valid
+          have fresh := valid.2.2.2.2.2.1
+          have output := refresh_preserves_sender found receipt
+          have same : receipt.result.1 = input.next :=
+            congrArg Prod.fst (Option.some.inj accepted).symm
+          simpa only [Ledger.accessEntry, output.2.2.2.2, same] using
+            fresh_access_keeps_original (next := ⟨input.key, input.next⟩) fresh linked
+        · contradiction
+    | revoked receipt =>
+      simpa only [Ledger.accessEntry, (revocation_retains_lineage receipt).2.1] using linked
+  · intro key marked
+    exact step_preserves_revocation step marked
+
+/-- Concrete instantiation of the shared statewise invariant on the existing
+OAuth enrollment, refresh, revocation and unchanged-ledger transition owner. -/
+def protectLineage (base : CedarPooSpec.ZeroTrust.Framework E Ledger) (original : Ledger) :
+    CedarPooSpec.ZeroTrust.Framework E Ledger :=
+  base.atInvariant (LedgerStep E) (Ledger.retains original)
+
+theorem protected_lineage_retains_base
+    (base : CedarPooSpec.ZeroTrust.Framework E Ledger)
+    (accepted : (protectLineage base original).required effect current) :
+    base.required effect current ∧ original.retains current :=
+  ⟨CedarPooSpec.ZeroTrust.invariant_guard_preserves_framework base
+      (LedgerStep E) (Ledger.retains original) effect current accepted, accepted.2.1.2.1⟩
+
+theorem protected_lineage_preserves_run
+    (base : CedarPooSpec.ZeroTrust.Framework E Ledger)
+    (run : CedarPooSpec.ZeroTrust.Run (protectLineage base original)
+      (LedgerStep E) original later) : original.retains later := by
+  apply CedarPooSpec.ZeroTrust.invariant_guard_preserves_run base
+    (LedgerStep E) (Ledger.retains original) _ (Ledger.retains_refl original) run
+  intro before after applied prior
+  exact Ledger.retains_trans prior (step_retains_lineage applied)
+
+theorem committed_run_retains_lineage
+    (base : CedarPooSpec.ZeroTrust.Framework E Ledger)
+    (run : CedarPooSpec.ZeroTrust.Run base (LedgerStep E) original later) : original.retains later :=
+  CedarPooSpec.ZeroTrust.run_preserves (Ledger.retains original)
+    (fun _ _ _ applied prior => Ledger.retains_trans prior (step_retains_lineage applied))
+    (Ledger.retains_refl original) run
+
+theorem historical_access_cannot_rebind
+    (base : CedarPooSpec.ZeroTrust.Framework E Ledger)
+    (run : CedarPooSpec.ZeroTrust.Run base (LedgerStep E) original later)
+    (known : original.accessEntry digest = some entry)
+    (candidate : later.accessEntry digest = some replacement) : replacement = entry :=
+  Option.some.inj (candidate.symm.trans ((committed_run_retains_lineage base run).1 _ _ known))
+
 def useAccess (ledger : Ledger) (authority : Authority) (attempt : Attempt) : Option Authority := do
   let entry ← ledger.accessEntry attempt.grant.tokenHash
   if entry.grant = attempt.grant ∧ entry.family ∉ ledger.revoked ∧
@@ -305,6 +425,19 @@ theorem committed_descendant_blocks_access
     (linked : later.accessEntry attempt.grant.tokenHash = some entry)
     (family : entry.family = input.key) : useAccess later authority attempt = none :=
   revoked_access_refused later linked (family.symm ▸ committed_run_preserves_revocation framework receipt run)
+
+/-- The original lookup suffices: later issuance cannot move a revoked
+historical token into a live family. No current-link premise is delegated. -/
+theorem committed_historical_access_refused
+    (base : CedarPooSpec.ZeroTrust.Framework E Ledger)
+    (receipt : Invocation revokeContract prepareRevoke input)
+    (run : CedarPooSpec.ZeroTrust.Run base (LedgerStep E) receipt.result later)
+    (linked : input.ledger.accessEntry attempt.grant.tokenHash = some entry)
+    (family : entry.family = input.key) : useAccess later authority attempt = none := by
+  have original : receipt.result.accessEntry attempt.grant.tokenHash = some entry := by
+    simpa only [Ledger.accessEntry, (revocation_retains_lineage receipt).2.1] using linked
+  exact committed_descendant_blocks_access base receipt run
+    ((committed_run_retains_lineage base run).1 _ _ original) family
 
 theorem committed_descendant_blocks_refresh
     (framework : CedarPooSpec.ZeroTrust.Framework E Ledger)

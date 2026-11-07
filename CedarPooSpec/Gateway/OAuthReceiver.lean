@@ -767,6 +767,17 @@ theorem legacyRecoveryTrace_preserves_effect_state (history : LegacyRecoveryTrac
   | confirmation prior receipt current unchanged boundary ih =>
     cases boundary <;> simpa [Revocation.Crash.recoverImage, unchanged] using ih
 
+theorem legacyRecoveryTrace_retains_oauth_lineage (history : LegacyRecoveryTrace initial after) :
+    initial.oauth.checkpoint.ledger.retains after.oauth.checkpoint.ledger := by
+  induction history with
+  | start => exact Refresh.Ledger.retains_refl _
+  | handoff prior applied ih =>
+    exact Refresh.Ledger.retains_trans ih (Revocation.Crash.handoff_retains_oauth_lineage applied)
+  | revoke prior applied ih =>
+    exact Refresh.Ledger.retains_trans ih (Revocation.Crash.revocation_retains_oauth_lineage applied)
+  | confirmation prior receipt current unchanged boundary ih =>
+    cases boundary <;> simpa [Revocation.Crash.recoverImage, unchanged] using ih
+
 theorem legacyRecoveryTrace_keeps_original_receipt (history : LegacyRecoveryTrace initial after)
     (original conflict : ProviderOutcome)
     (pinned : initial.settledOutcome original.receipt.commit.operation = some original)

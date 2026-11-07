@@ -8,7 +8,7 @@ permit(
   resource.matched && (resource.amount.lessThanOrEqual(decimal("500.0000")) || (principal in Role::"SeniorController"))
 };
 
-// POO policy ID: legacy-matched-release
+// POO policy ID: matched-release
 permit(
   principal,
   action == Action::"release",
