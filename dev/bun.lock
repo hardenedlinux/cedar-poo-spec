@@ -1,6 +1,3 @@
-// SPDX-FileCopyrightText: 2026 hardenedlinux Linux Team and Contributors
-// SPDX-License-Identifier: Apache-2.0
-
 {
   "lockfileVersion": 1,
   "configVersion": 1,
@@ -16,6 +13,8 @@
         "valibot": "1.2.0",
       },
       "devDependencies": {
+        "@deterministic-engineering/quint-models": "git+https://github.com/hardenedlinux/deterministic-engineering-quint-models.git#fad167d1a1890dba034e948f6f3cbac02a56164d",
+        "@deterministic-engineering/quint-modules-resolver": "git+https://github.com/hardenedlinux/deterministic-engineering-quint-modules-resolver.git#1fdc69c7798dd4d5023b35b4f68ba341ca36a954",
         "@informalsystems/quint": "0.33.0",
         "@types/bun": "1.4.4",
         "typescript": "7.0.2",
@@ -30,6 +29,10 @@
     "@connectrpc/connect-node": ["@connectrpc/connect-node@2.1.2", "", { "peerDependencies": { "@bufbuild/protobuf": "^2.7.0", "@connectrpc/connect": "2.1.2" } }, "sha512-+i/aAOpsI8sIx1mbYp6d99zvxaUSF6t/jP9Ux9maAmjsZPgmIQ3JuIeYi0zJIP9zlCnBlJjkpPosshCgdRuThQ=="],
 
     "@connectrpc/connect-web": ["@connectrpc/connect-web@2.1.2", "", { "peerDependencies": { "@bufbuild/protobuf": "^2.7.0", "@connectrpc/connect": "2.1.2" } }, "sha512-1tfaK85MU+gJjwwmL31d2rzdf0XCYX99chZf63uG89SGBUd4XuZ4ZzhGo2u79TPXOE6nLIZQ2okrpyey42PYdg=="],
+
+    "@deterministic-engineering/quint-models": ["@deterministic-engineering/quint-models@github:hardenedlinux/deterministic-engineering-quint-models#fad167d", {}, "hardenedlinux-deterministic-engineering-quint-models-fad167d", "sha512-PG75ZYkh4E4qEb5TR6J/jObGezIZhN5jvGXou2WUmg5u95o/ZaNkaZquLAUvUEavyTRBHexo/PEXogKoq0u90A=="],
+
+    "@deterministic-engineering/quint-modules-resolver": ["@deterministic-engineering/quint-modules-resolver@github:hardenedlinux/deterministic-engineering-quint-modules-resolver#1fdc69c", { "peerDependencies": { "@informalsystems/quint": "0.33.0" }, "bin": { "quint-modules-resolver": "./src/cli.ts" } }, "hardenedlinux-deterministic-engineering-quint-modules-resolver-1fdc69c", "sha512-TcV7o1J9O0UjHIT5ZZjzKoz+aiqQACKB54f7/KvgSrYgL/mv6bq9e77whmgAYd/EdCXx0N19RPnlwGa77GU2OA=="],
 
     "@deterministic-engineering/render": ["@deterministic-engineering/render@github:hardenedlinux/deterministic-engineering#6f3113e", { "dependencies": { "@fontsource/inter": "5.3.0", "@fontsource/kalam": "5.3.0", "@terrastruct/d2": "0.1.33", "@xyflow/system": "0.0.83", "elkjs": "0.12.1", "parse5": "8.0.1", "roughjs": "4.6.6", "sharp": "0.35.5", "valibot": "1.2.0", "web-worker": "1.5.0" }, "peerDependencies": { "@openmbee/opensysml": "0.11.0", "playwright": "1.64.1" }, "optionalPeers": ["@openmbee/opensysml", "playwright"] }, "hardenedlinux-deterministic-engineering-6f3113e", "sha512-TmCRHLPt3gmjkXTJ8aYTpkIqjsJrl5O/IWZ7mUkwHniwZX2Xd0VJ3pC0w5oQuxs2sprqjXNiFaIYtYjMJ5phIA=="],
 

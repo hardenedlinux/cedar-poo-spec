@@ -1,7 +1,8 @@
 // Finite threat exploration using the selected LeanPoo object graph.
 // No claim of EVM, consensus, key custody, real concurrency or deployed durability.
 module wallet_signing {
-  import attackers_capabilities.* from "../attackers/Capabilities"
+  import threat_capabilities.* from "@deterministic-engineering/quint-models/threat/capabilities/Capabilities"
+  import authority_currentness.* from "@deterministic-engineering/quint-models/threat/authority-currentness/AuthorityCurrentness"
   const Initial: Set[str]
   const Isolated: Set[str]
   const Goals: Set[str]
@@ -52,7 +53,7 @@ module wallet_signing {
   action expire = all { not(s.expired), s' = s.with("expired", true) }
 
   val currentUse = all {
-    s.prepared, s.ticketEpoch == s.epoch, s.ticketGeneration == s.generation,
+    s.prepared, epochCurrent(s.epoch, s.ticketEpoch), s.ticketGeneration == s.generation,
     s.allowed, not(s.revoked), not(s.expired), not(s.unknown), not(s.burned),
     s.caller == 1, s.known.contains("signerCredential"), s.tx == 0
   }

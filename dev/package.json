@@ -17,6 +17,8 @@
     "valibot": "1.2.0"
   },
   "devDependencies": {
+    "@deterministic-engineering/quint-models": "git+https://github.com/hardenedlinux/deterministic-engineering-quint-models.git#fad167d1a1890dba034e948f6f3cbac02a56164d",
+    "@deterministic-engineering/quint-modules-resolver": "git+https://github.com/hardenedlinux/deterministic-engineering-quint-modules-resolver.git#1fdc69c7798dd4d5023b35b4f68ba341ca36a954",
     "@informalsystems/quint": "0.33.0",
     "@types/bun": "1.4.4",
     "typescript": "7.0.2"

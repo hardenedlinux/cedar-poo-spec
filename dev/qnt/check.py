@@ -2,6 +2,7 @@
 from pathlib import Path
 import hashlib
 import json
+import os
 import subprocess
 import tempfile
 import shutil
@@ -9,12 +10,36 @@ import shutil
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / ".lake/build/wallet-threat"
 QUINT = ROOT / "dev/node_modules/.bin/quint"
+RESOLVER = ROOT / "dev/node_modules/.bin/quint-modules-resolver"
+MODELS_PKG = ROOT / "dev/node_modules/@deterministic-engineering/quint-models"
+CONSUMED_MODELS = (
+    "threat/capabilities",
+    "threat/authority-currentness",
+    "threat/state-rollback",
+)
 MODEL = "dev/qnt/financial/WalletSigning.qnt"
 CASE = ".lake/build/wallet-attackers-case.qnt"
 CONTAINMENT = "dev/qnt/financial/WalletContainment.qnt"
 HOST = "dev/qnt/financial/WalletHost.qnt"
 REPLAY = "dev/qnt/financial/WalletReplay.qnt"
 REPLAY_CASE = ".lake/build/wallet-replay-case.qnt"
+
+
+def verify_model_receipts() -> dict[str, str]:
+    digests: dict[str, str] = {}
+    for rel in CONSUMED_MODELS:
+        model_dir = MODELS_PKG / rel
+        receipt_file = model_dir / "receipt.json"
+        if not receipt_file.is_file():
+            raise SystemExit(f"Missing DE quint-models receipt: {receipt_file}")
+        data = json.loads(receipt_file.read_text())
+        for artifact, expected_sha in data.get("artifacts", {}).items():
+            artifact_path = model_dir / artifact
+            actual_sha = hashlib.sha256(artifact_path.read_bytes()).hexdigest()
+            if actual_sha != expected_sha:
+                raise SystemExit(f"Stale DE quint-models artifact {rel}/{artifact}: {actual_sha} != {expected_sha}")
+            digests[f"@deterministic-engineering/quint-models/{rel}/{artifact}"] = actual_sha
+    return digests
 
 
 def main() -> None:
@@ -26,18 +51,22 @@ def main() -> None:
         receipt_path.write_text(json.dumps(receipt, indent=2) + "\n")
 
     save()  # A failed rerun must never leave an earlier passing receipt current.
-    if not QUINT.is_file():
+    if not QUINT.is_file() or not RESOLVER.is_file():
         raise SystemExit("Install the declared dev dependencies with bun install --frozen-lockfile --ignore-scripts")
     version = subprocess.check_output([str(QUINT), "--version"], cwd=ROOT, text=True).strip()
     if version != "0.33.0":
         raise SystemExit(f"Expected pinned Quint 0.33.0, got {version}")
+    resolver_version = subprocess.check_output([str(RESOLVER), "--version"], cwd=ROOT, text=True).strip()
+    if resolver_version != "0.33.0":
+        raise SystemExit(f"Expected quint-modules-resolver backed by Quint 0.33.0, got {resolver_version}")
+    de_digests = verify_model_receipts()
     receipt.update(checkout=subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(), quint=version, apalache="0.62.1", seed=7, positive_depth=12, negative_depth=4)
     inputs = [MODEL, CONTAINMENT, HOST, REPLAY, REPLAY_CASE,
               "CedarPooSpec/Scenarios/Replay.lean", "Tests/Enterprise/Payment/WalletReplay.lean",
               "Examples/Scenarios/FinancialServices/Wallet/Binance2026Replay.lean", "CedarPooSpec/Vertical/FinancialServices/PaymentHost.lean",
               "Tests/Enterprise/Payment/WalletHost.lean", "Examples/Scenarios/FinancialServices/Wallet/Binance2026Host.lean", "CedarPooSpec/Vertical/FinancialServices/PaymentContainment.lean",
               "Tests/Enterprise/Payment/WalletContainment.lean", ".lake/build/binance-2026-metadata.json",
-              "CedarPooSpec/Scenarios/Metadata.lean", "CedarPooSpec/Scenarios/Functional.lean", "dev/qnt/attackers/Capabilities.qnt", CASE,
+              "CedarPooSpec/Scenarios/Metadata.lean", "CedarPooSpec/Scenarios/Functional.lean", CASE,
               "CedarPooSpec/Attackers/Trace.lean", "CedarPooSpec/Attackers/ProfileObject.lean",
               "CedarPooSpec/Vertical/FinancialServices/PaymentSigning.lean",
               "CedarPooSpec/Vertical/FinancialServices/PaymentOperation.lean",
@@ -47,15 +76,17 @@ def main() -> None:
               "Tests/Enterprise/Payment/WalletSigning.lean", "Tests/Attackers/ProfileObject.lean",
               "dev/qnt/check.py", "dev/package.json", "dev/bun.lock"]
     receipt["inputs"] = {p: hashlib.sha256((ROOT / p).read_bytes()).hexdigest() for p in inputs}
+    receipt["de_quint_models"] = de_digests
 
     receipt["scenario"] = json.loads((ROOT / ".lake/build/binance-2026-metadata.json").read_text())
 
     def run(label: str, args: list[str], expected: int = 0) -> None:
         log = OUT / f"{label}.log"
         command_args = [str(ROOT / arg) if arg in (MODEL, CASE, CONTAINMENT, HOST, REPLAY, REPLAY_CASE) else arg for arg in args]
-        command = ["timeout", "--signal=TERM", "--kill-after=3s", "120s", str(QUINT), *command_args]
+        command = ["timeout", "--signal=TERM", "--kill-after=3s", "120s", str(RESOLVER), *command_args]
+        env = {**os.environ, "QUINT_RESOLVE_ROOT": str(ROOT / "dev")}
         with log.open("w") as stream:
-            result = subprocess.run(command, cwd=OUT, stdout=stream, stderr=subprocess.STDOUT, check=False)
+            result = subprocess.run(command, cwd=OUT, env=env, stdout=stream, stderr=subprocess.STDOUT, check=False)
         receipt["checks"].append({"name": label, "command": args, "exit": result.returncode,
                                   "expected_exit": expected, "log": str(log.relative_to(ROOT))})
         save()
@@ -67,7 +98,7 @@ def main() -> None:
 
     run("typecheck", ["typecheck", MODEL])
     with tempfile.TemporaryDirectory(prefix="source-only-", dir=OUT) as isolated:
-        for source in (MODEL, CONTAINMENT, HOST, REPLAY, "dev/qnt/attackers/Capabilities.qnt"):
+        for source in (MODEL, CONTAINMENT, HOST, REPLAY):
             target = Path(isolated) / source
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(ROOT / source, target)
@@ -130,9 +161,10 @@ def main() -> None:
         negative.unlink(missing_ok=True)
         run(label, [*host, "--step=" + step, "--max-steps=4", "--out-itf=" + str(negative)], expected=1)
         counterexample = json.loads(negative.read_text())
-        if counterexample.get("vars") != ["h"]:
+        variable = "wallet_host::state_rollback::h"
+        if counterexample.get("vars") != [variable]:
             raise SystemExit("Unexpected Host counterexample binding")
-        states = [state.get("h", {}) for state in counterexample.get("states", [])]
+        states = [state.get(variable, {}) for state in counterexample.get("states", [])]
         if not any(state.get("unsafe") is True and
                 (state.get("durable") is False if step == "stepNoDurability" else
                  state.get("sent") == {"#bigint": "2"}) for state in states):
