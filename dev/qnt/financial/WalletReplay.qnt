@@ -1,6 +1,6 @@
 // Same Lean-exported acquisition graph; no malware, chain codec or EVM model.
 module wallet_replay {
-  import threat_capabilities.* from "@deterministic-engineering/quint-models/threat/capabilities/Capabilities"
+  import threat_capabilities.* from "@deterministic-engineering/quint-models/threat/execution/capabilities/Capabilities"
   const Initial: Set[str]
   const Isolated: Set[str]
   const Goals: Set[str]

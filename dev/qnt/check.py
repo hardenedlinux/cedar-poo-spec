@@ -13,9 +13,9 @@ QUINT = ROOT / "dev/node_modules/.bin/quint"
 RESOLVER = ROOT / "dev/node_modules/.bin/quint-modules-resolver"
 MODELS_PKG = ROOT / "dev/node_modules/@deterministic-engineering/quint-models"
 CONSUMED_MODELS = (
-    "threat/capabilities",
-    "threat/authority-currentness",
-    "threat/state-rollback",
+    "threat/execution/capabilities",
+    "threat/zero-trust/authority-currentness",
+    "threat/execution/state-rollback",
 )
 MODEL = "dev/qnt/financial/WalletSigning.qnt"
 CASE = ".lake/build/wallet-attackers-case.qnt"

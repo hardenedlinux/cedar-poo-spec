@@ -1,8 +1,8 @@
 // Finite threat exploration using the selected LeanPoo object graph.
 // No claim of EVM, consensus, key custody, real concurrency or deployed durability.
 module wallet_signing {
-  import threat_capabilities.* from "@deterministic-engineering/quint-models/threat/capabilities/Capabilities"
-  import authority_currentness.* from "@deterministic-engineering/quint-models/threat/authority-currentness/AuthorityCurrentness"
+  import threat_capabilities.* from "@deterministic-engineering/quint-models/threat/execution/capabilities/Capabilities"
+  import authority_currentness.* from "@deterministic-engineering/quint-models/threat/zero-trust/authority-currentness/AuthorityCurrentness"
   const Initial: Set[str]
   const Isolated: Set[str]
   const Goals: Set[str]
