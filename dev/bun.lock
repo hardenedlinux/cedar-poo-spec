@@ -14,7 +14,7 @@
       },
       "devDependencies": {
         "@deterministic-engineering/quint-models": "git+https://github.com/hardenedlinux/deterministic-engineering-quint-models.git#c51beb6395599e098ad287f7b3bccdffb7748d0f",
-        "@deterministic-engineering/quint-modules-resolver": "git+https://github.com/hardenedlinux/deterministic-engineering-quint-modules-resolver.git#77f2af6568327de1bb37dd689724629d745e8e7b",
+        "@deterministic-engineering/quint-modules-resolver": "git+https://github.com/hardenedlinux/deterministic-engineering-quint-modules-resolver.git#87c0d47d163b0ec0c9a4c13bdcb0a972fb46cdd1",
         "@informalsystems/quint": "0.33.0",
         "@types/bun": "1.4.4",
         "typescript": "7.0.2",
@@ -32,7 +32,7 @@
 
     "@deterministic-engineering/quint-models": ["@deterministic-engineering/quint-models@github:hardenedlinux/deterministic-engineering-quint-models#c51beb6", {}, "hardenedlinux-deterministic-engineering-quint-models-c51beb6", "sha512-L9q7hulSbbD6pPmWM5ZHh9dtsV/0iV7lysokkOt2T913ihFgWbCot6ljgyx05awl4J75Eqra7PMr6RmJiYXnVA=="],
 
-    "@deterministic-engineering/quint-modules-resolver": ["@deterministic-engineering/quint-modules-resolver@github:hardenedlinux/deterministic-engineering-quint-modules-resolver#77f2af6", { "peerDependencies": { "@informalsystems/quint": "0.33.0" }, "bin": { "quint-modules-resolver": "./src/cli.ts" } }, "hardenedlinux-deterministic-engineering-quint-modules-resolver-77f2af6", "sha512-qqft7B7173Shi/TqtjJCf2CdW9b+/mOmNCnUzoIgfTGZchcj79syqHAVizpmxi3dTZOFL+SZxVEOy+7uCJ31SA=="],
+    "@deterministic-engineering/quint-modules-resolver": ["@deterministic-engineering/quint-modules-resolver@github:hardenedlinux/deterministic-engineering-quint-modules-resolver#87c0d47", { "peerDependencies": { "@informalsystems/quint": "0.33.0" }, "bin": { "quint-modules-resolver": "./src/cli.ts" } }, "hardenedlinux-deterministic-engineering-quint-modules-resolver-87c0d47", "sha512-6r2Z8uJDg0AshAgV52TSlfCzkMoXRWbrmAaqCvo8D67WdV4FDbxWnPa15MK+xOX8Dhto6ltIm2jY8BL86M7B6w=="],
 
     "@deterministic-engineering/render": ["@deterministic-engineering/render@github:hardenedlinux/deterministic-engineering#6f3113e", { "dependencies": { "@fontsource/inter": "5.3.0", "@fontsource/kalam": "5.3.0", "@terrastruct/d2": "0.1.33", "@xyflow/system": "0.0.83", "elkjs": "0.12.1", "parse5": "8.0.1", "roughjs": "4.6.6", "sharp": "0.35.5", "valibot": "1.2.0", "web-worker": "1.5.0" }, "peerDependencies": { "@openmbee/opensysml": "0.11.0", "playwright": "1.64.1" }, "optionalPeers": ["@openmbee/opensysml", "playwright"] }, "hardenedlinux-deterministic-engineering-6f3113e", "sha512-TmCRHLPt3gmjkXTJ8aYTpkIqjsJrl5O/IWZ7mUkwHniwZX2Xd0VJ3pC0w5oQuxs2sprqjXNiFaIYtYjMJ5phIA=="],
 

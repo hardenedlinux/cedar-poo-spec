@@ -18,7 +18,7 @@
   },
   "devDependencies": {
     "@deterministic-engineering/quint-models": "git+https://github.com/hardenedlinux/deterministic-engineering-quint-models.git#c51beb6395599e098ad287f7b3bccdffb7748d0f",
-    "@deterministic-engineering/quint-modules-resolver": "git+https://github.com/hardenedlinux/deterministic-engineering-quint-modules-resolver.git#77f2af6568327de1bb37dd689724629d745e8e7b",
+    "@deterministic-engineering/quint-modules-resolver": "git+https://github.com/hardenedlinux/deterministic-engineering-quint-modules-resolver.git#87c0d47d163b0ec0c9a4c13bdcb0a972fb46cdd1",
     "@informalsystems/quint": "0.33.0",
     "@types/bun": "1.4.4",
     "typescript": "7.0.2"

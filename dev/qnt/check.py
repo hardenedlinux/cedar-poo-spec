@@ -146,9 +146,9 @@ def main() -> None:
             raise SystemExit("Containment counterexample does not demonstrate the intended failure")
     run("host-typecheck", ["typecheck", HOST])
     run("host-traces", ["test", HOST, "--main=wallet_host", "--max-samples=1", "--seed=7", "--backend=typescript"])
-    if "9 passing" not in (OUT / "host-traces.log").read_text():
-        raise SystemExit("All nine Host-boundary traces must run")
-    receipt["host_trace_tests"] = 9
+    if "10 passing" not in (OUT / "host-traces.log").read_text():
+        raise SystemExit("All ten Host-boundary traces (9 StateRollback + 1 AuthorityCurrentness) must run")
+    receipt["host_trace_tests"] = 10
     host = ["verify", HOST, "--main=wallet_host", "--backend=apalache", "--apalache-version=0.62.1", "--invariant=safety"]
     run("host-depth-12", [*host, "--max-steps=12"])
     for label, step in (("durability-negative-depth-4", "stepNoDurability"),
@@ -157,7 +157,7 @@ def main() -> None:
         negative.unlink(missing_ok=True)
         run(label, [*host, "--step=" + step, "--max-steps=4", "--out-itf=" + str(negative)], expected=1)
         counterexample = json.loads(negative.read_text())
-        variable = "wallet_host::state_rollback::h"
+        variable = "h"  # Top-level @quint-extends module fields are unqualified in native ITF.
         if counterexample.get("vars") != [variable]:
             raise SystemExit("Unexpected Host counterexample binding")
         states = [state.get(variable, {}) for state in counterexample.get("states", [])]
@@ -191,13 +191,32 @@ def main() -> None:
                 state.get(variable, {}).get("intents") == {"#bigint": "0"}
                 for state in trace.get("states", [])):
             raise SystemExit("Replay counterexample must retain prior exposure with no new signing")
+    mbt_reports = {}
+    for label, target, mod_name, min_cov in (
+        ("signing-mbt-audit", CASE, "wallet_attackers_case", "0.75"),
+        ("containment-mbt-audit", CONTAINMENT, "wallet_containment", "0.8"),
+        ("host-mbt-audit", HOST, "wallet_host", "0.8"),
+        ("replay-mbt-audit", REPLAY_CASE, "wallet_replay_case", "0.8"),
+    ):
+        run(label, [
+            "mbt-audit", target, f"--main={mod_name}",
+            "--n-traces=12", "--max-steps=12", "--seed=7",
+            f"--min-coverage={min_cov}", "--json",
+        ])
+        mbt_data = json.loads((OUT / f"{label}.log").read_text())
+        mbt_reports[mod_name] = {
+            "covered": len(mbt_data.get("coveredActions", [])),
+            "declared": len(mbt_data.get("declaredStepActions", [])),
+            "coverage": mbt_data.get("actionCoverage", 0),
+        }
+    receipt["mbt_audit"] = mbt_reports
     if any(hashlib.sha256((ROOT / p).read_bytes()).hexdigest() != digest
            for p, digest in receipt["inputs"].items()):
         receipt["status"] = "failed"
         save()
         raise SystemExit("Threat model inputs changed during verification; rerun the gate")
     receipt["status"] = "passed"
-    receipt["scope"] = "bounded model checks and deterministic traces; no deployed Host or Lean/Quint refinement claim"
+    receipt["scope"] = "bounded model checks, deterministic traces, and AST-driven MBT action-coverage audits; no deployed Host or Lean/Quint refinement claim"
     save()
     print(f"Receipt: {receipt_path}")
 

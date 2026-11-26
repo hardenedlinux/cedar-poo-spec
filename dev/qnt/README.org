@@ -41,8 +41,10 @@ pass of the deliberately broken model's safety property.
 
 The [[https://quint.sh/docs/model-checkers][Quint documentation]] distinguishes randomized simulation, bounded Apalache
 checking and other backend capabilities. This gate uses deterministic tests and
-bounded Apalache verification, not =quint run= or unbounded temporal/liveness
-verification. The finite domains and corresponding Lean laws are described in
+bounded Apalache verification as its primary safety and countermodel evidence,
+plus AST-driven =mbt-audit= action-coverage checks to catch unreachable dead
+actions across all four wallet models (no unbounded temporal/liveness
+verification is claimed). The finite domains and corresponding Lean laws are described in
 the [[file:../../Examples/Scenarios/FinancialServices/Wallet/README.org][financial audit]]. No deployed Host behavior, cryptographic protocol,
 consensus guarantee or Lean/Quint transition-refinement theorem is established.
 
@@ -60,12 +62,14 @@ Finite matching/finality bits abstract trusted Host observations; Lean uses the
 actual typed wallet/network/nonce fields. This is complementary exploration,
 not a refinement proof or evidence of EVM/consensus behavior.
 
-=financial/WalletHost.qnt= independently explores the checked Host adapter:
-nine additional deterministic traces, depth-12 safety, and required depth-4
-no-durability / old-state-replay counterexamples. The runner checks actual ITF
-unsafe states (including a second handoff for rollback). Existing signing and
-containment gates remain mandatory: 27 traces, three depth-12 positive checks,
-five negative countermodels. Trusted bits abstract real verifiers/readers and
+=financial/WalletHost.qnt= independently explores the checked Host adapter via
+=@quint-extends= + =@quint-const MaxSends = 1= over upstream =StateRollback.qnt=:
+ten deterministic traces (nine Host-boundary traces plus the imported
+=currentnessTest=), depth-12 safety, and required depth-4 no-durability /
+old-state-replay counterexamples. The runner checks actual ITF unsafe states
+(including a second handoff for rollback). Existing signing and containment
+gates remain mandatory: 28 traces, three depth-12 positive checks, five
+negative countermodels. Trusted bits abstract real verifiers/readers and
 storage; no Lean/Quint refinement or deployed Host qualification is claimed.
 
 =financial/WalletReplay.qnt= receives the same Lean-selected graph through an
@@ -73,5 +77,6 @@ ignored generated instance. It adds ten deterministic controls (including a
 legitimate positive control), depth-12 interleaving safety and two depth-4
 refutations of false containment claims. Those witnesses retain zero new signing
 intents while an old settlement or delegation survives pause; they are not
-hardened-invariant violations. Total: 37 deterministic controls, four positive
-depth-12 checks, five broken-boundary countermodels and two false-claim witnesses.
+hardened-invariant violations. Total: 38 deterministic controls, four positive
+depth-12 checks, five broken-boundary countermodels, two false-claim witnesses,
+and four AST-driven =mbt-audit= action-coverage gates.
