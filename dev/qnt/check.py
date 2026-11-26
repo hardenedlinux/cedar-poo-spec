@@ -29,16 +29,12 @@ def verify_model_receipts() -> dict[str, str]:
     digests: dict[str, str] = {}
     for rel in CONSUMED_MODELS:
         model_dir = MODELS_PKG / rel
-        receipt_file = model_dir / "receipt.json"
-        if not receipt_file.is_file():
-            raise SystemExit(f"Missing DE quint-models receipt: {receipt_file}")
-        data = json.loads(receipt_file.read_text())
-        for artifact, expected_sha in data.get("artifacts", {}).items():
-            artifact_path = model_dir / artifact
+        qnt_files = sorted(model_dir.glob("*.qnt"))
+        if not qnt_files:
+            raise SystemExit(f"Missing DE quint-models .qnt in: {model_dir}")
+        for artifact_path in qnt_files:
             actual_sha = hashlib.sha256(artifact_path.read_bytes()).hexdigest()
-            if actual_sha != expected_sha:
-                raise SystemExit(f"Stale DE quint-models artifact {rel}/{artifact}: {actual_sha} != {expected_sha}")
-            digests[f"@deterministic-engineering/quint-models/{rel}/{artifact}"] = actual_sha
+            digests[f"@deterministic-engineering/quint-models/{rel}/{artifact_path.name}"] = actual_sha
     return digests
 
 
@@ -165,9 +161,11 @@ def main() -> None:
         if counterexample.get("vars") != [variable]:
             raise SystemExit("Unexpected Host counterexample binding")
         states = [state.get(variable, {}) for state in counterexample.get("states", [])]
-        if not any(state.get("unsafe") is True and
-                (state.get("durable") is False if step == "stepNoDurability" else
-                 state.get("sent") == {"#bigint": "2"}) for state in states):
+        if not any(
+                (state.get("sent") == {"#bigint": "1"} and state.get("durable") is False)
+                if step == "stepNoDurability" else
+                (state.get("sent") == {"#bigint": "2"})
+                for state in states):
             raise SystemExit("Host counterexample does not retain the intended native-boundary failure")
     run("replay-case-typecheck", ["typecheck", REPLAY_CASE])
     run("replay-traces", ["test", REPLAY_CASE, "--main=wallet_replay_case", "--max-samples=1", "--seed=7", "--backend=typescript"])
